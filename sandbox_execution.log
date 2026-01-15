@@ -1,0 +1,15 @@
+2026-01-15 19:21:19,442 - __main__ - WARNING - 在 d:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\..\decision 中未找到 JSON 配置文件
+2026-01-15 19:21:19,445 - __main__ - INFO - 已创建默认配置文件: d:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\..\decision\default_task.json
+2026-01-15 19:21:19,566 - __main__ - INFO - 执行报告已保存: d:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\executor_workspace\reports\execution_report_20260115_192119.json
+2026-01-15 19:24:41,923 - __main__ - INFO - 找到配置文件: d:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\..\decision\default_task.json
+2026-01-15 19:24:41,925 - __main__ - INFO - 成功加载配置文件: 默认测试任务
+2026-01-15 19:24:42,068 - __main__ - INFO - 执行报告已保存: d:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\executor_workspace\reports\execution_report_20260115_192442.json
+2026-01-15 19:25:59,998 - __main__ - INFO - 找到配置文件: D:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\..\decision\default_task.json
+2026-01-15 19:25:59,999 - __main__ - INFO - 成功加载配置文件: 默认测试任务
+2026-01-15 19:26:00,303 - __main__ - INFO - 执行报告已保存: D:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\executor_workspace\reports\execution_report_20260115_192600.json
+2026-01-15 19:36:28,526 - __main__ - INFO - 找到配置文件: d:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\..\decision\default_task.json
+2026-01-15 19:36:28,527 - __main__ - INFO - 成功加载配置文件: 默认测试任务
+2026-01-15 19:36:28,647 - __main__ - INFO - 执行报告已保存: d:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\executor_workspace\reports\execution_report_20260115_193628.json
+2026-01-15 20:21:25,112 - __main__ - INFO - 找到配置文件: d:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\..\decision\default_task.json
+2026-01-15 20:21:25,114 - __main__ - INFO - 成功加载配置文件: 默认测试任务
+2026-01-15 20:21:25,233 - __main__ - INFO - 执行报告已保存: d:\NetworkProject\Project\基于AI的Web安全漏洞扫描系统\漏扫\WebScan\backend\services\executor_workspace\reports\execution_report_20260115_202125.json

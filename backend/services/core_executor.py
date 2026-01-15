@@ -5,6 +5,7 @@
 """
 import json
 import os
+import sys
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -24,11 +25,11 @@ class CodeExecutor:
         else:
             self.workspace = current_dir / "executor_workspace"
         
-        self.workspace.mkdir(exist_ok=True)
+        self.workspace.mkdir(parents=True, exist_ok=True)
         
         # 执行器配置
         self.executors = {
-            "python": {"ext": ".py", "cmd": ["python", "{file_path}"]},
+            "python": {"ext": ".py", "cmd": [sys.executable, "{file_path}"]},
             "javascript": {"ext": ".js", "cmd": ["node", "{file_path}"]},
             "shell": {"ext": ".sh", "cmd": ["bash", "{file_path}"]},
             "powershell": {"ext": ".ps1", "cmd": ["powershell", "-File", "{file_path}"]},
@@ -111,7 +112,7 @@ class CodeExecutor:
                 filename += self.executors[language]["ext"]
         
         file_path = self.workspace / filename
-        file_path.parent.mkdir(exist_ok=True)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
         
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(code)
@@ -119,7 +120,10 @@ class CodeExecutor:
         return {
             "success": True,
             "filepath": str(file_path),
-            "action": "write_code"
+            "action": "write_code",
+            "stdout": "",
+            "stderr": "",
+            "returncode": 0
         }
     
     def _execute_code(self, action: Dict) -> Dict:
@@ -149,19 +153,21 @@ class CodeExecutor:
             cmd = [part.format(file_path=str(full_path)) for part in cmd_template]
             cmd.extend(args)
             
+            encoding = 'gbk' if sys.platform == 'win32' else 'utf-8'
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30,
-                encoding='utf-8'
+                encoding=encoding,
+                errors='replace'
             )
-            
+
             return {
                 "success": result.returncode == 0,
                 "returncode": result.returncode,
-                "stdout": result.stdout,
-                "stderr": result.stderr,
+                "stdout": result.stdout or "",
+                "stderr": result.stderr or "",
                 "filepath": str(full_path),
                 "action": "execute_code"
             }
@@ -184,20 +190,31 @@ class CodeExecutor:
             else:
                 full_cmd = ["cmd", "/c", command]
             
+            # Windows 下使用 GBK 编码，其他系统使用 UTF-8
+            encoding = 'gbk' if sys.platform == 'win32' else 'utf-8'
+
             result = subprocess.run(
                 full_cmd,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                encoding='utf-8',
+                encoding=encoding,
+                errors='replace',
                 shell=False
             )
-            
+
             return {
                 "success": result.returncode == 0,
                 "returncode": result.returncode,
-                "stdout": result.stdout,
-                "stderr": result.stderr,
+                "stdout": result.stdout or "",
+                "stderr": result.stderr or "",
+                "command": command,
+                "action": "command"
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "success": False,
+                "error": "执行超时",
                 "command": command,
                 "action": "command"
             }
@@ -217,12 +234,15 @@ class CodeExecutor:
         try:
             with open(full_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             return {
                 "success": True,
                 "content": content,
                 "filepath": str(full_path),
-                "action": "read_code"
+                "action": "read_code",
+                "stdout": "",
+                "stderr": "",
+                "returncode": 0
             }
         except Exception as e:
             return {
@@ -230,3 +250,38 @@ class CodeExecutor:
                 "error": str(e),
                 "action": "read_code"
             }
+
+    def _process_action(self, action: Dict) -> Dict:
+        """处理单个动作（内部方法） - 覆盖以规范返回字段"""
+        action_type = action.get("type")
+        action_name = action.get("name") or action.get("filename") or ""
+
+        result = {"type": action_type, "success": False}
+
+        try:
+            if action_type == "write_code":
+                result = self._write_code(action)
+            elif action_type == "execute_code":
+                result = self._execute_code(action)
+            elif action_type == "command":
+                result = self._execute_command(action)
+            elif action_type == "read_code":
+                result = self._read_code(action)
+            else:
+                result = {"success": False, "error": f"未知动作类型: {action_type}", "action": action_type}
+        except Exception as e:
+            result = {"success": False, "error": str(e), "action": action_type}
+
+        # 规范字段
+        if "success" not in result:
+            result["success"] = False
+
+        result["action_type"] = action_type
+        result["action_name"] = action_name
+
+        # 确保 stdout/stderr/returncode 字段存在
+        result.setdefault("stdout", "")
+        result.setdefault("stderr", "")
+        result.setdefault("returncode", None)
+
+        return result
