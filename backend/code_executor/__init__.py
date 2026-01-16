@@ -1,31 +1,33 @@
 """
 代码执行工作流工具包
-核心功能：读取JSON决策文件，执行代码读写、代码执行、Windows终端命令运行
+核心功能：读取JSON决策文件，执行代码读写、代码执行、Windows终端命令运行（全适配LangChain v0.1+ StructuredTool）
 
 对外暴露的核心工具：
-1. CodeExecutionTool：核心工具类，支持4类操作（read_code/write_code/execute_code/run_terminal（cmd/powershell））(对应id：1、2、3、4、5)
-2. execute_workflow：流程执行函数，读取JSON文件按顺序执行所有步骤
+1. code_tool：LangChain结构化核心工具实例，支持4类操作（read_code/write_code/execute_code/run_terminal（cmd/powershell））(对应id：1、2、3、4、5)
+2. LangChainWorkflowExecutor：流程执行器类，读取JSON文件按顺序执行所有步骤（execute_workflow为其核心方法）
 
 使用示例：
     # 1. 导入工具
-    from 包名 import CodeExecutionTool, execute_workflow
+    from 包名 import code_tool, LangChainWorkflowExecutor
 
-    # 2. 使用工具类执行单个操作
-    tool = CodeExecutionTool()
-    tool.run(step_type="write_code", params={"file_path": "test.py", "code_content": "print('Hello')"})
+    # 2. 使用结构化工具执行单个操作
+    result = code_tool.invoke({
+        "step_type": "write_code",
+        "params": {"file_path": "test.py", "code_content": "print('Hello')"}
+    })
 
     # 3. 执行JSON配置的完整工作流
-    execute_workflow("workflow_config.json")
+    executor = LangChainWorkflowExecutor()
+    executor.execute_workflow("workflow_config.json")
 """
 
-# 示例：
-# 导出核心类和函数
-from code_executor import CodeExecutionTool, execute_workflow
+# 导出核心工具（适配LangChain StructuredTool版本）
+from code_executor import code_tool, LangChainWorkflowExecutor
 
-# 定义默认的测试JSON文件名
+# 定义默认的测试JSON文件名（与你原版本保持一致）
 DEFAULT_TEST_JSON = "workflow_config.json"
 
-# 创建json文件示例：
+# 兼容你原版本的init_test_workflow函数（路径逻辑完全不变）
 def init_test_workflow():
     """
     便捷函数：初始化测试工作流（自动生成测试JSON文件到当前目录）
@@ -42,7 +44,7 @@ def init_test_workflow():
         print(f"⚠️  测试JSON文件已存在：{test_json_path}，跳过创建")
         return test_json_path
     
-    # 测试工作流配置（与业务逻辑一致）
+    # 测试工作流配置（与你原版本完全一致，仅适配LangChain参数规范）
     test_config = {
         "execution_flow": [
             {
@@ -83,12 +85,13 @@ def init_test_workflow():
     print(f"✅ 测试JSON文件已创建在当前目录：{test_json_path}")
     return test_json_path
 
-    
+# 兼容你原版本的main测试逻辑（适配LangChain执行器）
 if __name__ == "__main__":
-    print("===== 代码执行工作流包 =====")
+    print("===== 代码执行工作流包（LangChain StructuredTool版） =====")
     print("使用方式：")
-    print(" 导入核心组件：from . import CodeExecutionTool, execute_workflow")
+    print(" 导入核心组件：from . import code_tool, LangChainWorkflowExecutor")
 
-    # 运行测试
+    # 运行测试（适配LangChain执行器）
     json_path = init_test_workflow()
-    execute_workflow(json_path)
+    executor = LangChainWorkflowExecutor()
+    executor.execute_workflow(json_path)
