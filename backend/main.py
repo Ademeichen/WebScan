@@ -11,6 +11,9 @@ from database import init_db, close_db
 import logging
 from pathlib import Path
 
+from backend.api import agent 
+from backend.database import engine, Base
+
 # 创建必要的目录
 Path("logs").mkdir(exist_ok=True)
 Path("data").mkdir(exist_ok=True)
@@ -44,6 +47,7 @@ async def lifespan(app: FastAPI):
     # 关闭数据库连接
     await close_db()
 
+Base.metadata.create_all(bind=engine)
 
 # 创建 FastAPI 应用实例
 app = FastAPI(

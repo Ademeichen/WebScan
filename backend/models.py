@@ -153,3 +153,27 @@ class POCScanResult(Model):
     
     def __str__(self):
         return f"{self.poc_type} - {self.target} ({'存在漏洞' if self.vulnerable else '安全'})"
+
+class AgentTask(Model):
+    # 任务ID (主键)
+    task_id = fields.UUIDField(pk=True)
+    # 用户输入的内容
+    input_json = fields.TextField()
+    # 创建时间
+    created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "agent_tasks"
+        table_description = "AI Agent 任务记录表"
+
+class AgentResult(Model):
+    id = fields.UUIDField(pk=True)
+    # 关联到上面的任务表 (外键)
+    task = fields.ForeignKeyField("models.AgentTask", related_name="result")
+    # AI 输出的结果
+    final_output = fields.TextField()
+    created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "agent_results"
+        table_description = "AI Agent 执行结果表"

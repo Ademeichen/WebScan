@@ -4,6 +4,9 @@ API 路由总入口
 from fastapi import APIRouter
 from . import scan, tasks, reports, poc, awvs, settings
 
+#导入 agent 路由
+from .agent import router as agent_router
+
 api_router = APIRouter()
 
 # 注册各个模块的路由
@@ -14,3 +17,4 @@ api_router.include_router(poc.router, tags=["POC扫描"])
 api_router.include_router(awvs.router, prefix="/awvs", tags=["AWVS漏洞扫描"])
 api_router.include_router(settings.router, prefix="/settings", tags=["系统设置"])
 
+api_router.include_router(agent_router)
