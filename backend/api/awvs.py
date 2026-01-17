@@ -1,0 +1,534 @@
+"""
+AWVS 漏洞扫描相关的 API 路由
+整合 AVWS 工具包的功能
+"""
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, HttpUrl
+from typing import Optional, List, Dict, Any
+import logging
+import json
+import re
+import asyncio
+from config import settings
+from models import Task
+
+# 导入 AWVS API 类
+from AVWS.API.Scan import Scan
+from AVWS.API.Target import Target
+from AVWS.API.Vuln import Vuln
+from AVWS.API.Dashboard import Dashboard
+from AVWS.API.Base import Base
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+# 请求模型
+class AWVSScanRequest(BaseModel):
+    url: str
+    scan_type: str = "full_scan"
+
+
+class AWVSTargetRequest(BaseModel):
+    address: str
+    description: Optional[str] = None
+
+
+# 响应模型
+class APIResponse(BaseModel):
+    code: int
+    message: str
+    data: Optional[Any] = None
+
+
+def get_awvs_client():
+    """获取AWVS客户端实例"""
+    return {
+        'api_url': settings.AWVS_API_URL,
+        'api_key': settings.AWVS_API_KEY
+    }
+
+
+async def sync_scans_from_awvs():
+    """从AWVS同步扫描任务到数据库"""
+    try:
+        client = get_awvs_client()
+        s = Scan(client['api_url'], client['api_key'])
+        # 获取AWVS中所有扫描
+        awvs_scans = s.get_all()
+        
+        # 获取数据库中所有AWVS任务
+        # 注意：这里假设task_type='awvs_scan'
+        db_tasks = await Task.filter(task_type='awvs_scan').all()
+        db_task_map = {}
+        for task in db_tasks:
+            config = json.loads(task.config) if task.config else {}
+            scan_id = config.get('scan_id')
+            if scan_id:
+                db_task_map[scan_id] = task
+
+        # 同步更新
+        for scan in awvs_scans:
+            scan_id = scan.get('scan_id')
+            target_id = scan.get('target_id')
+            
+            # 构建result JSON
+            result_json = json.dumps(scan)
+            
+            status = scan.get('current_session', {}).get('status', 'unknown')
+            progress = scan.get('current_session', {}).get('progress', 0)
+            
+            if scan_id in db_task_map:
+                # 更新现有任务
+                task = db_task_map[scan_id]
+                task.status = status
+                task.progress = progress
+                task.result = result_json
+                await task.save()
+            else:
+                # 检查是否存在未关联scan_id的同目标任务
+                # 优先通过 target_id 匹配 (更准确)
+                existing_task = None
+                
+                # 获取所有未关联 scan_id 的活跃任务
+                pending_tasks = await Task.filter(
+                    task_type='awvs_scan',
+                    status__in=['pending', 'submitted', 'processing']
+                ).all()
+                
+                for p_task in pending_tasks:
+                    p_config = json.loads(p_task.config) if p_task.config else {}
+                    # 检查 scan_id 是否已存在 (如果已存在说明是其他任务)
+                    if p_config.get('scan_id'):
+                        continue
+                        
+                    # 匹配 target_id
+                    if target_id and p_config.get('target_id') == target_id:
+                        existing_task = p_task
+                        break
+                    
+                    # 降级匹配: target URL (忽略末尾斜杠)
+                    t1 = p_task.target.rstrip('/')
+                    t2 = scan.get('target', {}).get('address', '').rstrip('/')
+                    if t1 and t2 and t1 == t2:
+                        existing_task = p_task
+                        break
+                
+                if existing_task:
+                    # 关联现有任务
+                    existing_task.status = status
+                    existing_task.progress = progress
+                    existing_task.result = result_json
+                    # 更新配置中的scan_id
+                    config = json.loads(existing_task.config)
+                    config['scan_id'] = scan_id
+                    existing_task.config = json.dumps(config)
+                    await existing_task.save()
+                    # 更新映射防止重复处理
+                    db_task_map[scan_id] = existing_task
+                else:
+                    # 创建新任务（可能是直接在AWVS创建的）
+                    target_address = scan.get('target', {}).get('address', 'Unknown Target')
+                    new_task = await Task.create(
+                        task_name=f"AWVS Scan: {target_address}",
+                        task_type='awvs_scan',
+                        target=target_address,
+                        status=status,
+                        progress=progress,
+                        config=json.dumps({'scan_id': scan_id, 'target_id': target_id}),
+                        result=result_json
+                    )
+                    db_task_map[scan_id] = new_task
+                
+    except Exception as e:
+        logger.error(f"同步AWVS扫描任务失败: {str(e)}")
+
+
+# ==================== 获取所有扫描任务 ====================
+@router.get("/scans", response_model=APIResponse)
+async def get_all_scans():
+    """
+    获取所有扫描任务列表 (从数据库获取，并尝试同步)
+    """
+    try:
+        # 异步触发同步，不阻塞返回（或者可以阻塞以保证最新）
+        # 为了保证显示最新状态，这里选择阻塞同步
+        await sync_scans_from_awvs()
+        
+        # 从数据库读取
+        tasks = await Task.filter(task_type='awvs_scan').order_by('-created_at').all()
+        
+        data = []
+        for task in tasks:
+            if task.result:
+                try:
+                    scan_data = json.loads(task.result)
+                    data.append(scan_data)
+                except:
+                    pass
+            else:
+                # 只有基本信息的任务
+                data.append({
+                    'target': {'address': task.target},
+                    'profile_name': 'Unknown',
+                    'current_session': {'status': task.status, 'severity_counts': {}, 'start_date': str(task.created_at)},
+                    'target_id': json.loads(task.config).get('target_id') if task.config else None
+                })
+        
+        logger.info(f"获取扫描任务列表成功，共 {len(data)} 个任务")
+        return APIResponse(code=200, message="获取成功", data=data)
+    except Exception as e:
+        logger.error(f"获取扫描任务列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 获取目标漏洞列表 ====================
+@router.get("/vulnerabilities/{target_id}", response_model=APIResponse)
+async def get_target_vulnerabilities(target_id: str):
+    """
+    获取指定目标的漏洞列表
+    """
+    try:
+        client = get_awvs_client()
+        v = Vuln(client['api_url'], client['api_key'])
+        
+        # 搜索该目标的所有已打开的漏洞
+        # search 方法返回的是 JSON 字符串，需要解析
+        result_text = v.search(
+            severity=None,
+            criticality=None,
+            status='open',
+            target_id=target_id
+        )
+        
+        data = []
+        if result_text:
+            try:
+                result_json = json.loads(result_text)
+                vulnerabilities = result_json.get('vulnerabilities', [])
+                
+                # Severity mapping
+                severity_map = {
+                    3: 'High',
+                    2: 'Medium',
+                    1: 'Low',
+                    0: 'Info'
+                }
+                
+                for val in vulnerabilities:
+                    # Handle severity if it's an integer
+                    severity_val = val.get('severity')
+                    if isinstance(severity_val, int):
+                        severity = severity_map.get(severity_val, 'Info')
+                    else:
+                        severity = str(severity_val) if severity_val is not None else 'Info'
+                        
+                    data.append({
+                        'vuln_id': val.get('vuln_id'),
+                        'severity': severity,
+                        'vuln_name': val.get('vt_name'),
+                        'target': val.get('affects_url'),
+                        'time': val.get('last_seen', '').replace('T', ' ').split('.')[0] if val.get('last_seen') else ''
+                    })
+            except json.JSONDecodeError:
+                logger.error(f"解析漏洞数据失败: {result_text}")
+                
+        return APIResponse(code=200, message="获取漏洞列表成功", data=data)
+    except Exception as e:
+        logger.error(f"获取漏洞列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 获取漏洞详情 ====================
+@router.get("/vulnerability/{vuln_id}", response_model=APIResponse)
+async def get_vulnerability_detail(vuln_id: str):
+    """
+    获取漏洞详情
+    """
+    try:
+        client = get_awvs_client()
+        v = Vuln(client['api_url'], client['api_key'])
+        
+        vuln_data = v.get(vuln_id)
+        
+        if vuln_data:
+            return APIResponse(code=200, message="获取漏洞详情成功", data=vuln_data)
+        else:
+            return APIResponse(code=404, message="未找到漏洞信息", data=None)
+            
+    except Exception as e:
+        logger.error(f"获取漏洞详情失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 创建新的扫描任务 ====================
+@router.post("/scan", response_model=APIResponse)
+async def create_scan(request: AWVSScanRequest):
+    """
+    创建新的扫描任务
+    """
+    try:
+        client = get_awvs_client()
+        
+        # 1. 在数据库创建 Pending 任务
+        task = await Task.create(
+            task_name=f"AWVS Scan: {request.url}",
+            task_type='awvs_scan',
+            target=request.url,
+            status='pending',
+            progress=0,
+            config=json.dumps({'scan_type': request.scan_type})
+        )
+        
+        # 2. 先添加目标
+        t = Target(client['api_url'], client['api_key'])
+        target_id = t.add(request.url)
+        
+        if target_id is None:
+            task.status = 'failed'
+            task.error_message = "Failed to add target to AWVS"
+            await task.save()
+            return APIResponse(code=400, message="添加目标失败", data=None)
+        
+        # 更新任务配置
+        config = json.loads(task.config)
+        config['target_id'] = target_id
+        task.config = json.dumps(config)
+        await task.save()
+        
+        # 3. 创建扫描任务
+        s = Scan(client['api_url'], client['api_key'])
+        status_code = s.add(target_id, request.scan_type)
+        
+        if status_code == 200:
+            logger.info(f"创建扫描任务成功: {request.url}")
+            task.status = 'submitted'
+            await task.save()
+            
+            # 尝试立即同步一次以获取 scan_id
+            # 但AWVS可能需要一点时间生成scan_id，所以这里可能获取不到
+            # 下次 list scans 时会自动同步
+            
+            return APIResponse(code=200, message="扫描任务创建成功", data={"target_id": target_id})
+        else:
+            task.status = 'failed'
+            task.error_message = "Failed to start scan in AWVS"
+            await task.save()
+            return APIResponse(code=400, message="创建扫描任务失败", data=None)
+            
+    except Exception as e:
+        logger.error(f"创建扫描任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 获取目标的漏洞结果 ====================
+@router.get("/vulnerabilities/{target_id}", response_model=APIResponse)
+async def get_target_vulnerabilities(target_id: str):
+    """
+    获取指定目标的漏洞列表
+    """
+    try:
+        client = get_awvs_client()
+        d = Vuln(client['api_url'], client['api_key'])
+        
+        vuln_details = json.loads(d.search(None, None, "open", target_id=target_id))
+        data = []
+        
+        if 'vulnerabilities' in vuln_details:
+            for idx, item_data in enumerate(vuln_details['vulnerabilities'], 1):
+                # Log first item for debugging
+                if idx == 1:
+                    logger.info(f"First vulnerability item data: {json.dumps(item_data)}")
+
+                # Handle severity mapping using standardized function
+                severity_val = item_data.get('severity')
+                severity = standardize_severity(severity_val)
+
+                # SQL Injection prefix logic
+                vt_name = item_data.get('vt_name', 'Unknown Vulnerability')
+                vuln_name = vt_name
+                if 'SQL Injection' in vt_name and not vt_name.startswith('[SQL'):
+                    vuln_name = f"[SQL Injection] {vt_name}"
+
+                item = {
+                    'id': idx,
+                    'severity': severity,
+                    'target': item_data.get('affects_url', ''),
+                    'vuln_id': item_data.get('vuln_id'),
+                    'vuln_name': vuln_name,
+                    'time': re.sub(r'T|\..*$', " ", item_data.get('last_seen', '')) if item_data.get('last_seen') else ''
+                }
+                data.append(item)
+        
+        logger.info(f"获取目标 {target_id} 的漏洞列表成功，共 {len(data)} 个漏洞")
+        return APIResponse(code=200, message="获取成功", data=data)
+    except Exception as e:
+        logger.error(f"获取漏洞列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 获取漏洞详情 ====================
+@router.get("/vulnerability/{vuln_id}", response_model=APIResponse)
+async def get_vulnerability_detail(vuln_id: str):
+    """
+    获取指定漏洞的详细信息
+    """
+    try:
+        client = get_awvs_client()
+        d = Vuln(client['api_url'], client['api_key'])
+        data = d.get(vuln_id)
+        
+        if not data:
+            return APIResponse(code=404, message="漏洞不存在", data=None)
+        
+        # 解析HTML内容
+        parameter_list = BeautifulSoup(data['details'], features="html.parser").findAll('span')
+        request_list = BeautifulSoup(data['details'], features="html.parser").findAll('li')
+        
+        data_dict = {
+            'affects_url': data['affects_url'],
+            'last_seen': re.sub(r'T|\..*$', " ", data['last_seen']),
+            'vt_name': data['vt_name'],
+            'details': data['details'].replace("  ", '').replace('</p>', ''),
+            'request': data['request'],
+            'recommendation': data['recommendation'].replace('<br/>', '\n')
+        }
+        
+        try:
+            data_dict['parameter_name'] = parameter_list[0].contents[0]
+            data_dict['parameter_data'] = parameter_list[1].contents[0]
+        except:
+            pass
+        
+        num = 1
+        try:
+            test_str = ''
+            for i in range(len(request_list)):
+                test_str += str(request_list[i].contents[0]) + str(request_list[i].contents[1]).replace('<strong>', '').replace('</strong>', '') + '\n'
+                num += 1
+            data_dict['tests_performed'] = test_str
+            data_dict['num'] = num
+        except:
+            pass
+        
+        data_dict['details'] = data_dict['details'].replace('class="bb-dark"', 'style="color: #ff0000"')
+        
+        logger.info(f"获取漏洞 {vuln_id} 详情成功")
+        return APIResponse(code=200, message="获取成功", data=data_dict)
+    except Exception as e:
+        logger.error(f"获取漏洞详情失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 获取漏洞排名 ====================
+@router.get("/vulnerabilities/rank", response_model=APIResponse)
+async def get_vulnerability_rank():
+    """
+    获取漏洞排名（前5名）
+    """
+    try:
+        client = get_awvs_client()
+        d = Dashboard(client['api_url'], client['api_key'])
+        data = json.loads(d.stats())["top_vulnerabilities"]
+        
+        vuln_rank = []
+        for i in range(min(5, len(data))):
+            tem = {
+                'name': data[i]['name'],
+                'value': data[i]['count']
+            }
+            vuln_rank.append(tem)
+        
+        logger.info("获取漏洞排名成功")
+        return APIResponse(code=200, message="获取成功", data=vuln_rank)
+    except Exception as e:
+        logger.error(f"获取漏洞排名失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 获取漏洞统计 ====================
+@router.get("/vulnerabilities/stats", response_model=APIResponse)
+async def get_vulnerability_stats():
+    """
+    获取漏洞统计信息
+    """
+    try:
+        client = get_awvs_client()
+        d = Dashboard(client['api_url'], client['api_key'])
+        data = json.loads(d.stats())["vuln_count_by_criticality"]
+        
+        result = {}
+        if data.get('high') is not None:
+            vuln_high_count = [i for i in data['high'].values()]
+            result['high'] = vuln_high_count
+        if data.get('normal') is not None:
+            vuln_normal_count = [i for i in data['normal'].values()]
+            result['normal'] = vuln_normal_count
+        
+        logger.info("获取漏洞统计成功")
+        return APIResponse(code=200, message="获取成功", data=result)
+    except Exception as e:
+        logger.error(f"获取漏洞统计失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 获取所有目标 ====================
+@router.get("/targets", response_model=APIResponse)
+async def get_all_targets():
+    """
+    获取所有目标列表
+    """
+    try:
+        client = get_awvs_client()
+        t = Target(client['api_url'], client['api_key'])
+        data = t.get_all()
+        
+        logger.info(f"获取目标列表成功，共 {len(data) if data else 0} 个目标")
+        return APIResponse(code=200, message="获取成功", data=data)
+    except Exception as e:
+        logger.error(f"获取目标列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 添加目标 ====================
+@router.post("/target", response_model=APIResponse)
+async def add_target(request: AWVSTargetRequest):
+    """
+    添加新的扫描目标
+    """
+    try:
+        client = get_awvs_client()
+        t = Target(client['api_url'], client['api_key'])
+        
+        target_id = t.add(request.address, request.description)
+        
+        if target_id:
+            logger.info(f"添加目标成功: {request.address}")
+            return APIResponse(code=200, message="添加成功", data={"target_id": target_id})
+        else:
+            return APIResponse(code=400, message="添加目标失败", data=None)
+            
+    except Exception as e:
+        logger.error(f"添加目标失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 健康检查 ====================
+@router.get("/health", response_model=APIResponse)
+async def awvs_health_check():
+    """
+    检查AWVS服务连接状态
+    """
+    try:
+        client = get_awvs_client()
+        d = Dashboard(client['api_url'], client['api_key'])
+        stats = d.stats()
+        
+        if stats:
+            return APIResponse(code=200, message="AWVS服务连接正常", data={"status": "connected"})
+        else:
+            return APIResponse(code=503, message="AWVS服务连接失败", data={"status": "disconnected"})
+    except Exception as e:
+        logger.error(f"AWVS健康检查失败: {str(e)}")
+        return APIResponse(code=503, message="AWVS服务连接失败", data={"status": "disconnected", "error": str(e)})
