@@ -122,9 +122,11 @@
                   </td>
                   <td>
                     <div class="vuln-counts">
+                      <span class="vuln-count critical" v-if="scan.current_session.severity_counts.critical > 0">{{ scan.current_session.severity_counts.critical || 0 }}</span>
                       <span class="vuln-count high">{{ scan.current_session.severity_counts.high || 0 }}</span>
                       <span class="vuln-count medium">{{ scan.current_session.severity_counts.medium || 0 }}</span>
                       <span class="vuln-count low">{{ scan.current_session.severity_counts.low || 0 }}</span>
+                      <span class="vuln-count info">{{ scan.current_session.severity_counts.info || 0 }}</span>
                     </div>
                   </td>
                   <td>{{ formatDate(scan.current_session.start_date) }}</td>
@@ -706,6 +708,11 @@ th {
 .vuln-count.low {
   background: #f6ffed;
   color: #52c41a;
+}
+
+.vuln-count.info {
+  background: #e6f7ff;
+  color: #1890ff;
 }
 
 .modal-overlay {

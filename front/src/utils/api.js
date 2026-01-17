@@ -186,7 +186,7 @@ export const settingsApi = {
   getSystemInfo: () => apiClient.get('/settings/system-info'),
   
   // 获取统计信息
-  getStatistics: () => apiClient.get('/settings/statistics')
+  getStatistics: (params) => apiClient.get('/settings/statistics', params)
 }
 
 /**

@@ -8,6 +8,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
 from tortoise import connections
+from tortoise.functions import Count
 import json
 import asyncio
 
@@ -101,35 +102,74 @@ async def create_task(request: CreateTaskRequest):
         from task_executor import task_executor
         import json
         
-        # 1. 验证任务类型
-        # valid_types = ['awvs_scan', 'poc_scan', 'scan_dir', 'scan_webside', 'scan_port', 'scan_cms', 'scan_comprehensive']
-        # if request.task_type not in valid_types:
-        #     # 暂时不强制验证，允许插件扩展
-        #     pass
-
-        # 2. 创建 Task 记录
-        task = await Task.create(
-            task_name=request.task_name,
-            task_type=request.task_type,
-            target=request.target,
-            status='pending',
-            progress=0,
-            config=json.dumps(request.config)
-        )
+        logger.info(f"收到创建任务请求: {request.task_name} (Type: {request.task_type}, Target: {request.target})")
         
-        logger.info(f"创建任务: {request.task_name} (ID: {task.id}, Type: {request.task_type})")
+        # 1. 验证参数
+        if not request.target:
+             raise HTTPException(status_code=400, detail="Target cannot be empty")
+
+        # 验证任务类型
+        valid_types = ['awvs_scan', 'poc_scan', 'scan_dir', 'scan_webside', 'scan_port', 'scan_cms', 'scan_comprehensive']
+        if request.task_type not in valid_types:
+            logger.warning(f"无效的任务类型: {request.task_type}")
+            # 暂时不强制验证，允许插件扩展
+            pass
+
+        # 1.1 POC 任务参数校验
+        if request.task_type == 'poc_scan':
+            poc_types = request.config.get('poc_types', [])
+            if not poc_types:
+                 logger.warning(f"POC扫描未指定POC类型，默认扫描所有")
+            
+            # 简单的 POC 类型验证
+            # 这里不强制失败，只是记录日志
+            pass
+        
+        # 2. 创建 Task 记录
+        try:
+            task = await Task.create(
+                task_name=request.task_name,
+                task_type=request.task_type,
+                target=request.target,
+                status='pending',
+                progress=0,
+                config=json.dumps(request.config)
+            )
+        except Exception as db_err:
+            logger.error(f"创建任务数据库记录失败: {str(db_err)}")
+            raise HTTPException(status_code=500, detail=f"Database error: {str(db_err)}")
+        
+        logger.info(f"任务记录创建成功: {task.id}")
         
         # 3. 启动异步任务执行
-        asyncio.create_task(task_executor.start_task(
-            task_id=task.id,
-            target=request.target,
-            scan_config=request.config
-        ))
-            
-        return APIResponse(code=200, message="任务创建成功", data={"task_id": task.id})
+        try:
+            # 确保 task_executor 已初始化
+            if not task_executor:
+                 raise Exception("Task executor not initialized")
+
+            asyncio.create_task(task_executor.start_task(
+                task_id=task.id,
+                target=request.target,
+                scan_config=request.config
+            ))
+        except Exception as exec_err:
+            logger.error(f"启动异步任务失败: {str(exec_err)}")
+            # 更新任务状态为失败
+            task.status = 'failed'
+            task.error_message = f"Failed to start task: {str(exec_err)}"
+            await task.save()
+            # 注意：这里我们返回成功，因为任务已创建，只是执行失败。
+            # 前端可以通过查询任务状态获知失败。
+            # 或者也可以返回 500，取决于前端逻辑。
+            # 为了让用户看到任务已创建但失败，我们返回成功。
+            return APIResponse(code=200, message="任务创建成功，但启动失败", data={"task_id": task.id, "status": "failed"})
         
+        return APIResponse(code=200, message="任务创建成功", data={"task_id": task.id, "status": "pending"})
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"创建任务失败: {str(e)}", exc_info=True)
+        logger.error(f"创建任务失败 (未捕获异常): {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", response_model=APIResponse)
@@ -147,7 +187,7 @@ async def list_tasks(
     支持按状态、类型、时间范围、关键词过滤
     """
     try:
-        from models import Task
+        from models import Task, Vulnerability
         from tortoise.expressions import Q
         
         # 构建查询条件
@@ -188,6 +228,17 @@ async def list_tasks(
         # 转换为字典格式
         task_list = []
         for task in tasks:
+            res = {}
+            if task.result:
+                try:
+                    parsed = json.loads(task.result)
+                    if isinstance(parsed, dict):
+                        res = parsed
+                    else:
+                        res = {'raw_result': parsed}
+                except:
+                    res = {'raw_result': task.result}
+
             task_dict = {
                 "id": task.id,
                 "task_name": task.task_name,
@@ -196,10 +247,36 @@ async def list_tasks(
                 "status": task.status,
                 "progress": task.progress,
                 "config": json.loads(task.config) if task.config else {},
-                "result": json.loads(task.result) if task.result else None,
+                "result": res,
                 "created_at": task.created_at,
                 "updated_at": task.updated_at
             }
+            
+            # 计算漏洞统计 (从数据库)
+            # 这确保了 Dashboard 显示的数字与详情页一致 (包括 Critical)
+            try:
+                vuln_counts = await Vulnerability.filter(task_id=task.id).group_by('severity').annotate(count=Count('id')).values('severity', 'count')
+                
+                counts_map = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0, 'info': 0}
+                total_db_count = 0
+                for item in vuln_counts:
+                    s = str(item['severity']).lower()
+                    if s in counts_map:
+                        counts_map[s] = item['count']
+                        total_db_count += item['count']
+                
+                # 只有当数据库有数据时才覆盖，否则保留原始 result 中的数据 (如果存在)
+                # 这样即使数据库同步失败，也能显示 AWVS 原始统计 (虽然可能没有 Critical)
+                if total_db_count > 0:
+                    if 'vulnerabilities' not in task_dict['result']:
+                         task_dict['result']['vulnerabilities'] = {}
+                    task_dict['result']['vulnerabilities'] = counts_map
+                elif 'vulnerabilities' not in task_dict['result'] or not task_dict['result']['vulnerabilities']:
+                    # 如果数据库没数据且 result 也没数据，默认全 0
+                    task_dict['result']['vulnerabilities'] = counts_map
+            except Exception as e:
+                logger.warning(f"Failed to get vulnerability counts for task {task.id}: {e}")
+
             task_list.append(task_dict)
         
         return APIResponse(

@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 import logging
+from tortoise.functions import Count
+from models import Task, Vulnerability
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,8 @@ async def get_settings():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+
 @router.put("/", response_model=APIResponse)
 async def update_settings(settings: Dict[str, Any]):
     """
@@ -103,99 +107,65 @@ async def get_system_info():
 
 
 @router.get("/statistics", response_model=APIResponse)
-async def get_statistics():
+async def get_statistics(period: int = 7):
     """
-    获取统计信息（用于仪表盘）
+    获取统计信息
     """
     try:
-        from models import Task, Vulnerability, POCScanResult
-        from datetime import datetime, timedelta, time
+        # 1. 今日扫描任务
+        today = datetime.now().date()
+        today_scans = await Task.filter(
+            created_at__gte=datetime.combine(today, datetime.min.time())
+        ).count()
         
-        now = datetime.now()
-        today_start = datetime.combine(now.date(), time.min)
+        # 2. 未修复高危漏洞 (Critical + High)
+        high_risk_vulns = await Vulnerability.filter(
+            severity__in=['Critical', 'High'],
+            status='open'
+        ).count()
         
-        # 1. 今日扫描任务数量
-        today_scans = await Task.filter(created_at__gte=today_start).count()
+        # 3. 已完成扫描
+        completed_scans = await Task.filter(status='completed').count()
         
-        # 2. 高危漏洞数量 (包括 Vulnerability 和 POCScanResult)
-        # 注意: 这里的 severity 可能是 "Critical", "High" 等，需要根据实际存储的值匹配
-        # 假设 severity 存储的是标准化后的值 (Critical, High, Medium, Low, Info)
-        high_risk_vulns_scan = await Vulnerability.filter(severity__in=["Critical", "High"]).count()
-        high_risk_vulns_poc = await POCScanResult.filter(vulnerable=True, severity__in=["Critical", "High"]).count()
-        high_risk_vulns = high_risk_vulns_scan + high_risk_vulns_poc
-        
-        # 3. 已完成扫描总数
-        completed_scans = await Task.filter(status="completed").count()
-        
-        # 4. 趋势数据 (最近7天漏洞趋势)
-        trend_data = await generate_real_trend_data(7)
+        # 4. 趋势数据
+        trend_data = []
+        for i in range(period - 1, -1, -1):
+            date = today - timedelta(days=i)
+            next_date = date + timedelta(days=1)
             
-        # 5. 周环比 (简单计算：本周总数 vs 上周总数)
-        week_start = now - timedelta(days=7)
-        last_week_start = now - timedelta(days=14)
-        
-        this_week_count = await Task.filter(created_at__gte=week_start).count()
-        last_week_count = await Task.filter(created_at__gte=last_week_start, created_at__lt=week_start).count()
-        
-        if last_week_count == 0:
-            weekly_trend = 100 if this_week_count > 0 else 0
-        else:
-            weekly_trend = int(((this_week_count - last_week_count) / last_week_count) * 100)
-
-        statistics = {
-            "today_scans": today_scans,
-            "high_risk_vulns": high_risk_vulns,
-            "weekly_trend": weekly_trend,
-            "completed_scans": completed_scans,
-            "trend_data": trend_data
-        }
-        
-        logger.info("获取统计数据成功")
+            # Count vulns created on this day
+            daily_counts = await Vulnerability.filter(
+                created_at__gte=datetime.combine(date, datetime.min.time()),
+                created_at__lt=datetime.combine(next_date, datetime.min.time())
+            ).group_by('severity').annotate(count=Count('id')).values('severity', 'count')
+            
+            day_stats = {
+                'date': date.strftime("%m/%d"),
+                'high': 0,
+                'medium': 0,
+                'low': 0
+            }
+            
+            for item in daily_counts:
+                sev = str(item['severity']).lower()
+                if sev == 'critical':
+                    day_stats['high'] += item['count'] # Merge critical into high for chart compatibility
+                elif sev in day_stats:
+                    day_stats[sev] += item['count']
+            
+            trend_data.append(day_stats)
+            
         return APIResponse(
             code=200,
             message="获取成功",
-            data=statistics
+            data={
+                "today_scans": today_scans,
+                "high_risk_vulns": high_risk_vulns,
+                "weekly_trend": 0,
+                "completed_scans": completed_scans,
+                "trend_data": trend_data
+            }
         )
     except Exception as e:
-        logger.error(f"获取统计信息失败: {str(e)}")
+        logger.error(f"获取统计数据失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-async def generate_real_trend_data(days: int) -> List[Dict[str, Any]]:
-    """
-    从数据库生成趋势数据
-    """
-    from models import Vulnerability
-    from datetime import datetime, timedelta, time
-    
-    trend_data = []
-    today = datetime.now().date()
-    
-    for i in range(days):
-        date = today - timedelta(days=days - 1 - i)
-        date_start = datetime.combine(date, time.min)
-        date_end = datetime.combine(date, time.max)
-        
-        high = await Vulnerability.filter(
-            created_at__range=(date_start, date_end),
-            severity__in=['High', 'Critical']
-        ).count()
-        
-        medium = await Vulnerability.filter(
-            created_at__range=(date_start, date_end),
-            severity='Medium'
-        ).count()
-        
-        low = await Vulnerability.filter(
-            created_at__range=(date_start, date_end),
-            severity='Low'
-        ).count()
-        
-        trend_data.append({
-            "date": f"{date.month}/{date.day}",
-            "high": high,
-            "medium": medium,
-            "low": low
-        })
-    
-    return trend_data

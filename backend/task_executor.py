@@ -19,7 +19,10 @@ from plugins.cdnexist.cdnexist import iscdn
 from plugins.waf.waf import getwaf
 from plugins.whatcms.whatcms import getwhatcms
 from plugins.subdomain.subdomain import get_subdomain
-from dirsearcch.dir_scanner import DirScanner
+try:
+    from dirsearcch.dir_scanner import DirScanner
+except ImportError:
+    DirScanner = None
 
 # Import POCs
 from poc import (
@@ -428,9 +431,18 @@ class TaskExecutor:
                 try:
                     if poc_item['type'] == 'builtin':
                         # 执行内置 POC
-                        poc_func = poc_item['func']
-                        is_vulnerable, message = await asyncio.to_thread(
-                            poc_func, target, timeout
+                        poc_module = poc_item['func']
+                        loop = asyncio.get_running_loop()
+                        
+                        # Ensure we are calling the poc function inside the module
+                        if hasattr(poc_module, 'poc'):
+                            poc_func = poc_module.poc
+                        else:
+                            # Fallback if it's already a function (unlikely based on analysis but safe)
+                            poc_func = poc_module
+                            
+                        is_vulnerable, message = await loop.run_in_executor(
+                            None, poc_func, target, timeout
                         )
                     elif poc_item['type'] == 'kb':
                         # 执行知识库 POC (Pocsuite3)
@@ -583,7 +595,8 @@ class TaskExecutor:
             logger.info(f"插件任务 {task_id} ({task_type}) 开始执行: {target}")
             
             # 在线程池中执行插件，避免阻塞事件循环
-            result = await asyncio.to_thread(self._run_plugin, task_type, target, scan_config)
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, self._run_plugin, task_type, target, scan_config)
             
             task.result = json.dumps(result)
             task.status = 'completed'

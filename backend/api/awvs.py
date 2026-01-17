@@ -9,8 +9,10 @@ import logging
 import json
 import re
 import asyncio
+from functools import partial
+from tortoise.functions import Count
 from config import settings
-from models import Task
+from models import Task, Vulnerability
 
 # 导入 AWVS API 类
 from AVWS.API.Scan import Scan
@@ -22,6 +24,11 @@ from AVWS.API.Base import Base
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+async def run_sync(func, *args, **kwargs):
+    """在线程池中运行同步阻塞函数"""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, partial(func, *args, **kwargs))
 
 
 # 请求模型
@@ -49,14 +56,101 @@ def get_awvs_client():
         'api_key': settings.AWVS_API_KEY
     }
 
+def map_severity(awvs_severity: int, vuln_title: str) -> str:
+    """
+    映射 AWVS 严重程度到系统 5 级分类
+    AWVS: 3=High, 2=Medium, 1=Low, 0=Info
+    System: Critical, High, Medium, Low, Info
+    """
+    try:
+        s = int(awvs_severity)
+    except:
+        return "Info"
+        
+    if s >= 3:
+        # 特殊规则：SQL注入、RCE 等提升为 Critical
+        critical_keywords = ['SQL Injection', 'Remote Code Execution', 'RCE', 'Command Injection']
+        if any(k.lower() in vuln_title.lower() for k in critical_keywords):
+            return "Critical"
+        return "High"
+    elif s == 2:
+        return "Medium"
+    elif s == 1:
+        return "Low"
+    else:
+        return "Info"
+
+async def sync_vulnerabilities(scan_id: str, scan_session_id: str, task_id: int):
+    """同步指定扫描的漏洞信息"""
+    try:
+        client = get_awvs_client()
+        s = Scan(client['api_url'], client['api_key'])
+        
+        # 获取漏洞列表 (使用线程池避免阻塞)
+        vulns = await run_sync(s.get_vulns, scan_id, scan_session_id)
+        
+        if not vulns:
+            return
+
+        for v in vulns:
+            vuln_id = v.get('vuln_id')
+            if not vuln_id:
+                continue
+                
+            # 检查漏洞是否已存在
+            existing_vuln = await Vulnerability.filter(source_id=vuln_id, task_id=task_id).first()
+            
+            # 映射严重程度
+            severity = map_severity(v.get('severity', 0), v.get('vt_name', ''))
+            
+            # 获取详细信息 (仅对中高危漏洞或不存在的漏洞获取详情，以减少请求量)
+            description = v.get('description', f"See AWVS for details. Target: {v.get('affects_url')}")
+            remediation = v.get('recommendation', '')
+            
+            if severity in ['Critical', 'High', 'Medium'] or not existing_vuln:
+                try:
+                    detail = await run_sync(s.get_vuln_detail, scan_id, scan_session_id, vuln_id)
+                    if detail:
+                        description = detail.get('description', description)
+                        remediation = detail.get('recommendation', remediation)
+                        # 清理HTML标签 (简单处理)
+                        description = re.sub(r'<[^>]+>', '', description)
+                        remediation = re.sub(r'<[^>]+>', '', remediation)
+                except Exception as e:
+                    logger.warning(f"获取漏洞详情失败: {str(e)}")
+
+            if existing_vuln:
+                # 更新状态和严重程度
+                existing_vuln.status = v.get('status', 'open')
+                existing_vuln.severity = severity
+                existing_vuln.description = description
+                existing_vuln.remediation = remediation
+                await existing_vuln.save()
+            else:
+                # 创建新漏洞
+                await Vulnerability.create(
+                    task_id=task_id,
+                    vuln_type=v.get('vt_name', 'Unknown'),
+                    severity=severity,
+                    title=v.get('vt_name', 'Unknown'),
+                    description=description,
+                    remediation=remediation,
+                    url=v.get('affects_url'),
+                    status=v.get('status', 'open'),
+                    source_id=vuln_id
+                )
+                
+    except Exception as e:
+        logger.error(f"同步漏洞失败 (ScanID: {scan_id}): {str(e)}")
+
 
 async def sync_scans_from_awvs():
     """从AWVS同步扫描任务到数据库"""
     try:
         client = get_awvs_client()
         s = Scan(client['api_url'], client['api_key'])
-        # 获取AWVS中所有扫描
-        awvs_scans = s.get_all()
+        # 获取AWVS中所有扫描 (使用线程池)
+        awvs_scans = await run_sync(s.get_all)
         
         # 获取数据库中所有AWVS任务
         # 注意：这里假设task_type='awvs_scan'
@@ -76,8 +170,12 @@ async def sync_scans_from_awvs():
             # 构建result JSON
             result_json = json.dumps(scan)
             
-            status = scan.get('current_session', {}).get('status', 'unknown')
-            progress = scan.get('current_session', {}).get('progress', 0)
+            current_session = scan.get('current_session', {})
+            status = current_session.get('status', 'unknown')
+            progress = current_session.get('progress', 0)
+            scan_session_id = current_session.get('scan_session_id')
+            
+            target_task = None
             
             if scan_id in db_task_map:
                 # 更新现有任务
@@ -86,6 +184,7 @@ async def sync_scans_from_awvs():
                 task.progress = progress
                 task.result = result_json
                 await task.save()
+                target_task = task
             else:
                 # 检查是否存在未关联scan_id的同目标任务
                 # 优先通过 target_id 匹配 (更准确)
@@ -127,6 +226,7 @@ async def sync_scans_from_awvs():
                     await existing_task.save()
                     # 更新映射防止重复处理
                     db_task_map[scan_id] = existing_task
+                    target_task = existing_task
                 else:
                     # 创建新任务（可能是直接在AWVS创建的）
                     target_address = scan.get('target', {}).get('address', 'Unknown Target')
@@ -140,6 +240,11 @@ async def sync_scans_from_awvs():
                         result=result_json
                     )
                     db_task_map[scan_id] = new_task
+                    target_task = new_task
+            
+            # 同步漏洞数据 (仅当任务处于处理中或已完成时)
+            if target_task and scan_session_id and status in ['processing', 'completed', 'aborted']:
+                 await sync_vulnerabilities(scan_id, scan_session_id, target_task.id)
                 
     except Exception as e:
         logger.error(f"同步AWVS扫描任务失败: {str(e)}")
@@ -161,20 +266,65 @@ async def get_all_scans():
         
         data = []
         for task in tasks:
+            scan_data = {}
             if task.result:
                 try:
                     scan_data = json.loads(task.result)
-                    data.append(scan_data)
                 except:
                     pass
-            else:
-                # 只有基本信息的任务
-                data.append({
+            
+            # 基础数据回退
+            if not scan_data:
+                scan_data = {
                     'target': {'address': task.target},
                     'profile_name': 'Unknown',
                     'current_session': {'status': task.status, 'severity_counts': {}, 'start_date': str(task.created_at)},
                     'target_id': json.loads(task.config).get('target_id') if task.config else None
-                })
+                }
+            
+            # 使用数据库中的漏洞统计覆盖 AWVS 原始统计
+            # 这样可以反映我们自定义的严重程度映射 (例如 SQLi -> Critical)
+            db_counts = await Vulnerability.filter(task_id=task.id).group_by('severity').annotate(count=Count('id')).values('severity', 'count')
+            
+            severity_counts = {
+                'critical': 0,
+                'high': 0,
+                'medium': 0,
+                'low': 0,
+                'info': 0
+            }
+            
+            total_db_count = 0
+            for item in db_counts:
+                sev = str(item['severity']).lower()
+                if sev in severity_counts:
+                    severity_counts[sev] = item['count']
+                    total_db_count += item['count']
+            
+            # 更新统计数据
+            if 'current_session' not in scan_data:
+                scan_data['current_session'] = {}
+            
+            # 仅当数据库有数据时才覆盖，或者如果原始数据中没有统计信息
+            # 这样即使数据库同步失败，也能保留 AWVS 原始统计
+            if total_db_count > 0 or not scan_data['current_session'].get('severity_counts'):
+                scan_data['current_session']['severity_counts'] = severity_counts
+            
+            # 确保状态同步
+            scan_data['current_session']['status'] = task.status
+            
+            # 确保 scan_id/target_id 存在
+            if task.config:
+                try:
+                    config = json.loads(task.config)
+                    if not scan_data.get('scan_id') and config.get('scan_id'):
+                        scan_data['scan_id'] = config.get('scan_id')
+                    if not scan_data.get('target_id') and config.get('target_id'):
+                        scan_data['target_id'] = config.get('target_id')
+                except:
+                    pass
+            
+            data.append(scan_data)
         
         logger.info(f"获取扫描任务列表成功，共 {len(data)} 个任务")
         return APIResponse(code=200, message="获取成功", data=data)
@@ -343,7 +493,8 @@ async def get_target_vulnerabilities(target_id: str):
 
                 # Handle severity mapping using standardized function
                 severity_val = item_data.get('severity')
-                severity = standardize_severity(severity_val)
+                vt_name = item_data.get('vt_name', '')
+                severity = map_severity(severity_val, vt_name)
 
                 # SQL Injection prefix logic
                 vt_name = item_data.get('vt_name', 'Unknown Vulnerability')

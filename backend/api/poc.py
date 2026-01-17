@@ -143,8 +143,9 @@ async def scan_single_poc(poc_type: str, target: str, timeout: int = 10):
 
         # 2. 执行扫描
         poc_func = POC_FUNCTIONS[poc_type]
-        is_vulnerable, message = await asyncio.to_thread(
-            poc_func, target, timeout
+        loop = asyncio.get_running_loop()
+        is_vulnerable, message = await loop.run_in_executor(
+            None, poc_func, target, timeout
         )
         
         # 3. 保存结果到数据库

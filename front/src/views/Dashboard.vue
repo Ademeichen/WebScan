@@ -5,21 +5,13 @@
       <p class="dashboard-subtitle">Web应用漏洞扫描概览</p>
     </div>
 
-    <!-- 核心数据卡片 -->
+      <!-- 核心数据卡片 -->
     <div class="stats-grid">
       <div class="stat-card stat-card-primary">
         <div class="stat-icon">🔍</div>
         <div class="stat-content">
           <div class="stat-number">{{ todayScans }}</div>
           <div class="stat-label">今日扫描任务</div>
-        </div>
-      </div>
-
-      <div class="stat-card stat-card-danger">
-        <div class="stat-icon">⚠️</div>
-        <div class="stat-content">
-          <div class="stat-number">{{ highRiskVulns }}</div>
-          <div class="stat-label">未修复高危漏洞</div>
         </div>
       </div>
 
@@ -122,6 +114,7 @@
               </div>
               <div class="scan-results">
                 <div v-if="scan.vulnerabilities" class="vuln-summary">
+                  <span class="vuln-count critical-risk" v-if="scan.vulnerabilities.critical > 0">{{ scan.vulnerabilities.critical }}</span>
                   <span class="vuln-count high-risk">{{ scan.vulnerabilities.high }}</span>
                   <span class="vuln-count medium-risk">{{ scan.vulnerabilities.medium }}</span>
                   <span class="vuln-count low-risk">{{ scan.vulnerabilities.low }}</span>
@@ -233,7 +226,7 @@ export default {
     },
     async loadTrendData() {
       try {
-        const response = await settingsApi.getStatistics()
+        const response = await settingsApi.getStatistics({ period: this.trendPeriod })
         if (response && response.data && response.data.trend_data) {
           this.trendData = response.data.trend_data
         } else {
@@ -256,9 +249,11 @@ export default {
             time: this.formatTime(task.created_at),
             status: this.mapTaskStatus(task.status),
             vulnerabilities: task.result?.vulnerabilities || {
+              critical: 0,
               high: 0,
               medium: 0,
-              low: 0
+              low: 0,
+              info: 0
             }
           }))
         } else {
@@ -321,7 +316,15 @@ export default {
       }
     },
     viewScanResults(scanId) {
-      this.$router.push(`/vulnerabilities/${scanId}`)
+      // Check if the scanId is an integer (regular scan) or UUID (AWVS scan)
+      if (typeof scanId === 'string' && scanId.length > 10) {
+          // Likely a UUID, navigate to AWVS scan details or handle accordingly
+          // Assuming AWVS scans might be viewed in the same component or a different one
+          // If AWVS scans are stored in tasks table with a specific ID format
+           this.$router.push(`/vulnerabilities/${scanId}`)
+      } else {
+           this.$router.push(`/vulnerabilities/${scanId}`)
+      }
     }
   },
   watch: {
@@ -599,6 +602,11 @@ export default {
   text-align: center;
 }
 
+.vuln-count.critical-risk {
+  background-color: rgba(139, 0, 0, 0.1);
+  color: #8B0000;
+}
+
 .vuln-count.high-risk {
   background-color: rgba(231, 76, 60, 0.1);
   color: var(--high-risk);
@@ -838,4 +846,4 @@ export default {
 
 </style>
 
-
+

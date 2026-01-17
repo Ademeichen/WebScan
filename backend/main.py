@@ -43,6 +43,16 @@ async def lifespan(app: FastAPI):
         success, message = awvs_base.check_connection()
         if success:
             logger.info("AWVS API 连接测试成功")
+            
+            # 启动后台同步任务
+            try:
+                from api.awvs import sync_scans_from_awvs
+                import asyncio
+                logger.info("正在启动AWVS数据后台同步...")
+                asyncio.create_task(sync_scans_from_awvs())
+            except Exception as e:
+                logger.error(f"启动AWVS同步任务失败: {e}")
+                
         else:
             logger.error(f"AWVS API 连接测试失败: {message}")
             # 可以在这里选择是否抛出异常阻止启动，或者只是记录警告
