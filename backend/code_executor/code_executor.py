@@ -1,7 +1,33 @@
 import os
 import json
 import subprocess
+import logging
 from typing import Dict, Any
+
+# ====================== 日志配置 ======================
+def setup_logger():
+    """配置日志系统：同时输出到控制台和日志文件"""
+    # 日志文件路径（当前目录下的code_execution.log）
+    log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "code_execution.log")
+    
+    # 日志格式：时间 - 日志级别 - 模块 - 消息
+    log_format = "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
+    
+    # 配置根日志器
+    logging.basicConfig(
+        level=logging.INFO,  # 日志级别：INFO及以上
+        format=log_format,
+        handlers=[
+            # 输出到文件（追加模式，编码UTF-8避免中文乱码）
+            logging.FileHandler(log_file, mode='a', encoding='utf-8'),
+            # 输出到控制台
+            logging.StreamHandler()
+        ]
+    )
+
+# 初始化日志
+setup_logger()
+logger = logging.getLogger(__name__)
 
 # ====================== 核心功能工具类 ======================
 class CodeExecutionTool:
@@ -17,7 +43,9 @@ class CodeExecutionTool:
             "run_terminal": self._run_terminal
         }
         if step_type not in step_handlers:
-            raise ValueError(f"不支持的步骤类型: {step_type}，仅支持{list(step_handlers.keys())}")
+            error_msg = f"不支持的步骤类型: {step_type}，仅支持{list(step_handlers.keys())}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         return step_handlers[step_type](params)
 
     def _read_code(self, params: Dict[str, str]) -> str:
@@ -25,14 +53,22 @@ class CodeExecutionTool:
         file_name = params.get("file_path")
         current_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(current_dir, file_name)
+        
         if not file_path:
-            raise ValueError("读取代码缺少必要参数：file_path")
+            error_msg = "读取代码缺少必要参数：file_path"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"文件不存在：{file_path}")
+            error_msg = f"文件不存在：{file_path}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
         
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
-        print(f"✅ 成功读取文件 {file_path}，内容：\n{content}\n")
+        
+        success_msg = f"✅ 成功读取文件 {file_path}，内容：\n{content}\n"
+        logger.info(success_msg)
         return content
 
     def _write_code(self, params: Dict[str, str]) -> str:
@@ -42,7 +78,9 @@ class CodeExecutionTool:
         code_content = params.get("code_content")
         
         if not file_name or code_content is None:
-            raise ValueError("写入代码缺少必要参数：file_path（至少包含文件名）或 code_content")
+            error_msg = "写入代码缺少必要参数：file_path（至少包含文件名）或 code_content"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         
         # 显式拼接当前目录路径，确保文件在本目录
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -51,7 +89,9 @@ class CodeExecutionTool:
         # 无需创建目录（当前目录已存在）
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(code_content)
-        print(f"✅ 代码已写入当前目录文件：{file_path}\n")
+        
+        success_msg = f"✅ 代码已写入当前目录文件：{file_path}\n"
+        logger.info(success_msg)
         return f"成功写入代码到当前目录：{file_path}"
 
     def _execute_code(self, params: Dict[str, str]) -> str:
@@ -60,14 +100,18 @@ class CodeExecutionTool:
         python_exec = params.get("python_executable", "python")
         
         if not file_name:
-            raise ValueError("执行代码缺少必要参数：file_path（至少包含文件名）")
+            error_msg = "执行代码缺少必要参数：file_path（至少包含文件名）"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         
         # 显式拼接当前目录路径
         current_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(current_dir, file_name)
         
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"当前目录中文件不存在：{file_path}")
+            error_msg = f"当前目录中文件不存在：{file_path}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
         
         try:
             result = subprocess.run(
@@ -78,23 +122,28 @@ class CodeExecutionTool:
             )
             if result.returncode == 0:
                 output = f"✅ 代码执行成功，输出：\n{result.stdout}\n"
+                logger.info(output)
             else:
                 output = f"❌ 代码执行失败，错误：\n{result.stderr}\n"
-            print(output)
+                logger.error(output)
             return output
         except Exception as e:
-            raise RuntimeError(f"执行代码异常：{str(e)}")
+            error_msg = f"执行代码异常：{str(e)}"
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
 
     def _run_terminal(self, params: Dict[str, str]) -> str:
         """运行Windows终端命令（默认在当前目录执行）"""
         command = params.get("command")
         terminal_type = params.get("terminal_type", "cmd")
         
-        # 强制指定终端命令在当前目录执行
+        # 指定终端命令在当前目录执行
         current_dir = os.path.dirname(os.path.abspath(__file__))
         
         if not command:
-            raise ValueError("运行终端命令缺少必要参数：command")
+            error_msg = "运行终端命令缺少必要参数：command"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         
         try:
             # 构建终端执行命令
@@ -103,9 +152,11 @@ class CodeExecutionTool:
             elif terminal_type.lower() == "powershell":
                 cmd = ["powershell.exe", "-Command", command]
             else:
-                raise ValueError(f"不支持的终端类型：{terminal_type}（仅支持cmd/powershell）")
+                error_msg = f"不支持的终端类型：{terminal_type}（仅支持cmd/powershell）"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
             
-            # 执行命令（强制在当前目录运行，解决中文乱码）
+            # 执行命令（在当前目录运行，解决中文乱码）
             result = subprocess.run(
                 cmd,
                 cwd=current_dir,  # 显式指定当前目录为工作目录
@@ -116,12 +167,15 @@ class CodeExecutionTool:
             
             if result.returncode == 0:
                 output = f"✅ {terminal_type.upper()}命令执行成功，输出：\n{result.stdout}\n"
+                logger.info(output)
             else:
                 output = f"❌ {terminal_type.upper()}命令执行失败，错误：\n{result.stderr}\n"
-            print(output)
+                logger.error(output)
             return output
         except Exception as e:
-            raise RuntimeError(f"运行终端命令异常：{str(e)}")
+            error_msg = f"运行终端命令异常：{str(e)}"
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
 
 # ====================== 流程执行引擎 ======================
 def execute_workflow(json_file_path: str) -> None:
@@ -132,7 +186,9 @@ def execute_workflow(json_file_path: str) -> None:
     
     # 1. 校验并读取JSON文件
     if not os.path.exists(json_file_path):
-        raise FileNotFoundError(f"JSON决策文件不存在：{json_file_path}")
+        error_msg = f"JSON决策文件不存在：{json_file_path}"
+        logger.error(error_msg)
+        raise FileNotFoundError(error_msg)
     
     with open(json_file_path, "r", encoding="utf-8") as f:
         workflow_data = json.load(f)
@@ -140,80 +196,75 @@ def execute_workflow(json_file_path: str) -> None:
     # 2. 解析执行流程
     execution_flow = workflow_data.get("execution_flow", [])
     if not execution_flow:
-        raise ValueError("JSON文件中未定义执行流程（execution_flow）")
+        error_msg = "JSON文件中未定义执行流程（execution_flow）"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
     
     # 3. 初始化工具并执行步骤
     tool = CodeExecutionTool()
-    print("========== 开始执行工作流 ==========\n")
+    logger.info("========== 开始执行工作流 ==========")
+    
     for step in execution_flow:
-        step_id = step.get("step_id")
         step_type = step.get("step_type")
         params = step.get("params", {})
         
-        print(f"📌 执行步骤 {step_id} - 类型：{step_type}")
+        step_start_msg = f"📌 执行步骤类型：{step_type}"
+        logger.info(step_start_msg)
+        
         try:
             tool.run(step_type=step_type, params=params)
         except Exception as e:
-            print(f"❌ 步骤 {step_id} 执行失败：{str(e)}\n")
+            step_error_msg = f"❌ 步骤类型：{step_type} 执行失败：{str(e)}"
+            logger.error(step_error_msg)
             continue  # 单个步骤失败不中断整体流程
     
-    print("========== 工作流执行完成 ==========")
+    logger.info("========== 工作流执行完成 ==========")
 
-
-
-
-
-
-# ====================== 测试入口（强制在当前目录创建JSON文件） ======================
-
-
+# ====================== 测试入口======================
 if __name__ == "__main__":
-    # 强制指定JSON文件在当前目录
+    # 指定JSON文件在当前目录
     current_dir = os.path.dirname(os.path.abspath(__file__))
     TEST_JSON_FILE_NAME = "workflow_config.json"
     TEST_JSON_PATH = os.path.join(current_dir, TEST_JSON_FILE_NAME)
     
-    # 自动生成测试JSON文件（若不存在，强制在当前目录）
+    # 自动生成测试JSON文件（若不存在，在当前目录）
     if not os.path.exists(TEST_JSON_PATH):
         test_config = {
             "execution_flow": [
                 {
-                    "step_id": 1,
                     "step_type": "write_code",
                     "params": {
-                        # 仅指定文件名，确保在当前目录创建test_script.py
                         "file_path": "test_script.py",
                         "code_content": "print('Hello from test script!')\nx = 10\ny = 20\nprint(f'Sum: {x+y}')"
                     }
                 },
                 {
-                    "step_id": 2,
                     "step_type": "read_code",
                     "params": {"file_path": "test_script.py"}
                 },
                 {
-                    "step_id": 3,
                     "step_type": "execute_code",
                     "params": {"file_path": "test_script.py", "python_executable": "python"}
                 },
                 {
-                    "step_id": 4,
                     "step_type": "run_terminal",
-                    "params": {"command": "dir", "terminal_type": "cmd"}  # 移除cwd，强制用当前目录
+                    "params": {"command": "dir", "terminal_type": "cmd"}  
                 },
                 {
-                    "step_id": 5,
                     "step_type": "run_terminal",
-                    "params": {"command": "Get-ChildItem", "terminal_type": "powershell"}  # 移除cwd
+                    "params": {"command": "Get-ChildItem", "terminal_type": "powershell"}  
                 }
             ]
         }
         with open(TEST_JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(test_config, f, ensure_ascii=False, indent=4)
-        print(f"📝 测试JSON文件已生成在当前目录：{TEST_JSON_PATH}\n")
+        
+        generate_msg = f"📝 测试JSON文件已生成在当前目录：{TEST_JSON_PATH}"
+        logger.info(generate_msg)
     
     # 执行工作流
     try:
         execute_workflow(TEST_JSON_PATH)
     except Exception as e:
-        print(f"❌ 工作流执行异常：{str(e)}")
+        error_msg = f"❌ 工作流执行异常：{str(e)}"
+        logger.error(error_msg)
