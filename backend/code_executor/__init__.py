@@ -24,13 +24,13 @@
 import logging
 import os
 
-# 导出核心工具（适配LangChain StructuredTool版本）
+# 导出核心工具
 from code_executor import code_tool, LangChainWorkflowExecutor
 
 # 定义默认的测试JSON文件名
 DEFAULT_TEST_JSON = "workflow_config.json"
 
-# init_test_workflow函数（添加日志输出）创建json文件
+# 创建json文件
 def init_test_workflow():
     """
     便捷函数：初始化测试工作流（自动生成测试JSON文件到当前目录）
@@ -38,10 +38,10 @@ def init_test_workflow():
     """
     import json
     
-    # 初始化日志器（复用核心文件的配置）
+    # 初始化日志器
     logger = logging.getLogger(__name__)
     
-    # 强制在当前目录创建测试JSON
+    # 创建测试JSON
     current_dir = os.path.dirname(os.path.abspath(__file__))
     test_json_path = os.path.join(current_dir, DEFAULT_TEST_JSON)
     
@@ -49,7 +49,7 @@ def init_test_workflow():
         logger.warning(f"⚠️  测试JSON文件已存在：{test_json_path}，跳过创建")
         return test_json_path
     
-    # 测试工作流配置（与你原版本完全一致）
+    # 测试工作流配置
     test_config = {
         "execution_flow": [
             {
@@ -90,6 +90,9 @@ def init_test_workflow():
     logger.info(f"✅ 测试JSON文件已创建在当前目录：{test_json_path}")
     return test_json_path
 
+
+
+# 使用示例
 
 if __name__ == "__main__":
 

@@ -6,9 +6,9 @@ from typing import Dict, Any, List
 from langchain_core.tools import StructuredTool
 from langchain_core.pydantic_v1 import BaseModel, Field
 
-# ====================== 1. 配置日志（同时输出到控制台+文件） ======================
+
 def setup_logger():
-    """配置日志：输出到控制台 + 写入文件（code_executor.log）"""
+    """配置日志（code_executor.log）"""
     # 日志文件路径（当前目录）
     log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "code_executor.log")
     
@@ -31,7 +31,7 @@ def setup_logger():
 # 初始化日志器
 logger = setup_logger()
 
-# ====================== 2. 定义结构化参数模型 ======================
+# ======================  定义结构化参数模型 ======================
 
 class CodeToolInput(BaseModel):
     step_type: str = Field(
@@ -46,7 +46,7 @@ class CodeToolInput(BaseModel):
         "- run_terminal: {command: 终端命令, terminal_type: cmd/powershell（可选）}"
     )
 
-# ====================== 3. 核心业务逻辑（替换print为logger） ======================
+# ======================  业务逻辑 ======================
 def read_code(params: Dict[str, str]) -> str:
     """读取当前目录的代码文件"""
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.basename(params.get("file_path", "")))
@@ -135,7 +135,7 @@ def run_terminal(params: Dict[str, str]) -> str:
         logger.error(error_msg)
         return error_msg
 
-# ====================== 4. 多参数工具核心函数 ======================
+# ======================  多参数工具核心函数 ======================
 def code_execution_tool(step_type: str, params: Dict[str, Any]) -> str:
     """StructuredTool专用的多参数核心函数"""
     handlers = {
@@ -150,7 +150,7 @@ def code_execution_tool(step_type: str, params: Dict[str, Any]) -> str:
         return error_msg
     return handlers[step_type](params)
 
-# ====================== 5. 创建LangChain结构化工具 ======================
+# ====================== 创建LangChain结构化工具 ======================
 code_tool = StructuredTool.from_function(
     func=code_execution_tool,
     name="code_execution_tool",
@@ -159,7 +159,7 @@ code_tool = StructuredTool.from_function(
     return_direct=True
 )
 
-# ====================== 6. 工作流执行器（日志适配） ======================
+# ======================  工作流执行器 ======================
 class LangChainWorkflowExecutor:
     def __init__(self):
         self.tool = code_tool
@@ -204,10 +204,13 @@ class LangChainWorkflowExecutor:
                 self.logger.error(error_msg)
                 results.append(error_msg)
         
-        self.logger.info("========== LangChain工作流执行完成 ==========")
+        self.logger.info("========== 工作流执行完成 ==========")
         return results
 
-# ====================== 7. 测试入口 ======================
+
+
+
+# ======================  测试入口 ======================
 if __name__ == "__main__":
     # 测试JSON路径（当前目录）
     TEST_JSON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workflow_config.json")
