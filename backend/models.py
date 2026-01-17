@@ -153,3 +153,47 @@ class POCScanResult(Model):
     
     def __str__(self):
         return f"{self.poc_type} - {self.target} ({'存在漏洞' if self.vulnerable else '安全'})"
+
+
+class AIChatInstance(Model):
+    """AI对话实例表"""
+    
+    id = fields.UUIDField(pk=True, description="对话实例ID")
+    user_id = fields.CharField(max_length=100, null=True, description="用户ID")
+    chat_name = fields.CharField(max_length=255, default="新对话", description="对话名称")
+    chat_type = fields.CharField(max_length=50, default="general", description="对话类型：general, security, etc.")
+    status = fields.CharField(max_length=50, default="active", description="状态：active, closed")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
+    
+    # 关系
+    messages: fields.ReverseRelation["AIChatMessage"]
+    
+    class Meta:
+        table = "ai_chat_instances"
+        table_description = "AI对话实例表"
+        ordering = ["-updated_at"]
+    
+    def __str__(self):
+        return f"{self.chat_name} ({self.status})"
+
+
+class AIChatMessage(Model):
+    """AI对话消息表"""
+    
+    id = fields.BigIntField(pk=True, description="消息ID")
+    chat_instance: fields.ForeignKeyRelation[AIChatInstance] = fields.ForeignKeyField(
+        "models.AIChatInstance", related_name="messages", description="关联对话实例"
+    )
+    role = fields.CharField(max_length=20, description="角色：user, assistant")
+    content = fields.TextField(description="消息内容")
+    message_type = fields.CharField(max_length=50, default="text", description="消息类型：text, image, etc.")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    
+    class Meta:
+        table = "ai_chat_messages"
+        table_description = "AI对话消息表"
+        ordering = ["created_at"]
+    
+    def __str__(self):
+        return f"{self.role}: {self.content[:50]}..."
