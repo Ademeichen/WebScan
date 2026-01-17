@@ -3,7 +3,8 @@
 核心功能：读取JSON决策文件，执行代码读写、代码执行、Windows终端命令运行（全适配LangChain v0.1+ StructuredTool，日志输出到文件）
 
 对外暴露的核心工具：
-1. code_tool：LangChain结构化核心工具实例，支持4类操作（read_code/write_code/execute_code/run_terminal（cmd/powershell））(对应id：1、2、3、4、5)
+1. code_tool：LangChain结构化核心工具实例，支持4类操作（read_code/write_code/execute_code/run_terminal（cmd/powershell））
+    **以下创建json文件函数提供json文件结构参数示例**
 2. LangChainWorkflowExecutor：流程执行器类，读取JSON文件按顺序执行所有步骤（execute_workflow为其核心方法）
 
 使用示例：
@@ -30,7 +31,7 @@ from code_executor import code_tool, LangChainWorkflowExecutor
 # 定义默认的测试JSON文件名
 DEFAULT_TEST_JSON = "workflow_config.json"
 
-# 创建json文件
+# 创建json文件示例
 def init_test_workflow():
     """
     便捷函数：初始化测试工作流（自动生成测试JSON文件到当前目录）
@@ -49,38 +50,33 @@ def init_test_workflow():
         logger.warning(f"⚠️  测试JSON文件已存在：{test_json_path}，跳过创建")
         return test_json_path
     
-    # 测试工作流配置
+    # josn文件示例
     test_config = {
         "execution_flow": [
-            {
-                "step_id": 1,
-                "step_type": "write_code",
-                "params": {
-                    "file_path": "test_script.py",
-                    "code_content": "print('Hello World!')\nx = 10\ny = 20\nprint(f'Sum: {x+y}')"
+                {
+                    "step_type": "write_code",
+                    "params": {
+                        "file_path": "test_script.py",
+                        "code_content": "print('Hello World!')\nx=100\ny=200\nprint(f'Sum: {x+y}')"
+                    }
+                },
+                {
+                    "step_type": "read_code",
+                    "params": {"file_path": "test_script.py"}
+                },
+                {
+                    "step_type": "execute_code",
+                    "params": {"file_path": "test_script.py", "python_executable": "python"}
+                },
+                {
+                    "step_type": "run_terminal",
+                    "params": {"command": "dir test_script.py", "terminal_type": "cmd"}
+                },
+                {
+                    "step_type": "run_terminal",
+                    "params": {"command": "Get-ChildItem test_script.py", "terminal_type": "powershell"}
                 }
-            },
-            {
-                "step_id": 2,
-                "step_type": "read_code",
-                "params": {"file_path": "test_script.py"}
-            },
-            {
-                "step_id": 3,
-                "step_type": "execute_code",
-                "params": {"file_path": "test_script.py", "python_executable": "python"}
-            },
-            {
-                "step_id": 4,
-                "step_type": "run_terminal",
-                "params": {"command": "dir", "terminal_type": "cmd"}
-            },
-            {
-                "step_id": 5,
-                "step_type": "run_terminal",
-                "params": {"command": "Get-ChildItem", "terminal_type": "powershell"}
-            }
-        ]
+            ]
     }
     
     # 写入JSON文件

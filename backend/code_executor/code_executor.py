@@ -183,9 +183,10 @@ class LangChainWorkflowExecutor:
 
     def execute_workflow(self, json_file_path: str) -> List[str]:
         """执行工作流（输出日志到文件+控制台）"""
+        self.logger.info("========== 开始执行 ==========")
         workflow = self.load_workflow_from_json(json_file_path)
         results = []
-        self.logger.info("========== 开始执行LangChain工作流 ==========")
+        
         
         for idx, step in enumerate(workflow, 1):
             step_type = step.get("step_type")
