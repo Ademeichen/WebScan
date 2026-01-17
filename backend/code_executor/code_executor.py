@@ -1,12 +1,38 @@
 import os
 import json
 import subprocess
+import logging
 from typing import Dict, Any, List
-# 导入StructuredTool（处理多参数）
 from langchain_core.tools import StructuredTool
 from langchain_core.pydantic_v1 import BaseModel, Field
 
-# ====================== 1. 定义结构化参数模型（多参数专用） ======================
+# ====================== 1. 配置日志（同时输出到控制台+文件） ======================
+def setup_logger():
+    """配置日志：输出到控制台 + 写入文件（code_executor.log）"""
+    # 日志文件路径（当前目录）
+    log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "code_executor.log")
+    
+    # 日志格式：时间 | 级别 | 内容
+    log_format = "%(asctime)s | %(levelname)s | %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
+    
+    # 配置根日志
+    logging.basicConfig(
+        level=logging.INFO,  # 日志级别
+        format=log_format,
+        datefmt=date_format,
+        handlers=[
+            logging.FileHandler(log_file, encoding="utf-8"),  # 写入文件
+            logging.StreamHandler()  # 输出到控制台
+        ]
+    )
+    return logging.getLogger(__name__)
+
+# 初始化日志器
+logger = setup_logger()
+
+# ====================== 2. 定义结构化参数模型 ======================
+
 class CodeToolInput(BaseModel):
     step_type: str = Field(
         description="操作类型，仅支持：read_code、write_code、execute_code、run_terminal",
@@ -20,26 +46,34 @@ class CodeToolInput(BaseModel):
         "- run_terminal: {command: 终端命令, terminal_type: cmd/powershell（可选）}"
     )
 
-# ====================== 2. 核心业务逻辑（纯函数，无框架耦合） ======================
+# ====================== 3. 核心业务逻辑（替换print为logger） ======================
 def read_code(params: Dict[str, str]) -> str:
     """读取当前目录的代码文件"""
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.basename(params.get("file_path", "")))
     if not os.path.exists(file_path):
-        return f"文件不存在：{file_path}"
+        error_msg = f"文件不存在：{file_path}"
+        logger.error(error_msg)
+        return error_msg
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
-    return f"✅ 成功读取文件 {file_path}\n内容：\n{content}"
+    success_msg = f"✅ 成功读取文件 {file_path}\n内容：\n{content}"
+    logger.info(success_msg)
+    return success_msg
 
 def write_code(params: Dict[str, str]) -> str:
     """写入代码到当前目录文件"""
     file_name = os.path.basename(params.get("file_path", ""))
     code_content = params.get("code_content")
     if not file_name or code_content is None:
-        return "缺少必要参数：file_path（文件名）或 code_content（代码内容）"
+        error_msg = "缺少必要参数：file_path（文件名）或 code_content（代码内容）"
+        logger.error(error_msg)
+        return error_msg
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_name)
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(code_content)
-    return f"✅ 代码已写入当前目录文件：{file_path}"
+    success_msg = f"✅ 代码已写入当前目录文件：{file_path}"
+    logger.info(success_msg)
+    return success_msg
 
 def execute_code(params: Dict[str, str]) -> str:
     """执行当前目录的Python代码文件"""
@@ -47,7 +81,9 @@ def execute_code(params: Dict[str, str]) -> str:
     python_exec = params.get("python_executable", "python")
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_name)
     if not os.path.exists(file_path):
-        return f"文件不存在：{file_path}"
+        error_msg = f"文件不存在：{file_path}"
+        logger.error(error_msg)
+        return error_msg
     try:
         result = subprocess.run(
             [python_exec, file_path],
@@ -56,11 +92,17 @@ def execute_code(params: Dict[str, str]) -> str:
             encoding="utf-8"
         )
         if result.returncode == 0:
-            return f"✅ 代码执行成功\n输出：\n{result.stdout}"
+            success_msg = f"✅ 代码执行成功\n输出：\n{result.stdout}"
+            logger.info(success_msg)
+            return success_msg
         else:
-            return f"❌ 代码执行失败\n错误：\n{result.stderr}"
+            error_msg = f"❌ 代码执行失败\n错误：\n{result.stderr}"
+            logger.error(error_msg)
+            return error_msg
     except Exception as e:
-        return f"❌ 执行异常：{str(e)}"
+        error_msg = f"❌ 执行异常：{str(e)}"
+        logger.error(error_msg)
+        return error_msg
 
 def run_terminal(params: Dict[str, str]) -> str:
     """运行Windows终端命令（当前目录）"""
@@ -68,7 +110,9 @@ def run_terminal(params: Dict[str, str]) -> str:
     terminal_type = params.get("terminal_type", "cmd")
     current_dir = os.path.dirname(os.path.abspath(__file__))
     if not command:
-        return "缺少必要参数：command（终端命令）"
+        error_msg = "缺少必要参数：command（终端命令）"
+        logger.error(error_msg)
+        return error_msg
     try:
         cmd = ["cmd.exe", "/c", command] if terminal_type.lower() == "cmd" else ["powershell.exe", "-Command", command]
         result = subprocess.run(
@@ -79,13 +123,19 @@ def run_terminal(params: Dict[str, str]) -> str:
             encoding="gbk"
         )
         if result.returncode == 0:
-            return f"✅ {terminal_type.upper()}命令执行成功\n输出：\n{result.stdout}"
+            success_msg = f"✅ {terminal_type.upper()}命令执行成功\n输出：\n{result.stdout}"
+            logger.info(success_msg)
+            return success_msg
         else:
-            return f"❌ {terminal_type.upper()}命令执行失败\n错误：\n{result.stderr}"
+            error_msg = f"❌ {terminal_type.upper()}命令执行失败\n错误：\n{result.stderr}"
+            logger.error(error_msg)
+            return error_msg
     except Exception as e:
-        return f"❌ 终端命令执行异常：{str(e)}"
+        error_msg = f"❌ 终端命令执行异常：{str(e)}"
+        logger.error(error_msg)
+        return error_msg
 
-# ====================== 3. 多参数工具核心函数（适配StructuredTool） ======================
+# ====================== 4. 多参数工具核心函数 ======================
 def code_execution_tool(step_type: str, params: Dict[str, Any]) -> str:
     """StructuredTool专用的多参数核心函数"""
     handlers = {
@@ -95,63 +145,69 @@ def code_execution_tool(step_type: str, params: Dict[str, Any]) -> str:
         "run_terminal": run_terminal
     }
     if step_type not in handlers:
-        return f"不支持的操作类型：{step_type}，仅支持{list(handlers.keys())}"
+        error_msg = f"不支持的操作类型：{step_type}，仅支持{list(handlers.keys())}"
+        logger.error(error_msg)
+        return error_msg
     return handlers[step_type](params)
 
-# ====================== 4. 创建LangChain结构化工具 ======================
-# 改用StructuredTool（多参数专用）
+# ====================== 5. 创建LangChain结构化工具 ======================
 code_tool = StructuredTool.from_function(
     func=code_execution_tool,
     name="code_execution_tool",
     description="用于在Windows当前目录执行代码读取、写入、执行和终端命令运行的工具",
-    args_schema=CodeToolInput,  # 自动校验多参数
+    args_schema=CodeToolInput,
     return_direct=True
 )
 
-# ====================== 5. 工作流执行器（适配StructuredTool调用） ======================
+# ====================== 6. 工作流执行器（日志适配） ======================
 class LangChainWorkflowExecutor:
     def __init__(self):
-        self.tool = code_tool  # 初始化结构化工具
+        self.tool = code_tool
+        self.logger = logger  # 复用日志器
 
     def load_workflow_from_json(self, json_file_path: str) -> List[Dict[str, Any]]:
         """加载并校验JSON工作流"""
         json_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.basename(json_file_path))
         if not os.path.exists(json_file_path):
-            raise FileNotFoundError(f"JSON文件不存在：{json_file_path}")
+            error_msg = f"JSON文件不存在：{json_file_path}"
+            self.logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
         with open(json_file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         if "execution_flow" not in data:
-            raise ValueError("JSON缺少execution_flow字段")
+            error_msg = "JSON缺少execution_flow字段"
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+        self.logger.info(f"✅ 成功加载JSON工作流文件：{json_file_path}")
         return data["execution_flow"]
 
     def execute_workflow(self, json_file_path: str) -> List[str]:
-        """执行工作流（StructuredTool正确调用方式）"""
+        """执行工作流（输出日志到文件+控制台）"""
         workflow = self.load_workflow_from_json(json_file_path)
         results = []
-        print("========== 开始执行LangChain工作流 ==========\n")
+        self.logger.info("========== 开始执行LangChain工作流 ==========")
         
         for idx, step in enumerate(workflow, 1):
             step_type = step.get("step_type")
             params = step.get("params", {})
-            print(f"📌 执行步骤 {idx} - 类型：{step_type}")
+            step_msg = f"📌 执行步骤 {idx} - 类型：{step_type}"
+            self.logger.info(step_msg)
             
-            # StructuredTool的正确调用方式：传入结构化字典（单参数封装多字段）
             try:
-                # invoke是新版LangChain推荐的调用方式（结构化输入）
                 result = self.tool.invoke({
                     "step_type": step_type,
                     "params": params
                 })
+                results.append(result)
             except Exception as e:
-                result = f"❌ 步骤执行失败：{str(e)}"
-            
-            results.append(result)
-            print(f"{result}\n")
+                error_msg = f"❌ 步骤执行失败：{str(e)}"
+                self.logger.error(error_msg)
+                results.append(error_msg)
         
-        print("========== LangChain工作流执行完成 ==========")
+        self.logger.info("========== LangChain工作流执行完成 ==========")
         return results
 
-# ====================== 6. 测试入口 ======================
+# ====================== 7. 测试入口 ======================
 if __name__ == "__main__":
     # 测试JSON路径（当前目录）
     TEST_JSON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workflow_config.json")
@@ -187,16 +243,17 @@ if __name__ == "__main__":
         }
         with open(TEST_JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(test_workflow, f, ensure_ascii=False, indent=4)
-        print(f"📝 测试JSON已生成：{TEST_JSON_PATH}\n")
+        logger.info(f"📝 测试JSON已生成：{TEST_JSON_PATH}")
 
     # 执行工作流
     try:
         executor = LangChainWorkflowExecutor()
         executor.execute_workflow(TEST_JSON_PATH)
     except Exception as e:
-        print(f"❌ 执行异常：{str(e)}")
+        logger.error(f"❌ 执行异常：{str(e)}")
 
-    # ====================== 大模型集成示例（StructuredTool适配） ======================
+
+      # ====================== 集成示例 ======================
     """
     from langchain_openai import ChatOpenAI
     from langchain.agents import create_openai_tools_agent, AgentExecutor
