@@ -197,3 +197,47 @@ class AIChatMessage(Model):
     
     def __str__(self):
         return f"{self.role}: {self.content[:50]}..."
+
+
+class AgentTask(Model):
+    """AI Agent 任务记录表"""
+    
+    task_id = fields.UUIDField(pk=True, description="任务ID")
+    user_id = fields.CharField(max_length=100, null=True, description="用户ID")
+    input_json = fields.TextField(description="用户输入的内容（JSON格式）")
+    task_type = fields.CharField(max_length=50, null=True, description="任务类型")
+    status = fields.CharField(max_length=50, default="pending", description="状态：pending, running, completed, failed")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
+    
+    # 关系
+    result: fields.ReverseRelation["AgentResult"]
+    
+    class Meta:
+        table = "agent_tasks"
+        table_description = "AI Agent 任务记录表"
+        ordering = ["-created_at"]
+    
+    def __str__(self):
+        return f"AgentTask {self.task_id} ({self.status})"
+
+
+class AgentResult(Model):
+    """AI Agent 执行结果表"""
+    
+    id = fields.UUIDField(pk=True, description="结果ID")
+    task: fields.ForeignKeyRelation[AgentTask] = fields.ForeignKeyField(
+        "models.AgentTask", related_name="result", description="关联任务"
+    )
+    final_output = fields.TextField(description="AI 输出的结果（JSON格式）")
+    execution_time = fields.FloatField(null=True, description="执行时间（秒）")
+    error_message = fields.TextField(null=True, description="错误信息")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    
+    class Meta:
+        table = "agent_results"
+        table_description = "AI Agent 执行结果表"
+        ordering = ["-created_at"]
+    
+    def __str__(self):
+        return f"AgentResult {self.id} for Task {self.task.task_id}"
