@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     
     # AWVS 配置
     AWVS_API_URL: str = "https://127.0.0.1:3443"
-    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c4afa9c3233a64e329c40686bd9dbd468"
+    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c456ea4387ded4bd9b8a4802bdfad8c7f"
     
     class Config:
         env_file = ".env"
@@ -67,18 +67,3 @@ TORTOISE_ORM = {
         },
     },
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

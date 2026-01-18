@@ -1,0 +1,5 @@
+2026-01-10 21:11:19,892 - main - INFO - 启动 WebScan AI Security Platform v1.0.0
+2026-01-10 21:11:20,034 - database - INFO - 数据库初始化成功
+2026-01-10 21:13:04,045 - main - INFO - 应用关闭
+2026-01-10 21:13:04,060 - tortoise - INFO - Tortoise-ORM shutdown
+2026-01-10 21:13:04,062 - database - INFO - 数据库连接已关闭
