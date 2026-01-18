@@ -2,7 +2,7 @@
 API 路由总入口
 """
 from fastapi import APIRouter
-from . import scan, tasks, reports, poc, awvs, settings
+from . import scan, tasks, reports, poc, awvs, settings, ai
 
 api_router = APIRouter()
 
@@ -13,4 +13,5 @@ api_router.include_router(reports.router, prefix="/reports", tags=["报告管理
 api_router.include_router(poc.router, tags=["POC扫描"])
 api_router.include_router(awvs.router, prefix="/awvs", tags=["AWVS漏洞扫描"])
 api_router.include_router(settings.router, prefix="/settings", tags=["系统设置"])
+api_router.include_router(ai.router, prefix="/ai", tags=["AI对话"])
 
