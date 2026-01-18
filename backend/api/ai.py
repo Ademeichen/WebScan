@@ -1,5 +1,8 @@
 """
 AI 对话 API 路由
+
+提供 AI 对话功能，支持创建对话实例、发送消息、获取历史等。
+使用 LangChain 和阿里云通义千问模型实现智能对话。
 """
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Dict, Any, Optional
@@ -7,33 +10,31 @@ from uuid import UUID, uuid4
 from tortoise.expressions import Q
 import json
 from datetime import datetime
+import logging
 
 from models import AIChatInstance, AIChatMessage
 from config import settings
 
-# LangChain 相关导入
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_classic.memory import ConversationBufferMemory
 from langchain_classic.chains import LLMChain
 from langchain_classic.prompts import PromptTemplate
 
-# 初始化路由
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["AI对话"])
 
-# 内存中的对话历史缓存，用于快速访问
 conversation_memory_cache: Dict[str, ConversationBufferMemory] = {}
 
-# 初始化 LLM - 使用阿里云通义千问模型
 llm = ChatOpenAI(
     model="qwen-plus",
     temperature=0.7,
-    openai_api_key="sk-55446596eada420db8bf883864458e9f",
+    openai_api_key=settings.QWEN_API_KEY or "sk-55446596eada420db8bf883864458e9f",
     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
     streaming=True
 )
 
-# 系统提示
 SYSTEM_PROMPT = """
 你是一个专业的Web安全顾问，名为WebScan AI。你的任务是帮助用户解决Web安全相关问题，包括漏洞分析、安全加固建议、扫描报告解读等。
 
@@ -53,9 +54,16 @@ async def create_chat_instance(
 ):
     """
     创建新的对话实例
+    
+    Args:
+        chat_name: 对话名称
+        chat_type: 对话类型
+        user_id: 用户ID
+        
+    Returns:
+        Dict: 包含对话实例信息的响应
     """
     try:
-        # 创建对话实例
         chat_instance = await AIChatInstance.create(
             id=uuid4(),
             user_id=user_id,
@@ -64,12 +72,13 @@ async def create_chat_instance(
             status="active"
         )
         
-        # 初始化内存中的对话历史
         conversation_memory = ConversationBufferMemory(
             memory_key="chat_history",
             return_messages=True
         )
         conversation_memory_cache[str(chat_instance.id)] = conversation_memory
+        
+        logger.info(f"✅ 创建对话实例: {chat_instance.id}")
         
         return {
             "code": 200,
@@ -83,6 +92,7 @@ async def create_chat_instance(
             }
         }
     except Exception as e:
+        logger.error(f"❌ 创建对话实例失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"创建对话实例失败: {str(e)}")
 
 
@@ -240,17 +250,24 @@ async def send_message(
 ):
     """
     发送消息到对话实例
+    
+    Args:
+        chat_instance_id: 对话实例ID
+        request: 消息请求
+        
+    Returns:
+        Dict: 包含用户消息和AI响应的响应
     """
     try:
-        # 检查对话实例是否存在
         chat_instance = await AIChatInstance.get_or_none(id=chat_instance_id)
         if not chat_instance:
+            logger.error(f"❌ 对话实例不存在: {chat_instance_id}")
             raise HTTPException(status_code=404, detail="对话实例不存在")
         
         if chat_instance.status != "active":
+            logger.warning(f"⚠️ 对话实例已关闭: {chat_instance_id}")
             raise HTTPException(status_code=400, detail="对话实例已关闭")
         
-        # 保存用户消息
         user_message = await AIChatMessage.create(
             chat_instance_id=chat_instance_id,
             role="user",
@@ -258,15 +275,12 @@ async def send_message(
             message_type=request.message_type
         )
         
-        # 获取或初始化对话历史
         if str(chat_instance_id) not in conversation_memory_cache:
-            # 从数据库加载历史消息
             conversation_memory = ConversationBufferMemory(
                 memory_key="chat_history",
                 return_messages=True
             )
             
-            # 加载历史消息
             history_messages = await AIChatMessage.filter(
                 chat_instance_id=chat_instance_id
             ).order_by("created_at")
@@ -281,7 +295,6 @@ async def send_message(
         
         conversation_memory = conversation_memory_cache[str(chat_instance_id)]
         
-        # 创建对话链
         prompt = PromptTemplate(
             input_variables=["chat_history", "human_input"],
             template="""{chat_history}
@@ -296,14 +309,11 @@ Assistant:"""
             prompt=prompt
         )
         
-        # 获取AI响应 - 实际调用阿里云通义千问模型
         response_content = await conversation.arun(human_input=request.content)
         
-        # 更新对话历史
         conversation_memory.chat_memory.add_user_message(request.content)
         conversation_memory.chat_memory.add_ai_message(response_content)
         
-        # 保存AI响应
         ai_message = await AIChatMessage.create(
             chat_instance_id=chat_instance_id,
             role="assistant",
@@ -311,9 +321,10 @@ Assistant:"""
             message_type="text"
         )
         
-        # 更新对话实例的更新时间
         chat_instance.updated_at = datetime.now()
         await chat_instance.save()
+        
+        logger.info(f"✅ 消息发送成功: {chat_instance_id}")
         
         return {
             "code": 200,
@@ -336,6 +347,7 @@ Assistant:"""
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ 发送消息失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"发送消息失败: {str(e)}")
 
 

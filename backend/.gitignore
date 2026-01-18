@@ -34,6 +34,7 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+!data/webscan.db
 
 # IDE
 .vscode/
