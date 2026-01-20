@@ -11,8 +11,8 @@ from database import init_db, close_db
 import logging
 from pathlib import Path
 
-from backend.api import agent 
-from backend.database import engine, Base
+from api import agent 
+from database import engine, Base
 
 # 创建必要的目录
 Path("logs").mkdir(exist_ok=True)

@@ -6,6 +6,7 @@
 支持工作流配置文件执行。
 """
 import os
+import sys
 import json
 import subprocess
 import logging
@@ -13,6 +14,7 @@ from typing import Dict, Any, List
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import settings
 
 

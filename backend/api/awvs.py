@@ -2,15 +2,18 @@
 AWVS 漏洞扫描相关的 API 路由
 整合 AVWS 工具包的功能
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, HttpUrl
 from typing import Optional, List, Dict, Any
 import logging
 import json
 import re
 import asyncio
+import time
 from functools import partial
 from tortoise.functions import Count
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 from config import settings
 from models import Task, Vulnerability
 
@@ -21,9 +24,20 @@ from AVWS.API.Vuln import Vuln
 from AVWS.API.Dashboard import Dashboard
 from AVWS.API.Base import Base
 
+# 导入 POC 模块
+from poc.weblogic import cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc
+from poc.Drupal import cve_2018_7600_poc
+from poc.tomcat import cve_2017_12615_poc
+from poc.jboss import cve_2017_12149_poc
+from poc.nexus import cve_2020_10199_poc
+from poc.struts2 import struts2_009_poc, struts2_032_poc
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# 全局变量用于存储中间件扫描时间戳
+middleware_scan_time = 0.0
 
 async def run_sync(func, *args, **kwargs):
     """在线程池中运行同步阻塞函数"""
@@ -472,106 +486,6 @@ async def create_scan(request: AWVSScanRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 获取目标的漏洞结果 ====================
-@router.get("/vulnerabilities/{target_id}", response_model=APIResponse)
-async def get_target_vulnerabilities(target_id: str):
-    """
-    获取指定目标的漏洞列表
-    """
-    try:
-        client = get_awvs_client()
-        d = Vuln(client['api_url'], client['api_key'])
-        
-        vuln_details = json.loads(d.search(None, None, "open", target_id=target_id))
-        data = []
-        
-        if 'vulnerabilities' in vuln_details:
-            for idx, item_data in enumerate(vuln_details['vulnerabilities'], 1):
-                # Log first item for debugging
-                if idx == 1:
-                    logger.info(f"First vulnerability item data: {json.dumps(item_data)}")
-
-                # Handle severity mapping using standardized function
-                severity_val = item_data.get('severity')
-                vt_name = item_data.get('vt_name', '')
-                severity = map_severity(severity_val, vt_name)
-
-                # SQL Injection prefix logic
-                vt_name = item_data.get('vt_name', 'Unknown Vulnerability')
-                vuln_name = vt_name
-                if 'SQL Injection' in vt_name and not vt_name.startswith('[SQL'):
-                    vuln_name = f"[SQL Injection] {vt_name}"
-
-                item = {
-                    'id': idx,
-                    'severity': severity,
-                    'target': item_data.get('affects_url', ''),
-                    'vuln_id': item_data.get('vuln_id'),
-                    'vuln_name': vuln_name,
-                    'time': re.sub(r'T|\..*$', " ", item_data.get('last_seen', '')) if item_data.get('last_seen') else ''
-                }
-                data.append(item)
-        
-        logger.info(f"获取目标 {target_id} 的漏洞列表成功，共 {len(data)} 个漏洞")
-        return APIResponse(code=200, message="获取成功", data=data)
-    except Exception as e:
-        logger.error(f"获取漏洞列表失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ==================== 获取漏洞详情 ====================
-@router.get("/vulnerability/{vuln_id}", response_model=APIResponse)
-async def get_vulnerability_detail(vuln_id: str):
-    """
-    获取指定漏洞的详细信息
-    """
-    try:
-        client = get_awvs_client()
-        d = Vuln(client['api_url'], client['api_key'])
-        data = d.get(vuln_id)
-        
-        if not data:
-            return APIResponse(code=404, message="漏洞不存在", data=None)
-        
-        # 解析HTML内容
-        parameter_list = BeautifulSoup(data['details'], features="html.parser").findAll('span')
-        request_list = BeautifulSoup(data['details'], features="html.parser").findAll('li')
-        
-        data_dict = {
-            'affects_url': data['affects_url'],
-            'last_seen': re.sub(r'T|\..*$', " ", data['last_seen']),
-            'vt_name': data['vt_name'],
-            'details': data['details'].replace("  ", '').replace('</p>', ''),
-            'request': data['request'],
-            'recommendation': data['recommendation'].replace('<br/>', '\n')
-        }
-        
-        try:
-            data_dict['parameter_name'] = parameter_list[0].contents[0]
-            data_dict['parameter_data'] = parameter_list[1].contents[0]
-        except:
-            pass
-        
-        num = 1
-        try:
-            test_str = ''
-            for i in range(len(request_list)):
-                test_str += str(request_list[i].contents[0]) + str(request_list[i].contents[1]).replace('<strong>', '').replace('</strong>', '') + '\n'
-                num += 1
-            data_dict['tests_performed'] = test_str
-            data_dict['num'] = num
-        except:
-            pass
-        
-        data_dict['details'] = data_dict['details'].replace('class="bb-dark"', 'style="color: #ff0000"')
-        
-        logger.info(f"获取漏洞 {vuln_id} 详情成功")
-        return APIResponse(code=200, message="获取成功", data=data_dict)
-    except Exception as e:
-        logger.error(f"获取漏洞详情失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 # ==================== 获取漏洞排名 ====================
 @router.get("/vulnerabilities/rank", response_model=APIResponse)
 async def get_vulnerability_rank():
@@ -683,3 +597,283 @@ async def awvs_health_check():
     except Exception as e:
         logger.error(f"AWVS健康检查失败: {str(e)}")
         return APIResponse(code=503, message="AWVS服务连接失败", data={"status": "disconnected", "error": str(e)})
+
+
+# ==================== 中间件POC扫描相关 ====================
+
+class MiddlewareScanRequest(BaseModel):
+    url: str
+    cve_id: str
+
+
+class MiddlewareScanStartRequest(BaseModel):
+    url: str
+    cve_id: str
+
+
+def POC_Check(url: str, CVE_id: str) -> tuple:
+    """
+    执行POC检查
+    :param url: 目标URL
+    :param CVE_id: CVE ID
+    :return: (是否漏洞, 消息)
+    """
+    try:
+        parsed = urlparse(url)
+        ip = parsed.hostname or parsed.netloc.split(':')[0]
+        port = parsed.port or (443 if parsed.scheme == 'https' else 80)
+        
+        CVE_id_clean = CVE_id.replace('-', "_")
+        
+        # Weblogic
+        if CVE_id_clean == "CVE_2020_2551":
+            result = cve_2020_2551_poc.poc(url)
+        elif CVE_id_clean == "CVE_2018_2628":
+            result = cve_2018_2628_poc.poc(ip, port, 0)
+        elif CVE_id_clean == "CVE_2018_2894":
+            result = cve_2018_2894_poc.poc(url, "weblogic")
+        # Drupal
+        elif CVE_id_clean == "CVE_2018_7600":
+            result = cve_2018_7600_poc.poc(url)
+        # Tomcat
+        elif CVE_id_clean == "CVE_2017_12615":
+            result = cve_2017_12615_poc.poc(url)
+        # JBoss
+        elif CVE_id_clean == "CVE_2017_12149":
+            result = cve_2017_12149_poc.poc(url)
+        # Nexus
+        elif CVE_id_clean == "CVE_2020_10199":
+            result = cve_2020_10199_poc.poc(ip, port, "admin")
+        # Struts2
+        elif CVE_id_clean == "Struts2_009":
+            result = struts2_009_poc.poc(url)
+        elif CVE_id_clean == "Struts2_032":
+            result = struts2_032_poc.poc(url)
+        else:
+            return False, f"未知的CVE ID: {CVE_id}"
+        
+        if isinstance(result, tuple):
+            return result
+        else:
+            return result, f"{CVE_id}: 扫描完成"
+    except Exception as e:
+        logger.error(f"POC检查失败: {str(e)}")
+        return False, f"{CVE_id}: 扫描失败 - {str(e)}"
+
+
+@router.post("/middleware/scan", response_model=APIResponse)
+async def middleware_scan(request: MiddlewareScanRequest):
+    """
+    创建中间件POC扫描任务（插入数据库）
+    """
+    global middleware_scan_time
+    
+    try:
+        url = request.url
+        CVE_id = request.cve_id.replace('-', "_")
+        middleware_scan_time = time.time()
+        
+        # 创建任务记录
+        task = await Task.create(
+            task_name=f"Middleware POC Scan: {CVE_id}",
+            task_type='middleware_poc_scan',
+            target=url,
+            status='running',
+            progress=0,
+            config=json.dumps({
+                'cve_id': CVE_id,
+                'scan_time': middleware_scan_time
+            })
+        )
+        
+        logger.info(f"创建中间件扫描任务成功: {url} - {CVE_id}")
+        return APIResponse(code=200, message="创建扫描任务成功", data={"task_id": task.id})
+    except Exception as e:
+        logger.error(f"创建中间件扫描任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/middleware/scan/start", response_model=APIResponse)
+async def start_middleware_scan(request: MiddlewareScanStartRequest, background_tasks: BackgroundTasks):
+    """
+    启动中间件POC扫描（后台任务）
+    """
+    try:
+        url = request.url
+        CVE_id = request.cve_id.replace('-', "_")
+        
+        # 在后台执行扫描
+        async def run_middleware_scan():
+            try:
+                # 等待数据插入成功
+                await asyncio.sleep(2)
+                
+                # 查找运行中的任务
+                tasks = await Task.filter(
+                    task_type='middleware_poc_scan',
+                    target=url,
+                    status='running'
+                ).all()
+                
+                for task in tasks:
+                    config = json.loads(task.config) if task.config else {}
+                    if config.get('cve_id') == CVE_id:
+                        # 执行POC检查
+                        result, message = await asyncio.to_thread(POC_Check, url, CVE_id)
+                        
+                        # 更新任务状态
+                        task.status = 'completed'
+                        task.progress = 100
+                        task.result = json.dumps({
+                            'vulnerable': result,
+                            'message': message
+                        })
+                        
+                        # 如果存在漏洞，创建漏洞记录
+                        if result:
+                            await Vulnerability.create(
+                                task_id=task.id,
+                                vuln_type=CVE_id,
+                                severity='high',
+                                title=f"{CVE_id} 漏洞检测",
+                                description=message,
+                                url=url,
+                                status='open'
+                            )
+                        
+                        await task.save()
+                        logger.info(f"中间件扫描完成: {url} - {CVE_id} - 结果: {result}")
+                        
+            except Exception as e:
+                logger.error(f"中间件扫描执行失败: {str(e)}")
+        
+        background_tasks.add_task(run_middleware_scan)
+        
+        logger.info(f"启动中间件扫描: {url} - {CVE_id}")
+        return APIResponse(code=200, message="扫描任务已启动", data=None)
+    except Exception as e:
+        logger.error(f"启动中间件扫描失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/middleware/scans", response_model=APIResponse)
+async def get_middleware_scans():
+    """
+    获取所有中间件POC扫描任务
+    """
+    try:
+        tasks = await Task.filter(task_type='middleware_poc_scan').order_by('-created_at').all()
+        
+        data = []
+        for task in tasks:
+            scan_data = {
+                'id': task.id,
+                'task_name': task.task_name,
+                'target': task.target,
+                'status': task.status,
+                'progress': task.progress,
+                'created_at': task.created_at.isoformat(),
+                'updated_at': task.updated_at.isoformat()
+            }
+            
+            if task.config:
+                try:
+                    config = json.loads(task.config)
+                    scan_data['cve_id'] = config.get('cve_id')
+                except:
+                    pass
+            
+            if task.result:
+                try:
+                    result = json.loads(task.result)
+                    scan_data['vulnerable'] = result.get('vulnerable', False)
+                    scan_data['message'] = result.get('message', '')
+                except:
+                    pass
+            
+            data.append(scan_data)
+        
+        logger.info(f"获取中间件扫描列表成功，共 {len(data)} 个任务")
+        return APIResponse(code=200, message="获取成功", data=data)
+    except Exception as e:
+        logger.error(f"获取中间件扫描列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/middleware/poc-list", response_model=APIResponse)
+async def get_middleware_poc_list():
+    """
+    获取支持的中间件POC列表
+    """
+    try:
+        poc_list = [
+            {
+                'cve_id': 'CVE-2020-2551',
+                'name': 'WebLogic CVE-2020-2551',
+                'description': 'WebLogic Server 反序列化漏洞',
+                'severity': '高危',
+                'middleware': 'WebLogic'
+            },
+            {
+                'cve_id': 'CVE-2018-2628',
+                'name': 'WebLogic CVE-2018-2628',
+                'description': 'WebLogic Server 反序列化漏洞',
+                'severity': '高危',
+                'middleware': 'WebLogic'
+            },
+            {
+                'cve_id': 'CVE-2018-2894',
+                'name': 'WebLogic CVE-2018-2894',
+                'description': 'WebLogic Server 任意文件上传漏洞',
+                'severity': '高危',
+                'middleware': 'WebLogic'
+            },
+            {
+                'cve_id': 'CVE-2018-7600',
+                'name': 'Drupal CVE-2018-7600',
+                'description': 'Drupal 远程代码执行漏洞',
+                'severity': '高危',
+                'middleware': 'Drupal'
+            },
+            {
+                'cve_id': 'CVE-2017-12615',
+                'name': 'Tomcat CVE-2017-12615',
+                'description': 'Tomcat 任意文件写入漏洞',
+                'severity': '高危',
+                'middleware': 'Tomcat'
+            },
+            {
+                'cve_id': 'CVE-2017-12149',
+                'name': 'JBoss CVE-2017-12149',
+                'description': 'JBoss 反序列化漏洞',
+                'severity': '高危',
+                'middleware': 'JBoss'
+            },
+            {
+                'cve_id': 'CVE-2020-10199',
+                'name': 'Nexus CVE-2020-10199',
+                'description': 'Nexus Repository Manager 远程代码执行漏洞',
+                'severity': '高危',
+                'middleware': 'Nexus'
+            },
+            {
+                'cve_id': 'Struts2-009',
+                'name': 'Struts2 S2-009',
+                'description': 'Struts2 远程代码执行漏洞',
+                'severity': '高危',
+                'middleware': 'Struts2'
+            },
+            {
+                'cve_id': 'Struts2-032',
+                'name': 'Struts2 S2-032',
+                'description': 'Struts2 远程代码执行漏洞',
+                'severity': '高危',
+                'middleware': 'Struts2'
+            }
+        ]
+        
+        logger.info("获取中间件POC列表成功")
+        return APIResponse(code=200, message="获取成功", data=poc_list)
+    except Exception as e:
+        logger.error(f"获取中间件POC列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

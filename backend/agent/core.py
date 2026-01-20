@@ -15,7 +15,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
+#TODO: 完善工具注册表，添加更多实际可用的工具
 # ====================== 工具注册表 ======================
 
 def get_weather(city: str) -> str:

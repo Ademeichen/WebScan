@@ -4,7 +4,7 @@ API 路由总入口
 统一管理所有 API 路由，包括扫描、任务、报告、POC、AWVS、AI 对话和 Agent 等模块。
 """
 from fastapi import APIRouter
-from . import scan, tasks, reports, poc, awvs, settings, ai
+from . import scan, tasks, reports, poc, awvs, settings, ai, kb, poc_gen
 from .agent import router as agent_router
 
 api_router = APIRouter()
