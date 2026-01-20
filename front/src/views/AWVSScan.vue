@@ -122,9 +122,11 @@
                   </td>
                   <td>
                     <div class="vuln-counts">
+                      <span class="vuln-count critical" v-if="scan.current_session.severity_counts.critical > 0">{{ scan.current_session.severity_counts.critical || 0 }}</span>
                       <span class="vuln-count high">{{ scan.current_session.severity_counts.high || 0 }}</span>
                       <span class="vuln-count medium">{{ scan.current_session.severity_counts.medium || 0 }}</span>
                       <span class="vuln-count low">{{ scan.current_session.severity_counts.low || 0 }}</span>
+                      <span class="vuln-count info">{{ scan.current_session.severity_counts.info || 0 }}</span>
                     </div>
                   </td>
                   <td>{{ formatDate(scan.current_session.start_date) }}</td>
@@ -169,8 +171,8 @@
               @click="viewVulnDetail(vuln.vuln_id)"
             >
               <div class="vuln-header">
-                <span :class="['severity-badge', `severity-${vuln.severity.toLowerCase()}`]">
-                  {{ vuln.severity }}
+                <span :class="['severity-badge', `severity-${String(vuln.severity || 'info').toLowerCase()}`]">
+                  {{ vuln.severity || 'Info' }}
                 </span>
                 <h4>{{ vuln.vuln_name }}</h4>
               </div>
@@ -237,15 +239,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 
-const API_BASE = 'http://127.0.0.1:8888/api/awvs'
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api') + '/awvs'
 
 // AWVS 配置
 const awvsConfig = reactive({
   apiUrl: 'https://127.0.0.1:3443'
 })
+
+// 轮询定时器
+const pollingTimer = ref(null)
 
 // 健康状态
 const healthStatus = reactive({
@@ -326,8 +331,10 @@ const createScan = async () => {
 }
 
 // 加载扫描任务列表
-const loadScans = async () => {
-  scans.loading = true
+const loadScans = async (silent = false) => {
+  if (!silent) {
+    scans.loading = true
+  }
   try {
     const response = await axios.get(`${API_BASE}/scans`)
     if (response.data.code === 200) {
@@ -336,7 +343,9 @@ const loadScans = async () => {
   } catch (error) {
     console.error('加载扫描任务失败:', error)
   } finally {
-    scans.loading = false
+    if (!silent) {
+      scans.loading = false
+    }
   }
 }
 
@@ -384,27 +393,42 @@ const closeVulnDetailModal = () => {
   vulnDetail.data = null
 }
 
-// 格式化日期
-const formatDate = (dateStr) => {
-  if (!dateStr) return '-'
-  return dateStr.replace('T', ' ').split('.')[0]
-}
-
-// 获取状态文本
+// 辅助函数
 const getStatusText = (status) => {
   const statusMap = {
-    'processing': '扫描中',
+    'processing': '进行中',
     'completed': '已完成',
     'failed': '失败',
-    'scheduled': '已计划'
+    'aborted': '已中止',
+    'queued': '排队中',
+    'scanning': '扫描中',
+    'submitted': '已提交',
+    'pending': '等待中',
+    'unknown': '未知'
   }
   return statusMap[status] || status
 }
 
-// 组件挂载时加载数据
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleString()
+}
+
+// 生命周期
 onMounted(() => {
   checkHealth()
   loadScans()
+  
+  // 启动轮询，每5秒更新一次状态
+  pollingTimer.value = setInterval(() => {
+    loadScans(true)
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (pollingTimer.value) {
+    clearInterval(pollingTimer.value)
+  }
 })
 </script>
 
@@ -666,6 +690,11 @@ th {
   font-weight: 600;
 }
 
+.vuln-count.critical {
+  background: #391010;
+  color: #ff0000;
+}
+
 .vuln-count.high {
   background: #fff2f0;
   color: #ff4d4f;
@@ -679,6 +708,11 @@ th {
 .vuln-count.low {
   background: #f6ffed;
   color: #52c41a;
+}
+
+.vuln-count.info {
+  background: #e6f7ff;
+  color: #1890ff;
 }
 
 .modal-overlay {
@@ -778,6 +812,11 @@ th {
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.severity-critical {
+  background: #391010;
+  color: #ff0000;
 }
 
 .severity-high {

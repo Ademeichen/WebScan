@@ -290,13 +290,10 @@ export default {
         
         const response = await pocApi.scan(payload)
         
-        if (response.success) {
-          // 将新结果添加到结果列表
-          this.results = [...response.results, ...this.results]
-          
-          alert(`扫描完成！共扫描 ${response.total_scanned} 个POC，发现 ${response.vulnerable_count} 个漏洞`)
+        if (response.code === 200) {
+          alert('扫描任务已创建！请前往"扫描任务"页面查看进度。')
         } else {
-          alert('扫描失败')
+          alert(response.message || '扫描失败')
         }
       } catch (error) {
         console.error('扫描失败:', error)

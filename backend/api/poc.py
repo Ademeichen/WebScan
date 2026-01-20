@@ -5,8 +5,10 @@ POC 漏洞扫描 API 路由
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, HttpUrl
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import asyncio
+import json
+import logging
 from datetime import datetime
 
 from poc import (
@@ -14,6 +16,8 @@ from poc import (
     struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
     cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/poc", tags=["POC扫描"])
 
@@ -33,12 +37,10 @@ class POCScanResult(BaseModel):
     timestamp: str
 
 
-class POCScanResponse(BaseModel):
-    success: bool
-    results: List[POCScanResult]
-    total_scanned: int
-    vulnerable_count: int
-    timestamp: str
+class APIResponse(BaseModel):
+    code: int
+    message: str
+    data: Optional[Any] = None
 
 
 # POC 映射表
@@ -63,81 +65,107 @@ async def get_available_poc_types():
     return list(POC_FUNCTIONS.keys())
 
 
-@router.post("/scan", response_model=POCScanResponse)
+@router.post("/scan", response_model=APIResponse)
 async def scan_poc(request: POCScanRequest):
     """
-    执行 POC 漏洞扫描
+    创建 POC 扫描任务（异步执行）
     """
     try:
-        # 如果未指定 POC 类型，则扫描所有类型
+        from models import Task
+        from task_executor import task_executor
+        
+        # 1. 创建任务记录
         poc_types = request.poc_types if request.poc_types else list(POC_FUNCTIONS.keys())
-        
-        results = []
-        vulnerable_count = 0
-        
-        for poc_type in poc_types:
-            if poc_type not in POC_FUNCTIONS:
-                results.append(POCScanResult(
-                    poc_type=poc_type,
-                    target=request.target,
-                    vulnerable=False,
-                    message=f"未知的 POC 类型: {poc_type}",
-                    timestamp=datetime.now().isoformat()
-                ))
-                continue
+        task_name = f"POC Scan: {request.target}"
+        if len(poc_types) == 1:
+            task_name = f"POC Scan ({poc_types[0]}): {request.target}"
             
-            try:
-                # 执行 POC 扫描
-                poc_func = POC_FUNCTIONS[poc_type]
-                is_vulnerable, message = await asyncio.to_thread(
-                    poc_func, request.target, request.timeout
-                )
-                
-                if is_vulnerable:
-                    vulnerable_count += 1
-                
-                results.append(POCScanResult(
-                    poc_type=poc_type,
-                    target=request.target,
-                    vulnerable=is_vulnerable,
-                    message=message,
-                    timestamp=datetime.now().isoformat()
-                ))
-                
-            except Exception as e:
-                results.append(POCScanResult(
-                    poc_type=poc_type,
-                    target=request.target,
-                    vulnerable=False,
-                    message=f"扫描失败: {str(e)}",
-                    timestamp=datetime.now().isoformat()
-                ))
+        new_task = await Task.create(
+            task_name=task_name,
+            task_type="poc_scan",
+            target=request.target,
+            status="pending",
+            progress=0,
+            config=json.dumps({
+                "poc_types": poc_types,
+                "timeout": request.timeout
+            }),
+            result=None
+        )
         
-        return POCScanResponse(
-            success=True,
-            results=results,
-            total_scanned=len(results),
-            vulnerable_count=vulnerable_count,
-            timestamp=datetime.now().isoformat()
+        # 2. 启动异步任务
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=request.target,
+            scan_config={
+                "poc_types": poc_types,
+                "timeout": request.timeout
+            }
+        ))
+        
+        # 3. 返回任务信息
+        return APIResponse(
+            code=200,
+            message="POC 扫描任务已创建",
+            data={
+                "task_id": new_task.id,
+                "status": "pending",
+                "target": request.target,
+                "poc_count": len(poc_types)
+            }
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"POC 扫描失败: {str(e)}")
+        logger.error(f"创建 POC 扫描任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"创建任务失败: {str(e)}")
 
 
 @router.post("/scan/{poc_type}", response_model=POCScanResult)
 async def scan_single_poc(poc_type: str, target: str, timeout: int = 10):
     """
-    执行单个 POC 漏洞扫描
+    执行单个 POC 漏洞扫描（并保存记录）
     """
     if poc_type not in POC_FUNCTIONS:
         raise HTTPException(status_code=400, detail=f"未知的 POC 类型: {poc_type}")
     
     try:
-        poc_func = POC_FUNCTIONS[poc_type]
-        is_vulnerable, message = await asyncio.to_thread(
-            poc_func, target, timeout
+        from models import Task, POCScanResult as DBPOCResult
+        
+        # 1. 创建任务记录
+        task = await Task.create(
+            task_name=f"Single POC: {poc_type} - {target}",
+            task_type="poc_scan",
+            target=target,
+            status="running",
+            progress=0,
+            config=json.dumps({"poc_types": [poc_type], "timeout": timeout})
         )
+
+        # 2. 执行扫描
+        poc_func = POC_FUNCTIONS[poc_type]
+        loop = asyncio.get_running_loop()
+        is_vulnerable, message = await loop.run_in_executor(
+            None, poc_func, target, timeout
+        )
+        
+        # 3. 保存结果到数据库
+        await DBPOCResult.create(
+            task=task,
+            poc_type=poc_type,
+            target=target,
+            vulnerable=is_vulnerable,
+            message=message,
+            severity="High" # 默认为高危，后续可根据POC信息调整
+        )
+
+        # 4. 更新任务状态
+        task.status = "completed"
+        task.progress = 100
+        task.result = json.dumps({
+            "vulnerable": is_vulnerable,
+            "message": message
+        })
+        await task.save()
         
         return POCScanResult(
             poc_type=poc_type,
@@ -148,6 +176,15 @@ async def scan_single_poc(poc_type: str, target: str, timeout: int = 10):
         )
         
     except Exception as e:
+        logger.error(f"单次 POC 扫描失败: {str(e)}")
+        # 尝试更新任务为失败
+        try:
+            if 'task' in locals():
+                task.status = "failed"
+                task.error_message = str(e)
+                await task.save()
+        except:
+            pass
         raise HTTPException(status_code=500, detail=f"POC 扫描失败: {str(e)}")
 
 

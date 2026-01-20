@@ -37,6 +37,36 @@ class Base(object):
         # 禁用https证书相关警告
         requests.packages.urllib3.disable_warnings()
 
+    def check_connection(self):
+        """
+        检查API连接是否正常
+        :return: (bool, str) - (是否成功, 错误信息)
+        """
+        try:
+            # 尝试访问 info 或 me 接口，这里使用 targets 接口作为简单测试
+            # AWVS通常没有专门的 ping 接口，但可以用 targets 列表 (limit=1) 测试权限
+            response = requests.get(
+                self.targets_api,
+                headers=self.auth_headers,
+                params={'l': 1},
+                verify=False,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                return True, "Connection successful"
+            elif response.status_code == 401:
+                return False, "Authentication failed: Invalid API Key"
+            else:
+                return False, f"Connection failed with status code: {response.status_code}"
+                
+        except requests.exceptions.ConnectionError:
+            return False, f"Network error: Unable to connect to {self.api_base_url}"
+        except requests.exceptions.Timeout:
+            return False, "Connection timeout"
+        except Exception as e:
+            return False, f"Unexpected error: {str(e)}"
+
     @property
     def auth_headers(self):
         auth_headers = {
@@ -48,4 +78,4 @@ class Base(object):
     @property
     def get_logger(self):
         # 使用FastAPI项目的logger
-        return logging.getLogger('awvs')
+        return logging.getLogger('awvs')

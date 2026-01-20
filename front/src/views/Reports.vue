@@ -18,7 +18,7 @@
               <select v-model="selectedTask" class="form-select">
                 <option value="">请选择扫描任务</option>
                 <option v-for="task in scanTasks" :key="task.id" :value="task.id">
-                  {{ task.name }} - {{ task.targetUrl }}
+                  {{ task.task_name }} - {{ task.target }}
                 </option>
               </select>
             </div>
@@ -55,50 +55,6 @@
             </div>
           </div>
           
-          <!-- 报告预览 -->
-          <div class="preview-section">
-            <h4>报告预览</h4>
-            <div class="report-preview">
-              <div class="preview-header">
-                <h3>{{ getPreviewTitle() }}</h3>
-                <div class="preview-meta">
-                  <span>生成时间: {{ new Date().toLocaleString('zh-CN') }}</span>
-                </div>
-              </div>
-              
-              <div class="preview-content">
-                <div v-if="selectedContent.includes('summary')" class="preview-section-item">
-                  <h4>扫描摘要</h4>
-                  <div class="summary-stats">
-                    <span class="stat-item high">高危: 3</span>
-                    <span class="stat-item medium">中危: 8</span>
-                    <span class="stat-item low">低危: 12</span>
-                  </div>
-                </div>
-                
-                <div v-if="selectedContent.includes('vulnerabilities')" class="preview-section-item">
-                  <h4>漏洞列表</h4>
-                  <div class="vuln-preview">
-                    <div class="vuln-item-preview">
-                      <span class="vuln-priority high">高危</span>
-                      <span class="vuln-title">SQL注入漏洞 - 用户登录接口</span>
-                    </div>
-                    <div class="vuln-item-preview">
-                      <span class="vuln-priority medium">中危</span>
-                      <span class="vuln-title">跨站脚本攻击 - 评论功能</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div v-if="selectedContent.includes('recommendations')" class="preview-section-item">
-                  <h4>修复建议</h4>
-                  <p class="recommendation-text">
-                    建议立即修复所有高危漏洞，加强输入验证和输出编码...
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         
         <div class="generator-actions">
@@ -131,16 +87,16 @@
             class="report-item"
           >
             <div class="report-info">
-              <div class="report-name">{{ report.name }}</div>
+              <div class="report-name">{{ report.report_name }}</div>
               <div class="report-meta">
-                <span class="report-task">{{ report.taskName }}</span>
-                <span class="report-date">{{ report.createdAt }}</span>
+                <span class="report-task">{{ report.task_name }}</span>
+                <span class="report-date">{{ report.created_at }}</span>
               </div>
             </div>
             
             <div class="report-format">
-              <span :class="['format-badge', `format-${report.format}`]">
-                {{ report.format.toUpperCase() }}
+              <span :class="['format-badge', `format-${report.report_type}`]">
+                {{ (report.report_type || '').toUpperCase() }}
               </span>
             </div>
             
@@ -173,13 +129,14 @@
 </template>
 
 <script>
-// TODO: 替换为真实的API调用
-import { mockScanTasks, mockReports } from '../data/mockData.js'
+import { reportApi, taskApi } from '../utils/api.js'
 
 export default {
   name: 'Reports',
   data() {
     return {
+      scanTasks: [], // Will be populated from API
+      reports: [],
       selectedTask: '',
       selectedFormat: 'html',
       selectedContent: ['summary', 'vulnerabilities', 'recommendations'],
@@ -195,12 +152,7 @@ export default {
         { value: 'recommendations', label: '修复建议' },
         { value: 'charts', label: '统计图表' },
         { value: 'appendix', label: '技术附录' }
-      ],
-      // TODO: 从API获取扫描任务列表 - GET /api/scan-tasks
-      scanTasks: mockScanTasks,
-      
-      // TODO: 从API获取报告历史 - GET /api/reports
-      reports: mockReports
+      ]
     }
   },
   computed: {
@@ -209,47 +161,90 @@ export default {
     },
     filteredReports() {
       if (!this.historyFilter) return this.reports
-      return this.reports.filter(report => report.format === this.historyFilter)
+      return this.reports.filter(report => report.report_type === this.historyFilter)
     }
   },
+  mounted() {
+    this.fetchTasks()
+    this.fetchReports()
+  },
   methods: {
-    getPreviewTitle() {
-      const task = this.scanTasks.find(t => t.id == this.selectedTask)
-      return task ? `${task.name} - 安全扫描报告` : '安全扫描报告'
+    async fetchTasks() {
+      try {
+        const response = await taskApi.list()
+        if (response.code === 200 && response.data && response.data.tasks) {
+            this.scanTasks = response.data.tasks
+        } else if (Array.isArray(response.data)) {
+            // Fallback if structure is different
+            this.scanTasks = response.data
+        } else {
+            this.scanTasks = []
+        }
+      } catch (error) {
+        console.error('获取任务列表失败:', error)
+      }
     },
-    generateReport() {
+    async fetchReports() {
+      try {
+        const response = await reportApi.list()
+        if (response.code === 200 && response.data && response.data.reports) {
+            this.reports = response.data.reports
+        } else {
+             // Try direct array if format differs
+             this.reports = response.data || []
+        }
+      } catch (error) {
+        console.error('获取报告列表失败:', error)
+        this.reports = []
+      }
+    },
+    async generateReport() {
       if (!this.canGenerate) return
       
-      // 模拟报告生成
       const task = this.scanTasks.find(t => t.id == this.selectedTask)
-      const newReport = {
-        id: Date.now(),
-        name: `${task.name}报告`,
-        taskName: task.name,
-        format: this.selectedFormat,
-        size: this.getRandomSize(),
-        createdAt: new Date().toLocaleString('zh-CN')
+      if (!task) return
+
+      try {
+        const reportData = {
+          task_id: task.id,
+          format: this.selectedFormat,
+          content: this.selectedContent,
+          name: `${task.task_name}报告`
+        }
+        
+        await reportApi.create(reportData)
+        alert('报告生成成功！')
+        this.fetchReports()
+      } catch (error) {
+        console.error('生成报告失败:', error)
+        alert('生成报告失败: ' + error.message)
       }
-      
-      this.reports.unshift(newReport)
-      alert('报告生成成功！')
-    },
-    getRandomSize() {
-      const sizes = ['1.2 MB', '2.5 MB', '3.1 MB', '856 KB', '1.8 MB']
-      return sizes[Math.floor(Math.random() * sizes.length)]
     },
     downloadReport(report) {
       // 实现下载功能
-      console.log('下载报告:', report.name)
-      alert(`开始下载: ${report.name}`)
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+      const url = `${baseUrl}/reports/${report.id}/export?format=${report.report_type}`
+      
+      const link = document.createElement('a')
+      link.href = url
+      link.target = '_blank' // Open in new tab if it doesn't download immediately, though attachment header should force download
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     },
     viewReport(report) {
       // 实现预览功能
-      console.log('预览报告:', report.name)
+      console.log('预览报告:', report.report_name)
     },
-    deleteReport(reportId) {
+    async deleteReport(reportId) {
       if (confirm('确定要删除这个报告吗？')) {
-        this.reports = this.reports.filter(r => r.id !== reportId)
+        try {
+            await reportApi.delete(reportId)
+            this.reports = this.reports.filter(r => r.id !== reportId)
+        } catch (error) {
+            console.error('删除报告失败:', error)
+            alert('删除报告失败')
+        }
       }
     }
   }
@@ -277,15 +272,15 @@ export default {
 }
 
 .generator-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-xl);
+  display: block; /* Removed grid to allow full width since preview is gone */
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  max-width: 800px; /* Limit width for better readability */
+  margin: 0 auto; /* Center the form */
 }
 
 /* 格式选择标签 */
@@ -366,122 +361,15 @@ export default {
 }
 
 .checkbox-input:checked + .checkbox-custom::after {
-  content: '✓';
+  content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 10px;
-  font-weight: bold;
-}
-
-/* 报告预览 */
-.preview-section h4 {
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-md);
-}
-
-.report-preview {
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: var(--spacing-lg);
-  background-color: white;
-  min-height: 300px;
-}
-
-.preview-header {
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-}
-
-.preview-header h3 {
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
-}
-
-.preview-meta {
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-
-.preview-section-item {
-  margin-bottom: var(--spacing-lg);
-}
-
-.preview-section-item h4 {
-  color: var(--text-primary);
-  font-size: 14px;
-  margin-bottom: var(--spacing-sm);
-}
-
-.summary-stats {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.stat-item {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius);
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.stat-item.high {
-  background-color: rgba(231, 76, 60, 0.1);
-  color: var(--high-risk);
-}
-
-.stat-item.medium {
-  background-color: rgba(245, 166, 35, 0.1);
-  color: var(--medium-risk);
-}
-
-.stat-item.low {
-  background-color: rgba(241, 196, 15, 0.1);
-  color: var(--low-risk);
-}
-
-.vuln-preview {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.vuln-item-preview {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xs);
-  font-size: 12px;
-}
-
-.vuln-priority {
-  padding: 2px var(--spacing-xs);
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: bold;
-}
-
-.vuln-priority.high {
-  background-color: var(--high-risk);
-  color: white;
-}
-
-.vuln-priority.medium {
-  background-color: var(--medium-risk);
-  color: white;
-}
-
-.vuln-title {
-  color: var(--text-primary);
-}
-
-.recommendation-text {
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.4;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .generator-actions {

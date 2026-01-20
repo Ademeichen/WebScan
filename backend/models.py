@@ -145,6 +145,7 @@ class Vulnerability(Model):
     evidence = fields.TextField(null=True, description="漏洞证据（截图/响应数据等）")
     remediation = fields.TextField(null=True, description="修复建议")
     status = fields.CharField(max_length=50, default="open", description="状态：open, fixed, ignored, false_positive")
+    source_id = fields.CharField(max_length=100, null=True, description="来源ID (如AWVS vuln_id)")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
     
@@ -505,3 +506,30 @@ class AgentResult(Model):
     def has_error(self) -> bool:
         """检查是否有错误"""
         return self.error_message is not None
+
+
+class VulnerabilityKB(Model):
+    """漏洞知识库表"""
+    
+    id = fields.IntField(pk=True, description="知识库ID")
+    cve_id = fields.CharField(max_length=50, unique=True, null=True, description="CVE 编号")
+    name = fields.CharField(max_length=500, description="漏洞名称")
+    description = fields.TextField(null=True, description="漏洞描述")
+    severity = fields.CharField(max_length=20, null=True, description="严重程度")
+    cvss_score = fields.FloatField(null=True, description="CVSS 评分")
+    affected_product = fields.TextField(null=True, description="影响组件/产品")
+    solution = fields.TextField(null=True, description="修复建议")
+    references = fields.TextField(null=True, description="参考链接（JSON/List）")
+    poc_code = fields.TextField(null=True, description="POC 代码")
+    has_poc = fields.BooleanField(default=False, description="是否有 POC")
+    source = fields.CharField(max_length=50, default="manual", description="来源：seebug, exploit-db, manual")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
+    
+    class Meta:
+        table = "vulnerability_kb"
+        table_description = "漏洞知识库表"
+        ordering = ["-updated_at"]
+    
+    def __str__(self):
+        return f"{self.cve_id or 'No CVE'} - {self.name}"

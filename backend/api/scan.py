@@ -1,11 +1,13 @@
 """
 扫描功能相关的 API 路由
-整合原有的 plugins 功能模块
+整合原有的 plugins 功能模块，统一使用异步任务执行
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, HttpUrl
 from typing import Optional, List, Dict, Any
 import logging
+import asyncio
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -46,25 +48,35 @@ class APIResponse(BaseModel):
 @router.post("/port-scan", response_model=APIResponse)
 async def port_scan(request: PortScanRequest):
     """
-    端口扫描
+    端口扫描 (异步)
     """
     try:
-        from plugins.portscan.portscan import ScanPort
         from plugins.common.common import check_ip
         
         if not check_ip(request.ip):
             raise HTTPException(status_code=400, detail="请填写正确的IP地址")
         
-        scanner = ScanPort(request.ip)
-        if scanner.run_scan():
-            result = scanner.get_results()
-        else:
-            result = []
-        logger.info(f"端口扫描完成: {request.ip}")
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"Port Scan: {request.ip}",
+            task_type='scan_port',
+            target=request.ip,
+            status="pending",
+            progress=0,
+            config=json.dumps({'ports': request.ports}),
+            result=None
+        )
         
-        return APIResponse(code=200, message="扫描成功", data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=request.ip,
+            scan_config={'ports': request.ports}
+        ))
+        
+        return APIResponse(code=200, message="端口扫描任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"端口扫描失败: {str(e)}")
+        logger.error(f"端口扫描启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -72,22 +84,36 @@ async def port_scan(request: PortScanRequest):
 @router.post("/info-leak", response_model=APIResponse)
 async def info_leak(request: URLRequest):
     """
-    信息泄露检测
+    信息泄露检测 (异步)
     """
     try:
-        from plugins.infoleak.infoleak import get_infoleak
         from plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
-        result = get_infoleak(url)
-        logger.info(f"信息泄露检测完成: {url}")
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"Info Leak: {url}",
+            task_type='scan_infoleak',
+            target=url,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        return APIResponse(code=200, message="检测成功", data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=url,
+            scan_config={}
+        ))
+        
+        return APIResponse(code=200, message="信息泄露检测任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"信息泄露检测失败: {str(e)}")
+        logger.error(f"信息泄露检测启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -95,23 +121,35 @@ async def info_leak(request: URLRequest):
 @router.post("/web-side", response_model=APIResponse)
 async def web_side_scan(request: IPRequest):
     """
-    获取旁站信息
+    获取旁站信息 (异步)
     """
     try:
-        from plugins.webside.webside import get_side_info
         from plugins.common.common import check_ip
         
         if not check_ip(request.ip):
             raise HTTPException(status_code=400, detail="请填写正确的IP地址")
         
-        result = get_side_info(request.ip)
-        if not result:
-            return APIResponse(code=400, message="未找到旁站信息", data=None)
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"Web Side: {request.ip}",
+            task_type='scan_webside',
+            target=request.ip,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        logger.info(f"旁站扫描完成: {request.ip}")
-        return APIResponse(code=200, message="扫描成功", data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=request.ip,
+            scan_config={}
+        ))
+        
+        return APIResponse(code=200, message="旁站扫描任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"旁站扫描失败: {str(e)}")
+        logger.error(f"旁站扫描启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -119,22 +157,36 @@ async def web_side_scan(request: IPRequest):
 @router.post("/baseinfo", response_model=APIResponse)
 async def get_base_info(request: URLRequest):
     """
-    获取网站基本信息
+    获取网站基本信息 (异步)
     """
     try:
-        from plugins.baseinfo.baseinfo import getbaseinfo
         from plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
-        result = getbaseinfo(url)
-        logger.info(f"网站基本信息获取完成: {url}")
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"Base Info: {url}",
+            task_type='scan_baseinfo',
+            target=url,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        return APIResponse(code=result.get('code', 200), message=result.get('msg', '成功'), data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=url,
+            scan_config={}
+        ))
+        
+        return APIResponse(code=200, message="网站基本信息获取任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"获取网站基本信息失败: {str(e)}")
+        logger.error(f"获取网站基本信息启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -142,22 +194,36 @@ async def get_base_info(request: URLRequest):
 @router.post("/web-weight", response_model=APIResponse)
 async def get_web_weight(request: URLRequest):
     """
-    获取网站权重
+    获取网站权重 (异步)
     """
     try:
-        from plugins.webweight.webweight import get_web_weight
         from plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
-        result = get_web_weight(url)
-        logger.info(f"网站权重获取完成: {url}")
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"Web Weight: {url}",
+            task_type='scan_webweight',
+            target=url,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        return APIResponse(code=200, message="获取成功", data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=url,
+            scan_config={}
+        ))
+        
+        return APIResponse(code=200, message="网站权重获取任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"获取网站权重失败: {str(e)}")
+        logger.error(f"获取网站权重启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -165,21 +231,35 @@ async def get_web_weight(request: URLRequest):
 @router.post("/ip-locating", response_model=APIResponse)
 async def ip_locating(request: IPRequest):
     """
-    IP定位
+    IP定位 (异步)
     """
     try:
-        from plugins.iplocating.iplocating import get_locating
         from plugins.common.common import check_ip
         
         if not check_ip(request.ip):
             raise HTTPException(status_code=400, detail="请填写正确的IP地址")
         
-        result = get_locating(request.ip)
-        logger.info(f"IP定位完成: {request.ip}")
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"IP Locating: {request.ip}",
+            task_type='scan_iplocating',
+            target=request.ip,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        return APIResponse(code=200, message="定位成功", data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=request.ip,
+            scan_config={}
+        ))
+        
+        return APIResponse(code=200, message="IP定位任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"IP定位失败: {str(e)}")
+        logger.error(f"IP定位启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -187,26 +267,36 @@ async def ip_locating(request: IPRequest):
 @router.post("/cdn-check", response_model=APIResponse)
 async def cdn_check(request: URLRequest):
     """
-    判断是否使用CDN
+    CDN检测 (异步)
     """
     try:
-        from plugins.cdnexist.cdnexist import iscdn
         from plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
-        result_str = iscdn(url)
-        if result_str == '目标站点不可访问':
-            return APIResponse(code=200, message="网络错误", data=result_str)
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"CDN Check: {url}",
+            task_type='scan_cdn',
+            target=url,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        result = "存在CDN（源IP可能不正确）" if result_str else "无CDN"
-        logger.info(f"CDN检测完成: {url}")
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=url,
+            scan_config={}
+        ))
         
-        return APIResponse(code=200, message="检测成功", data=result)
+        return APIResponse(code=200, message="CDN检测任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"CDN检测失败: {str(e)}")
+        logger.error(f"CDN检测启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -214,22 +304,36 @@ async def cdn_check(request: URLRequest):
 @router.post("/waf-check", response_model=APIResponse)
 async def waf_check(request: URLRequest):
     """
-    判断是否使用WAF
+    WAF检测 (异步)
     """
     try:
-        from plugins.waf.waf import getwaf
         from plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
-        result = getwaf(url)
-        logger.info(f"WAF检测完成: {url}")
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"WAF Check: {url}",
+            task_type='scan_waf',
+            target=url,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        return APIResponse(code=200, message="检测成功", data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=url,
+            scan_config={}
+        ))
+        
+        return APIResponse(code=200, message="WAF检测任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"WAF检测失败: {str(e)}")
+        logger.error(f"WAF检测启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -237,22 +341,36 @@ async def waf_check(request: URLRequest):
 @router.post("/what-cms", response_model=APIResponse)
 async def what_cms(request: URLRequest):
     """
-    CMS指纹识别
+    CMS指纹识别 (异步)
     """
     try:
-        from plugins.whatcms.whatcms import getwhatcms
         from plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
-        result = getwhatcms(url)
-        logger.info(f"CMS指纹识别完成: {url}")
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"CMS Detect: {url}",
+            task_type='scan_cms',
+            target=url,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        return APIResponse(code=200, message="识别成功", data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=url,
+            scan_config={}
+        ))
+        
+        return APIResponse(code=200, message="CMS指纹识别任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"CMS指纹识别失败: {str(e)}")
+        logger.error(f"CMS指纹识别启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -260,20 +378,33 @@ async def what_cms(request: URLRequest):
 @router.post("/subdomain", response_model=APIResponse)
 async def subdomain_scan(request: SubdomainRequest):
     """
-    子域名扫描
+    子域名扫描 (异步)
     """
     try:
-        from plugins.subdomain.subdomain import get_subdomain
-        
         if not request.domain:
             raise HTTPException(status_code=400, detail="请填写正确的域名")
         
-        result = get_subdomain(request.domain)
-        logger.info(f"子域名扫描完成: {request.domain}, 发现 {len(result)} 个子域名")
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"Subdomain: {request.domain}",
+            task_type='scan_subdomain',
+            target=request.domain,
+            status="pending",
+            progress=0,
+            config=json.dumps({'deep_scan': request.deep_scan}),
+            result=None
+        )
         
-        return APIResponse(code=200, message="扫描成功", data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=request.domain,
+            scan_config={'deep_scan': request.deep_scan}
+        ))
+        
+        return APIResponse(code=200, message="子域名扫描任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"子域名扫描失败: {str(e)}")
+        logger.error(f"子域名扫描启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -281,23 +412,36 @@ async def subdomain_scan(request: SubdomainRequest):
 @router.post("/dir-scan", response_model=APIResponse)
 async def dir_scan(request: URLRequest):
     """
-    目录扫描
+    目录扫描 (异步)
     """
     try:
-        from dirsearcch.dir_scanner import DirScanner
         from plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
-        scanner = DirScanner(url)
-        result = scanner.scan()
-        logger.info(f"目录扫描完成: {url}")
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"Dir Scan: {url}",
+            task_type='scan_dir',
+            target=url,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        return APIResponse(code=200, message="扫描成功", data=result)
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=url,
+            scan_config={}
+        ))
+        
+        return APIResponse(code=200, message="目录扫描任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"目录扫描失败: {str(e)}")
+        logger.error(f"目录扫描启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -305,7 +449,7 @@ async def dir_scan(request: URLRequest):
 @router.post("/comprehensive", response_model=APIResponse)
 async def comprehensive_scan(request: URLRequest):
     """
-    综合扫描（执行多个检测项）
+    综合扫描 (异步)
     """
     try:
         from plugins.common.common import check_url
@@ -314,37 +458,25 @@ async def comprehensive_scan(request: URLRequest):
         if not url:
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
-        results = {}
+        from models import Task
+        new_task = await Task.create(
+            task_name=f"Comprehensive: {url}",
+            task_type='scan_comprehensive',
+            target=url,
+            status="pending",
+            progress=0,
+            config=json.dumps({}),
+            result=None
+        )
         
-        # 执行各项检测
-        try:
-            from plugins.baseinfo.baseinfo import getbaseinfo
-            results['baseinfo'] = getbaseinfo(url)
-        except Exception as e:
-            results['baseinfo'] = {'error': str(e)}
+        from task_executor import task_executor
+        asyncio.create_task(task_executor.start_task(
+            task_id=new_task.id,
+            target=url,
+            scan_config={}
+        ))
         
-        try:
-            from plugins.whatcms.whatcms import getwhatcms
-            results['cms'] = getwhatcms(url)
-        except Exception as e:
-            results['cms'] = {'error': str(e)}
-        
-        try:
-            from plugins.cdnexist.cdnexist import iscdn
-            results['cdn'] = "存在CDN" if iscdn(url) else "无CDN"
-        except Exception as e:
-            results['cdn'] = {'error': str(e)}
-        
-        try:
-            from plugins.waf.waf import getwaf
-            results['waf'] = getwaf(url)
-        except Exception as e:
-            results['waf'] = {'error': str(e)}
-        
-        logger.info(f"综合扫描完成: {url}")
-        return APIResponse(code=200, message="综合扫描完成", data=results)
+        return APIResponse(code=200, message="综合扫描任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(f"综合扫描失败: {str(e)}")
+        logger.error(f"综合扫描启动失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-

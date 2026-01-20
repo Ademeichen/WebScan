@@ -3,7 +3,7 @@
  */
 
 // API 基础 URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8888/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 /**
  * API 请求封装
@@ -186,7 +186,7 @@ export const settingsApi = {
   getSystemInfo: () => apiClient.get('/settings/system-info'),
   
   // 获取统计信息
-  getStatistics: () => apiClient.get('/settings/statistics')
+  getStatistics: (params) => apiClient.get('/settings/statistics', params)
 }
 
 /**

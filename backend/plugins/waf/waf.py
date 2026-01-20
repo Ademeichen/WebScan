@@ -98,32 +98,65 @@ WAF_RULES = (
     'KeyCDN|headers|Server|KeyCDN',
     'Reblaze Firewall|headers|Set-cookie|rbzid=\w+',
     'Distil Firewall|headers|X-Distil-CS|.+',
-    'SDWAF|headers|X-Powered-By|SDWAF',
-    'NGENIX CDN|headers|X-NGENIX-Cache|HIT',
-    'FortiWeb|headers|Server|FortiWeb.*',
-    'Naxsi|headers|X-Data-Origin|naxsi-waf',
-    'IBM DataPower|headers|X-Backside-Transport|\w+',
-    'Cisco ACE XML Gateway|headers|Server|ACE\sXML\sGateway',
-    'AWS WAF|headers|Server|awselb.*',
-    'PowerCDN|headers|Server|PowerCDN',
-    'Profense|headers|Server|profense',
-    'CompState|headers|X-SL-CompState|.+',
-    'West263CDN|headers|X-Cache|.+WT263CDN-.+',
-    'DenyALL WAF|content|content|Condition Intercepted',
-    'yunsuo|content|content|<img class="yunsuologo"',
-    'aesecure|content|content|aesecure_denied.png',
-    'aliyun|content|content|errors.aliyun.com',
-    'aliyun|headers|Set-Cookie|aliyungf_tc=',
-    'Palo Alto Firewall|content|content|has been blocked in accordance with company policy',
-    'PerimeterX Firewall|content|content|https://www.perimeterx.com/whywasiblocked',
-    'Neusoft SEnginx|content|content|SENGINX-ROBOT-MITIGATION',
-    'SiteLock TrueShield|content|content|sitelock-site-verification',
-    'SonicWall|content|content|nsa_banner',
-    'SonicWall|content|content|Web Site Blocked',
-    'Sophos UTM Firewall|content|content|Powered by UTM Web Protection',
-    'Unknown FireWall|content|content|firewall',
-    '知道创宇云安全WAF|content|content|知道创宇云安全'
+    'ZSWS|headers|Server|ZSWS',
+    'KnownSec|headers|Server|KS-WAF',
+    'KnownSec|headers|Server|KnownSec-WAF',
 )
+
+
+def getwaf(url: str, headers: Dict[str, str] = None, content: str = None) -> Optional[str]:
+    """
+    检测 WAF
+    :param url: 目标 URL
+    :param headers: 响应头 (字典)
+    :param content: 响应内容 (字符串)
+    :return: WAF 名称或 None
+    """
+    try:
+        # 如果没有提供 headers 和 content，则主动发起请求
+        if headers is None and content is None:
+            try:
+                resp = requests.get(url, timeout=10, verify=False, headers={'User-Agent': 'Mozilla/5.0'})
+                headers = resp.headers
+                content = resp.text
+            except Exception as e:
+                logging.debug(f"WAF detect request failed: {e}")
+                return None
+
+        # 确保 headers 是字典
+        if not isinstance(headers, dict) and hasattr(headers, 'items'):
+             headers = dict(headers)
+        
+        # 遍历规则进行匹配
+        for rule in WAF_RULES:
+            try:
+                # rule format: name|match_location|key|regex
+                parts = rule.split('|')
+                if len(parts) != 4:
+                    continue
+                
+                waf_name, match_location, key, regex = parts
+                
+                if match_location == 'headers':
+                    # 检查 headers
+                    if headers and key in headers:
+                        if re.search(regex, str(headers[key]), re.I):
+                            return waf_name
+                    # 有些 header key 可能是大小写敏感的，或者 requests headers 是不敏感的
+                    # requests headers 是 CaseInsensitiveDict，所以直接 key in headers 应该可以
+                    # 但为了保险，可以遍历 headers
+                    
+                elif match_location == 'content':
+                    # 检查 content
+                    if content and re.search(regex, content, re.I):
+                        return waf_name
+            except Exception:
+                continue
+                
+        return None
+    except Exception as e:
+        logging.error(f"WAF detection error: {e}")
+        return None
 
 # 恶意Payload（触发WAF的试探参数）
 DETECT_PAYLOAD = r'/?id=1%27&d=2"&y=3%27or%27select%20*%20from%20users%20limit%200,1&b=<script>alert(1)</script>&o=eval&yy=%0a%0d'

@@ -17,3 +17,6 @@ api_router.include_router(awvs.router, prefix="/awvs", tags=["AWVS漏洞扫描"]
 api_router.include_router(settings.router, prefix="/settings", tags=["系统设置"])
 api_router.include_router(ai.router, prefix="/ai", tags=["AI对话"])
 api_router.include_router(agent_router)
+api_router.include_router(kb.router, prefix="/kb", tags=["漏洞知识库"])
+api_router.include_router(poc_gen.router, prefix="/poc-gen", tags=["POC智能生成"])
+

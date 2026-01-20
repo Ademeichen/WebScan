@@ -29,6 +29,8 @@ def poc(url, timeout=10):
     global g_bPipe
     global result_data
     try:
+        if not url.startswith('http'):
+            url = 'http://' + url
         oH=urlparse(url)
         a=oH.netloc.split(':')
         port=80
@@ -52,4 +54,4 @@ if __name__=='__main__':
     print(poc('http://127.0.0.1:7001'))
     end = datetime.datetime.now()
     print(end - start)
-
+
