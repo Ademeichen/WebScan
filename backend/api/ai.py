@@ -2,13 +2,13 @@
 AI 对话 API 路由
 
 提供 AI 对话功能，支持创建对话实例、发送消息、获取历史等。
-使用 LangChain 和阿里云通义千问模型实现智能对话。
+使用 LangChain 和 OpenAI GPT-3.5-turbo 模型实现智能对话。
+使用 ConversationSummaryMemory 进行对话总结和记忆管理。
 """
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, HTTPException
+from typing import Dict, Any, Optional
 from uuid import UUID, uuid4
 from tortoise.expressions import Q
-import json
 from datetime import datetime
 import logging
 
@@ -16,25 +16,23 @@ from models import AIChatInstance, AIChatMessage
 from config import settings
 
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_classic.memory import ConversationBufferMemory
-from langchain_classic.chains import LLMChain
-from langchain_classic.prompts import PromptTemplate
+from langchain.memory import ConversationSummaryMemory
+from langchain.chains import ConversationChain
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["AI对话"])
 
-conversation_memory_cache: Dict[str, ConversationBufferMemory] = {}
-
+#TODO: 优化模型参数
 llm = ChatOpenAI(
-    model="qwen-plus",
+    model="gpt-3.5-turbo",
     temperature=0.7,
-    openai_api_key=settings.QWEN_API_KEY or "sk-55446596eada420db8bf883864458e9f",
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    openai_api_key=settings.OPENAI_API_KEY,
     streaming=True
 )
 
+#TODO: 优化系统提示词
 SYSTEM_PROMPT = """
 你是一个专业的Web安全顾问，名为WebScan AI。你的任务是帮助用户解决Web安全相关问题，包括漏洞分析、安全加固建议、扫描报告解读等。
 
@@ -45,6 +43,57 @@ SYSTEM_PROMPT = """
 4. 保持友好、专业的语气
 5. 当用户提供扫描报告或漏洞信息时，进行深入分析
 """
+
+conversation_memory_cache: Dict[str, ConversationSummaryMemory] = {}
+
+
+async def get_or_create_memory(chat_instance_id: UUID) -> ConversationSummaryMemory:
+    """
+    获取或创建对话记忆
+    
+    Args:
+        chat_instance_id: 对话实例ID
+        
+    Returns:
+        ConversationSummaryMemory: 对话记忆对象
+    """
+    chat_id = str(chat_instance_id)
+    
+    if chat_id not in conversation_memory_cache:
+        memory = ConversationSummaryMemory(
+            llm=llm,
+            return_messages=True,
+            max_token_limit=2000
+        )
+        
+        history_messages = await AIChatMessage.filter(
+            chat_instance_id=chat_instance_id
+        ).order_by("created_at")
+        
+        for msg in history_messages:
+            if msg.role == "user":
+                memory.chat_memory.add_user_message(msg.content)
+            elif msg.role == "assistant":
+                memory.chat_memory.add_ai_message(msg.content)
+        
+        conversation_memory_cache[chat_id] = memory
+        logger.info(f"✅ 创建对话记忆: {chat_id}")
+    
+    return conversation_memory_cache[chat_id]
+
+
+async def clear_memory(chat_instance_id: UUID):
+    """
+    清除对话记忆
+    
+    Args:
+        chat_instance_id: 对话实例ID
+    """
+    chat_id = str(chat_instance_id)
+    if chat_id in conversation_memory_cache:
+        del conversation_memory_cache[chat_id]
+        logger.info(f"✅ 清除对话记忆: {chat_id}")
+
 
 @router.post("/chat/instances", response_model=Dict[str, Any])
 async def create_chat_instance(
@@ -72,11 +121,7 @@ async def create_chat_instance(
             status="active"
         )
         
-        conversation_memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True
-        )
-        conversation_memory_cache[str(chat_instance.id)] = conversation_memory
+        await get_or_create_memory(chat_instance.id)
         
         logger.info(f"✅ 创建对话实例: {chat_instance.id}")
         
@@ -105,16 +150,23 @@ async def list_chat_instances(
 ):
     """
     列出对话实例
+    
+    Args:
+        user_id: 用户ID
+        status: 对话状态
+        page: 页码
+        page_size: 每页数量
+        
+    Returns:
+        Dict: 包含对话实例列表的响应
     """
     try:
-        # 构建查询条件
         query = Q()
         if user_id:
             query &= Q(user_id=user_id)
         if status:
             query &= Q(status=status)
         
-        # 查询对话实例
         instances = await AIChatInstance.filter(query) \
             .order_by("-updated_at") \
             .offset((page - 1) * page_size) \
@@ -122,10 +174,8 @@ async def list_chat_instances(
         
         total = await AIChatInstance.filter(query).count()
         
-        # 转换为响应格式
         instance_list = []
         for instance in instances:
-            # 获取最新消息
             latest_message = await AIChatMessage.filter(
                 chat_instance_id=instance.id
             ).order_by("-created_at").first()
@@ -156,6 +206,7 @@ async def list_chat_instances(
             }
         }
     except Exception as e:
+        logger.error(f"❌ 查询对话实例失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"查询对话实例失败: {str(e)}")
 
 
@@ -163,13 +214,18 @@ async def list_chat_instances(
 async def get_chat_instance(chat_instance_id: UUID):
     """
     获取对话实例详情
+    
+    Args:
+        chat_instance_id: 对话实例ID
+        
+    Returns:
+        Dict: 包含对话实例和消息列表的响应
     """
     try:
         chat_instance = await AIChatInstance.get_or_none(id=chat_instance_id)
         if not chat_instance:
             raise HTTPException(status_code=404, detail="对话实例不存在")
         
-        # 获取消息列表
         messages = await AIChatMessage.filter(chat_instance_id=chat_instance_id) \
             .order_by("created_at")
         
@@ -202,6 +258,7 @@ async def get_chat_instance(chat_instance_id: UUID):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ 查询对话实例失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"查询对话实例失败: {str(e)}")
 
 
@@ -209,19 +266,22 @@ async def get_chat_instance(chat_instance_id: UUID):
 async def delete_chat_instance(chat_instance_id: UUID):
     """
     删除对话实例
+    
+    Args:
+        chat_instance_id: 对话实例ID
+        
+    Returns:
+        Dict: 删除结果
     """
     try:
         chat_instance = await AIChatInstance.get_or_none(id=chat_instance_id)
         if not chat_instance:
             raise HTTPException(status_code=404, detail="对话实例不存在")
         
-        # 删除对话实例及其消息
         await AIChatMessage.filter(chat_instance_id=chat_instance_id).delete()
         await chat_instance.delete()
         
-        # 从缓存中删除
-        if str(chat_instance_id) in conversation_memory_cache:
-            del conversation_memory_cache[str(chat_instance_id)]
+        await clear_memory(chat_instance_id)
         
         return {
             "code": 200,
@@ -230,10 +290,8 @@ async def delete_chat_instance(chat_instance_id: UUID):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ 删除对话实例失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"删除对话实例失败: {str(e)}")
-
-
-from pydantic import BaseModel
 
 
 class MessageRequest(BaseModel):
@@ -275,49 +333,29 @@ async def send_message(
             message_type=request.message_type
         )
         
-        if str(chat_instance_id) not in conversation_memory_cache:
-            conversation_memory = ConversationBufferMemory(
-                memory_key="chat_history",
-                return_messages=True
-            )
-            
-            history_messages = await AIChatMessage.filter(
-                chat_instance_id=chat_instance_id
-            ).order_by("created_at")
-            
-            for msg in history_messages:
-                if msg.role == "user":
-                    conversation_memory.chat_memory.add_user_message(msg.content)
-                elif msg.role == "assistant":
-                    conversation_memory.chat_memory.add_ai_message(msg.content)
-            
-            conversation_memory_cache[str(chat_instance_id)] = conversation_memory
+        memory = await get_or_create_memory(chat_instance_id)
         
-        conversation_memory = conversation_memory_cache[str(chat_instance_id)]
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", SYSTEM_PROMPT),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{input}")
+        ])
         
-        prompt = PromptTemplate(
-            input_variables=["chat_history", "human_input"],
-            template="""{chat_history}
-
-Human: {human_input}
-Assistant:"""
-        )
-        
-        conversation = LLMChain(
+        conversation = ConversationChain(
             llm=llm,
-            memory=conversation_memory,
-            prompt=prompt
+            memory=memory,
+            prompt=prompt,
+            verbose=False
         )
         
-        response_content = await conversation.arun(human_input=request.content)
-        
-        conversation_memory.chat_memory.add_user_message(request.content)
-        conversation_memory.chat_memory.add_ai_message(response_content)
+        response_content = await conversation.ainvoke(
+            {"input": request.content}
+        )
         
         ai_message = await AIChatMessage.create(
             chat_instance_id=chat_instance_id,
             role="assistant",
-            content=response_content,
+            content=response_content["response"],
             message_type="text"
         )
         
@@ -359,14 +397,20 @@ async def get_chat_messages(
 ):
     """
     获取对话消息历史
+    
+    Args:
+        chat_instance_id: 对话实例ID
+        page: 页码
+        page_size: 每页数量
+        
+    Returns:
+        Dict: 包含消息列表的响应
     """
     try:
-        # 检查对话实例是否存在
         chat_instance = await AIChatInstance.get_or_none(id=chat_instance_id)
         if not chat_instance:
             raise HTTPException(status_code=404, detail="对话实例不存在")
         
-        # 查询消息
         messages = await AIChatMessage.filter(chat_instance_id=chat_instance_id) \
             .order_by("created_at") \
             .offset((page - 1) * page_size) \
@@ -374,16 +418,16 @@ async def get_chat_messages(
         
         total = await AIChatMessage.filter(chat_instance_id=chat_instance_id).count()
         
-        # 转换为响应格式
-        message_list = []
-        for message in messages:
-            message_list.append({
+        message_list = [
+            {
                 "id": message.id,
                 "role": message.role,
                 "content": message.content,
                 "message_type": message.message_type,
                 "created_at": message.created_at
-            })
+            }
+            for message in messages
+        ]
         
         return {
             "code": 200,
@@ -399,6 +443,7 @@ async def get_chat_messages(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ 获取消息历史失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"获取消息历史失败: {str(e)}")
 
 
@@ -406,19 +451,22 @@ async def get_chat_messages(
 async def close_chat_instance(chat_instance_id: UUID):
     """
     关闭对话实例
+    
+    Args:
+        chat_instance_id: 对话实例ID
+        
+    Returns:
+        Dict: 关闭结果
     """
     try:
         chat_instance = await AIChatInstance.get_or_none(id=chat_instance_id)
         if not chat_instance:
             raise HTTPException(status_code=404, detail="对话实例不存在")
         
-        # 更新状态
         chat_instance.status = "closed"
         await chat_instance.save()
         
-        # 从缓存中删除
-        if str(chat_instance_id) in conversation_memory_cache:
-            del conversation_memory_cache[str(chat_instance_id)]
+        await clear_memory(chat_instance_id)
         
         return {
             "code": 200,
@@ -427,4 +475,5 @@ async def close_chat_instance(chat_instance_id: UUID):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ 关闭对话实例失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"关闭对话实例失败: {str(e)}")
