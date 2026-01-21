@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     
     # ====================== AWVS 配置 ======================
     AWVS_API_URL: str = "https://127.0.0.1:3443"
-    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c456ea4387ded4bd9b8a4802bdfad8c7f"
+    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c986f9835bbf243cb9b33aee376ee7da9"
     
     # ====================== 代码执行配置 ======================
     # 代码执行工作空间路径

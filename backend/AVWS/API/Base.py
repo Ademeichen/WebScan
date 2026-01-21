@@ -79,3 +79,11 @@ class Base(object):
     def get_logger(self):
         # 使用FastAPI项目的logger
         return logging.getLogger('awvs')
+
+if __name__ == '__main__':
+    import sys
+    import os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
+    from config import settings
+    base = Base(settings.AWVS_API_URL, settings.AWVS_API_KEY)
+    print(base.check_connection())
