@@ -1,3 +1,15 @@
+"""
+漏洞知识库 API 路由
+
+提供漏洞知识库管理功能，支持从外部数据源同步漏洞信息。
+支持 Seebug 和 Exploit-DB 等数据源。
+
+主要功能：
+- 漏洞知识库列表查询
+- 漏洞详情查询
+- 从外部数据源同步漏洞信息
+- 支持关键词搜索和过滤
+"""
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
@@ -10,6 +22,22 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 class VulnerabilityKBResponse(BaseModel):
+    """
+    漏洞知识库响应模型
+    
+    Attributes:
+        id: 漏洞 ID
+        cve_id: CVE 编号
+        name: 漏洞名称
+        description: 漏洞描述
+        severity: 严重程度
+        cvss_score: CVSS 评分
+        affected_product: 受影响产品
+        solution: 解决方案
+        has_poc: 是否有 POC
+        source: 数据源
+        created_at: 创建时间
+    """
     id: int
     cve_id: Optional[str]
     name: str
@@ -26,6 +54,13 @@ class VulnerabilityKBResponse(BaseModel):
         from_attributes = True
 
 class SyncResponse(BaseModel):
+    """
+    同步响应模型
+    
+    Attributes:
+        message: 同步消息
+        count: 同步的漏洞数量
+    """
     message: str
     count: int
 
@@ -39,6 +74,28 @@ async def list_kb_vulnerabilities(
 ):
     """
     获取漏洞知识库列表
+    
+    支持按关键词、数据源、是否有 POC 等条件过滤，以及分页查询。
+    
+    Args:
+        page: 页码，从 1 开始
+        page_size: 每页数量
+        keyword: 搜索关键词，匹配名称、CVE ID 或描述
+        source: 数据源过滤，如 'seebug', 'exploit-db'
+        has_poc: 是否有 POC，true/false
+        
+    Returns:
+        Dict: 包含漏洞列表和分页信息的响应，结构如下:
+            {
+                "total": 总数,
+                "page": 当前页,
+                "page_size": 每页数量,
+                "items": [...]
+            }
+        
+    Examples:
+        >>> 搜索 SQL 注入相关漏洞
+        >>> GET /kb/vulnerabilities?keyword=SQL%20Injection
     """
     query = VulnerabilityKB.all()
     
@@ -54,7 +111,7 @@ async def list_kb_vulnerabilities(
     total = await query.count()
     items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-updated_at")
     
-    # Format dates
+    # 格式化日期
     formatted_items = []
     for item in items:
         item_dict = dict(item)
@@ -73,6 +130,21 @@ async def list_kb_vulnerabilities(
 async def get_kb_vulnerability(kb_id: int):
     """
     获取漏洞知识库详情
+    
+    根据漏洞 ID 获取详细的漏洞信息。
+    
+    Args:
+        kb_id: 漏洞知识库 ID
+        
+    Returns:
+        Dict: 包含漏洞详细信息的响应
+        
+    Raises:
+        HTTPException: 当漏洞不存在时抛出 404 错误
+        
+    Examples:
+        >>> 获取漏洞详情
+        >>> GET /kb/vulnerabilities/1
     """
     item = await VulnerabilityKB.get_or_none(id=kb_id)
     if not item:
@@ -85,11 +157,19 @@ async def get_kb_vulnerability(kb_id: int):
     return item_dict
 
 async def fetch_seebug_data():
-    """模拟从 Seebug 获取数据"""
+    """
+    从 Seebug 获取漏洞数据
+    
+    模拟从 Seebug 平台获取漏洞信息。
+    在实际生产环境中，这里应该调用 Seebug API 或爬取数据。
+    
+    Returns:
+        List[Dict]: 漏洞数据列表
+    """
     # 在实际生产环境中，这里应该调用 Seebug API 或爬取数据
     # import requests
     # resp = requests.get("https://www.seebug.org/api/...")
-    await asyncio.sleep(1) # Simulate network delay
+    await asyncio.sleep(1) # 模拟网络延迟
     return [
         {
             "cve_id": "CVE-2021-44228",
@@ -118,7 +198,14 @@ async def fetch_seebug_data():
     ]
 
 async def fetch_exploit_db_data():
-    """模拟从 Exploit-DB 获取数据"""
+    """
+    从 Exploit-DB 获取漏洞数据
+    
+    模拟从 Exploit-DB 平台获取漏洞信息。
+    
+    Returns:
+        List[Dict]: 漏洞数据列表
+    """
     await asyncio.sleep(1)
     return [
         {
@@ -137,29 +224,34 @@ async def fetch_exploit_db_data():
 async def sync_vulnerabilities_task():
     """
     后台同步漏洞数据任务
+    
+    从 Seebug 和 Exploit-DB 等数据源同步漏洞信息到本地数据库。
+    该任务在后台异步执行，不阻塞主线程。
     """
     logger.info("开始同步漏洞知识库...")
     
     count = 0
     
     try:
-        # 1. Sync from Seebug
+        # 1. 从 Seebug 同步
         seebug_data = await fetch_seebug_data()
+        # DEBUG: 打印原始 Seebug 数据
+        print(f"原始 Seebug 数据: {seebug_data}")
         for data in seebug_data:
             exists = await VulnerabilityKB.get_or_none(cve_id=data['cve_id'])
             if not exists:
                 await VulnerabilityKB.create(**data)
                 count += 1
             else:
-                # Update existing?
+                # 更新现有记录（可选）
                 # exists.update_from_dict(data)
                 # await exists.save()
                 pass
 
-        # 2. Sync from Exploit-DB
+        # 2. 从 Exploit-DB 同步
         edb_data = await fetch_exploit_db_data()
         for data in edb_data:
-            # check by CVE or Name
+            # 通过 CVE 或名称检查
             exists = await VulnerabilityKB.get_or_none(cve_id=data['cve_id'])
             if not exists:
                 await VulnerabilityKB.create(**data)
@@ -174,6 +266,22 @@ async def sync_vulnerabilities_task():
 async def sync_vulnerabilities(background_tasks: BackgroundTasks):
     """
     触发漏洞库同步
+    
+    在后台启动漏洞数据同步任务。
+    
+    Args:
+        background_tasks: FastAPI 后台任务管理器
+        
+    Returns:
+        Dict: 同步任务启动响应，结构如下:
+            {
+                "message": "Sync task started",
+                "status": "running"
+            }
+        
+    Examples:
+        >>> 触发同步
+        >>> POST /kb/sync
     """
     background_tasks.add_task(sync_vulnerabilities_task)
     return {"message": "Sync task started", "status": "running"}

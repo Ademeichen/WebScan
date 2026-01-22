@@ -1,4 +1,27 @@
 # -*- coding:utf-8 -*-
+"""
+网站权重查询模块
+功能：
+1. 查询域名的百度权重（PC端和移动端）
+2. 使用爱站网API进行查询
+3. 支持域名格式校验和提取
+4. 自动处理编码，避免中文乱码
+
+特性：
+- 支持请求重试（网络波动时自动重试）
+- 标准化返回结果，便于调用方处理
+- 容错提取权重字段，避免KeyError
+- 提供兼容原代码的返回格式
+
+依赖：
+- requests: 用于HTTP请求
+
+使用示例：
+    >>> from backend.plugins.webweight.webweight import get_web_weight
+    >>> result = get_web_weight('https://jwt1399.top/')
+    >>> print(result)
+    {"success": True, "result": "PC权重(1)，移动权重(0)，预计来路(0) --数据来源于aizhan.com", ...}
+"""
 import logging
 import json
 from typing import Dict, Union, Optional
@@ -32,6 +55,10 @@ def getdomain(domain: str) -> str:
     提取纯域名（移除协议、路径、端口等）
     :param domain: 原始域名/URL（如https://jwt1399.top/）
     :return: 纯域名（如jwt1399.top）
+    说明：
+        1. 移除协议头（http://或https://）
+        2. 移除路径（/后的内容）
+        3. 移除端口（:后的内容）
     """
     if not isinstance(domain, str) or not domain.strip():
         return ""
@@ -48,6 +75,9 @@ def is_valid_domain(domain: str) -> bool:
     校验域名格式是否合法（简单校验，满足基础需求）
     :param domain: 纯域名
     :return: True（合法）/False（非法）
+    说明：
+        使用正则表达式匹配域名格式
+        格式：xxx.xxx，其中xxx为字母、数字或连字符
     """
     if not domain or "." not in domain:
         return False
@@ -67,6 +97,11 @@ def get_web_weight(domain: str) -> Dict[str, Union[bool, str, Dict]]:
             "raw_data": {},         # API返回的原始数据（便于调试）
             "message": ""           # 成功/失败原因
         }
+    说明：
+        1. 提取纯域名并校验格式
+        2. 调用爱站网API查询权重
+        3. 返回格式：PC权重(x)，移动权重(y)，预计来路(z)
+        4. 设置4秒超时，支持2次重试
     """
     # 初始化标准化返回结果
     result = {

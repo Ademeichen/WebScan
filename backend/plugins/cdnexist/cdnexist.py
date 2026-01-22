@@ -1,4 +1,21 @@
 # -*- coding:utf-8 -*-
+"""
+CDN检测模块
+功能：
+1. 检测目标主机是否使用CDN（通过IP段匹配和ASN匹配）
+2. 支持URL、域名、IP地址作为输入
+3. 使用GeoIP2数据库进行ASN查询
+4. 预编译CDN网段，提升检测性能
+
+依赖：
+- geoip2: 用于查询IP的ASN信息
+- ipaddress: 用于IP地址和网段处理
+
+使用示例：
+    >>> from backend.plugins.cdnexist.cdnexist import is_cdn
+    >>> result = is_cdn("https://www.baidu.com")
+    >>> print(result)  # True or False
+"""
 import logging
 import socket
 import ipaddress
@@ -89,6 +106,7 @@ GEOIP2_ASN_DB_PATH = Path(__file__).parent.parent.parent / "database" / "GeoLite
 # 预编译CDN网段为ip_network对象，避免每次调用重复解析
 try:
     CDN_NETWORKS = [ipaddress.ip_network(cidr, strict=False) for cidr in CDN_CIDR_LIST]
+    print(f"CDN_NETWORKS: {CDN_NETWORKS}")
 except ValueError as e:
     logger.error(f"CDN网段解析失败：{e}")
     CDN_NETWORKS = []
@@ -99,10 +117,16 @@ def parse_host_to_ip(host: str) -> Optional[str]:
     将URL/域名解析为IPv4地址（优化版）
     :param host: URL/域名/IP
     :return: 第一个有效IPv4地址 | None
+    说明：
+        1. 若输入已是合法IPv4，直接返回
+        2. 否则尝试提取域名并解析为IP
+        3. 支持多种URL格式（http/https）
+        4. 设置1秒超时，避免长时间阻塞
     """
-    # 1. 若已是合法IPv4，直接返回
+    # 1. 若已是合法IPv4，直接返回，校验IPv4格式
     try:
         ip_obj = ipaddress.IPv4Address(host.strip())
+        print(f"IPv4地址 {ip_obj} 格式校验通过")
         return str(ip_obj)
     except ipaddress.AddressValueError:
         pass
@@ -144,6 +168,8 @@ def check_ip_in_cdn_networks(ip: str) -> bool:
     """
     try:
         ip_obj = ipaddress.IPv4Address(ip.strip())
+        
+
         # 遍历预编译的网段，匹配到立即返回
         for network in CDN_NETWORKS:
             if ip_obj in network:

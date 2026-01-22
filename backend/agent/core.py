@@ -15,9 +15,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-#TODO: 完善工具注册表，添加更多实际可用的工具
-# ====================== 工具注册表 ======================
-
 def get_weather(city: str) -> str:
     """获取天气信息（模拟）"""
     return f"【模拟数据】{city} 天气晴，25度"
@@ -33,8 +30,6 @@ TOOL_REGISTRY = {
     "send_notification": send_notification
 }
 
-
-# ====================== 数据结构定义 ======================
 
 class PlanningResponse(BaseModel):
     """规划响应模型"""
@@ -58,8 +53,6 @@ class AgentState(Dict):
     plan_data: Optional[Dict]
     execution_results: List[Dict]
 
-
-# ====================== 节点逻辑 ======================
 
 def planner_node(state: AgentState):
     """
@@ -139,8 +132,6 @@ def executor_node(state: AgentState):
         
     return {"execution_results": results}
 
-
-# ====================== 工作流构建 ======================
 
 workflow = StateGraph(AgentState)
 workflow.add_node("planner", planner_node)

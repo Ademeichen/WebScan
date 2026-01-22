@@ -102,7 +102,9 @@ async def sync_vulnerabilities(scan_id: str, scan_session_id: str, task_id: int)
         
         # 获取漏洞列表 (使用线程池避免阻塞)
         vulns = await run_sync(s.get_vulns, scan_id, scan_session_id)
-        
+        # DEBUG: 打印原始漏洞数据
+        print(f"原始漏洞数据: {vulns}")
+
         if not vulns:
             return
 
@@ -165,7 +167,9 @@ async def sync_scans_from_awvs():
         s = Scan(client['api_url'], client['api_key'])
         # 获取AWVS中所有扫描 (使用线程池)
         awvs_scans = await run_sync(s.get_all)
-        
+        # DEBUG: 打印原始扫描数据
+        print(f"原始扫描数据: {awvs_scans}")
+
         # 获取数据库中所有AWVS任务
         # 注意：这里假设task_type='awvs_scan'
         db_tasks = await Task.filter(task_type='awvs_scan').all()
@@ -277,6 +281,8 @@ async def get_all_scans():
         
         # 从数据库读取
         tasks = await Task.filter(task_type='awvs_scan').order_by('-created_at').all()
+        # DEBUG: 打印原始任务数据
+        print(f"原始任务数据: {tasks}")
         
         data = []
         for task in tasks:
@@ -356,6 +362,8 @@ async def get_target_vulnerabilities(target_id: str):
     try:
         client = get_awvs_client()
         v = Vuln(client['api_url'], client['api_key'])
+        # DEBUG: 打印原始漏洞搜索参数
+        print(f"原始漏洞搜索参数: target_id={target_id}")
         
         # 搜索该目标的所有已打开的漏洞
         # search 方法返回的是 JSON 字符串，需要解析
@@ -365,6 +373,8 @@ async def get_target_vulnerabilities(target_id: str):
             status='open',
             target_id=target_id
         )
+        # DEBUG: 打印原始漏洞搜索结果
+        print(f"原始漏洞搜索结果: {result_text}")
         
         data = []
         if result_text:
@@ -379,6 +389,8 @@ async def get_target_vulnerabilities(target_id: str):
                     1: 'Low',
                     0: 'Info'
                 }
+                # DEBUG: 打印原始漏洞数据
+                print(f"原始漏洞数据: {vulnerabilities}")
                 
                 for val in vulnerabilities:
                     # Handle severity if it's an integer
@@ -415,7 +427,9 @@ async def get_vulnerability_detail(vuln_id: str):
         v = Vuln(client['api_url'], client['api_key'])
         
         vuln_data = v.get(vuln_id)
-        
+        # DEBUG: 打印原始漏洞数据
+        print(f"原始漏洞数据: {vuln_data}")
+
         if vuln_data:
             return APIResponse(code=200, message="获取漏洞详情成功", data=vuln_data)
         else:
@@ -877,3 +891,4 @@ async def get_middleware_poc_list():
     except Exception as e:
         logger.error(f"获取中间件POC列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+

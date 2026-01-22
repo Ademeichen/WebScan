@@ -7,12 +7,18 @@ FastAPI通用工具函数模块
 3. 字符串安全过滤（防注入/XSS）
 4. IP/URL/域名合法性校验（过滤禁止目标）
 5. 域名解析（转IP）
+
+使用示例：
+    >>> from backend.plugins.common.common import check_ip, check_url, get_domain_ip
+    >>> check_ip("8.8.8.8")  # True
+    >>> check_url("https://www.baidu.com")  # "https://www.baidu.com"
+    >>> get_domain_ip("https://www.baidu.com")  # "110.242.68.4"
 """
 
 import re
 import socket
 from typing import Optional, Union, Dict, Any
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 # ======================== 配置常量（正则预编译+注释清晰） ========================
@@ -45,8 +51,8 @@ IP_VALID_PATTERN = re.compile(
 # DNS解析超时时间（秒）
 DNS_TIMEOUT = 1
 
-# 初始化FastAPI应用（如需集成到已有项目，可注释此行，仅保留工具函数）
-app = FastAPI(title="通用工具函数API", version="1.0")
+# 初始化API路由（注册到主应用）
+router = APIRouter(prefix="/common", tags=["通用工具"])
 
 # ======================== 标准化响应函数（适配FastAPI） ========================
 def success(
@@ -60,6 +66,9 @@ def success(
     :param data: 返回数据（默认空列表）
     :param msg: 提示信息（默认success）
     :return: FastAPI JSONResponse
+    说明：
+        返回格式：{"code": 200, "data": [], "msg": "success"}
+        可用于API接口的成功响应
     """
     if data is None:
         data = []
@@ -82,6 +91,9 @@ def error(
     :param data: 返回数据（默认空列表）
     :param msg: 错误提示（默认error）
     :return: FastAPI JSONResponse
+    说明：
+        返回格式：{"code": 400, "data": [], "msg": "error"}
+        可用于API接口的错误响应
     """
     if data is None:
         data = []
@@ -98,6 +110,10 @@ def get_user_ip(request: Request) -> str:
     获取用户真实IP（适配FastAPI Request对象，兼容反向代理）
     :param request: FastAPI Request对象
     :return: 用户IP字符串（默认空字符串）
+    说明：
+        1. 优先从X-Forwarded-For头获取真实IP（反向代理场景）
+        2. 若无X-Forwarded-For，则使用request.client.host（直连场景）
+        3. 多个IP用逗号分隔时，取第一个IP
     """
     real_ip = ""
     try:
@@ -120,6 +136,10 @@ def safe_addslashes(sstr: Optional[str]) -> str:
     安全过滤字符串，转义特殊字符（防SQL注入/XSS）
     :param sstr: 待过滤字符串（允许None）
     :return: 过滤后的字符串
+    说明：
+        1. 转义反斜杠、单引号、双引号
+        2. 移除尖括号（< >）防止XSS
+        3. 自动处理None和空字符串
     """
     if not sstr:
         return ""
@@ -138,6 +158,10 @@ def get_domain(url: Optional[str]) -> Optional[str]:
     从合法URL中提取域名
     :param url: 待解析URL
     :return: 域名字符串 | None
+    说明：
+        1. 先通过check_url校验URL合法性
+        2. 从URL中提取域名部分（//后第一个/前的内容）
+        3. 返回小写域名
     """
     valid_url = check_url(url)
     if not valid_url:
@@ -157,6 +181,11 @@ def get_domain_ip(host: Optional[str]) -> str:
     域名/URL转IP，过滤禁止扫描的IP
     :param host: 域名/URL/IP字符串
     :return: 合法IP | 错误提示
+    说明：
+        1. 若输入已是IP，直接校验是否为禁止IP
+        2. 若输入是域名，先DNS解析为IP再校验
+        3. 禁止的IP段包括：内网IP、本地IP、特定IP
+        4. 设置1秒DNS解析超时
     """
     if not host:
         print("[ERROR] 域名/IP为空，解析失败")
@@ -190,6 +219,10 @@ def check_ip(ipaddr: Optional[str]) -> bool:
     校验IP合法性（格式+非禁止IP）
     :param ipaddr: 待校验IP字符串
     :return: True（合法）| False（非法）
+    说明：
+        1. 校验IP格式（正则匹配）
+        2. 校验IP长度（6 < 长度 < 16）
+        3. 过滤禁止IP段（内网IP、本地IP等）
     """
     if not ipaddr:
         return False
@@ -209,6 +242,12 @@ def check_url(url: Optional[str]) -> Union[str, bool]:
     校验URL合法性（格式+非禁止域名）
     :param url: 待校验URL字符串
     :return: 小写合法URL | False
+    说明：
+        1. 清洗URL（移除危险字符）
+        2. 校验URL长度（10 < 长度 < 40）
+        3. 过滤禁止域名（内网域名、gov.cn等）
+        4. 校验协议（必须以http://或https://开头）
+        5. 校验域名格式（必须包含点号）
     """
     if not url:
         return False
@@ -237,7 +276,7 @@ def check_url(url: Optional[str]) -> Union[str, bool]:
     return url_clean.lower()
 
 # ======================== FastAPI示例路由（可根据业务扩展） ========================
-@app.get("/check/ip", summary="校验IP合法性")
+@router.get("/check/ip", summary="校验IP合法性")
 async def api_check_ip(ip: str):
     """
     FastAPI接口示例：校验IP合法性
@@ -263,7 +302,7 @@ async def api_check_url(url: str):
         return error(code=403, data={"url": url, "is_valid": False}, msg="URL非法或禁止扫描")
 
 
-@app.get("/domain/ip", summary="域名/URL转IP")
+@router.get("/domain/ip", summary="域名/URL转IP")
 async def api_domain_to_ip(host: str):
     """
     FastAPI接口示例：域名/URL转IP
@@ -348,12 +387,4 @@ def test_all_functions():
 
 
 if __name__ == "__main__":
-    # 第一步：运行所有工具函数测试
     test_all_functions()
-
-    # 第二步：启动FastAPI测试服务器（需安装uvicorn：pip install uvicorn）
-    print("\n启动FastAPI测试服务器...")
-    print("访问文档地址: http://127.0.0.1:8888/docs")
-    print("按 Ctrl+C 停止服务器")
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8001)

@@ -1,5 +1,15 @@
 """
 FastAPI 主应用入口文件
+
+本文件是 WebScan AI Security Platform 的主入口，负责：
+- 创建和配置 FastAPI 应用实例
+- 设置 CORS 中间件
+- 注册 API 路由
+- 配置日志系统
+- 管理应用生命周期（启动/关闭）
+- 初始化数据库连接
+- 验证外部服务连接（如 AWVS）
+- 启动后台任务
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,7 +42,25 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理"""
+    """
+    应用生命周期管理
+    
+    管理应用的启动和关闭流程：
+    启动时：
+    - 初始化数据库连接
+    - 验证 AWVS API 连接
+    - 启动后台数据同步任务
+    
+    关闭时：
+    - 关闭数据库连接
+    - 清理资源
+    
+    Args:
+        app: FastAPI 应用实例
+        
+    Yields:
+        None: 控制权交还给应用
+    """
     # 启动时执行
     logger.info(f"启动 {settings.APP_NAME} v{settings.APP_VERSION}")
     
@@ -41,8 +69,8 @@ async def lifespan(app: FastAPI):
     
     # 验证AWVS连接
     try:
-        from AVWS.API.Base import Base
-        awvs_base = Base(settings.AWVS_API_URL, settings.AWVS_API_KEY)
+        from AVWS.API.Base import Base as AWVSBase
+        awvs_base = AWVSBase(settings.AWVS_API_URL, settings.AWVS_API_KEY)
         success, message = awvs_base.check_connection()
         if success:
             logger.info("AWVS API 连接测试成功")
@@ -71,6 +99,7 @@ async def lifespan(app: FastAPI):
     # 关闭数据库连接
     await close_db()
 
+# 创建数据库表
 Base.metadata.create_all(bind=engine)
 
 # 创建 FastAPI 应用实例
@@ -92,10 +121,24 @@ app.add_middleware(
 )
 
 
-# 根路径
 @app.get("/")
 async def root():
-    """根路径，返回API信息"""
+    """
+    根路径
+    
+    返回 API 基本信息，用于验证服务是否正常运行。
+    
+    Returns:
+        Dict: 包含欢迎消息、版本号和状态的响应
+        
+    Examples:
+        >>> GET /
+        >>> {
+        ...     "message": "Welcome to WebScan AI Security Platform",
+        ...     "version": "1.0.0",
+        ...     "status": "running"
+        ... }
+    """
     return {
         "message": "Welcome to WebScan AI Security Platform",
         "version": settings.APP_VERSION,
@@ -103,17 +146,38 @@ async def root():
     }
 
 
-# 健康检查
 @app.get("/health")
 async def health_check():
-    """健康检查端点"""
+    """
+    健康检查端点
+    
+    用于监控服务健康状态，负载均衡器和容器编排系统可以定期调用此端点。
+    
+    Returns:
+        Dict: 包含健康状态的响应
+        
+    Examples:
+        >>> GET /health
+        >>> {"status": "healthy"}
+    """
     return {"status": "healthy"}
 
 
-# 全局异常处理
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    """全局异常处理器"""
+    """
+    全局异常处理器
+    
+    捕获所有未处理的异常，统一返回错误响应。
+    在生产环境中，不会返回详细的错误信息以避免泄露敏感信息。
+    
+    Args:
+        request: 请求对象
+        exc: 异常对象
+        
+    Returns:
+        JSONResponse: 统一的错误响应格式
+    """
     logger.error(f"未处理的异常: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
@@ -131,6 +195,11 @@ app.include_router(api_router, prefix="/api")
 
 
 if __name__ == "__main__":
+    """
+    应用启动入口
+    
+    使用 Uvicorn ASGI 服务器运行 FastAPI 应用。
+    """
     uvicorn.run(
         "main:app",
         host=settings.HOST,
@@ -138,7 +207,3 @@ if __name__ == "__main__":
         reload=False,
         log_level=settings.LOG_LEVEL.lower()
     )
-
-
-
-

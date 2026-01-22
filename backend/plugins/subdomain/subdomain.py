@@ -1,4 +1,26 @@
 # -*- coding:utf-8 -*-
+"""
+子域名枚举模块
+功能：
+1. 获取域名的子域名列表
+2. 使用ip138.com免费API进行查询
+3. 支持域名格式校验
+4. 自动处理编码，避免中文乱码
+
+特性：
+- 支持请求重试（网络波动时自动重试）
+- 使用正则表达式匹配子域名
+- 去重处理，返回唯一子域名列表
+
+依赖：
+- requests: 用于HTTP请求
+
+使用示例：
+    >>> from backend.plugins.subdomain.subdomain import get_subdomain
+    >>> result = get_subdomain('baidu.com')
+    >>> print(result)
+    ['www.baidu.com', 'tieba.baidu.com', 'zhidao.baidu.com', ...]
+""" 
 import logging
 import re
 from typing import List, Optional

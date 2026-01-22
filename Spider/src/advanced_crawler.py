@@ -1,3 +1,10 @@
+"""
+Acunetix API 高级爬虫模块
+
+该模块使用 Playwright 和 BeautifulSoup 爬取 Acunetix API 文档页面，
+提取 API 端点、HTTP 方法、参数、描述、示例等信息，并保存为 JSON 格式
+"""
+
 import asyncio
 import json
 import re
@@ -14,7 +21,18 @@ from config import TARGET_URL, OUTPUT_DIR, CRAWLER_CONFIG, OUTPUT_CONFIG, FILTER
 
 
 class AcunetixAPICrawler:
+    """
+    Acunetix API 爬虫类
+
+    负责爬取 Acunetix API 文档页面，提取结构化的 API 信息
+    """
+
     def __init__(self):
+        """
+        初始化爬虫实例
+
+        设置访问过的 URL 集合、API 数据存储、链接存储和正则表达式模式
+        """
         self.visited_urls: Set[str] = set()
         self.api_data: List[Dict] = []
         self.all_links: List[Dict] = []
@@ -24,6 +42,11 @@ class AcunetixAPICrawler:
         self.status_code_pattern = re.compile(r'\b(200|201|202|204|400|401|403|404|500)\b')
         
     async def crawl(self):
+        """
+        主爬取方法
+
+        启动浏览器，爬取目标页面，提取 API 数据，并保存结果
+        """
         ensure_output_dir()
         
         async with async_playwright() as p:
@@ -64,6 +87,13 @@ class AcunetixAPICrawler:
         self._save_results()
     
     async def _crawl_page(self, page, url: str):
+        """
+        爬取单个页面
+
+        Args:
+            page: Playwright 页面对象
+            url: 要爬取的页面 URL
+        """
         if url in self.visited_urls:
             print(f'  跳过已访问: {url}')
             return
@@ -105,6 +135,16 @@ class AcunetixAPICrawler:
             print(f'  ✗ 处理错误 {url}: {type(e).__name__}: {e}')
     
     def _extract_api_data(self, soup: BeautifulSoup, current_url: str) -> List[Dict]:
+        """
+        从 BeautifulSoup 对象中提取 API 数据
+
+        Args:
+            soup: BeautifulSoup 解析对象
+            current_url: 当前页面 URL
+
+        Returns:
+            包含 API 数据的字典列表
+        """
         api_data = []
         processed_sections = set()
         
@@ -133,6 +173,17 @@ class AcunetixAPICrawler:
         return api_data
     
     def _extract_section_data(self, header: Tag, section_title: str, section_id: str) -> Dict:
+        """
+        从标题元素中提取完整的 API 部分数据
+
+        Args:
+            header: BeautifulSoup 标题元素
+            section_title: 部分标题
+            section_id: 部分 ID
+
+        Returns:
+            包含部分详细信息的字典
+        """
         section = {
             'sectionTitle': section_title,
             'sectionId': section_id,
@@ -162,6 +213,13 @@ class AcunetixAPICrawler:
         return section
     
     def _extract_endpoints_and_methods(self, section_content: Tag, section: Dict):
+        """
+        从内容中提取 API 端点和 HTTP 方法
+
+        Args:
+            section_content: BeautifulSoup 内容元素
+            section: 要更新的部分字典
+        """
         code_blocks = section_content.find_all(['code', 'pre'])
         
         for code in code_blocks:
@@ -194,6 +252,13 @@ class AcunetixAPICrawler:
                     section['endpoints'].append(endpoint)
     
     def _extract_parameters(self, section_content: Tag, section: Dict):
+        """
+        从表格中提取 API 参数信息
+
+        Args:
+            section_content: BeautifulSoup 内容元素
+            section: 要更新的部分字典
+        """
         tables = section_content.find_all('table')
         
         for table in tables:
@@ -213,6 +278,13 @@ class AcunetixAPICrawler:
                             section['parameters'].append(param)
     
     def _extract_description(self, section_content: Tag, section: Dict):
+        """
+        从内容中提取描述信息
+
+        Args:
+            section_content: BeautifulSoup 内容元素
+            section: 要更新的部分字典
+        """
         description_elements = section_content.find_all(['p', 'div', 'span'])
         descriptions = []
         
@@ -224,6 +296,13 @@ class AcunetixAPICrawler:
         section['description'] = '\n'.join(descriptions[:5])
     
     def _extract_status_and_response(self, section_content: Tag, section: Dict):
+        """
+        从内容中提取状态码和响应格式
+
+        Args:
+            section_content: BeautifulSoup 内容元素
+            section: 要更新的部分字典
+        """
         status_elements = section_content.find_all(class_=re.compile(r'status|response|code|http', re.IGNORECASE))
         
         for elem in status_elements:
@@ -238,6 +317,13 @@ class AcunetixAPICrawler:
                     section['responseFormat'] = text
     
     def _extract_authentication(self, section_content: Tag, section: Dict):
+        """
+        从内容中提取认证信息
+
+        Args:
+            section_content: BeautifulSoup 内容元素
+            section: 要更新的部分字典
+        """
         auth_keywords = ['authentication', 'authorization', 'api key', 'token', 'bearer', 'x-auth']
         
         for elem in section_content.find_all(['p', 'div', 'span', 'code']):
@@ -250,6 +336,13 @@ class AcunetixAPICrawler:
                         section['authentication'] = auth_text
     
     def _extract_examples(self, section_content: Tag, section: Dict):
+        """
+        从内容中提取 API 使用示例
+
+        Args:
+            section_content: BeautifulSoup 内容元素
+            section: 要更新的部分字典
+        """
         code_blocks = section_content.find_all(['code', 'pre'])
         
         for code in code_blocks:
@@ -260,6 +353,16 @@ class AcunetixAPICrawler:
                     section['examples'].append(code_text)
     
     def _extract_links(self, soup: BeautifulSoup, current_url: str) -> List[Dict]:
+        """
+        从页面中提取所有符合条件的链接
+
+        Args:
+            soup: BeautifulSoup 解析对象
+            current_url: 当前页面 URL
+
+        Returns:
+            包含链接信息的字典列表
+        """
         links = []
         
         for link in soup.find_all('a', href=True):
@@ -278,6 +381,11 @@ class AcunetixAPICrawler:
         return links
     
     def _save_results(self):
+        """
+        保存爬取结果到 JSON 文件
+
+        保存完整的 API 数据和统计摘要
+        """
         if not self.api_data:
             print('\n未找到 API 数据保存')
             return
@@ -318,6 +426,11 @@ class AcunetixAPICrawler:
 
 
 async def main():
+    """
+    主函数入口
+
+    创建爬虫实例并启动爬取
+    """
     crawler = AcunetixAPICrawler()
     await crawler.crawl()
 

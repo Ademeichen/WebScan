@@ -6,6 +6,8 @@ API 路由总入口
 from fastapi import APIRouter
 from . import scan, tasks, reports, poc, awvs, settings, ai, kb, poc_gen
 from .agent import router as agent_router
+from plugins.common.common import router as common_router
+from plugins.common.common_proxyfliter import router as common_proxy_router
 
 api_router = APIRouter()
 
@@ -16,7 +18,9 @@ api_router.include_router(poc.router, tags=["POC扫描"])
 api_router.include_router(awvs.router, prefix="/awvs", tags=["AWVS漏洞扫描"])
 api_router.include_router(settings.router, prefix="/settings", tags=["系统设置"])
 api_router.include_router(ai.router, prefix="/ai", tags=["AI对话"])
-api_router.include_router(agent_router)
+api_router.include_router(agent_router, prefix="/agent", tags=["Agent功能"])
 api_router.include_router(kb.router, prefix="/kb", tags=["漏洞知识库"])
 api_router.include_router(poc_gen.router, prefix="/poc-gen", tags=["POC智能生成"])
+api_router.include_router(common_router, prefix="/common", tags=["通用工具"])
+api_router.include_router(common_proxy_router, prefix="/common-proxy", tags=["通用工具-代理过滤"])
 

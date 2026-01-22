@@ -1,4 +1,31 @@
 # -*- coding:utf-8 -*-
+"""
+信息泄露扫描模块
+功能：
+1. 扫描目标URL的敏感文件和目录
+2. 检测潜在的信息泄露风险（如备份文件、配置文件等）
+3. 支持多线程并发扫描，提升效率
+4. 基于风险路径字典进行检测
+
+特性：
+- 线程安全的结果存储
+- 支持自定义风险路径字典
+- 自动去重，避免重复扫描
+- 支持多种HTTP状态码判断（200、206、401、305、407）
+- 使用ThreadPoolExecutor进行并发扫描
+
+依赖：
+- requests: 用于HTTP请求
+- concurrent.futures: 用于多线程
+
+使用示例：
+    >>> from backend.plugins.infoleak.infoleak import get_infoleak
+    >>> result = get_infoleak('https://www.example.com/')
+    >>> print(result)
+    [('backup', 'https://www.example.com/backup.sql'),
+     ('config', 'https://www.example.com/config.php'),
+     ...]
+"""
 import json
 import logging
 import os

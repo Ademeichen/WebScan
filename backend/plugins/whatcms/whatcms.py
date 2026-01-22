@@ -1,5 +1,41 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
+"""
+CMS（内容管理系统）检测模块
+功能：
+1. 识别目标网站使用的CMS类型和版本
+2. 基于Wappalyzer规则库进行检测
+3. 支持多种检测方式（URL、HTML、Script、Header等）
+4. 支持自定义规则和扩展
+
+特性：
+- 单例模式，避免重复加载规则文件
+- 预编译正则表达式，提升检测效率
+- 支持多种CMS类型识别（WordPress、Drupal、Joomla等）
+- 返回详细的CMS信息和相关技术栈
+
+依赖：
+- requests: 用于HTTP请求
+- bs4: 用于HTML解析
+- chardet: 用于编码检测
+
+使用示例：
+    >>> from backend.plugins.whatcms.whatcms import getwhatcms
+    >>> result = getwhatcms('https://www.example.com/')
+    >>> print(result)
+    {
+        "success": True,
+        "has_data": True,
+        "data": {
+            "apps": [...],
+            "title": "Example Site",
+            "server": "nginx",
+            "security": [],
+            "url": "https://www.example.com/"
+        },
+        "message": "识别到X个CMS"
+    }
+"""
 import os
 import re
 import json

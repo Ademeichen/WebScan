@@ -509,17 +509,38 @@ class AgentResult(Model):
 
 
 class VulnerabilityKB(Model):
-    """漏洞知识库表"""
+    """
+    漏洞知识库表
+    
+    用于存储和管理漏洞知识库信息，包括CVE漏洞详情、POC代码、修复建议等。
+    知识库用于支持AI Agent进行漏洞分析和POC生成。
+    
+    Attributes:
+        id: 知识库唯一标识
+        cve_id: CVE编号，如CVE-2021-44228，唯一标识漏洞
+        name: 漏洞名称，简洁描述漏洞
+        description: 漏洞详细描述，说明漏洞原理、影响范围等
+        severity: 严重程度，critical（严重）、high（高危）、medium（中危）、low（低危）
+        cvss_score: CVSS评分，0.0-10.0的数值评分
+        affected_product: 受影响的产品或组件，如Apache Log4j、Spring Framework等
+        solution: 修复建议，提供漏洞修复方案和补丁信息
+        references: 参考链接，JSON格式存储相关漏洞公告、分析文章等链接
+        poc_code: POC代码，用于验证漏洞的测试代码
+        has_poc: 是否有POC代码，True表示有可用的POC
+        source: 数据来源，如seebug、exploit-db、manual（手动添加）
+        created_at: 记录创建时间
+        updated_at: 记录最后更新时间
+    """
     
     id = fields.IntField(pk=True, description="知识库ID")
-    cve_id = fields.CharField(max_length=50, unique=True, null=True, description="CVE 编号")
+    cve_id = fields.CharField(max_length=50, unique=True, null=True, description="CVE 编号（如CVE-2021-44228）")
     name = fields.CharField(max_length=500, description="漏洞名称")
-    description = fields.TextField(null=True, description="漏洞描述")
-    severity = fields.CharField(max_length=20, null=True, description="严重程度")
-    cvss_score = fields.FloatField(null=True, description="CVSS 评分")
+    description = fields.TextField(null=True, description="漏洞详细描述")
+    severity = fields.CharField(max_length=20, null=True, description="严重程度：critical, high, medium, low")
+    cvss_score = fields.FloatField(null=True, description="CVSS 评分（0.0-10.0）")
     affected_product = fields.TextField(null=True, description="影响组件/产品")
     solution = fields.TextField(null=True, description="修复建议")
-    references = fields.TextField(null=True, description="参考链接（JSON/List）")
+    references = fields.TextField(null=True, description="参考链接（JSON格式）")
     poc_code = fields.TextField(null=True, description="POC 代码")
     has_poc = fields.BooleanField(default=False, description="是否有 POC")
     source = fields.CharField(max_length=50, default="manual", description="来源：seebug, exploit-db, manual")
@@ -530,6 +551,82 @@ class VulnerabilityKB(Model):
         table = "vulnerability_kb"
         table_description = "漏洞知识库表"
         ordering = ["-updated_at"]
+        indexes = [
+            ("cve_id",),
+            ("severity",),
+        ]
     
     def __str__(self):
         return f"{self.cve_id or 'No CVE'} - {self.name}"
+    
+    def is_critical(self) -> bool:
+        """检查是否为严重漏洞"""
+        return self.severity in ["critical", "high"]
+    
+    def has_poc_available(self) -> bool:
+        """检查是否有可用的POC代码"""
+        return self.has_poc and self.poc_code is not None
+
+
+class SystemSettings(Model):
+    """
+    系统设置表
+    
+    用于存储和管理系统配置信息，支持动态配置管理。
+    所有设置以键值对形式存储，支持分类管理。
+    
+    Attributes:
+        id: 设置唯一标识
+        category: 设置分类，如general（通用）、scan（扫描）、notification（通知）、security（安全）等
+        key: 设置键名，唯一标识设置项
+        value: 设置值，JSON格式存储，支持字符串、数字、布尔、对象等类型
+        value_type: 值类型，string（字符串）、number（数字）、boolean（布尔）、object（对象）、array（数组）
+        description: 设置描述，说明设置项的作用和取值范围
+        is_public: 是否公开，True表示可以公开访问，False表示需要管理员权限
+        created_at: 创建时间
+        updated_at: 更新时间
+    """
+    
+    id = fields.IntField(pk=True, description="设置ID")
+    category = fields.CharField(max_length=50, description="设置分类：general, scan, notification, security, etc.")
+    key = fields.CharField(max_length=100, description="设置键名")
+    value = fields.TextField(description="设置值（JSON格式）")
+    value_type = fields.CharField(max_length=20, default="string", description="值类型：string, number, boolean, object, array")
+    description = fields.TextField(null=True, description="设置描述")
+    is_public = fields.BooleanField(default=True, description="是否公开（True=公开，False=需管理员权限）")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
+    
+    class Meta:
+        table = "system_settings"
+        table_description = "系统设置表"
+        ordering = ["category", "key"]
+        unique_together = [("category", "key")]
+        indexes = [
+            ("category",),
+            ("key",),
+        ]
+    
+    def __str__(self):
+        return f"{self.category}.{self.key}"
+    
+    def is_public_setting(self) -> bool:
+        """检查是否为公开设置"""
+        return self.is_public
+    
+    def get_parsed_value(self):
+        """解析并返回设置值"""
+        import json
+        try:
+            if self.value_type == "string":
+                return self.value
+            elif self.value_type == "number":
+                return float(self.value)
+            elif self.value_type == "boolean":
+                return self.value.lower() in ["true", "1", "yes"]
+            elif self.value_type in ["object", "array"]:
+                return json.loads(self.value)
+            else:
+                return self.value
+        except Exception:
+            return self.value

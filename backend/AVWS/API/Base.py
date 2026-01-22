@@ -1,12 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+AWVS API 基础类
+
+提供与 AWVS API 交互的基础功能，包括连接检查、认证头生成等
+"""
+
 import requests
 import logging
 import requests.packages.urllib3
 
 class Base(object):
+    """
+    AWVS API 基础类
+
+    封装了与 AWVS API 交互的基础功能，包括 API 地址管理、认证、连接检查等
+    """
+
     def __init__(self, api_base_url, api_key):
+        """
+        初始化 AWVS API 基础类
+
+        Args:
+            api_base_url: AWVS API 基础 URL
+            api_key: AWVS API 密钥
+        """
         self.api_base_url = api_base_url
         self._api_key = api_key
 
@@ -34,17 +53,16 @@ class Base(object):
             'wasc_threat_classification': '11111111-1111-1111-1111-111111111123'
         }
 
-        # 禁用https证书相关警告
         requests.packages.urllib3.disable_warnings()
 
     def check_connection(self):
         """
-        检查API连接是否正常
-        :return: (bool, str) - (是否成功, 错误信息)
+        检查 API 连接是否正常
+
+        Returns:
+            tuple: (是否成功, 错误信息)
         """
         try:
-            # 尝试访问 info 或 me 接口，这里使用 targets 接口作为简单测试
-            # AWVS通常没有专门的 ping 接口，但可以用 targets 列表 (limit=1) 测试权限
             response = requests.get(
                 self.targets_api,
                 headers=self.auth_headers,
@@ -69,6 +87,12 @@ class Base(object):
 
     @property
     def auth_headers(self):
+        """
+        获取认证请求头
+
+        Returns:
+            dict: 包含 API 密钥和内容类型的请求头
+        """
         auth_headers = {
             'X-Auth': self._api_key,
             'content-type': 'application/json'
@@ -77,7 +101,12 @@ class Base(object):
 
     @property
     def get_logger(self):
-        # 使用FastAPI项目的logger
+        """
+        获取日志记录器
+
+        Returns:
+            logging.Logger: FastAPI 项目的日志记录器
+        """
         return logging.getLogger('awvs')
 
 if __name__ == '__main__':

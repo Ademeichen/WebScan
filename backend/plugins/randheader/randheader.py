@@ -1,3 +1,26 @@
+# -*- coding:utf-8 -*-
+"""
+随机请求头生成模块
+功能：
+1. 生成随机的User-Agent请求头
+2. 伪造随机的公网IP地址（填充X-Forwarded-For和X-Real-IP）
+3. 支持自定义Connection头类型
+4. 支持将请求头转换为列表格式
+
+特性：
+- 使用fake_useragent库生成真实浏览器User-Agent
+- 自动排除内网IP段，生成更真实的公网IP
+- 支持多种连接类型（keep-alive/close）
+
+依赖：
+- fake_useragent: 用于生成随机User-Agent
+
+使用示例：
+    >>> from backend.plugins.randheader.randheader import get_random_headers
+    >>> headers = get_random_headers(conn_type="keep-alive")
+    >>> print(headers)
+    {'Accept': '...', 'User-Agent': '...', 'X-Forwarded-For': '...', ...}
+"""
 # https://github.com/al0ne
 import random
 import socket
@@ -43,6 +66,11 @@ def generate_random_public_ip() -> str:
     """
     生成随机公网IPv4地址（排除内网/非法IP，伪造更真实）
     :return: 合法公网IP字符串
+    说明：
+        1. 生成1~0xFFFFFFFE的随机整数（排除255.255.255.255）
+        2. 检查是否属于内网/非法IP段（10.0.0.0/8、192.168.0.0/16等）
+        3. 若属于内网IP段，重新生成
+        4. 将整数转换为IPv4字符串格式
     """
     while True:
         # 生成1~0xFFFFFFFE的随机整数（排除255.255.255.255）
@@ -63,6 +91,8 @@ def get_ua() -> Dict[str, str]:
     """
     获取随机User-Agent请求头（简化版，兼容旧代码）
     :return: 包含User-Agent的字典
+    说明：
+        调用get_random_headers函数，默认使用keep-alive连接类型
     """
     return get_random_headers(conn_type="keep-alive")
 
@@ -72,6 +102,11 @@ def get_random_headers(conn_type: Optional[str] = "keep-alive") -> Dict[str, str
     生成伪造的HTTP请求头（优化版）
     :param conn_type: Connection头值，可选keep-alive/close
     :return: 填充后的请求头字典
+    说明：
+        1. 生成随机User-Agent（使用fake_useragent或备用列表）
+        2. 生成随机公网IP，填充X-Forwarded-For和X-Real-IP
+        3. 设置Connection类型（默认keep-alive）
+        4. 返回完整的请求头字典
     """
     # 复制基础模板，避免修改原字典
     headers = BASE_HEADERS.copy()
@@ -102,6 +137,9 @@ def headers_to_list(headers: Dict[str, str]) -> List[str]:
     将请求头字典转换为字符串列表（适配urllib/requests等库）
     :param headers: 请求头字典
     :return: 如 ['User-Agent: xxx', 'Accept: xxx']
+    说明：
+        将字典格式的请求头转换为列表格式
+        每个元素格式为"Key: Value"
     """
     return [f"{k}: {v}" for k, v in headers.items()]
 

@@ -22,4 +22,4 @@ window.addEventListener('error', (event) => {
   console.error('全局错误:', event.error)
 })
 
-app.mount('#app')
+app.mount('#app')

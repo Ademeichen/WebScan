@@ -1,3 +1,9 @@
+"""
+Spider 模块配置文件
+
+定义爬虫的目标 URL、输出目录、爬虫配置、输出配置和过滤规则
+"""
+
 import os
 from pathlib import Path
 

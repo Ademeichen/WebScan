@@ -1,7 +1,14 @@
 """
 任务管理相关的 API 路由
 已迁移至数据库存储（Tortoise-ORM）
+
+本模块提供任务管理的完整 API 接口，包括：
+- 任务创建、查询、更新、删除
+- 任务结果获取和聚合
+- 漏洞数据管理和统计
+- POC 扫描结果管理
 """
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -17,8 +24,25 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # ==================== 辅助函数 ====================
+
 def standardize_severity(severity_val) -> str:
-    """标准化严重程度 (Title Case)"""
+    """
+    标准化严重程度为统一格式 (Title Case)
+    
+    支持整数和字符串两种输入格式，统一转换为标准字符串格式。
+    
+    Args:
+        severity_val: 严重程度值，可以是整数 (0-4) 或字符串
+        
+    Returns:
+        str: 标准化后的严重程度字符串，可选值: 'Critical', 'High', 'Medium', 'Low', 'Info'
+        
+    Examples:
+        >>> standardize_severity(4)
+        'Critical'
+        >>> standardize_severity('high')
+        'High'
+    """
     if isinstance(severity_val, int):
         if severity_val >= 4: return 'Critical'
         if severity_val == 3: return 'High'
@@ -38,7 +62,19 @@ def standardize_severity(severity_val) -> str:
     return 'Info'
 
 def standardize_title(title: str) -> str:
-    """标准化漏洞标题 (添加前缀)"""
+    """
+    标准化漏洞标题，添加类型前缀以便识别
+    
+    Args:
+        title: 原始漏洞标题
+        
+    Returns:
+        str: 添加了类型前缀的标准化标题
+        
+    Examples:
+        >>> standardize_title("SQL Injection in login form")
+        '[SQL Injection] SQL Injection in login form'
+    """
     if not title: return "Unknown Vulnerability"
     if 'SQL Injection' in title and not title.startswith('[SQL'):
         return f"[SQL Injection] {title}"
@@ -49,7 +85,14 @@ def standardize_title(title: str) -> str:
 def validate_vulnerability_consistency(vuln_data: dict) -> List[str]:
     """
     验证漏洞数据一致性
-    返回错误信息列表
+    
+    检查漏洞数据的关键字段是否存在且格式正确。
+    
+    Args:
+        vuln_data: 漏洞数据字典
+        
+    Returns:
+        List[str]: 错误信息列表，空列表表示数据有效
     """
     errors = []
     if not vuln_data.get('vuln_id'):
@@ -73,19 +116,45 @@ def validate_vulnerability_consistency(vuln_data: dict) -> List[str]:
         
     return errors
 
-# 请求模型
+# ==================== 请求模型 ====================
+
 class CreateTaskRequest(BaseModel):
+    """
+    创建任务的请求模型
+    
+    Attributes:
+        task_name: 任务名称
+        target: 扫描目标 (URL、IP 或目录路径)
+        task_type: 任务类型，可选值: 'awvs_scan', 'poc_scan', 'scan_dir', 'scan_webside', 'scan_port', 'scan_cms', 'scan_comprehensive'
+        config: 任务配置参数，字典格式
+    """
     task_name: str
     target: str
-    task_type: str  # awvs_scan, poc_scan, scan_dir, scan_webside, etc.
+    task_type: str
     config: Dict[str, Any] = {}
 
 class TaskUpdate(BaseModel):
+    """
+    更新任务的请求模型
+    
+    Attributes:
+        status: 任务状态，可选值: 'pending', 'running', 'completed', 'failed', 'cancelled'
+        progress: 任务进度，0-100
+        result: 任务结果数据
+    """
     status: Optional[str] = None
     progress: Optional[int] = None
     result: Optional[Any] = None
 
 class APIResponse(BaseModel):
+    """
+    统一 API 响应模型
+    
+    Attributes:
+        code: 响应状态码，200 表示成功
+        message: 响应消息
+        data: 响应数据，可选
+    """
     code: int
     message: str
     data: Optional[Any] = None
@@ -96,6 +165,26 @@ class APIResponse(BaseModel):
 async def create_task(request: CreateTaskRequest):
     """
     统一任务创建接口
+    
+    创建新的扫描任务并启动异步执行。支持多种任务类型，包括 AWVS 扫描、POC 扫描、目录扫描等。
+    
+    Args:
+        request: 创建任务的请求参数
+        
+    Returns:
+        APIResponse: 包含任务 ID 和状态的响应
+        
+    Raises:
+        HTTPException: 当参数无效或数据库操作失败时抛出
+        
+    Examples:
+        >>> 创建 AWVS 扫描任务
+        >>> {
+        ...     "task_name": "扫描 example.com",
+        ...     "target": "https://example.com",
+        ...     "task_type": "awvs_scan",
+        ...     "config": {"profile_id": "11111111-1111-1111-1111-111111111111"}
+        ... }
     """
     try:
         from models import Task
@@ -184,7 +273,24 @@ async def list_tasks(
 ):
     """
     获取任务列表（使用数据库）
-    支持按状态、类型、时间范围、关键词过滤
+    
+    支持按状态、类型、时间范围、关键词过滤，并包含漏洞统计信息。
+    
+    Args:
+        status: 按任务状态过滤，可选值: 'pending', 'running', 'completed', 'failed', 'cancelled'
+        task_type: 按任务类型过滤
+        start_date: 起始日期，格式: YYYY-MM-DD
+        end_date: 结束日期，格式: YYYY-MM-DD
+        search: 搜索关键词，匹配任务名称或目标
+        skip: 跳过的记录数，用于分页
+        limit: 返回的最大记录数
+        
+    Returns:
+        APIResponse: 包含任务列表、总数和分页信息的响应
+        
+    Examples:
+        >>> 获取所有运行中的任务
+        >>> GET /tasks/?status=running
     """
     try:
         from models import Task, Vulnerability
@@ -298,6 +404,21 @@ async def list_tasks(
 async def get_task(task_id: int):
     """
     获取任务详情（使用数据库）
+    
+    根据任务 ID 获取单个任务的详细信息。
+    
+    Args:
+        task_id: 任务 ID
+        
+    Returns:
+        APIResponse: 包含任务详细信息的响应
+        
+    Raises:
+        HTTPException: 当任务不存在时抛出 404 错误
+        
+    Examples:
+        >>> 获取 ID 为 1 的任务详情
+        >>> GET /tasks/1
     """
     try:
         from models import Task
@@ -333,6 +454,26 @@ async def get_task(task_id: int):
 async def update_task(task_id: int, task_update: TaskUpdate):
     """
     更新任务状态
+    
+    更新任务的状态、进度或结果信息。
+    
+    Args:
+        task_id: 任务 ID
+        task_update: 更新数据
+        
+    Returns:
+        APIResponse: 更新成功的响应
+        
+    Raises:
+        HTTPException: 当任务不存在时抛出 404 错误
+        
+    Examples:
+        >>> 更新任务状态为完成
+        >>> PUT /tasks/1
+        >>> {
+        ...     "status": "completed",
+        ...     "progress": 100
+        ... }
     """
     try:
         from models import Task
@@ -360,6 +501,21 @@ async def update_task(task_id: int, task_update: TaskUpdate):
 async def delete_task(task_id: int):
     """
     删除任务
+    
+    根据任务 ID 删除任务及其相关数据。
+    
+    Args:
+        task_id: 任务 ID
+        
+    Returns:
+        APIResponse: 删除成功的响应
+        
+    Raises:
+        HTTPException: 当任务不存在时抛出 404 错误
+        
+    Examples:
+        >>> 删除 ID 为 1 的任务
+        >>> DELETE /tasks/1
     """
     try:
         from models import Task
@@ -380,6 +536,33 @@ async def delete_task(task_id: int):
 async def get_task_results(task_id: int):
     """
     获取任务的详细结果（智能聚合）
+    
+    获取任务的完整扫描结果，包括：
+    - 任务基本信息
+    - AWVS 漏洞列表
+    - POC 扫描结果
+    - 插件扫描结果
+    
+    支持从数据库和 AWVS API 双向获取数据，并自动同步到数据库。
+    
+    Args:
+        task_id: 任务 ID
+        
+    Returns:
+        APIResponse: 包含任务详细结果的响应，结构如下:
+            {
+                "task_info": {...},
+                "vulnerabilities": [...],
+                "basic_info": [...],
+                "poc_results": [...]
+            }
+        
+    Raises:
+        HTTPException: 当任务不存在或获取失败时抛出错误
+        
+    Examples:
+        >>> 获取 ID 为 1 的任务结果
+        >>> GET /tasks/1/results
     """
     try:
         from models import Task, POCScanResult, Vulnerability
@@ -515,188 +698,73 @@ async def get_task_results(task_id: int):
                         if k not in ignored_keys:
                             # 格式化 value
                             val_str = str(v)
-                            if isinstance(v, (dict, list)):
+                            # 如果是列表或字典，转换为 JSON 字符串
+                            if isinstance(v, (list, dict)):
                                 try:
                                     val_str = json.dumps(v, ensure_ascii=False)
                                 except:
                                     pass
+                            # 限制长度
+                            if len(val_str) > 500:
+                                val_str = val_str[:500] + "..."
                             response_data["basic_info"].append({
-                                "key": k, 
-                                "value": val_str,
-                                "source": "plugin",
-                                "timestamp": str(task.updated_at)
+                                "key": k,
+                                "value": val_str
                             })
-                            
-                elif isinstance(res, list):
-                     for item in res:
-                         if isinstance(item, dict) and 'key' in item and 'value' in item:
-                             response_data["basic_info"].append({
-                                 "key": item['key'],
-                                 "value": str(item['value']),
-                                 "source": item.get('source', 'plugin'),
-                                 "timestamp": item.get('timestamp', str(task.updated_at))
-                             })
-                         elif isinstance(item, dict):
-                             for k, v in item.items():
-                                 response_data["basic_info"].append({
-                                     "key": k, 
-                                     "value": str(v),
-                                     "source": "plugin",
-                                     "timestamp": str(task.updated_at)
-                                 })
-                         else:
-                             response_data["basic_info"].append({
-                                 "key": "Result", 
-                                 "value": str(item),
-                                 "source": "plugin",
-                                 "timestamp": str(task.updated_at)
-                             })
             except Exception as e:
-                logger.warning(f"Error parsing task result for basic info: {e}")
-
-        # 智能结果展示逻辑
-        # 如果是 AWVS 任务，确保 basic_info 包含目标信息
-        if task.task_type == 'awvs_scan' and not response_data["basic_info"]:
-             response_data["basic_info"].append({
-                 "key": "Target",
-                 "value": task.target,
-                 "source": "task_config",
-                 "timestamp": str(task.created_at)
-             })
-
-        return APIResponse(code=200, message="获取成功", data=response_data)
+                logger.warning(f"解析任务结果失败: {e}")
         
+        return APIResponse(code=200, message="获取成功", data=response_data)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"获取任务结果失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-async def update_task(task_id: int, task_update: TaskUpdate):
-    """
-    更新任务状态（使用数据库）
-    """
-    try:
-        from models import Task
-        
-        task = await Task.get_or_none(id=task_id)
-        
-        if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
-        
-        # 构建更新数据
-        update_data = {}
-        if task_update.status:
-            update_data['status'] = task_update.status
-        if task_update.result is not None:
-            update_data['result'] = json.dumps(task_update.result)
-        if task_update.progress is not None:
-            update_data['progress'] = task_update.progress
-        
-        # 更新任务
-        if update_data:
-            for key, value in update_data.items():
-                setattr(task, key, value)
-            await task.save()
-        
-        # 重新获取更新后的任务
-        task = await Task.get(id=task_id)
-        
-        logger.info(f"更新任务: {task_id}")
-        
-        # 转换为字典格式
-        task_dict = {
-            "id": task.id,
-            "task_name": task.task_name,
-            "task_type": task.task_type,
-            "target": task.target,
-            "status": task.status,
-            "progress": task.progress,
-            "config": json.loads(task.config) if task.config else {},
-            "result": json.loads(task.result) if task.result else None,
-            "created_at": task.created_at,
-            "updated_at": task.updated_at
-        }
-        
-        return APIResponse(code=200, message="更新成功", data=task_dict)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"更新任务失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.delete("/{task_id}", response_model=APIResponse)
-async def delete_task(task_id: int):
-    """
-    删除任务（使用数据库）
-    """
-    try:
-        from models import Task
-        
-        task = await Task.get_or_none(id=task_id)
-        
-        if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
-        
-        task_name = task.task_name
-        
-        # 删除任务
-        await task.delete()
-        
-        logger.info(f"删除任务: {task_name} (ID: {task_id})")
-        return APIResponse(code=200, message="删除成功", data=None)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"删除任务失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{task_id}/cancel", response_model=APIResponse)
 async def cancel_task(task_id: int):
     """
-    取消任务（使用数据库）
+    取消任务
+    
+    取消正在运行或等待中的任务。
+    
+    Args:
+        task_id: 任务 ID
+        
+    Returns:
+        APIResponse: 取消成功的响应
+        
+    Raises:
+        HTTPException: 当任务不存在或无法取消时抛出错误
+        
+    Examples:
+        >>> 取消 ID 为 1 的任务
+        >>> POST /tasks/1/cancel
     """
     try:
         from models import Task
+        from task_executor import task_executor
         
         task = await Task.get_or_none(id=task_id)
-        
         if not task:
             raise HTTPException(status_code=404, detail="任务不存在")
         
-        if task.status in ['completed', 'failed', 'cancelled']:
-            return APIResponse(code=400, message=f"任务已{task.status}，无法取消", data=None)
+        if task.status not in ['pending', 'running']:
+            raise HTTPException(status_code=400, detail="只能取消等待中或运行中的任务")
         
-        # 更新任务状态为已取消
-        for key, value in {'status': 'cancelled'}.items():
-            setattr(task, key, value)
+        # 更新任务状态
+        task.status = 'cancelled'
         await task.save()
         
-        # 停止正在执行的任务
-        from task_executor import task_executor
-        await task_executor.cancel_task(task_id)
+        # 通知任务执行器停止任务
+        if task_executor:
+            try:
+                await task_executor.cancel_task(task_id)
+            except Exception as e:
+                logger.warning(f"通知任务执行器取消任务失败: {e}")
         
-        logger.info(f"取消任务: {task_id}")
-        
-        # 重新获取更新后的任务
-        task = await Task.get(id=task_id)
-        
-        # 转换为字典格式
-        task_dict = {
-            "id": task.id,
-            "task_name": task.task_name,
-            "task_type": task.task_type,
-            "target": task.target,
-            "status": task.status,
-            "progress": task.progress,
-            "config": json.loads(task.config) if task.config else {},
-            "result": json.loads(task.result) if task.result else None,
-            "created_at": task.created_at,
-            "updated_at": task.updated_at
-        }
-        
-        return APIResponse(code=200, message="任务已取消", data=task_dict)
+        return APIResponse(code=200, message="任务已取消")
     except HTTPException:
         raise
     except Exception as e:
@@ -704,192 +772,149 @@ async def cancel_task(task_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{task_id}/progress", response_model=APIResponse)
-async def get_task_progress(task_id: int):
+@router.get("/{task_id}/vulnerabilities", response_model=APIResponse)
+async def get_task_vulnerabilities(
+    task_id: int,
+    severity: Optional[str] = None,
+    status: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100
+):
     """
-    获取任务进度（实时显示功能）
+    获取任务的漏洞列表
+    
+    获取指定任务的所有漏洞，支持按严重程度和状态过滤。
+    
+    Args:
+        task_id: 任务 ID
+        severity: 按严重程度过滤，可选值: 'critical', 'high', 'medium', 'low', 'info'
+        status: 按漏洞状态过滤，可选值: 'open', 'fixed', 'reopened'
+        skip: 跳过的记录数，用于分页
+        limit: 返回的最大记录数
+        
+    Returns:
+        APIResponse: 包含漏洞列表和总数的响应
+        
+    Raises:
+        HTTPException: 当任务不存在时抛出 404 错误
+        
+    Examples:
+        >>> 获取任务 1 的所有高危漏洞
+        >>> GET /tasks/1/vulnerabilities?severity=high
     """
     try:
-        from models import Task
+        from models import Task, Vulnerability
         
         task = await Task.get_or_none(id=task_id)
-        
         if not task:
             raise HTTPException(status_code=404, detail="任务不存在")
         
-        # 返回进度信息
-        progress_info = {
-            "task_id": task.id,
-            "task_name": task.task_name,
-            "status": task.status,
-            "progress": task.progress,
-            "target": task.target,
-            "updated_at": task.updated_at
-        }
+        # 构建查询
+        query = Vulnerability.filter(task=task)
         
-        return APIResponse(code=200, message="获取成功", data=progress_info)
+        # 过滤条件
+        if severity:
+            query = query.filter(severity=severity.lower())
+        if status:
+            query = query.filter(status=status.lower())
+        
+        # 排序（最新的在前）
+        query = query.order_by('-created_at')
+        
+        # 获取总数
+        total = await query.count()
+        
+        # 分页查询
+        vulns = await query.offset(skip).limit(limit)
+        
+        # 转换为字典格式
+        vuln_list = []
+        for vuln in vulns:
+            vuln_list.append({
+                "id": vuln.source_id or str(vuln.id),
+                "title": vuln.title,
+                "severity": standardize_severity(vuln.severity),
+                "status": vuln.status,
+                "type": vuln.vuln_type,
+                "url": vuln.url,
+                "description": vuln.description,
+                "created_at": vuln.created_at,
+                "updated_at": vuln.updated_at
+            })
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "vulnerabilities": vuln_list,
+                "total": total,
+                "skip": skip,
+                "limit": limit
+            }
+        )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"获取任务进度失败: {str(e)}")
+        logger.error(f"获取任务漏洞列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 获取任务漏洞列表 ====================
-@router.get("/{task_id}/vulnerabilities", response_model=APIResponse)
-async def get_task_vulnerabilities(task_id: int):
+@router.get("/statistics/overview", response_model=APIResponse)
+async def get_statistics_overview():
     """
-    获取任务的漏洞列表（统一接口）
+    获取任务统计概览
+    
+    获取所有任务的统计信息，包括：
+    - 总任务数
+    - 各状态任务数
+    - 各类型任务数
+    - 总漏洞数
+    - 各严重程度漏洞数
+    
+    Returns:
+        APIResponse: 包含统计概览数据的响应
+        
+    Examples:
+        >>> 获取统计概览
+        >>> GET /tasks/statistics/overview
     """
     try:
-        from models import Task, POCScanResult
-        from config import settings
-        from AVWS.API.Vuln import Vuln
+        from models import Task, Vulnerability
+        from tortoise.functions import Count
         
-        task = await Task.get_or_none(id=task_id)
-        if not task:
-            return APIResponse(code=404, message="任务不存在")
-            
-        vulnerabilities = []
+        # 任务统计
+        total_tasks = await Task.all().count()
         
-        # 根据任务类型获取漏洞
-        if task.task_type == 'awvs_scan':
-            # 获取 AWVS 漏洞
-            config = json.loads(task.config) if task.config else {}
-            target_id = config.get('awvs_target_id') or config.get('target_id')
-            
-            if target_id:
-                client = {
-                    'api_url': settings.AWVS_API_URL,
-                    'api_key': settings.AWVS_API_KEY
+        # 按状态统计
+        status_stats = await Task.all().group_by('status').annotate(count=Count('id')).values('status', 'count')
+        status_counts = {item['status']: item['count'] for item in status_stats}
+        
+        # 按类型统计
+        type_stats = await Task.all().group_by('task_type').annotate(count=Count('id')).values('task_type', 'count')
+        type_counts = {item['task_type']: item['count'] for item in type_stats}
+        
+        # 漏洞统计
+        total_vulns = await Vulnerability.all().count()
+        
+        # 按严重程度统计
+        severity_stats = await Vulnerability.all().group_by('severity').annotate(count=Count('id')).values('severity', 'count')
+        severity_counts = {item['severity']: item['count'] for item in severity_stats}
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "tasks": {
+                    "total": total_tasks,
+                    "by_status": status_counts,
+                    "by_type": type_counts
+                },
+                "vulnerabilities": {
+                    "total": total_vulns,
+                    "by_severity": severity_counts
                 }
-                d = Vuln(client['api_url'], client['api_key'])
-                
-                # 搜索该目标的漏洞
-                try:
-                    vuln_details_json = d.search(None, None, "open", target_id=target_id)
-                    vuln_details = json.loads(vuln_details_json)
-                    
-                    if 'vulnerabilities' in vuln_details:
-                        for item in vuln_details['vulnerabilities']:
-                            severity_val = item.get('severity')
-                            severity = standardize_severity(severity_val)
-                            
-                            vt_name = item.get('vt_name', 'Unknown Vulnerability')
-                            title = standardize_title(vt_name)
-                            
-                            vulnerabilities.append({
-                                'id': item.get('vuln_id'),
-                                'title': title,
-                                'type': item.get('vt_name'), 
-                                'severity': severity,
-                                'cvssScore': item.get('cvss_score'),
-                                'location': item.get('affects_url'),
-                                'discoveredAt': item.get('last_seen', '').replace('T', ' ').split('.')[0],
-                                'status': item.get('status', 'open'),
-                                'target': item.get('affects_url'),
-                                'source': 'awvs'
-                            })
-                except Exception as e:
-                    logger.error(f"Fetch AWVS vulns failed: {e}")
-                    
-        elif task.task_type == 'poc_scan':
-            # 获取 POC 漏洞
-            poc_results = await POCScanResult.filter(task=task, vulnerable=True).all()
-            for res in poc_results:
-                vulnerabilities.append({
-                    'id': str(res.id),
-                    'title': standardize_title(f"{res.poc_type} 漏洞"),
-                    'type': res.poc_type,
-                    'severity': standardize_severity(res.severity or 'high'),
-                    'cvssScore': 0, 
-                    'location': res.target,
-                    'discoveredAt': res.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                    'status': 'open',
-                    'target': res.target,
-                    'source': 'poc'
-                })
-        
-        return APIResponse(code=200, message="获取成功", data=vulnerabilities)
-        
-    except Exception as e:
-        logger.error(f"获取任务漏洞失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ==================== 获取漏洞详情 ====================
-@router.get("/vulnerabilities/{vuln_id}", response_model=APIResponse)
-async def get_vulnerability_detail(vuln_id: str, source: Optional[str] = 'awvs'):
-    """
-    获取漏洞详情（统一接口）
-    """
-    try:
-        from models import Task, POCScanResult
-        from config import settings
-        from AVWS.API.Vuln import Vuln
-        
-        data = {}
-        
-        if source == 'awvs':
-            client = {
-                'api_url': settings.AWVS_API_URL,
-                'api_key': settings.AWVS_API_KEY
             }
-            v = Vuln(client['api_url'], client['api_key'])
-            vuln_data = v.get(vuln_id)
-            
-            if vuln_data:
-                        severity_val = vuln_data.get('severity')
-                        severity = standardize_severity(severity_val)
-                        
-                        vt_name = vuln_data.get('vt_name', '')
-                        title = standardize_title(vt_name)
-
-                        data = {
-                            'vuln_id': vuln_data.get('vuln_id'),
-                            'vt_name': title,  # Use prefixed title for display
-                            'severity': severity,
-                            'cvss_score': vuln_data.get('cvss_score'),
-                            'affects_url': vuln_data.get('affects_url'),
-                            'last_seen': vuln_data.get('last_seen', '').replace('T', ' ').split('.')[0],
-                            'impact': vuln_data.get('impact', ''),
-                            'description': vuln_data.get('description', ''),
-                            'details': vuln_data.get('details', ''),
-                            'recommendation': vuln_data.get('recommendation', ''),
-                            'request': vuln_data.get('request', ''),
-                            'response': vuln_data.get('response', ''),
-                            'status': vuln_data.get('status', 'open'),
-                            'source': 'awvs'
-                        }
-                
-        elif source == 'poc':
-            try:
-                res = await POCScanResult.get_or_none(id=int(vuln_id))
-                if res:
-                    data = {
-                        'vuln_id': str(res.id),
-                        'vt_name': f"{res.poc_type} 漏洞",
-                        'severity': res.severity.title() if res.severity else 'High',
-                        'cvss_score': 0,
-                        'affects_url': res.target,
-                        'last_seen': res.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                        'impact': 'Potential RCE or Information Leak',
-                        'description': res.message,
-                        'details': f"CVE ID: {res.cve_id}" if res.cve_id else "",
-                        'recommendation': 'Please update to the latest version.',
-                        'request': '',
-                        'response': '',
-                        'status': 'open',
-                        'source': 'poc'
-                    }
-            except ValueError:
-                pass
-
-        if data:
-            return APIResponse(code=200, message="获取成功", data=data)
-        else:
-            return APIResponse(code=404, message="未找到漏洞信息")
-            
+        )
     except Exception as e:
-        logger.error(f"获取漏洞详情失败: {str(e)}")
+        logger.error(f"获取统计概览失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -19,6 +19,8 @@ from plugins.cdnexist.cdnexist import iscdn
 from plugins.waf.waf import getwaf
 from plugins.whatcms.whatcms import getwhatcms
 from plugins.subdomain.subdomain import get_subdomain
+from plugins.loginfo.loginfo import LogHandler
+from plugins.randheader.randheader import get_random_headers
 try:
     from dirsearcch.dir_scanner import DirScanner
 except ImportError:
@@ -28,7 +30,8 @@ except ImportError:
 from poc import (
     cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
     struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
-    cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
+    cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc,
+    cve_2022_22965_poc, cve_2022_47986_poc, cve_2020_14756_poc, cve_2023_21839_poc
 )
 
 logger = logging.getLogger(__name__)
@@ -37,9 +40,13 @@ POC_FUNCTIONS = {
     "weblogic_cve_2020_2551": cve_2020_2551_poc,
     "weblogic_cve_2018_2628": cve_2018_2628_poc,
     "weblogic_cve_2018_2894": cve_2018_2894_poc,
+    "weblogic_cve_2020_14756": cve_2020_14756_poc,
+    "weblogic_cve_2023_21839": cve_2023_21839_poc,
     "struts2_009": struts2_009_poc,
     "struts2_032": struts2_032_poc,
     "tomcat_cve_2017_12615": cve_2017_12615_poc,
+    "tomcat_cve_2022_22965": cve_2022_22965_poc,
+    "tomcat_cve_2022_47986": cve_2022_47986_poc,
     "jboss_cve_2017_12149": cve_2017_12149_poc,
     "nexus_cve_2020_10199": cve_2020_10199_poc,
     "drupal_cve_2018_7600": cve_2018_7600_poc,

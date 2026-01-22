@@ -1,4 +1,37 @@
 # -*- coding:utf-8 -*-
+"""
+基础信息收集模块
+功能：
+1. 获取目标URL的基础信息（域名、IP、服务器、操作系统等）
+2. 查询IP的物理地址（国家、省份、城市、ASN）
+3. 获取域名解析的IP列表（支持IPv4/IPv6）
+4. 从Server头推断操作系统类型
+
+特性：
+- 支持请求重试和超时控制
+- 自动处理响应编码，避免中文乱码
+- 支持IP列表去重
+- 标准化返回结果格式
+
+依赖：
+- requests: 用于HTTP请求
+- socket: 用于DNS解析
+
+使用示例：
+    >>> from backend.plugins.baseinfo.baseinfo import getbaseinfo
+    >>> result = getbaseinfo('https://www.taobao.com/')
+    >>> print(result)
+    {
+        "code": 200,
+        "msg": "查询成功",
+        "domain": "www.taobao.com",
+        "server": "Tengine",
+        "language": null,
+        "ip": ["110.242.68.66 (物理地址: 中国,浙江,杭州,AS37963)"],
+        "os": "Linux",
+        "register": "http://whois.chinaz.com/www.taobao.com"
+    }
+""" 
 import logging
 import socket
 import json
@@ -200,7 +233,7 @@ def getbaseinfo(url: str) -> Dict[str, Any]:
 
 if __name__ == '__main__':
     # 测试示例
-    test_url = "https://jwt1399.top/"
+    test_url = "https://www.taobao.com/"
     result = getbaseinfo(test_url)
     # 格式化输出测试结果
     print(json.dumps(result, ensure_ascii=False, indent=2))

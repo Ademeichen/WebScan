@@ -1,4 +1,32 @@
 # -*- coding:utf-8 -*-
+"""
+WAF（Web应用防火墙）检测模块
+功能：
+1. 检测目标网站是否部署WAF
+2. 支持多种WAF类型识别（360、CloudFlare、F5、Baidu等）
+3. 通过HTTP响应头和内容特征进行识别
+4. 支持URL/域名/IP作为输入
+
+特性：
+- 内置多种WAF识别规则
+- 支持自定义检测规则
+- 返回WAF名称和匹配特征
+
+依赖：
+- requests: 用于HTTP请求
+- chardet: 用于编码检测
+
+使用示例：
+    >>> from backend.plugins.waf.waf import get_waf
+    >>> result = get_waf('https://www.example.com/')
+    >>> print(result)
+    {
+        "status": "success",
+        "has_waf": "yes",
+        "waf_name": "CloudFlare",
+        "message": "检测到CloudFlare CDN/WAF"
+    }
+""" 
 import re
 import logging
 from typing import Dict, Tuple, List, Optional
