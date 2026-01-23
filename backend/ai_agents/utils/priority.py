@@ -5,7 +5,7 @@
 """
 import logging
 from typing import List, Dict, Any
-from ..config import agent_config
+from ..agent_config import agent_config
 
 logger = logging.getLogger(__name__)
 

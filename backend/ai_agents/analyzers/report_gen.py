@@ -7,7 +7,7 @@ import json
 import logging
 from typing import Dict, Any, List
 from datetime import datetime
-from ..config import agent_config
+from ..agent_config import agent_config
 
 logger = logging.getLogger(__name__)
 

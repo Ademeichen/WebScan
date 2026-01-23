@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from ..core.state import AgentState
 from ..tools.registry import registry
 from ..tools.adapters import PluginAdapter, POCAdapter
-from ..config import agent_config
+from ..agent_config import agent_config
 from ..utils.priority import TaskPriorityManager
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class TaskPlanningNode:
         
         if agent_config.ENABLE_LLM_PLANNING:
             self.llm = ChatOpenAI(
-                model="xop3qwen1b7",
+                model=agent_config.MODEL_ID,
                 temperature=0,
                 openai_api_key=agent_config.OPENAI_API_KEY,
                 base_url=agent_config.OPENAI_BASE_URL

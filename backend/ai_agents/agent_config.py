@@ -44,6 +44,32 @@ class AgentConfig:
     
     默认为60秒。
     """
+
+    # ====================== LLM 配置 ======================
+    MODEL_ID: str = settings.MODEL_ID
+    """
+    AI 模型 ID
+    
+    指定使用的大语言模型。
+    默认为通义千问 1b7 模型。
+    """
+
+    OPENAI_API_KEY: str = settings.OPENAI_API_KEY
+    """
+    OpenAI API 密钥
+    
+    用于访问 OpenAI 的 GPT 系列模型。
+    用于 AI Agent、代码生成、漏洞分析等功能。
+    """
+
+    OPENAI_BASE_URL: str = settings.OPENAI_BASE_URL
+    """
+    OpenAI API 基础 URL
+    
+    用于指定 OpenAI API 的自定义端点。
+    默认为官方 OpenAI API 地址。
+    如果使用第三方兼容服务（如阿里云 MaaS），可以修改此地址。
+    """
     
     # ====================== 任务规划配置 ======================
     ENABLE_LLM_PLANNING: bool = True
@@ -138,6 +164,6 @@ agent_config = AgentConfig()
 全局Agent配置实例
 
 在应用中导入此实例来访问配置：
-    from ai_agents.config import agent_config
+    from ai_agents.agent_config import agent_config
     max_time = agent_config.MAX_EXECUTION_TIME
 """

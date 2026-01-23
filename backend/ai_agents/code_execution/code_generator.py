@@ -10,7 +10,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
-from ..config import agent_config
+from ..agent_config import agent_config
 from .environment import EnvironmentAwareness
 
 logger = logging.getLogger(__name__)
@@ -53,12 +53,11 @@ class CodeGenerator:
         
         if agent_config.ENABLE_LLM_PLANNING:
             try:
-                from config import settings
                 self.llm = ChatOpenAI(
-                    model=settings.MODEL_ID,
+                    model=agent_config.MODEL_ID,
                     temperature=0.3,
-                    openai_api_key=settings.OPENAI_API_KEY,
-                    base_url=settings.OPENAI_BASE_URL
+                    openai_api_key=agent_config.OPENAI_API_KEY,
+                    base_url=agent_config.OPENAI_BASE_URL
                 )
                 logger.info("✅ LLM代码生成器初始化完成")
             except Exception as e:

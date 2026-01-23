@@ -163,7 +163,7 @@ class EnvironmentAwareness:
             return {
                 "hostname": hostname,
                 "proxy_detected": self._check_proxy(),
-                "firewall_detected": self._check_firewall()
+                "firewall_detected": self._check_firewall(),
                 "internet_available": self._check_internet()
             }
         except Exception as e:

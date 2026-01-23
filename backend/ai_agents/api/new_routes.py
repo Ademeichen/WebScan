@@ -349,4 +349,4 @@ async def check_tool(tool_name: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-from ..config import agent_config
+from ..agent_config import agent_config

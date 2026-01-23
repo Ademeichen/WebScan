@@ -18,7 +18,7 @@ from ..code_execution.executor import UnifiedExecutor
 from ..code_execution.environment import EnvironmentAwareness
 from ..code_execution.code_generator import CodeGenerator
 from ..code_execution.capability_enhancer import CapabilityEnhancer
-from ..config import agent_config
+from ..agent_config import agent_config
 
 logger = logging.getLogger(__name__)
 

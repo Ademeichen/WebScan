@@ -22,7 +22,7 @@ from .new_nodes import (
     CodeExecutionNode,
     IntelligentDecisionNode
 )
-from ..config import agent_config
+from ..agent_config import agent_config
 
 logger = logging.getLogger(__name__)
 
@@ -221,8 +221,8 @@ def initialize_tools():
     
     注册所有插件和POC到工具注册表。
     """
-    from .tools.registry import registry
-    from .tools.adapters import PluginAdapter, POCAdapter
+    from ..tools.registry import registry
+    from ..tools.adapters import PluginAdapter, POCAdapter
     
     logger.info("🔧 开始初始化工具...")
     
