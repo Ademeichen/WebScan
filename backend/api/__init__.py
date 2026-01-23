@@ -1,13 +1,14 @@
 """
 API 路由总入口
 
-统一管理所有 API 路由，包括扫描、任务、报告、POC、AWVS、AI 对话和 Agent 等模块。
+统一管理所有 API 路由，包括扫描、任务、报告、POC、AWVS、AI 对话、Agent 和 AI Agents 等模块。
 """
 from fastapi import APIRouter
 from . import scan, tasks, reports, poc, awvs, settings, ai, kb, poc_gen
 from .agent import router as agent_router
 from plugins.common.common import router as common_router
 from plugins.common.common_proxyfliter import router as common_proxy_router
+from ai_agents.api import router as ai_agents_router
 
 api_router = APIRouter()
 
@@ -23,4 +24,6 @@ api_router.include_router(kb.router, prefix="/kb", tags=["漏洞知识库"])
 api_router.include_router(poc_gen.router, prefix="/poc-gen", tags=["POC智能生成"])
 api_router.include_router(common_router, prefix="/common", tags=["通用工具"])
 api_router.include_router(common_proxy_router, prefix="/common-proxy", tags=["通用工具-代理过滤"])
+api_router.include_router(ai_agents_router, tags=["AI Agents"])
+api_router.include_router(ai_agents_new_router, tags=["AI Agents Extended"])
 
