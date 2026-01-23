@@ -11,6 +11,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langgraph.graph import StateGraph, END
 from pydantic import BaseModel
+from config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,12 @@ def planner_node(state: AgentState):
     user_prompt = f"工具列表:\n{tools_desc}\n用户需求:\n{state['user_requirement']}"
 
     try:
-        model = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+        model = ChatOpenAI(
+            model=settings.MODEL_ID,
+            temperature=0,
+            openai_api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL
+        )
         chain = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
             ("human", user_prompt)

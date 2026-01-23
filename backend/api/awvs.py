@@ -25,9 +25,9 @@ from AVWS.API.Dashboard import Dashboard
 from AVWS.API.Base import Base
 
 # 导入 POC 模块
-from poc.weblogic import cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc
+from poc.weblogic import cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc, cve_2020_14756_poc, cve_2023_21839_poc
 from poc.Drupal import cve_2018_7600_poc
-from poc.tomcat import cve_2017_12615_poc
+from poc.tomcat import cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc
 from poc.jboss import cve_2017_12149_poc
 from poc.nexus import cve_2020_10199_poc
 from poc.struts2 import struts2_009_poc, struts2_032_poc
@@ -646,12 +646,20 @@ def POC_Check(url: str, CVE_id: str) -> tuple:
             result = cve_2018_2628_poc.poc(ip, port, 0)
         elif CVE_id_clean == "CVE_2018_2894":
             result = cve_2018_2894_poc.poc(url, "weblogic")
+        elif CVE_id_clean == "CVE_2020_14756":
+            result = cve_2020_14756_poc(url)
+        elif CVE_id_clean == "CVE_2023_21839":
+            result = cve_2023_21839_poc(url)
         # Drupal
         elif CVE_id_clean == "CVE_2018_7600":
             result = cve_2018_7600_poc.poc(url)
         # Tomcat
         elif CVE_id_clean == "CVE_2017_12615":
             result = cve_2017_12615_poc.poc(url)
+        elif CVE_id_clean == "CVE_2022_22965":
+            result = cve_2022_22965_poc(url)
+        elif CVE_id_clean == "CVE_2022_47986":
+            result = cve_2022_47986_poc(url)
         # JBoss
         elif CVE_id_clean == "CVE_2017_12149":
             result = cve_2017_12149_poc.poc(url)

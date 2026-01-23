@@ -30,15 +30,15 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["AI对话"])
 
-#TODO: 优化模型参数
 llm = ChatOpenAI(
-    model="gpt-3.5-turbo",
+    model=settings.MODEL_ID,
     temperature=0.7,
     openai_api_key=settings.OPENAI_API_KEY,
+    base_url=settings.OPENAI_BASE_URL,
     streaming=True
 )
 
-#TODO: 优化系统提示词
+# TODO: 优化系统提示词
 SYSTEM_PROMPT = """
 你是一个专业的Web安全顾问，名为WebScan AI。你的任务是帮助用户解决Web安全相关问题，包括漏洞分析、安全加固建议、扫描报告解读等。
 

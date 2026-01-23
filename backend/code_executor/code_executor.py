@@ -13,6 +13,7 @@ import logging
 from typing import Dict, Any, List
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
+from langchain_openai import ChatOpenAI
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import settings
@@ -46,6 +47,7 @@ def setup_logger():
 setup_logger()
 logger = logging.getLogger(__name__)
 
+# TODO: 集成该功能到 LangChain 工作流中，作为工具调用节点
 
 # ====================== 结构化参数模型 ======================
 
@@ -365,7 +367,12 @@ from langchain_openai import ChatOpenAI
 from langchain.agents import create_openai_tools_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-llm = ChatOpenAI(model="gpt-3.5-turbo", api_key="你的API_KEY", temperature=0)
+llm = ChatOpenAI(
+    model=settings.MODEL_ID,
+    api_key=settings.OPENAI_API_KEY,
+    base_url=settings.OPENAI_BASE_URL,
+    temperature=0
+)
 
 prompt = ChatPromptTemplate.from_messages([
     ("system", "你是代码执行助手，所有文件都在当前目录创建/执行，严格调用结构化工具完成任务。"),

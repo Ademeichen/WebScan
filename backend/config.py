@@ -203,7 +203,7 @@ class Settings(BaseSettings):
     """
     
     # ====================== API 密钥配置 ======================
-    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: str = "341787347bdc5374dc6377f29a192907:Nzk5NTk4OTFkYmE5MTUzODI1YTM0MjNj"
     """
     OpenAI API 密钥
     
@@ -213,6 +213,26 @@ class Settings(BaseSettings):
     
     如果不使用 OpenAI 模型，可以留空。
     必须通过环境变量 OPENAI_API_KEY 设置，不要在代码中硬编码。
+    """
+    
+    OPENAI_BASE_URL: str = "https://maas-api.cn-huabei-1.xf-yun.com/v2"
+    """
+    OpenAI API 基础 URL
+    
+    用于指定 OpenAI API 的自定义端点。
+    默认为官方 OpenAI API 地址。
+    如果使用第三方兼容服务（如阿里云 MaaS），可以修改此地址。
+    可以通过环境变量 OPENAI_BASE_URL 覆盖。
+    """
+    
+    MODEL_ID: str = "xop3qwen1b7"
+    """
+    AI 模型 ID
+    
+    指定使用的大语言模型。
+    默认为通义千问 1b7 模型。
+    可以根据需求切换不同的模型。
+    可以通过环境变量 MODEL_ID 覆盖。
     """
     
     QWEN_API_KEY: Optional[str] = None

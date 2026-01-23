@@ -12,7 +12,11 @@ from models import VulnerabilityKB
 # from langchain.prompts import PromptTemplate
 # from langchain.chains import LLMChain
 
+# TODO: 实际生产环境中，这里应该调用 LongChain API 或集成 LongChain 调用
+# 这里使用 OpenAI 作为示例，实际生产中应替换为 LongChain 调用
+
 # 尝试导入 pocsuite3
+# TODO: 实际生产环境中，这里应该调用 Pocsuite3 API 或集成 Pocsuite3 调用
 try:
     from pocsuite3.api import init_pocsuite
     from pocsuite3.lib.core.data import conf

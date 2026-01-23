@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["AI Agent"])
 
-
+# TODO: 完善图结构，添加工具调用节点，搭建完整的工作流
 class ToolDef(BaseModel):
     """
     工具定义模型

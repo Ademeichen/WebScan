@@ -3,9 +3,9 @@ POC 漏洞扫描 API 路由
 提供中间件和框架的 CVE 漏洞检测接口
 
 支持的 POC 类型：
-- WebLogic: CVE-2020-2551, CVE-2018-2628, CVE-2018-2894
+- WebLogic: CVE-2020-2551, CVE-2018-2628, CVE-2018-2894, CVE-2020-14756, CVE-2023-21839
 - Struts2: S2-009, S2-032
-- Tomcat: CVE-2017-12615
+- Tomcat: CVE-2017-12615, CVE-2022-22965, CVE-2022-47986
 - JBoss: CVE-2017-12149
 - Nexus: CVE-2020-10199
 - Drupal: CVE-2018-7600
@@ -26,8 +26,8 @@ import logging
 from datetime import datetime
 
 from poc import (
-    cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
-    struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
+    cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc, cve_2020_14756_poc, cve_2023_21839_poc,
+    struts2_009_poc, struts2_032_poc, cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc,
     cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
 )
 
@@ -88,9 +88,13 @@ POC_FUNCTIONS = {
     "weblogic_cve_2020_2551": cve_2020_2551_poc,
     "weblogic_cve_2018_2628": cve_2018_2628_poc,
     "weblogic_cve_2018_2894": cve_2018_2894_poc,
+    "weblogic_cve_2020_14756": cve_2020_14756_poc,
+    "weblogic_cve_2023_21839": cve_2023_21839_poc,
     "struts2_009": struts2_009_poc,
     "struts2_032": struts2_032_poc,
     "tomcat_cve_2017_12615": cve_2017_12615_poc,
+    "tomcat_cve_2022_22965": cve_2022_22965_poc,
+    "tomcat_cve_2022_47986": cve_2022_47986_poc,
     "jboss_cve_2017_12149": cve_2017_12149_poc,
     "nexus_cve_2020_10199": cve_2020_10199_poc,
     "drupal_cve_2018_7600": cve_2018_7600_poc,
@@ -338,6 +342,18 @@ async def get_poc_info(poc_type: str):
             "severity": "高危",
             "cve": "CVE-2018-2894"
         },
+        "weblogic_cve_2020_14756": {
+            "name": "WebLogic CVE-2020-14756",
+            "description": "WebLogic Server 远程代码执行漏洞",
+            "severity": "高危",
+            "cve": "CVE-2020-14756"
+        },
+        "weblogic_cve_2023_21839": {
+            "name": "WebLogic CVE-2023-21839",
+            "description": "WebLogic Server 远程代码执行漏洞",
+            "severity": "高危",
+            "cve": "CVE-2023-21839"
+        },
         "struts2_009": {
             "name": "Struts2 S2-009",
             "description": "Struts2 远程代码执行漏洞",
@@ -355,6 +371,18 @@ async def get_poc_info(poc_type: str):
             "description": "Tomcat 任意文件写入漏洞",
             "severity": "高危",
             "cve": "CVE-2017-12615"
+        },
+        "tomcat_cve_2022_22965": {
+            "name": "Tomcat CVE-2022-22965",
+            "description": "Spring Framework 远程代码执行漏洞 (Spring4Shell)",
+            "severity": "高危",
+            "cve": "CVE-2022-22965"
+        },
+        "tomcat_cve_2022_47986": {
+            "name": "Tomcat CVE-2022-47986",
+            "description": "Aspera Faspex 远程代码执行漏洞",
+            "severity": "高危",
+            "cve": "CVE-2022-47986"
         },
         "jboss_cve_2017_12149": {
             "name": "JBoss CVE-2017-12149",

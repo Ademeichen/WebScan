@@ -156,6 +156,7 @@ async def get_kb_vulnerability(kb_id: int):
     
     return item_dict
 
+# TODO: 实际生产环境中，这里应该调用 Seebug API 或爬取数据
 async def fetch_seebug_data():
     """
     从 Seebug 获取漏洞数据
@@ -197,6 +198,7 @@ async def fetch_seebug_data():
         }
     ]
 
+# TODO: 实际生产环境中，这里应该调用 Exploit-DB API 或爬取数据
 async def fetch_exploit_db_data():
     """
     从 Exploit-DB 获取漏洞数据
