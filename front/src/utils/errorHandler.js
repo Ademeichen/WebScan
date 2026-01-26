@@ -2,6 +2,8 @@
  * 全局错误处理工具
  */
 
+import toast from './toast.js'
+
 /**
  * 错误类型枚举
  */
@@ -125,24 +127,35 @@ class ErrorHandler {
    * 默认错误处理器
    */
   defaultHandler(error) {
-    // 显示用户友好的错误消息
-    if (typeof window !== 'undefined') {
-      // 在浏览器环境中显示错误
-      this.showErrorToast(error.message)
+    // 根据错误类型显示不同的提示
+    switch (error.type) {
+      case ErrorType.NETWORK_ERROR:
+        toast.error('网络错误', error.message, 5000)
+        break
+      case ErrorType.AUTH_ERROR:
+        toast.warning('认证错误', error.message, 4000)
+        // 跳转到登录页
+        if (error.statusCode === 401) {
+          setTimeout(() => {
+            window.location.href = '/login'
+          }, 2000)
+        }
+        break
+      case ErrorType.VALIDATION_ERROR:
+        toast.warning('验证错误', error.message, 3000)
+        break
+      case ErrorType.API_ERROR:
+        if (error.statusCode >= 500) {
+          toast.error('服务器错误', error.message, 5000)
+        } else {
+          toast.warning('请求错误', error.message, 3000)
+        }
+        break
+      default:
+        toast.info('提示', error.message, 3000)
     }
 
     return error
-  }
-
-  /**
-   * 显示错误提示
-   */
-  showErrorToast(message) {
-    // 如果使用了toast库，可以在这里调用
-    // 这里使用简单的alert作为后备
-    if (typeof alert !== 'undefined') {
-      alert(message)
-    }
   }
 }
 
@@ -153,22 +166,11 @@ export const errorHandler = new ErrorHandler()
 errorHandler.setGlobalHandler((error) => {
   console.error('全局错误:', error)
   
-  // 根据错误类型进行不同处理
-  switch (error.type) {
-    case ErrorType.NETWORK_ERROR:
-      errorHandler.showErrorToast('网络连接失败，请检查您的网络设置')
-      break
-    case ErrorType.AUTH_ERROR:
-      errorHandler.showErrorToast(error.message)
-      // 可以在这里跳转到登录页面
-      // window.location.href = '/login'
-      break
-    case ErrorType.VALIDATION_ERROR:
-      errorHandler.showErrorToast('输入数据有误，请检查后重试')
-      break
-    default:
-      errorHandler.showErrorToast(error.message || '操作失败，请稍后重试')
-  }
+  // 记录错误到日志服务（可选）
+  // logErrorToService(error)
+  
+  // 上报错误到监控系统（可选）
+  // reportErrorToMonitoring(error)
 })
 
 /**

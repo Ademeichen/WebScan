@@ -15,12 +15,13 @@
           <div class="form-section">
             <div class="form-group">
               <label class="form-label">选择扫描任务</label>
-              <select v-model="selectedTask" class="form-select">
+              <select v-model="selectedTask" class="form-select" :disabled="loadingTasks">
                 <option value="">请选择扫描任务</option>
                 <option v-for="task in scanTasks" :key="task.id" :value="task.id">
                   {{ task.task_name }} - {{ task.target }}
                 </option>
               </select>
+              <span v-if="loadingTasks" class="form-hint">加载中...</span>
             </div>
             
             <div class="form-group">
@@ -58,8 +59,9 @@
         </div>
         
         <div class="generator-actions">
-          <button @click="generateReport" class="btn btn-success" :disabled="!canGenerate">
-            📄 生成报告
+          <button @click="generateReport" class="btn btn-success" :disabled="!canGenerate || generating">
+            <span v-if="generating">⏳ 生成中...</span>
+            <span v-else>📄 生成报告</span>
           </button>
         </div>
       </div>
@@ -80,7 +82,12 @@
           </div>
         </div>
         
-        <div class="history-list">
+        <div v-if="loadingReports" class="loading-state">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">加载报告列表...</div>
+        </div>
+        
+        <div v-else class="history-list">
           <div 
             v-for="report in filteredReports" 
             :key="report.id"
@@ -90,7 +97,7 @@
               <div class="report-name">{{ report.report_name }}</div>
               <div class="report-meta">
                 <span class="report-task">{{ report.task_name }}</span>
-                <span class="report-date">{{ report.created_at }}</span>
+                <span class="report-date">{{ formatDate(report.created_at) }}</span>
               </div>
             </div>
             
@@ -101,27 +108,81 @@
             </div>
             
             <div class="report-size">
-              {{ report.size }}
+              {{ formatFileSize(report.file_size) }}
             </div>
             
             <div class="report-actions">
-              <button @click="downloadReport(report)" class="btn-icon" title="下载">
-                📥
+              <button @click="downloadReport(report)" class="btn-icon" title="下载" :disabled="downloading === report.id">
+                <span v-if="downloading === report.id">⏳</span>
+                <span v-else>📥</span>
               </button>
               <button @click="viewReport(report)" class="btn-icon" title="预览">
                 👁️
               </button>
-              <button @click="deleteReport(report.id)" class="btn-icon btn-danger" title="删除">
-                🗑️
+              <button @click="deleteReport(report.id)" class="btn-icon btn-danger" title="删除" :disabled="deleting === report.id">
+                <span v-if="deleting === report.id">⏳</span>
+                <span v-else>🗑️</span>
               </button>
             </div>
           </div>
         </div>
         
-        <div v-if="filteredReports.length === 0" class="empty-state">
+        <div v-if="!loadingReports && filteredReports.length === 0" class="empty-state">
           <div class="empty-icon">📋</div>
           <div class="empty-title">暂无报告</div>
           <div class="empty-description">生成第一个安全扫描报告</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 报告预览模态框 -->
+    <div v-if="showPreviewModal" class="modal-overlay" @click="closePreviewModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3 class="modal-title">报告预览</h3>
+          <button @click="closePreviewModal" class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <div v-if="previewLoading" class="preview-loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">加载预览...</div>
+          </div>
+          <div v-else class="preview-content">
+            <div class="preview-info">
+              <div class="preview-item">
+                <span class="preview-label">报告名称:</span>
+                <span class="preview-value">{{ currentPreviewReport?.report_name }}</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">关联任务:</span>
+                <span class="preview-value">{{ currentPreviewReport?.task_name }}</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">报告格式:</span>
+                <span class="preview-value">{{ (currentPreviewReport?.report_type || '').toUpperCase() }}</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">创建时间:</span>
+                <span class="preview-value">{{ formatDate(currentPreviewReport?.created_at) }}</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">文件大小:</span>
+                <span class="preview-value">{{ formatFileSize(currentPreviewReport?.file_size) }}</span>
+              </div>
+            </div>
+            <div v-if="currentPreviewReport?.description" class="preview-description">
+              <h4>描述</h4>
+              <p>{{ currentPreviewReport.description }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="downloadReport(currentPreviewReport)" class="btn btn-primary">
+            📥 下载报告
+          </button>
+          <button @click="closePreviewModal" class="btn btn-secondary">
+            关闭
+          </button>
         </div>
       </div>
     </div>
@@ -129,18 +190,27 @@
 </template>
 
 <script>
-import { reportApi, taskApi } from '../utils/api.js'
+import { reportsApi, tasksApi } from '../utils/api.js'
+import { formatDate } from '../utils/date.js'
 
 export default {
   name: 'Reports',
   data() {
     return {
-      scanTasks: [], // Will be populated from API
+      scanTasks: [],
       reports: [],
       selectedTask: '',
       selectedFormat: 'html',
       selectedContent: ['summary', 'vulnerabilities', 'recommendations'],
       historyFilter: '',
+      loadingTasks: false,
+      loadingReports: false,
+      generating: false,
+      downloading: null,
+      deleting: null,
+      showPreviewModal: false,
+      previewLoading: false,
+      currentPreviewReport: null,
       reportFormats: [
         { value: 'html', name: 'HTML', icon: '🌐' },
         { value: 'pdf', name: 'PDF', icon: '📄' },
@@ -169,33 +239,39 @@ export default {
     this.fetchReports()
   },
   methods: {
+    formatDate,
     async fetchTasks() {
+      this.loadingTasks = true
       try {
-        const response = await taskApi.list()
+        const response = await tasksApi.getTasks()
         if (response.code === 200 && response.data && response.data.tasks) {
-            this.scanTasks = response.data.tasks
+          this.scanTasks = response.data.tasks
         } else if (Array.isArray(response.data)) {
-            // Fallback if structure is different
-            this.scanTasks = response.data
+          this.scanTasks = response.data
         } else {
-            this.scanTasks = []
+          this.scanTasks = []
         }
       } catch (error) {
         console.error('获取任务列表失败:', error)
+        this.scanTasks = []
+      } finally {
+        this.loadingTasks = false
       }
     },
     async fetchReports() {
+      this.loadingReports = true
       try {
-        const response = await reportApi.list()
+        const response = await reportsApi.list()
         if (response.code === 200 && response.data && response.data.reports) {
-            this.reports = response.data.reports
+          this.reports = response.data.reports
         } else {
-             // Try direct array if format differs
-             this.reports = response.data || []
+          this.reports = response.data || []
         }
       } catch (error) {
         console.error('获取报告列表失败:', error)
         this.reports = []
+      } finally {
+        this.loadingReports = false
       }
     },
     async generateReport() {
@@ -204,6 +280,7 @@ export default {
       const task = this.scanTasks.find(t => t.id == this.selectedTask)
       if (!task) return
 
+      this.generating = true
       try {
         const reportData = {
           task_id: task.id,
@@ -212,40 +289,85 @@ export default {
           name: `${task.task_name}报告`
         }
         
-        await reportApi.create(reportData)
-        alert('报告生成成功！')
-        this.fetchReports()
+        const response = await reportsApi.create(reportData)
+        if (response.code === 200) {
+          alert('报告生成成功！')
+          await this.fetchReports()
+        } else {
+          alert('生成报告失败: ' + (response.message || '未知错误'))
+        }
       } catch (error) {
         console.error('生成报告失败:', error)
         alert('生成报告失败: ' + error.message)
+      } finally {
+        this.generating = false
       }
     },
     downloadReport(report) {
-      // 实现下载功能
+      if (!report) return
+      
+      this.downloading = report.id
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
       const url = `${baseUrl}/reports/${report.id}/export?format=${report.report_type}`
       
       const link = document.createElement('a')
       link.href = url
-      link.target = '_blank' // Open in new tab if it doesn't download immediately, though attachment header should force download
+      link.download = report.report_name || `report.${report.report_type}`
+      link.target = '_blank'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      
+      setTimeout(() => {
+        this.downloading = null
+      }, 1000)
     },
-    viewReport(report) {
-      // 实现预览功能
-      console.log('预览报告:', report.report_name)
+    async viewReport(report) {
+      this.currentPreviewReport = report
+      this.showPreviewModal = true
+      this.previewLoading = true
+      
+      try {
+        const response = await reportsApi.get(report.id)
+        if (response.code === 200) {
+          this.currentPreviewReport = { ...report, ...response.data }
+        }
+      } catch (error) {
+        console.error('获取报告详情失败:', error)
+      } finally {
+        this.previewLoading = false
+      }
+    },
+    closePreviewModal() {
+      this.showPreviewModal = false
+      this.currentPreviewReport = null
+      this.previewLoading = false
     },
     async deleteReport(reportId) {
       if (confirm('确定要删除这个报告吗？')) {
+        this.deleting = reportId
         try {
-            await reportApi.delete(reportId)
+          const response = await reportsApi.delete(reportId)
+          if (response.code === 200) {
             this.reports = this.reports.filter(r => r.id !== reportId)
+            alert('删除成功')
+          } else {
+            alert('删除失败: ' + (response.message || '未知错误'))
+          }
         } catch (error) {
-            console.error('删除报告失败:', error)
-            alert('删除报告失败')
+          console.error('删除报告失败:', error)
+          alert('删除报告失败')
+        } finally {
+          this.deleting = null
         }
       }
+    },
+    formatFileSize(bytes) {
+      if (!bytes) return '0 B'
+      const k = 1024
+      const sizes = ['B', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
     }
   }
 }
@@ -272,15 +394,22 @@ export default {
 }
 
 .generator-content {
-  display: block; /* Removed grid to allow full width since preview is gone */
+  display: block;
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-  max-width: 800px; /* Limit width for better readability */
-  margin: 0 auto; /* Center the form */
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: var(--spacing-xs);
 }
 
 /* 格式选择标签 */
@@ -385,6 +514,34 @@ export default {
   gap: var(--spacing-md);
 }
 
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-xl);
+  gap: var(--spacing-md);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--secondary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
 .history-list {
   display: flex;
   flex-direction: column;
@@ -469,11 +626,16 @@ export default {
   transition: background-color 0.2s ease;
 }
 
-.btn-icon:hover {
+.btn-icon:hover:not(:disabled) {
   background-color: var(--background-color);
 }
 
-.btn-icon.btn-danger:hover {
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon.btn-danger:hover:not(:disabled) {
   background-color: rgba(231, 76, 60, 0.1);
 }
 
@@ -499,6 +661,131 @@ export default {
   font-size: 14px;
 }
 
+/* 模态框 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-md);
+}
+
+.modal-content {
+  background: white;
+  border-radius: var(--border-radius);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s ease;
+}
+
+.modal-close:hover {
+  background-color: var(--background-color);
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.preview-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.preview-item {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.preview-label {
+  font-weight: bold;
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.preview-value {
+  color: var(--text-primary);
+}
+
+.preview-description {
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.preview-description h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.preview-description p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .generator-content {
@@ -518,6 +805,10 @@ export default {
   .report-meta {
     flex-direction: column;
     gap: var(--spacing-xs);
+  }
+  
+  .modal-content {
+    max-height: 95vh;
   }
 }
 </style>

@@ -316,8 +316,8 @@ def _build_graph(self) -> StateGraph:
 
 ## 文档
 
-- [功能说明文档](./README.md) - 详细的架构设计、模块说明、接口定义
-- [性能测试报告](./PERFORMANCE_REPORT.md) - 性能测试结果和优化建议
+- [系统完整文档](./SYSTEM_DOCUMENTATION.md) - 整合了API路由、整合指南和性能测试报告的完整技术文档
+- [代码阅读指南](./阅读顺序.md) - 按照推荐顺序阅读代码的指南
 
 ---
 

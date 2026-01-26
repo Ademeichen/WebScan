@@ -86,8 +86,7 @@
 </template>
 
 <script>
-// TODO: 替换为真实的API调用
-import { mockNotifications, mockUserInfo } from '../data/mockData.js'
+import { mockNotifications, mockUserInfo } from '../../data/mockData.js'
 
 export default {
   name: 'AppLayout',
@@ -104,11 +103,11 @@ export default {
         { name: 'ScanTasks', path: '/scan-tasks', label: '扫描任务', icon: '🔍' },
         { name: 'POCScan', path: '/poc-scan', label: 'POC扫描', icon: '🎯' },
         { name: 'AWVSScan', path: '/awvs-scan', label: 'AWVS扫描', icon: '🛡️' },
+        { name: 'AgentScan', path: '/agent-scan', label: 'AI Agent', icon: '🤖' },
         { name: 'Reports', path: '/reports', label: '报告', icon: '📋' },
         { name: 'Settings', path: '/settings', label: '设置', icon: '⚙️' }
       ],
       
-      // TODO: 从API获取通知列表 - GET /api/notifications
       notifications: mockNotifications,
       
       // TODO: 从API获取用户信息 - GET /api/user/profile

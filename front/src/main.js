@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import './style.css'
 import App from './App.vue'
 import router from './router'
@@ -6,9 +7,11 @@ import { ErrorHandlerPlugin } from './utils/errorHandler.js'
 import { LoadingPlugin } from './utils/loading.js'
 
 const app = createApp(App)
+const pinia = createPinia()
 
 // 注册全局插件
 app.use(router)
+app.use(pinia)
 app.use(ErrorHandlerPlugin)
 app.use(LoadingPlugin)
 
