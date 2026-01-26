@@ -177,18 +177,19 @@ class POCAdapter:
     """
     
     @staticmethod
-    def adapt_poc(poc_name: str, poc_module: Any) -> callable:
+    def adapt_poc(poc_name: str, poc_module: Any, timeout: int = 30) -> callable:
         """
         适配单个POC
         
         Args:
             poc_name: POC名称
             poc_module: POC模块
+            timeout: 超时时间（秒）
             
         Returns:
             callable: 适配后的函数
         """
-        async def poc_wrapper(target: str, timeout: int = 10) -> Dict[str, Any]:
+        async def poc_wrapper(target: str, timeout: int = timeout) -> Dict[str, Any]:
             try:
                 if hasattr(poc_module, 'poc'):
                     poc_func = poc_module.poc
@@ -227,21 +228,16 @@ class POCAdapter:
         from poc import (
             cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
             struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
-            cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc,
-            cve_2022_22965_poc, cve_2022_47986_poc, cve_2020_14756_poc, cve_2023_21839_poc
+            cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
         )
         
         return {
             "poc_weblogic_2020_2551": cve_2020_2551_poc,
             "poc_weblogic_2018_2628": cve_2018_2628_poc,
             "poc_weblogic_2018_2894": cve_2018_2894_poc,
-            "poc_weblogic_2020_14756": cve_2020_14756_poc,
-            "poc_weblogic_2023_21839": cve_2023_21839_poc,
             "poc_struts2_009": struts2_009_poc,
             "poc_struts2_032": struts2_032_poc,
             "poc_tomcat_2017_12615": cve_2017_12615_poc,
-            "poc_tomcat_2022_22965": cve_2022_22965_poc,
-            "poc_tomcat_2022_47986": cve_2022_47986_poc,
             "poc_jboss_2017_12149": cve_2017_12149_poc,
             "poc_nexus_2020_10199": cve_2020_10199_poc,
             "poc_drupal_2018_7600": cve_2018_7600_poc,

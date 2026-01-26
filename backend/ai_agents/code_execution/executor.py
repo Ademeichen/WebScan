@@ -205,15 +205,16 @@ class UnifiedExecutor:
                     timeout=self.timeout
                 )
                 
-                output = stdout.decode("utf-8", errors="ignore")
-                error = stderr.decode("utf-8", errors="ignore")
+                output = stdout.decode("utf-8", errors="replace")
+                error = stderr.decode("utf-8", errors="replace")
                 exit_code = process.returncode
                 
                 return ExecutionResult(
                     status="success" if exit_code == 0 else "failed",
                     output=output,
                     error=error,
-                    exit_code=exit_code
+                    exit_code=exit_code,
+                    execution_time=0.0
                 )
             except asyncio.TimeoutError:
                 process.kill()

@@ -6,6 +6,7 @@
 import platform
 import sys
 import subprocess
+import os
 import logging
 from typing import Dict, List, Any, Optional
 from pathlib import Path
@@ -64,11 +65,15 @@ class EnvironmentAwareness:
             langchain_version = langchain.__version__
         except ImportError:
             langchain_version = None
+        except AttributeError:
+            langchain_version = None
         
         try:
             import langgraph
-            langgraph_version = langgraph.__version__
+            langgraph_version = getattr(langgraph, '__version__', None)
         except ImportError:
+            langgraph_version = None
+        except AttributeError:
             langgraph_version = None
         
         try:
@@ -76,11 +81,15 @@ class EnvironmentAwareness:
             tortoise_version = tortoise.__version__
         except ImportError:
             tortoise_version = None
+        except AttributeError:
+            tortoise_version = None
         
         try:
             import fastapi
             fastapi_version = fastapi.__version__
         except ImportError:
+            fastapi_version = None
+        except AttributeError:
             fastapi_version = None
         
         return {

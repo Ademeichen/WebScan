@@ -289,7 +289,7 @@ async def api_check_ip(ip: str):
         return error(code=403, data={"ip": ip, "is_valid": False}, msg="IP非法或禁止扫描")
 
 
-@app.get("/check/url", summary="校验URL合法性")
+@router.get("/check/url", summary="校验URL合法性")
 async def api_check_url(url: str):
     """
     FastAPI接口示例：校验URL合法性

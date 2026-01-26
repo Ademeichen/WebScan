@@ -322,7 +322,3 @@ def initialize_tools():
         )
     
     logger.info(f"✅ 工具初始化完成，共注册 {len(registry.tools)} 个工具")
-
-
-# 初始化工具（模块加载时自动执行）
-initialize_tools()

@@ -9,14 +9,12 @@ AI Agents 模块
 - tools: 工具集成（注册表、封装、适配器）
 - planners: 任务规划（规则化、LLM增强）
 - analyzers: 结果分析（漏洞分析、报告生成）
-- memory: 记忆机制（上下文、历史）
 - api: API路由（Agent扫描接口）
 - utils: 工具函数（优先级、重试策略）
 """
 
 from .core import ScanAgentGraph
 from .tools import ToolRegistry
-from .memory import AgentMemory
 
 __version__ = "1.0.0"
-__all__ = ["ScanAgentGraph", "ToolRegistry", "AgentMemory"]
+__all__ = ["ScanAgentGraph", "ToolRegistry"]

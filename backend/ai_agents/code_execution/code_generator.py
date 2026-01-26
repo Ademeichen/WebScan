@@ -38,6 +38,15 @@ class CodeGenerationResponse(BaseModel):
     description: str = Field(description="代码说明")
     estimated_time: int = Field(description="预计执行时间（秒）")
     dependencies: List[str] = Field(default_factory=list, description="依赖列表")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        转换为字典
+        
+        Returns:
+            Dict[str, Any]: 字典表示
+        """
+        return self.model_dump()
 
 
 class CodeGenerator:

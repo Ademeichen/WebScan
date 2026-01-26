@@ -33,7 +33,8 @@ class AsyncToolWrapper:
         self.func = func
         self.timeout = timeout
         self.is_async = asyncio.iscoroutinefunction(func)
-        logger.debug(f"创建工具包装器: {func.__name__}, 异步: {self.is_async}, 超时: {timeout}s")
+        func_name = getattr(func, '__name__', str(func))
+        logger.debug(f"创建工具包装器: {func_name}, 异步: {self.is_async}, 超时: {timeout}s")
     
     async def execute(self, target: str, **kwargs) -> Any:
         """
@@ -50,6 +51,7 @@ class AsyncToolWrapper:
             asyncio.TimeoutError: 执行超时
             Exception: 执行失败
         """
+        func_name = getattr(self.func, '__name__', str(self.func))
         try:
             if self.is_async:
                 result = await asyncio.wait_for(
@@ -63,10 +65,10 @@ class AsyncToolWrapper:
                 )
             return result
         except asyncio.TimeoutError:
-            logger.error(f"工具 {self.func.__name__} 执行超时（{self.timeout}秒）")
+            logger.error(f"工具 {func_name} 执行超时（{self.timeout}秒）")
             raise
         except Exception as e:
-            logger.error(f"工具 {self.func.__name__} 执行失败: {str(e)}")
+            logger.error(f"工具 {func_name} 执行失败: {str(e)}")
             raise
     
     def get_timeout(self) -> int:
