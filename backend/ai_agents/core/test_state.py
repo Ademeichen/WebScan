@@ -184,7 +184,7 @@ class TestAgentState:
         state.completed_tasks = ['task1']
         
         progress = state.get_progress()
-        assert progress == 25.0
+        assert abs(progress - 33.33) < 0.1  # 1/3 ≈ 33.33%
 
     def test_get_progress_half_complete(self, state):
         """

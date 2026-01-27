@@ -213,7 +213,7 @@ class AgentState:
         """
         if not self.planned_tasks:
             return 100.0
-        total = len(self.planned_tasks) + len(self.completed_tasks)
+        total = len(self.planned_tasks)
         completed = len(self.completed_tasks)
         return (completed / total) * 100 if total > 0 else 0.0
     

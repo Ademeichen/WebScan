@@ -25,7 +25,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.baseinfo.baseinfo import getbaseinfo
+        from backend.plugins.baseinfo.baseinfo import getbaseinfo
         return wrap_async(getbaseinfo, timeout=10)
     
     @staticmethod
@@ -36,7 +36,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.portscan.portscan import ScanPort
+        from backend.plugins.portscan.portscan import ScanPort
         
         async def portscan_wrapper(target: str) -> Dict[str, Any]:
             try:
@@ -71,7 +71,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.waf.waf import getwaf
+        from backend.plugins.waf.waf import getwaf
         return wrap_async(getwaf, timeout=10)
     
     @staticmethod
@@ -82,7 +82,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.cdnexist.cdnexist import iscdn
+        from backend.plugins.cdnexist.cdnexist import iscdn
         
         async def cdn_wrapper(target: str) -> Dict[str, Any]:
             try:
@@ -110,7 +110,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.whatcms.whatcms import getwhatcms
+        from backend.plugins.whatcms.whatcms import getwhatcms
         return wrap_async(getwhatcms, timeout=15)
     
     @staticmethod
@@ -121,7 +121,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.infoleak.infoleak import get_infoleak
+        from backend.plugins.infoleak.infoleak import get_infoleak
         return wrap_async(get_infoleak, timeout=30)
     
     @staticmethod
@@ -132,7 +132,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.subdomain.subdomain import get_subdomain
+        from backend.plugins.subdomain.subdomain import get_subdomain
         return wrap_async(get_subdomain, timeout=60)
     
     @staticmethod
@@ -143,7 +143,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.webside.webside import get_side_info
+        from backend.plugins.webside.webside import get_side_info
         return wrap_async(get_side_info, timeout=30)
     
     @staticmethod
@@ -154,7 +154,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.webweight.webweight import get_web_weight
+        from backend.plugins.webweight.webweight import get_web_weight
         return wrap_async(get_web_weight, timeout=30)
     
     @staticmethod
@@ -165,7 +165,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.iplocating.iplocating import get_locating
+        from backend.plugins.iplocating.iplocating import get_locating
         return wrap_async(get_locating, timeout=10)
 
 
@@ -225,7 +225,7 @@ class POCAdapter:
         Returns:
             Dict[str, Any]: POC名称到模块的映射
         """
-        from poc import (
+        from backend.poc import (
             cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
             struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
             cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc

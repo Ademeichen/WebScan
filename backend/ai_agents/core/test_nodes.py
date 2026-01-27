@@ -10,7 +10,10 @@ from datetime import datetime
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from pathlib import Path
+
+# 统一导入路径配置
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from backend.ai_agents.core.state import AgentState
 from backend.ai_agents.core.nodes import (

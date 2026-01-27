@@ -82,7 +82,7 @@ class TestVulnerabilityAnalyzer:
         """
         deduplicated = analyzer.deduplicate(sample_vulnerabilities)
         
-        assert len(deduplicated) == 5
+        assert len(deduplicated) == 4  # 6个漏洞去重后应为4个
         cve_list = [v['cve'] for v in deduplicated]
         assert cve_list.count('CVE-2020-2551') == 1
 

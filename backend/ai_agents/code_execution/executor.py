@@ -83,7 +83,8 @@ class UnifiedExecutor:
         self.code_generator = CodeGenerator()
         self.capability_enhancer = CapabilityEnhancer()
         
-        self.workspace = Path("ai_agents/code_execution/workspace")
+        # 使用绝对路径创建工作目录
+        self.workspace = Path(__file__).parent / "workspace"
         self.workspace.mkdir(parents=True, exist_ok=True)
         
         logger.info(f"✅ 统一执行器初始化完成: timeout={timeout}s, sandbox={enable_sandbox}")
@@ -188,6 +189,17 @@ class UnifiedExecutor:
             ExecutionResult: 执行结果
         """
         try:
+            # 读取脚本文件内容
+            with open(script_file, 'r', encoding='utf-8') as f:
+                original_code = f.read()
+            
+            # 为代码添加必要的导入语句
+            enhanced_code = self._enhance_python_code(original_code)
+            
+            # 重新写入增强后的代码
+            with open(script_file, 'w', encoding='utf-8') as f:
+                f.write(enhanced_code)
+            
             cmd = [sys.executable, script_file]
             if target:
                 cmd.append(target)
@@ -196,7 +208,7 @@ class UnifiedExecutor:
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=str(self.workspace)
+                # cwd=str(self.workspace)  # 移除工作目录设置，使用默认路径
             )
             
             try:
@@ -486,6 +498,39 @@ class UnifiedExecutor:
             List[Dict]: 能力列表
         """
         return self.capability_enhancer.list_capabilities()
+    
+    def _enhance_python_code(self, code: str) -> str:
+        """
+        为Python代码添加必要的导入语句
+        
+        Args:
+            code: 原始代码
+            
+        Returns:
+            str: 增强后的代码
+        """
+        # 检查是否已经包含必要的导入
+        necessary_imports = [
+            "import sys",
+            "import os",
+            "import socket",
+            "import subprocess",
+            "import requests"
+        ]
+        
+        # 收集所有缺失的导入语句
+        missing_imports = []
+        for import_stmt in necessary_imports:
+            if import_stmt not in code:
+                missing_imports.append(import_stmt)
+        
+        # 在文件开头一次性添加所有缺失的导入语句
+        if missing_imports:
+            enhanced_code = "\n".join(missing_imports) + "\n\n" + code
+        else:
+            enhanced_code = code
+        
+        return enhanced_code
     
     def _get_file_extension(self, language: str) -> str:
         """
