@@ -14,7 +14,7 @@ from functools import partial
 from tortoise.functions import Count
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from config import settings
+from backend.config import settings
 from models import Task, Vulnerability
 
 # 导入 AWVS API 类

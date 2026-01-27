@@ -6,7 +6,7 @@
 """
 import os
 from tortoise import Tortoise, connections
-from config import settings
+from backend.config import settings
 import logging
 
 logger = logging.getLogger(__name__)

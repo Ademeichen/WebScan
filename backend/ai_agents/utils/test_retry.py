@@ -340,7 +340,8 @@ class TestRetryStrategyBase:
     测试重试策略基类
     """
 
-    def test_execute_not_implemented(self):
+    @pytest.mark.asyncio
+    async def test_execute_not_implemented(self):
         """
         测试基类execute方法未实现
         """

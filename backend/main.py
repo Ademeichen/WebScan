@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import uvicorn
-from config import settings
+from backend.config import settings
 from database import init_db, close_db
 import logging
 from pathlib import Path

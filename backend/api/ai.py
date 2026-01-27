@@ -19,7 +19,7 @@ from datetime import datetime
 import logging
 
 from models import AIChatInstance, AIChatMessage
-from config import settings
+from backend.config import settings
 
 from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationSummaryMemory

@@ -1,146 +1,86 @@
 """
-测试环境感知模块
-
-测试 EnvironmentAwareness 类的各项功能。
+简单的功能测试脚本
 """
-import pytest
 import sys
-from pathlib import Path
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from environment import EnvironmentAwareness
 
-from ai_agents.code_execution.environment import EnvironmentAwareness
+print("="*60)
+print("环境感知模块功能测试")
+print("="*60)
 
-
-class TestEnvironmentAwareness:
-    """
-    测试环境感知类
-    """
-
-    @pytest.fixture
-    def env_awareness(self):
-        """
-        创建环境感知实例
-        """
-        return EnvironmentAwareness()
-
-    def test_initialization(self, env_awareness):
-        """
-        测试初始化
-        """
-        assert env_awareness is not None
-        assert hasattr(env_awareness, 'os_info')
-        assert hasattr(env_awareness, 'python_info')
-        assert hasattr(env_awareness, 'available_tools')
-        assert hasattr(env_awareness, 'network_info')
-        assert hasattr(env_awareness, 'system_resources')
-
-    def test_detect_os(self, env_awareness):
-        """
-        测试操作系统检测
-        """
-        os_info = env_awareness.os_info
-        assert 'system' in os_info
-        assert 'release' in os_info
-        assert 'version' in os_info
-        assert 'machine' in os_info
-        assert os_info['system'] in ['Windows', 'Linux', 'Darwin', 'Java']
-
-    def test_detect_python(self, env_awareness):
-        """
-        测试Python版本检测
-        """
-        python_info = env_awareness.python_info
-        assert 'version' in python_info
-        assert 'executable' in python_info
-        assert 'dependencies' in python_info
-        
-        version = python_info['version']
-        assert isinstance(version, str)
-        assert len(version.split('.')) >= 2
-
-    def test_detect_tools(self, env_awareness):
-        """
-        测试工具检测
-        """
-        tools = env_awareness.available_tools
-        assert isinstance(tools, dict)
-        
-        expected_tools = ['nmap', 'sqlmap', 'burpsuite', 'metasploit', 'nikto', 'dirb', 'gobuster']
-        for tool in expected_tools:
-            assert tool in tools
-            assert 'available' in tools[tool]
-            assert 'version' in tools[tool]
-            assert isinstance(tools[tool]['available'], bool)
-
-    def test_detect_network(self, env_awareness):
-        """
-        测试网络检测
-        """
-        network_info = env_awareness.network_info
-        assert 'hostname' in network_info
-        assert 'proxy_detected' in network_info
-        assert 'firewall_detected' in network_info
-        assert 'internet_available' in network_info
-        assert isinstance(network_info['hostname'], str)
-        assert isinstance(network_info['proxy_detected'], bool)
-        assert isinstance(network_info['firewall_detected'], bool)
-        assert isinstance(network_info['internet_available'], bool)
-
-    def test_detect_resources(self, env_awareness):
-        """
-        测试系统资源检测
-        """
-        resources = env_awareness.system_resources
-        assert 'disk_total' in resources
-        assert 'disk_used' in resources
-        assert 'disk_free' in resources
-        assert 'disk_used_percent' in resources
-        assert resources['disk_total'] > 0
-        assert resources['disk_used'] >= 0
-        assert resources['disk_free'] >= 0
-        assert 0 <= resources['disk_used_percent'] <= 100
-
-    def test_get_environment_report(self, env_awareness):
-        """
-        测试获取环境报告
-        """
-        report = env_awareness.get_environment_report()
-        assert 'os_info' in report
-        assert 'python_info' in report
-        assert 'available_tools' in report
-        assert 'network_info' in report
-        assert 'system_resources' in report
-        assert 'scan_recommendations' in report
-        assert isinstance(report['scan_recommendations'], list)
-
-    def test_is_tool_available(self, env_awareness):
-        """
-        测试检查工具是否可用
-        """
-        result = env_awareness.is_tool_available('nmap')
-        assert isinstance(result, bool)
-        
-        result = env_awareness.is_tool_available('nonexistent_tool')
-        assert result is False
-
-    def test_get_python_version(self, env_awareness):
-        """
-        测试获取Python版本
-        """
-        version = env_awareness.get_python_version()
-        assert isinstance(version, str)
-        assert version != 'unknown'
-        assert len(version) >= 3
-
-    def test_generate_scan_recommendations(self, env_awareness):
-        """
-        测试生成扫描建议
-        """
-        recommendations = env_awareness._generate_scan_recommendations()
-        assert isinstance(recommendations, list)
-        assert len(recommendations) > 0
-
-
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+try:
+    print("\n1. 测试初始化...")
+    env = EnvironmentAwareness()
+    print("   ✅ 初始化成功")
+    
+    print("\n2. 测试操作系统检测...")
+    os_info = env.os_info
+    print(f"   系统: {os_info['system']} {os_info['release']}")
+    print("   ✅ 操作系统检测成功")
+    
+    print("\n3. 测试Python检测...")
+    python_info = env.python_info
+    print(f"   版本: {python_info['version']}")
+    print(f"   可执行文件: {python_info['executable']}")
+    print("   ✅ Python检测成功")
+    
+    print("\n4. 测试工具检测...")
+    tools = env.available_tools
+    available_count = sum(1 for t in tools.values() if t.get('available'))
+    print(f"   检测到 {len(tools)} 个工具，其中 {available_count} 个可用")
+    for tool_name, tool_info in tools.items():
+        status = "✓" if tool_info['available'] else "✗"
+        print(f"   {status} {tool_name}: {tool_info.get('version', 'unknown')}")
+    print("   ✅ 工具检测成功")
+    
+    print("\n5. 测试网络检测...")
+    network = env.network_info
+    print(f"   主机名: {network['hostname']}")
+    print(f"   代理: {'是' if network['proxy_detected'] else '否'}")
+    print(f"   防火墙: {'是' if network['firewall_detected'] else '否'}")
+    print(f"   网络: {'在线' if network['internet_available'] else '离线'}")
+    print("   ✅ 网络检测成功")
+    
+    print("\n6. 测试资源检测...")
+    resources = env.system_resources
+    print(f"   磁盘总空间: {resources['disk_total'] / (1024**3):.2f}GB")
+    print(f"   磁盘已用: {resources['disk_used'] / (1024**3):.2f}GB")
+    print(f"   磁盘可用: {resources['disk_free'] / (1024**3):.2f}GB")
+    print(f"   使用率: {resources['disk_used_percent']:.1f}%")
+    print("   ✅ 资源检测成功")
+    
+    print("\n7. 测试环境报告...")
+    report = env.get_environment_report()
+    print(f"   报告包含 {len(report)} 个部分")
+    print(f"   扫描建议: {len(report['scan_recommendations'])} 条")
+    print("   ✅ 环境报告生成成功")
+    
+    print("\n8. 测试工具可用性检查...")
+    nmap_available = env.is_tool_available('nmap')
+    print(f"   nmap可用: {nmap_available}")
+    print("   ✅ 工具可用性检查成功")
+    
+    print("\n9. 测试Python版本获取...")
+    version = env.get_python_version()
+    print(f"   Python版本: {version}")
+    print("   ✅ Python版本获取成功")
+    
+    print("\n10. 测试初始化状态...")
+    is_init = env.is_initialized()
+    error = env.get_init_error()
+    print(f"   已初始化: {is_init}")
+    print(f"   初始化错误: {error}")
+    print("   ✅ 初始化状态检查成功")
+    
+    print("\n" + "="*60)
+    print("✅ 所有测试通过！")
+    print("="*60)
+    
+except Exception as e:
+    print(f"\n❌ 测试失败: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)

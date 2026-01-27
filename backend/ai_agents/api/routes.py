@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from uuid import uuid4
 
-from models import AgentTask, AgentResult
+from backend.models import AgentTask, AgentResult
 from ..core.state import AgentState
 from ..core.graph import create_agent_graph
 from ..code_execution.executor import UnifiedExecutor

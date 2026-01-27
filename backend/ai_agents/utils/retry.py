@@ -206,9 +206,14 @@ def retry_on_failure(
         def sync_wrapper(*args, **kwargs):
             async def sync_to_async():
                 return func(*args, **kwargs)
-            return asyncio.run(strategy.execute(
-                sync_to_async, max_retries
-            ))
+            
+            try:
+                loop = asyncio.get_running_loop()
+                return strategy.execute(sync_to_async, max_retries)
+            except RuntimeError:
+                return asyncio.run(strategy.execute(
+                    sync_to_async, max_retries
+                ))
         
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
