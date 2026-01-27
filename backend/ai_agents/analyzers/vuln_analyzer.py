@@ -108,7 +108,7 @@ class VulnerabilityAnalyzer:
             "summary": summary
         }
     
-    def enrich_with_kb(self, vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def enrich_with_kb(self, vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         使用知识库丰富漏洞信息
         
@@ -126,7 +126,7 @@ class VulnerabilityAnalyzer:
         for vuln in vulnerabilities:
             cve = vuln.get("cve", "")
             if cve:
-                kb_info = self._get_kb_info(cve)
+                kb_info = await self._get_kb_info(cve)
                 if kb_info:
                     vuln["kb_info"] = kb_info
                     if kb_info.get("solution"):

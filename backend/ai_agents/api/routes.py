@@ -122,7 +122,7 @@ async def start_agent_scan(
         >>> 启动Agent扫描
         >>> POST /ai_agents/scan
         >>> {
-        ...     "target": "http://example.com",
+        ...     "target": "https://www.baidu.com",
         ...     "enable_llm_planning": true
         ... }
     """

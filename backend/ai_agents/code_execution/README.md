@@ -70,7 +70,7 @@ generator = CodeGenerator()
 # 使用模板生成
 result = await generator.generate_code(
     scan_type="port_scan",
-    target="http://example.com",
+    target="https://www.baidu.com",
     language="python"
 )
 
@@ -87,7 +87,7 @@ enhancer = CapabilityEnhancer()
 # 增强功能
 result = await enhancer.enhance_capability(
     requirement="需要一个新的SQL注入扫描工具",
-    target="http://example.com"
+    target="https://www.baidu.com"
 )
 
 print(f"增强结果: {result}")
@@ -122,7 +122,7 @@ print(f"执行结果: {result.to_dict()}")
 ```json
 {
   "scan_type": "port_scan",
-  "target": "http://example.com",
+  "target": "https://www.baidu.com",
   "requirements": "",
   "language": "python"
 }
@@ -151,7 +151,7 @@ print(f"执行结果: {result.to_dict()}")
 {
   "code": "print('Hello, World!')",
   "language": "python",
-  "target": "http://example.com"
+  "target": "https://www.baidu.com"
 }
 ```
 
@@ -177,7 +177,7 @@ print(f"执行结果: {result.to_dict()}")
 ```json
 {
   "requirement": "需要一个新的SQL注入扫描工具",
-  "target": "http://example.com"
+  "target": "https://www.baidu.com"
 }
 ```
 

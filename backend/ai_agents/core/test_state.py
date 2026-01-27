@@ -8,9 +8,9 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from ai_agents.core.state import AgentState
+from backend.ai_agents.core.state import AgentState
 
 
 class TestAgentState:
@@ -24,7 +24,7 @@ class TestAgentState:
         创建Agent状态实例
         """
         return AgentState(
-            target='http://example.com',
+            target='https://www.baidu.com',
             task_id='test-task-001'
         )
 
@@ -32,7 +32,7 @@ class TestAgentState:
         """
         测试初始化
         """
-        assert state.target == 'http://example.com'
+        assert state.target == 'https://www.baidu.com'
         assert state.task_id == 'test-task-001'
         assert state.planned_tasks == []
         assert state.completed_tasks == []
@@ -219,7 +219,7 @@ class TestAgentState:
         
         state_dict = state.to_dict()
         
-        assert state_dict['target'] == 'http://example.com'
+        assert state_dict['target'] == 'https://www.baidu.com'
         assert state_dict['task_id'] == 'test-task-001'
         assert state_dict['planned_tasks'] == ['task1', 'task2']
         assert state_dict['completed_tasks'] == ['task1']

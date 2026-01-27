@@ -803,7 +803,7 @@ location / {
 
 - 项目主页: https://github.com/yourusername/webscan-ai
 - 问题反馈: https://github.com/yourusername/webscan-ai/issues
-- 邮箱: your.email@example.com
+- 邮箱: your.email@www.baidu.com
 
 ---
 

@@ -14,7 +14,7 @@
           required
           :class="{ 'has-error': validationErrors.target }"
         />
-        <small class="help-text">支持URL格式：http://example.com 或 https://example.com</small>
+        <small class="help-text">支持URL格式：https://www.baidu.com 或 https://www.baidu.com</small>
         <span v-if="validationErrors.target" class="error-message">{{ validationErrors.target }}</span>
       </div>
       
@@ -85,7 +85,7 @@
           v-model="formData.proxyUrl"
           @input="debouncedValidate"
           type="text"
-          placeholder="http://proxy.example.com:8080"
+          placeholder="http://proxy.www.baidu.com:8080"
           :class="{ 'has-error': validationErrors.proxyUrl }"
         />
         <span v-if="validationErrors.proxyUrl" class="error-message">{{ validationErrors.proxyUrl }}</span>

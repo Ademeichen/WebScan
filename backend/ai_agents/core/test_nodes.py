@@ -10,10 +10,10 @@ from datetime import datetime
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.state import AgentState
-from core.nodes import (
+from backend.ai_agents.core.state import AgentState
+from backend.ai_agents.core.nodes import (
     TaskPlanningNode,
     ToolExecutionNode,
     ResultVerificationNode,

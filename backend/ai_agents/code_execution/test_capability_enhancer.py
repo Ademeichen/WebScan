@@ -8,9 +8,9 @@ import sys
 import asyncio
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from ai_agents.code_execution.capability_enhancer import (
+from backend.ai_agents.code_execution.capability_enhancer import (
     CapabilityEnhancer,
     Capability
 )
@@ -66,10 +66,10 @@ class TestCapability:
         """
         测试执行能力
         """
-        result = await capability.execute('example.com')
+        result = await capability.execute('www.baidu.com')
         
         assert result['status'] == 'success'
-        assert result['data']['target'] == 'example.com'
+        assert result['data']['target'] == 'www.baidu.com'
         assert result['data']['result'] == 'success'
         assert result['capability'] == 'test_capability'
         assert result['version'] == '1.0.0'
@@ -86,7 +86,7 @@ class TestCapability:
             execute_func=None
         )
         
-        result = await capability.execute('example.com')
+        result = await capability.execute('www.baidu.com')
         
         assert result['status'] == 'failed'
         assert '未定义执行函数' in result['error'] or 'execute function' in result['error'].lower()
@@ -197,10 +197,10 @@ class TestCapabilityEnhancer:
             execute_func=dummy_execute
         )
         
-        result = await enhancer.execute_capability('test_capability', 'example.com')
+        result = await enhancer.execute_capability('test_capability', 'www.baidu.com')
         
         assert result['status'] == 'success'
-        assert result['data']['target'] == 'example.com'
+        assert result['data']['target'] == 'www.baidu.com'
         assert result['data']['result'] == 'success'
 
     @pytest.mark.asyncio
@@ -208,7 +208,7 @@ class TestCapabilityEnhancer:
         """
         测试执行不存在的能力
         """
-        result = await enhancer.execute_capability('nonexistent_capability', 'example.com')
+        result = await enhancer.execute_capability('nonexistent_capability', 'www.baidu.com')
         
         assert result['status'] == 'failed'
         assert '不存在' in result['error'] or 'not found' in result['error'].lower()

@@ -180,8 +180,8 @@ async def create_task(request: CreateTaskRequest):
     Examples:
         >>> 创建 AWVS 扫描任务
         >>> {
-        ...     "task_name": "扫描 example.com",
-        ...     "target": "https://example.com",
+        ...     "task_name": "扫描 www.baidu.com",
+        ...     "target": "https://www.baidu.com",
         ...     "task_type": "awvs_scan",
         ...     "config": {"profile_id": "11111111-1111-1111-1111-111111111111"}
         ... }

@@ -372,7 +372,7 @@ POST /api/poc/scan
 Content-Type: application/json
 
 {
-  "target": "http://example.com",
+  "target": "https://www.baidu.com",
   "poc_list": ["poc1", "poc2"]
 }
 ```
@@ -384,7 +384,7 @@ POST /api/port/scan
 Content-Type: application/json
 
 {
-  "target": "example.com",
+  "target": "www.baidu.com",
   "ports": [80, 443, 8080]
 }
 ```
@@ -396,7 +396,7 @@ POST /api/awvs/scan
 Content-Type: application/json
 
 {
-  "url": "http://example.com",
+  "url": "https://www.baidu.com",
   "scan_type": "full_scan"
 }
 ```
@@ -661,7 +661,7 @@ lsof -ti:8888 | xargs kill -9
 
 - 项目主页: https://github.com/yourusername/webscan-ai
 - 问题反馈: https://github.com/yourusername/webscan-ai/issues
-- 邮箱: your.email@example.com
+- 邮箱: your.email@www.baidu.com
 
 ---
 

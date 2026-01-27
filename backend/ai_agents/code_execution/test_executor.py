@@ -8,9 +8,9 @@ import sys
 import asyncio
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from ai_agents.code_execution.executor import (
+from backend.ai_agents.code_execution.executor import (
     UnifiedExecutor,
     ExecutionResult
 )
@@ -160,7 +160,7 @@ os.system("echo dangerous")
         """
         result = await executor.generate_and_execute(
             scan_type='dir_scan',
-            target='http://example.com',
+            target='https://www.baidu.com',
             requirements='',
             language='python'
         )
@@ -169,7 +169,7 @@ os.system("echo dangerous")
         assert 'code_generation' in result
         assert 'execution' in result
         assert result['scan_type'] == 'dir_scan'
-        assert result['target'] == 'http://example.com'
+        assert result['target'] == 'https://www.baidu.com'
 
     def test_get_environment_info(self, executor):
         """

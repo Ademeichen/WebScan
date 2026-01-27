@@ -8,10 +8,10 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from ai_agents.analyzers.report_gen import ReportGenerator
-from ai_agents.core.state import AgentState
+from backend.ai_agents.analyzers.report_gen import ReportGenerator
+from backend.ai_agents.core.state import AgentState
 
 
 class TestReportGenerator:
@@ -32,7 +32,7 @@ class TestReportGenerator:
         创建示例Agent状态
         """
         state = AgentState(
-            target='http://example.com',
+            target='https://www.baidu.com',
             task_id='test-task-001'
         )
         
@@ -130,7 +130,7 @@ class TestReportGenerator:
         report = report_generator.generate_report(sample_state)
         
         assert report['task_id'] == 'test-task-001'
-        assert report['target'] == 'http://example.com'
+        assert report['target'] == 'https://www.baidu.com'
         assert report['status'] in ['completed', 'failed']
 
     def test_generate_report_tasks_section(self, report_generator, sample_state):
@@ -187,7 +187,7 @@ class TestReportGenerator:
         assert '</html>' in html
         assert '<head>' in html
         assert '<body>' in html
-        assert 'http://example.com' in html
+        assert 'https://www.baidu.com' in html
         assert 'test-task-001' in html
 
     def test_generate_html_report_structure(self, report_generator, sample_state):
@@ -215,7 +215,7 @@ class TestReportGenerator:
         """
         测试空历史记录的持续时间
         """
-        state = AgentState(target='http://example.com', task_id='test-001')
+        state = AgentState(target='https://www.baidu.com', task_id='test-001')
         duration = report_generator._calculate_duration(state)
         
         assert duration == 0.0
@@ -359,4 +359,6 @@ class TestReportGenerator:
 
 
 if __name__ == '__main__':
+    import sys
+    
     pytest.main([__file__, '-v'])

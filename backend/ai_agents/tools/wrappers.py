@@ -109,6 +109,6 @@ def wrap_async(
     Examples:
         >>> from plugins.baseinfo.baseinfo import getbaseinfo
         >>> wrapper = wrap_async(getbaseinfo, timeout=10)
-        >>> result = await wrapper.execute("http://example.com")
+        >>> result = await wrapper.execute("https://www.baidu.com")
     """
     return AsyncToolWrapper(func, timeout=timeout)

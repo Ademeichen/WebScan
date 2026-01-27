@@ -76,7 +76,7 @@
 from backend.plugins.webweight.webweight import get_web_weight
 
 # 使用示例
-domain = "https://example.com"
+domain = "https://www.baidu.com"
 result = get_web_weight(domain)
 print(result)
 ```

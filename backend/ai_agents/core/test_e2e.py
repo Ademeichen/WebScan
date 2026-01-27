@@ -6,10 +6,10 @@
 import asyncio
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.state import AgentState
-from core.graph import create_agent_graph
+from backend.ai_agents.core.state import AgentState
+from backend.ai_agents.core.graph import create_agent_graph
 
 
 async def test_fixed_tool_workflow():
@@ -21,7 +21,7 @@ async def test_fixed_tool_workflow():
     graph = create_agent_graph()
     initial_state = AgentState(
         task_id="e2e_fixed_tool",
-        target="http://example.com",
+        target="https://www.baidu.com",
         target_context={}
     )
     
@@ -52,7 +52,7 @@ async def test_code_generation_workflow():
     graph = create_agent_graph()
     initial_state = AgentState(
         task_id="e2e_code_generation",
-        target="http://example.com",
+        target="https://www.baidu.com",
         target_context={
             "need_custom_scan": True,
             "custom_scan_type": "vuln_scan",
@@ -94,7 +94,7 @@ async def test_capability_enhancement_workflow():
     graph = create_agent_graph()
     initial_state = AgentState(
         task_id="e2e_enhancement",
-        target="http://example.com",
+        target="https://www.baidu.com",
         target_context={
             "need_capability_enhancement": True,
             "capability_requirement": "安装requests库"
@@ -126,7 +126,7 @@ async def test_full_workflow():
     graph = create_agent_graph()
     initial_state = AgentState(
         task_id="e2e_full_workflow",
-        target="http://example.com",
+        target="https://www.baidu.com",
         target_context={}
     )
     
@@ -173,7 +173,7 @@ async def test_error_recovery():
     # 测试1: 环境检测失败后的恢复
     initial_state = AgentState(
         task_id="e2e_error_recovery",
-        target="http://example.com",
+        target="https://www.baidu.com",
         target_context={}
     )
     

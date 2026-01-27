@@ -95,7 +95,7 @@ python main.py
 curl -X POST "http://127.0.0.1:3000/api/ai_agents/scan" \
   -H "Content-Type: application/json" \
   -d '{
-    "target": "http://example.com"
+    "target": "https://www.baidu.com"
   }'
 
 # 查询任务状态
@@ -186,7 +186,7 @@ curl "http://127.0.0.1:3000/api/ai_agents/tasks/{task_id}"
 **请求示例**：
 ```json
 {
-  "target": "http://example.com",
+  "target": "https://www.baidu.com",
   "enable_llm_planning": true,
   "custom_tasks": ["baseinfo", "portscan"]
 }
@@ -212,7 +212,7 @@ curl "http://127.0.0.1:3000/api/ai_agents/tasks/{task_id}"
   "status": "completed",
   "final_output": {
     "task_id": "123e4567-e89b-12d3-a456-426614174000",
-    "target": "http://example.com",
+    "target": "https://www.baidu.com",
     "vulnerabilities": {
       "list": [...],
       "total": 5,

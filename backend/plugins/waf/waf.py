@@ -18,7 +18,7 @@ WAF（Web应用防火墙）检测模块
 
 使用示例：
     >>> from backend.plugins.waf.waf import get_waf
-    >>> result = get_waf('https://www.example.com/')
+    >>> result = get_waf('https://www.www.baidu.com/')
     >>> print(result)
     {
         "status": "success",

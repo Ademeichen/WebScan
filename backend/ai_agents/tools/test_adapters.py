@@ -9,9 +9,9 @@ import asyncio
 from pathlib import Path
 from unittest.mock import Mock, AsyncMock
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from ai_agents.tools.adapters import PluginAdapter, POCAdapter
+from backend.ai_agents.tools.adapters import PluginAdapter, POCAdapter
 
 
 class TestPluginAdapter:
@@ -120,7 +120,7 @@ class TestPluginAdapter:
         cdn_module.iscdn = mock_iscdn
         
         try:
-            result = await func('example.com')
+            result = await func('www.baidu.com')
             
             assert result['status'] == 'success'
             assert result['has_cdn'] is True
@@ -142,7 +142,7 @@ class TestPluginAdapter:
         cdn_module.iscdn = mock_iscdn
         
         try:
-            result = await func('example.com')
+            result = await func('www.baidu.com')
             
             assert result['status'] == 'success'
             assert result['has_cdn'] is False
@@ -292,7 +292,7 @@ class TestPOCAdapter:
         
         func = poc_adapter.adapt_poc('test_poc', mock_poc_module)
         
-        result = await func('example.com')
+        result = await func('www.baidu.com')
         
         assert result['status'] == 'success'
         assert result['vulnerable'] is True
@@ -309,7 +309,7 @@ class TestPOCAdapter:
         
         func = poc_adapter.adapt_poc('test_poc', mock_poc_module)
         
-        result = await func('example.com')
+        result = await func('www.baidu.com')
         
         assert result['status'] == 'success'
         assert result['vulnerable'] is False
@@ -326,7 +326,7 @@ class TestPOCAdapter:
         
         func = poc_adapter.adapt_poc('test_poc', mock_poc_module)
         
-        result = await func('example.com')
+        result = await func('www.baidu.com')
         
         assert result['status'] == 'failed'
         assert result['vulnerable'] is False

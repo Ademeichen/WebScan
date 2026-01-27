@@ -12,7 +12,7 @@
           placeholder="请输入URL"
           required
         />
-        <small class="help-text">支持URL格式：http://example.com 或 https://example.com</small>
+        <small class="help-text">支持URL格式：https://www.baidu.com 或 https://www.baidu.com</small>
       </div>
 
       <div class="form-group">
@@ -102,7 +102,7 @@
             id="loginUrl"
             v-model="formData.loginUrl"
             type="text"
-            placeholder="http://example.com/login"
+            placeholder="https://www.baidu.com/login"
           />
         </div>
         <div class="form-group">

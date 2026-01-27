@@ -91,7 +91,7 @@ state.tool_results = {
 **请求体变更**：
 ```json
 {
-  "target": "http://example.com",
+  "target": "https://www.baidu.com",
   "scan_type": "full",  // 新增：可选值 "full", "fixed_tool", "custom_code"
   "target_context": {  // 新增：可选的上下文配置
     "need_custom_scan": false,
@@ -108,7 +108,7 @@ state.tool_results = {
 ```json
 {
   "task_id": "scan_001",
-  "target": "http://example.com",
+  "target": "https://www.baidu.com",
   "status": "running",
   "scan_type": "full",  // 新增
   "entry_point": "environment_awareness",  // 新增
@@ -131,7 +131,7 @@ state.tool_results = {
 ```json
 {
   "task_id": "scan_001",
-  "target": "http://example.com",
+  "target": "https://www.baidu.com",
   "status": "running",
   "current_node": "tool_execution",  // 当前执行的节点
   "execution_history": [  // 新增：执行历史
@@ -213,7 +213,7 @@ state.tool_results = {
 **步骤1**：在请求体中添加`target_context`字段
 ```json
 {
-  "target": "http://example.com",
+  "target": "https://www.baidu.com",
   "target_context": {
     "need_custom_scan": true,
     "custom_scan_type": "vuln_scan"
@@ -260,7 +260,7 @@ import requests
 
 # 创建任务
 payload = {
-    "target": "http://example.com",
+    "target": "https://www.baidu.com",
     "scan_type": "custom_code",
     "target_context": {
         "need_custom_scan": True,
@@ -287,7 +287,7 @@ print(f"代码语言: {generated_code.get('language', '')}")
 ```python
 # 创建任务
 payload = {
-    "target": "http://example.com",
+    "target": "https://www.baidu.com",
     "target_context": {
         "need_capability_enhancement": True,
         "capability_requirement": "安装scapy库"

@@ -57,7 +57,7 @@
 from backend.poc.tomcat.cve_2017_12149_poc import check_vulnerability
 
 # 使用示例
-target_url = "http://example.com:8080"
+target_url = "https://www.baidu.com:8080"
 result = check_vulnerability(target_url)
 print(f"漏洞验证结果: {result}")
 ```

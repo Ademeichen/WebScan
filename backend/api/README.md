@@ -97,7 +97,7 @@
 from backend.api.scan import create_scan_task
 
 # 使用示例
-target = "https://example.com"
+target = "https://www.baidu.com"
 scan_options = {
     "scan_type": "full",
     "timeout": 3600,
@@ -114,7 +114,7 @@ print(f"创建扫描任务成功，任务ID: {task_id}")
 ```python
 from backend.api.scan import create_scan_task
 
-target_url = "https://example.com"
+target_url = "https://www.baidu.com"
 options = {
     "scan_type": "full",
     "depth": 3,
@@ -129,7 +129,7 @@ print(f"扫描任务创建成功，ID: {task_id}")
 ```python
 from backend.api.poc import verify_vulnerability
 
-target = "https://example.com"
+target = "https://www.baidu.com"
 vuln_id = "CVE-2017-12615"
 result = verify_vulnerability(target, vuln_id)
 print(f"漏洞验证结果: {result}")

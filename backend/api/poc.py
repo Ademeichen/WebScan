@@ -150,7 +150,7 @@ async def scan_poc(request: POCScanRequest):
         >>> 扫描指定目标的所有 POC
         >>> POST /poc/scan
         >>> {
-        ...     "target": "http://example.com",
+        ...     "target": "https://www.baidu.com",
         ...     "poc_types": ["weblogic_cve_2020_2551"],
         ...     "timeout": 10
         ... }
@@ -232,7 +232,7 @@ async def scan_single_poc(poc_type: str, target: str, timeout: int = 10):
         
     Examples:
         >>> 扫描 WebLogic CVE-2020-2551
-        >>> POST /poc/scan/weblogic_cve_2020_2551?target=http://example.com&timeout=10
+        >>> POST /poc/scan/weblogic_cve_2020_2551?target=https://www.baidu.com&timeout=10
     """
     if poc_type not in POC_FUNCTIONS:
         raise HTTPException(status_code=400, detail=f"未知的 POC 类型: {poc_type}")

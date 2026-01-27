@@ -20,10 +20,10 @@
 
 使用示例：
     >>> from backend.plugins.infoleak.infoleak import get_infoleak
-    >>> result = get_infoleak('https://www.example.com/')
+    >>> result = get_infoleak('https://www.www.baidu.com/')
     >>> print(result)
-    [('backup', 'https://www.example.com/backup.sql'),
-     ('config', 'https://www.example.com/config.php'),
+    [('backup', 'https://www.www.baidu.com/backup.sql'),
+     ('config', 'https://www.www.baidu.com/config.php'),
      ...]
 """
 import json

@@ -6,7 +6,7 @@ export const mockScanTasks = [
   {
     id: 1,
     name: '电商网站安全扫描',
-    targetUrl: 'https://shop.example.com',
+    targetUrl: 'https://shop.www.baidu.com',
     status: 'completed', // waiting, running, completed, failed
     priority: 'high', // low, medium, high, critical
     scanType: '深度扫描',
@@ -23,7 +23,7 @@ export const mockScanTasks = [
   {
     id: 2,
     name: '企业官网检测',
-    targetUrl: 'https://company.example.com',
+    targetUrl: 'https://company.www.baidu.com',
     status: 'running',
     priority: 'medium',
     scanType: '快速扫描',
@@ -35,7 +35,7 @@ export const mockScanTasks = [
   {
     id: 3,
     name: 'API接口安全测试',
-    targetUrl: 'https://api.example.com/v1/users',
+    targetUrl: 'https://api.www.baidu.com/v1/users',
     status: 'waiting',
     priority: 'critical',
     scanType: '自定义规则',
@@ -47,7 +47,7 @@ export const mockScanTasks = [
   {
     id: 4,
     name: '管理后台扫描',
-    targetUrl: 'https://admin.example.com/dashboard',
+    targetUrl: 'https://admin.www.baidu.com/dashboard',
     status: 'failed',
     priority: 'high',
     scanType: '深度扫描',
@@ -161,7 +161,7 @@ export const mockRecentScans = [
   {
     id: 1,
     name: '电商网站安全扫描',
-    url: 'https://shop.example.com',
+    url: 'https://shop.www.baidu.com',
     time: '2小时前',
     status: 'completed',
     vulnerabilities: { high: 2, medium: 5, low: 8 }
@@ -169,7 +169,7 @@ export const mockRecentScans = [
   {
     id: 2,
     name: '企业官网检测',
-    url: 'https://company.example.com',
+    url: 'https://company.www.baidu.com',
     time: '4小时前',
     status: 'running',
     vulnerabilities: null
@@ -177,7 +177,7 @@ export const mockRecentScans = [
   {
     id: 3,
     name: 'API接口安全测试',
-    url: 'https://api.example.com',
+    url: 'https://api.www.baidu.com',
     time: '6小时前',
     status: 'completed',
     vulnerabilities: { high: 0, medium: 3, low: 2 }
@@ -303,7 +303,7 @@ export const mockNotifications = [
   {
     id: 1,
     title: '高危漏洞发现',
-    message: '在 shop.example.com 发现 SQL 注入漏洞',
+    message: '在 shop.www.baidu.com 发现 SQL 注入漏洞',
     type: 'high-vulnerability',
     time: '5分钟前',
     read: false

@@ -125,7 +125,7 @@ class Settings(BaseSettings):
     
     在生产环境中，应将此列表限制为实际的前端域名。
     可以通过环境变量 CORS_ORIGINS 覆盖，格式为逗号分隔的列表。
-    例如：CORS_ORIGINS=https://example.com,https://api.example.com
+    例如：CORS_ORIGINS=https://www.baidu.com,https://api.www.baidu.com
     """
     
     # ====================== 数据库配置 ======================

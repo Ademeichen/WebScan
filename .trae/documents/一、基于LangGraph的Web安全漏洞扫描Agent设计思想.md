@@ -468,7 +468,7 @@ python main.py
 # 2. 调用Agent扫描API
 curl -X POST "http://127.0.0.1:3000/agent/execute" \
 -H "Content-Type: application/json" \
--d '{"target": "http://example.com"}'
+-d '{"target": "https://www.baidu.com"}'
 
 # 3. 查询任务结果
 curl "http://127.0.0.1:3000/agent/tasks/{task_id}"

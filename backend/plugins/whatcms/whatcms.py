@@ -21,7 +21,7 @@ CMS（内容管理系统）检测模块
 
 使用示例：
     >>> from backend.plugins.whatcms.whatcms import getwhatcms
-    >>> result = getwhatcms('https://www.example.com/')
+    >>> result = getwhatcms('https://www.www.baidu.com/')
     >>> print(result)
     {
         "success": True,
@@ -31,7 +31,7 @@ CMS（内容管理系统）检测模块
             "title": "Example Site",
             "server": "nginx",
             "security": [],
-            "url": "https://www.example.com/"
+            "url": "https://www.www.baidu.com/"
         },
         "message": "识别到X个CMS"
     }

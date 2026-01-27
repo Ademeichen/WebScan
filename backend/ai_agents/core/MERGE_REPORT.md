@@ -190,7 +190,7 @@ self.report_node = ReportGenerationNode()  # 报告生成
 [2026-01-27 18:30:00] [NODE_ENTRY] 节点: ScanAgentGraph.__init__, 任务ID: INIT, 详情: {"total_nodes": 10}
 [2026-01-27 18:30:01] [NODE_EXIT] 节点: ScanAgentGraph.__init__, 任务ID: INIT, 状态: success, 详情: {"nodes_count": 10}
 [2026-01-27 18:30:02] [DECISION] 任务ID: scan_001, 类型: SCAN_TYPE, 决策: fixed_tool, 原因: 使用现有工具
-[2026-01-27 18:30:03] [NODE_ENTRY] 节点: task_planning, 任务ID: scan_001, 详情: {"target": "http://example.com"}
+[2026-01-27 18:30:03] [NODE_ENTRY] 节点: task_planning, 任务ID: scan_001, 详情: {"target": "https://www.baidu.com"}
 [2026-01-27 18:30:05] [NODE_EXIT] 节点: task_planning, 任务ID: scan_001, 状态: success, 详情: {"planned_tasks": 5}
 ```
 
@@ -290,7 +290,7 @@ agent_graph = create_agent_graph()
 # 定义初始状态
 initial_state = AgentState(
     task_id="scan_001",
-    target="http://example.com",
+    target="https://www.baidu.com",
     target_context={
         "need_custom_scan": True,
         "custom_scan_type": "vuln_scan",

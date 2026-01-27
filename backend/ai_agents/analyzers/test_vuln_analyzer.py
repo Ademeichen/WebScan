@@ -7,9 +7,9 @@ import pytest
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from ai_agents.analyzers.vuln_analyzer import VulnerabilityAnalyzer
+from backend.ai_agents.analyzers.vuln_analyzer import VulnerabilityAnalyzer
 
 
 class TestVulnerabilityAnalyzer:
@@ -32,37 +32,37 @@ class TestVulnerabilityAnalyzer:
         return [
             {
                 'cve': 'CVE-2020-2551',
-                'target': 'example.com',
+                'target': 'baidu.com',
                 'severity': 'critical',
                 'details': 'WebLogic RCE vulnerability'
             },
             {
                 'cve': 'CVE-2018-2628',
-                'target': 'example.com',
+                'target': 'baidu.com',              
                 'severity': 'high',
                 'details': 'WebLogic RCE vulnerability'
             },
             {
                 'cve': 'CVE-2017-12149',
-                'target': 'example.com',
+                'target': 'baidu.com',
                 'severity': 'medium',
                 'details': 'JBoss deserialization vulnerability'
             },
             {
                 'cve': 'CVE-2020-14756',
-                'target': 'example.com',
+                'target': 'baidu.com',
                 'severity': 'low',
                 'details': 'WebLogic information disclosure'
             },
             {
                 'cve': 'CVE-2020-2551',
-                'target': 'example.com',
+                'target': 'baidu.com',
                 'severity': 'critical',
                 'details': 'Duplicate vulnerability'
             },
             {
                 'cve': 'CVE-2018-2628',
-                'target': 'test.com',
+                'target': 'baidu.com',
                 'severity': 'high',
                 'details': 'Same CVE different target'
             }
@@ -100,7 +100,7 @@ class TestVulnerabilityAnalyzer:
         vulnerabilities = [
             {
                 'cve': 'CVE-2020-2551',
-                'target': 'example.com',
+                'target': 'baidu.com',  
                 'severity': 'critical',
                 'details': 'Test vulnerability'
             }
@@ -150,7 +150,7 @@ class TestVulnerabilityAnalyzer:
 
     def test_analyze_severity_stats(self, analyzer):
         """
-        测试严重度统计
+        测试严重度统计              
         """
         vulnerabilities = [
             {'cve': 'CVE-1', 'severity': 'critical', 'details': 'Test'},
@@ -170,43 +170,45 @@ class TestVulnerabilityAnalyzer:
         assert result['by_severity']['low'] == 1
         assert result['by_severity']['info'] == 1
 
-    def test_enrich_with_kb(self, analyzer):
+    @pytest.mark.asyncio
+    async def test_enrich_with_kb(self, analyzer):
         """
         测试使用知识库丰富漏洞信息
         """
         vulnerabilities = [
             {
                 'cve': 'CVE-2020-2551',
-                'target': 'example.com',
+                'target': 'baidu.com',
                 'severity': 'critical',
                 'details': 'Test vulnerability'
             },
             {
                 'cve': 'CVE-2018-2628',
-                'target': 'example.com',
+                'target': 'baidu.com',
                 'severity': 'high',
                 'details': 'Test vulnerability'
             }
         ]
         
-        enriched = analyzer.enrich_with_kb(vulnerabilities)
+        enriched = await analyzer.enrich_with_kb(vulnerabilities)
         
         assert len(enriched) == 2
         assert all('cve' in v for v in enriched)
 
-    def test_enrich_with_kb_no_cve(self, analyzer):
+    @pytest.mark.asyncio
+    async def test_enrich_with_kb_no_cve(self, analyzer):
         """
         测试没有CVE的漏洞
         """
         vulnerabilities = [
             {
-                'target': 'example.com',
+                'target': 'baidu.com',
                 'severity': 'medium',
                 'details': 'Test vulnerability without CVE'
             }
         ]
         
-        enriched = analyzer.enrich_with_kb(vulnerabilities)
+        enriched = await analyzer.enrich_with_kb(vulnerabilities)
         
         assert len(enriched) == 1
         assert 'kb_info' not in enriched[0]
@@ -217,13 +219,13 @@ class TestVulnerabilityAnalyzer:
         """
         vuln = {
             'cve': 'CVE-2020-2551',
-            'target': 'example.com',
+            'target': 'baidu.com',
             'severity': 'critical'
         }
         
         key = analyzer._get_vuln_key(vuln)
         
-        assert key == 'CVE-2020-2551_example.com'
+        assert key == 'CVE-2020-2551_baidu.com'
 
     def test_get_vuln_key_missing_fields(self, analyzer):
         """

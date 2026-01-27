@@ -222,5 +222,5 @@ registry = ToolRegistry()
     async def my_tool(target: str):
         return {"result": "success"}
     
-    result = await registry.call_tool("my_tool", "http://example.com")
+    result = await registry.call_tool("my_tool", "https://www.baidu.com")
 """

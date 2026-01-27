@@ -8,9 +8,9 @@ import sys
 import asyncio
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from ai_agents.code_execution.code_generator import (
+from backend.ai_agents.code_execution.code_generator import (
     CodeGenerator,
     CodeGenerationRequest,
     CodeGenerationResponse
@@ -77,7 +77,7 @@ class TestCodeGenerator:
         """
         response = await code_generator._template_generate_code(
             scan_type='port_scan',
-            target='example.com',
+            target='www.baidu.com',
             requirements='',
             language='python',
             additional_params={}
@@ -88,7 +88,7 @@ class TestCodeGenerator:
         assert response.language == 'python'
         assert response.description != ''
         assert response.estimated_time > 0
-        assert 'example.com' in response.code
+        assert 'www.baidu.com' in response.code
 
     @pytest.mark.asyncio
     async def test_generate_code_port_scan(self, code_generator):
@@ -97,14 +97,14 @@ class TestCodeGenerator:
         """
         response = await code_generator.generate_code(
             scan_type='port_scan',
-            target='example.com',
+            target='www.baidu.com',
             requirements='',
             language='python'
         )
         
         assert isinstance(response, CodeGenerationResponse)
         assert response.code != ''
-        assert 'example.com' in response.code
+        assert 'www.baidu.com' in response.code
         assert 'socket' in response.code
 
     @pytest.mark.asyncio
@@ -114,14 +114,14 @@ class TestCodeGenerator:
         """
         response = await code_generator.generate_code(
             scan_type='vuln_scan',
-            target='http://example.com',
+            target='https://www.baidu.com',
             requirements='',
             language='python'
         )
         
         assert isinstance(response, CodeGenerationResponse)
         assert response.code != ''
-        assert 'http://example.com' in response.code
+        assert 'https://www.baidu.com' in response.code
         assert 'requests' in response.code
 
     @pytest.mark.asyncio
@@ -131,14 +131,14 @@ class TestCodeGenerator:
         """
         response = await code_generator.generate_code(
             scan_type='dir_scan',
-            target='http://example.com',
+            target='https://www.baidu.com',
             requirements='',
             language='python'
         )
         
         assert isinstance(response, CodeGenerationResponse)
         assert response.code != ''
-        assert 'http://example.com' in response.code
+        assert 'https://www.baidu.com' in response.code
         assert 'urljoin' in response.code
 
     @pytest.mark.asyncio
@@ -148,14 +148,14 @@ class TestCodeGenerator:
         """
         response = await code_generator.generate_code(
             scan_type='subdomain_scan',
-            target='example.com',
+            target='www.baidu.com',
             requirements='',
             language='python'
         )
         
         assert isinstance(response, CodeGenerationResponse)
         assert response.code != ''
-        assert 'example.com' in response.code
+        assert 'www.baidu.com' in response.code
         assert 'dns.resolver' in response.code
 
     def test_validate_code_safe(self, code_generator):

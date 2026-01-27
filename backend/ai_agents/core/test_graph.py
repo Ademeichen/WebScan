@@ -9,10 +9,10 @@ from unittest.mock import Mock, patch, AsyncMock
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.state import AgentState
-from core.graph import ScanAgentGraph, create_agent_graph
+from backend.ai_agents.core.state import AgentState
+from backend.ai_agents.core.graph import ScanAgentGraph, create_agent_graph
 
 
 class TestGraphBuilding(unittest.TestCase):
@@ -77,7 +77,7 @@ class TestFixedToolWorkflow(unittest.TestCase):
         self.graph = create_agent_graph()
         self.initial_state = AgentState(
             task_id="test_fixed_tool",
-            target="http://example.com",
+            target="https://www.baidu.com",
             target_context={}
         )
     
@@ -109,7 +109,7 @@ class TestFixedToolWorkflow(unittest.TestCase):
         """测试多个工具执行流程"""
         initial_state = AgentState(
             task_id="test_multiple_tools",
-            target="http://example.com",
+            target="https://www.baidu.com",
             target_context={}
         )
         
@@ -137,7 +137,7 @@ class TestCodeGenerationWorkflow(unittest.TestCase):
         """测试代码生成完整流程"""
         initial_state = AgentState(
             task_id="test_code_generation",
-            target="http://example.com",
+            target="https://www.baidu.com",
             target_context={
                 "need_custom_scan": True,
                 "custom_scan_type": "vuln_scan",
@@ -150,7 +150,7 @@ class TestCodeGenerationWorkflow(unittest.TestCase):
             # 模拟代码生成
             mock_response = Mock()
             mock_response.to_dict.return_value = {
-                "code": "import requests\nrequests.get('http://example.com')",
+                "code": "import requests\nrequests.get('https://www.baidu.com')",
                 "language": "python",
                 "explanation": "生成的SQL注入检测代码"
             }
@@ -182,7 +182,7 @@ class TestCodeGenerationWorkflow(unittest.TestCase):
         """测试代码执行失败触发功能补充"""
         initial_state = AgentState(
             task_id="test_code_failure",
-            target="http://example.com",
+            target="https://www.baidu.com",
             target_context={
                 "need_custom_scan": True,
                 "custom_scan_type": "vuln_scan"
@@ -235,7 +235,7 @@ class TestCapabilityEnhancementWorkflow(unittest.TestCase):
         """测试功能补充完整流程"""
         initial_state = AgentState(
             task_id="test_enhancement",
-            target="http://example.com",
+            target="https://www.baidu.com",
             target_context={
                 "need_capability_enhancement": True,
                 "capability_requirement": "安装scapy库"
@@ -277,7 +277,7 @@ class TestDecisionBranching(unittest.TestCase):
         """测试固定工具分支"""
         initial_state = AgentState(
             task_id="test_decision_fixed",
-            target="http://example.com",
+            target="https://www.baidu.com",
             target_context={}
         )
         
@@ -297,7 +297,7 @@ class TestDecisionBranching(unittest.TestCase):
         """测试代码生成分支"""
         initial_state = AgentState(
             task_id="test_decision_custom",
-            target="http://example.com",
+            target="https://www.baidu.com",
             target_context={
                 "need_custom_scan": True
             }
@@ -319,7 +319,7 @@ class TestDecisionBranching(unittest.TestCase):
         """测试先增强分支"""
         initial_state = AgentState(
             task_id="test_decision_enhance",
-            target="http://example.com",
+            target="https://www.baidu.com",
             target_context={
                 "need_capability_enhancement": True
             }
@@ -347,7 +347,7 @@ class TestErrorHandling(unittest.TestCase):
         """测试节点错误处理"""
         initial_state = AgentState(
             task_id="test_error",
-            target="http://example.com"
+            target="https://www.baidu.com"
         )
         
         with patch('core.nodes.registry.call_tool') as mock_registry:
@@ -366,7 +366,7 @@ class TestErrorHandling(unittest.TestCase):
         """测试环境检测错误处理"""
         initial_state = AgentState(
             task_id="test_env_error",
-            target="http://example.com"
+            target="https://www.baidu.com"
         )
         
         with patch('core.nodes.EnvironmentAwareness') as mock_env:
@@ -392,7 +392,7 @@ class TestStatePropagation(unittest.TestCase):
         """测试状态在节点间正确传递"""
         initial_state = AgentState(
             task_id="test_state_prop",
-            target="http://example.com",
+            target="https://www.baidu.com",
             target_context={"initial_key": "initial_value"}
         )
         
@@ -413,7 +413,7 @@ class TestStatePropagation(unittest.TestCase):
         """测试漏洞信息在节点间正确传递"""
         initial_state = AgentState(
             task_id="test_vuln_prop",
-            target="http://example.com"
+            target="https://www.baidu.com"
         )
         
         with patch('core.nodes.registry.call_tool') as mock_registry:

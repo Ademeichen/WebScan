@@ -21,8 +21,7 @@ from database import init_db, close_db
 import logging
 from pathlib import Path
 
-from api import agent 
-from database import engine, Base
+from api import agent
 
 # 创建必要的目录
 Path("logs").mkdir(exist_ok=True)
@@ -98,9 +97,6 @@ async def lifespan(app: FastAPI):
     
     # 关闭数据库连接
     await close_db()
-
-# 创建数据库表
-Base.metadata.create_all(bind=engine)
 
 # 创建 FastAPI 应用实例
 app = FastAPI(
