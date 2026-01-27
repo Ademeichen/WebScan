@@ -1,9 +1,16 @@
 """
-LangGraph 图构建
+LangGraph 图构建（增强版）
 
-构建Agent工作流的有向图，定义节点和边的连接关系。
+构建支持自主规划、代码生成、环境感知的完整Agent工作流。
+
+日志记录：
+- 时间戳：所有日志包含时间戳
+- 操作类型：节点进入/退出、状态变更、决策结果、错误信息
+- 对象标识：任务ID、节点名称、状态键名
+- 详细描述：操作的具体内容和结果
 """
 import logging
+import time
 from typing import Dict, Any, Literal
 from langgraph.graph import StateGraph, END
 
@@ -13,9 +20,7 @@ from .nodes import (
     ToolExecutionNode,
     ResultVerificationNode,
     VulnerabilityAnalysisNode,
-    ReportGenerationNode
-)
-from .new_nodes import (
+    ReportGenerationNode,
     EnvironmentAwarenessNode,
     CodeGenerationNode,
     CapabilityEnhancementNode,
@@ -25,6 +30,87 @@ from .new_nodes import (
 from ..agent_config import agent_config
 
 logger = logging.getLogger(__name__)
+
+
+def _log_node_entry(node_name: str, task_id: str, details: Dict[str, Any] = None):
+    """
+    记录节点进入日志
+    
+    Args:
+        node_name: 节点名称
+        task_id: 任务ID
+        details: 详细信息
+    """
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    log_msg = f"[{timestamp}] [NODE_ENTRY] 节点: {node_name}, 任务ID: {task_id}"
+    if details:
+        log_msg += f", 详情: {details}"
+    logger.info(log_msg)
+
+
+def _log_node_exit(node_name: str, task_id: str, status: str, details: Dict[str, Any] = None):
+    """
+    记录节点退出日志
+    
+    Args:
+        node_name: 节点名称
+        task_id: 任务ID
+        status: 退出状态（success/failed/skipped）
+        details: 详细信息
+    """
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    log_msg = f"[{timestamp}] [NODE_EXIT] 节点: {node_name}, 任务ID: {task_id}, 状态: {status}"
+    if details:
+        log_msg += f", 详情: {details}"
+    logger.info(log_msg)
+
+
+def _log_state_change(task_id: str, key: str, old_value: Any, new_value: Any):
+    """
+    记录状态变更日志
+    
+    Args:
+        task_id: 任务ID
+        key: 状态键名
+        old_value: 旧值
+        new_value: 新值
+    """
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    logger.info(f"[{timestamp}] [STATE_CHANGE] 任务ID: {task_id}, 键: {key}, 旧值: {old_value}, 新值: {new_value}")
+
+
+def _log_decision(task_id: str, decision_type: str, decision: str, reason: str = ""):
+    """
+    记录决策日志
+    
+    Args:
+        task_id: 任务ID
+        decision_type: 决策类型
+        decision: 决策结果
+        reason: 决策原因
+    """
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    log_msg = f"[{timestamp}] [DECISION] 任务ID: {task_id}, 类型: {decision_type}, 决策: {decision}"
+    if reason:
+        log_msg += f", 原因: {reason}"
+    logger.info(log_msg)
+
+
+def _log_error(task_id: str, node_name: str, error: Exception, context: Dict[str, Any] = None):
+    """
+    记录错误日志
+    
+    Args:
+        task_id: 任务ID
+        node_name: 节点名称
+        error: 异常对象
+        context: 错误上下文
+    """
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    log_msg = f"[{timestamp}] [ERROR] 任务ID: {task_id}, 节点: {node_name}, 错误: {str(error)}"
+    if context:
+        log_msg += f", 上下文: {context}"
+    logger.error(log_msg)
 
 
 class ScanAgentGraph:
@@ -40,17 +126,17 @@ class ScanAgentGraph:
         """
         logger.info("🔧 初始化扫描Agent图")
         
-        # 创建节点实例
-        self.env_awareness_node = EnvironmentAwarenessNode()
-        self.planning_node = TaskPlanningNode()
-        self.intelligent_decision_node = IntelligentDecisionNode()
-        self.execution_node = ToolExecutionNode()
-        self.code_generation_node = CodeGenerationNode()
-        self.code_execution_node = CodeExecutionNode()
-        self.capability_enhancement_node = CapabilityEnhancementNode()
-        self.verification_node = ResultVerificationNode()
-        self.analysis_node = VulnerabilityAnalysisNode()
-        self.report_node = ReportGenerationNode()
+        # 创建节点实例（原有+新增）
+        self.env_awareness_node = EnvironmentAwarenessNode()  # 环境感知
+        self.planning_node = TaskPlanningNode()  # 任务规划
+        self.intelligent_decision_node = IntelligentDecisionNode()  # 智能决策
+        self.execution_node = ToolExecutionNode()  # 固定工具执行
+        self.code_generation_node = CodeGenerationNode()  # 代码生成
+        self.code_execution_node = CodeExecutionNode()  # 代码执行
+        self.capability_enhancement_node = CapabilityEnhancementNode()  # 功能补充
+        self.verification_node = ResultVerificationNode()  # 结果验证
+        self.analysis_node = VulnerabilityAnalysisNode()  # 漏洞分析
+        self.report_node = ReportGenerationNode()  # 报告生成
         
         # 构建图
         self.graph = self._build_graph()
@@ -59,43 +145,85 @@ class ScanAgentGraph:
     
     def _build_graph(self) -> StateGraph:
         """
-        构建LangGraph图
+        构建LangGraph图（增强版，包含所有10个节点）
+        
+        实现完整的工作流：
+        - 环境感知 → 任务规划 → 智能决策
+        - 智能决策 → 固定工具 / 代码生成 / 功能补充
+        - 代码生成 → 代码执行 → 结果验证 / 功能补充
+        - 固定工具 → 结果验证 → 循环 / 漏洞分析
+        - 漏洞分析 → 报告生成 → 结束
         
         Returns:
             StateGraph: 编译后的图
         """
+        _log_node_entry("_build_graph", "GRAPH_BUILD", {"total_nodes": 10})
+        
         # 创建状态图
         workflow = StateGraph(AgentState)
         
-        # 添加节点
+        # 添加所有节点（原有5个 + 新增5个 = 10个）
+        workflow.add_node("environment_awareness", self.env_awareness_node)  # 新增：环境感知
         workflow.add_node("task_planning", self.planning_node)
+        workflow.add_node("intelligent_decision", self.intelligent_decision_node)  # 新增：智能决策
         workflow.add_node("tool_execution", self.execution_node)
+        workflow.add_node("code_generation", self.code_generation_node)  # 新增：代码生成
+        workflow.add_node("code_execution", self.code_execution_node)  # 新增：代码执行
+        workflow.add_node("capability_enhancement", self.capability_enhancement_node)  # 新增：功能补充
         workflow.add_node("result_verification", self.verification_node)
         workflow.add_node("vulnerability_analysis", self.analysis_node)
         workflow.add_node("report_generation", self.report_node)
         
-        # 设置入口点
-        workflow.set_entry_point("task_planning")
+        # 设置入口点：从环境感知开始（先看环境，再做规划）
+        workflow.set_entry_point("environment_awareness")
         
-        # 定义边（核心流程）
-        workflow.add_edge("task_planning", "tool_execution")
+        # 基础流程：环境感知 → 任务规划 → 智能决策
+        workflow.add_edge("environment_awareness", "task_planning")
+        workflow.add_edge("task_planning", "intelligent_decision")
+        
+        # 核心条件分支1：智能决策后选择"固定工具"或"代码生成"或"功能增强"
+        workflow.add_conditional_edges(
+            "intelligent_decision",  # 起始节点：智能决策
+            self._decide_scan_type,  # 分支判断函数
+            {
+                "fixed_tool": "tool_execution",  # 用现有工具扫描
+                "custom_code": "code_generation",  # 生成代码扫描
+                "enhance_first": "capability_enhancement"  # 先增强功能再扫描
+            }
+        )
+        
+        # 代码生成→执行→补充闭环
+        workflow.add_edge("code_generation", "code_execution")
+        # 代码执行失败时，触发功能补充（比如自动安装依赖）
+        workflow.add_conditional_edges(
+            "code_execution",
+            self._code_execution_result,
+            {
+                "success": "result_verification",  # 执行成功→验证结果
+                "need_enhance": "capability_enhancement"  # 执行失败→功能补充
+            }
+        )
+        # 功能补充后回到代码执行（重试）
+        workflow.add_edge("capability_enhancement", "code_execution")
+        
+        # 固定工具流程：执行→验证→循环/分析
         workflow.add_edge("tool_execution", "result_verification")
-        
-        # 条件边：验证后判断是否继续执行工具
+        # 结果验证后的分支：有任务继续执行，无任务进入分析
         workflow.add_conditional_edges(
             "result_verification",
             self._should_continue,
             {
-                "continue": "tool_execution",
-                "analyze": "vulnerability_analysis"
+                "continue": "tool_execution",  # 继续执行工具
+                "analyze": "vulnerability_analysis"  # 进入漏洞分析
             }
         )
         
-        # 后续流程
+        # 后续流程：分析→报告→结束
         workflow.add_edge("vulnerability_analysis", "report_generation")
         workflow.add_edge("report_generation", END)
         
-        logger.info("📊 LangGraph图边定义完成")
+        logger.info("📊 增强版LangGraph图边定义完成")
+        _log_node_exit("_build_graph", "GRAPH_BUILD", "success", {"nodes_count": 10, "edges_count": 14})
         return workflow
     
     def _should_continue(self, state: AgentState) -> Literal["continue", "analyze"]:
@@ -115,6 +243,90 @@ class ScanAgentGraph:
             logger.info(f"[{state.task_id}] 🔄 继续执行工具: {state.current_task}")
             return "continue"
     
+    def _decide_scan_type(self, state: AgentState) -> Literal["fixed_tool", "custom_code", "enhance_first"]:
+        """
+        智能决策：选择扫描类型（核心分支逻辑）
+        
+        根据环境信息和目标特征，智能决定使用固定工具扫描、
+        生成自定义代码扫描，还是先增强功能再扫描。
+        
+        Args:
+            state: Agent当前状态
+            
+        Returns:
+            Literal["fixed_tool", "custom_code", "enhance_first"]: 扫描类型
+        """
+        target_context = state.target_context
+        
+        # 1. 需要功能增强（比如依赖缺失）→先增强
+        if target_context.get("need_capability_enhancement"):
+            logger.info(f"[{state.task_id}] 🚀 需要功能增强，优先执行增强节点")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="SCAN_TYPE",
+                decision="enhance_first",
+                reason="需要功能增强"
+            )
+            return "enhance_first"
+        
+        # 2. 需要自定义扫描→生成代码
+        elif target_context.get("need_custom_scan"):
+            logger.info(f"[{state.task_id}] 🔧 需要自定义扫描，执行代码生成")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="SCAN_TYPE",
+                decision="custom_code",
+                reason="需要自定义扫描"
+            )
+            return "custom_code"
+        
+        # 3. 其他情况→使用现有工具
+        else:
+            logger.info(f"[{state.task_id}] 🛠️ 使用现有工具执行扫描")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="SCAN_TYPE",
+                decision="fixed_tool",
+                reason="使用现有工具"
+            )
+            return "fixed_tool"
+    
+    def _code_execution_result(self, state: AgentState) -> Literal["success", "need_enhance"]:
+        """
+        判断代码执行结果：成功→继续流程，失败→触发功能补充
+        
+        根据代码执行结果决定是继续验证结果还是触发功能补充。
+        
+        Args:
+            state: Agent当前状态
+            
+        Returns:
+            Literal["success", "need_enhance"]: 下一步操作
+        """
+        execution_result = state.tool_results.get("code_execution", {})
+        
+        if execution_result.get("status") == "success":
+            logger.info(f"[{state.task_id}] ✅ 代码执行成功，继续验证结果")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="CODE_EXECUTION",
+                decision="success",
+                reason="代码执行成功"
+            )
+            return "success"
+        else:
+            # 执行失败时，标记需要功能增强
+            logger.warning(f"[{state.task_id}] ⚠️ 代码执行失败，需要功能增强")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="CODE_EXECUTION",
+                decision="need_enhance",
+                reason=f"代码执行失败: {execution_result.get('error', 'unknown')}"
+            )
+            state.target_context["need_capability_enhancement"] = True
+            state.target_context["capability_requirement"] = "自动安装代码执行所需依赖"
+            return "need_enhance"
+    
     def compile(self):
         """
         编译图
@@ -126,7 +338,7 @@ class ScanAgentGraph:
     
     async def invoke(self, initial_state: AgentState) -> AgentState:
         """
-        执行Agent工作流
+        执行Agent工作流（增强版）
         
         Args:
             initial_state: 初始状态
@@ -134,44 +346,72 @@ class ScanAgentGraph:
         Returns:
             AgentState: 最终状态
         """
-        logger.info(f"🚀 开始执行Agent工作流: {initial_state.task_id}")
+        logger.info(f"🚀 开始执行增强版Agent工作流: {initial_state.task_id}")
+        _log_node_entry("invoke", initial_state.task_id, {"target": initial_state.target})
         
-        compiled_graph = self.compile()
-        final_state = await compiled_graph.ainvoke(initial_state)
-        
-        logger.info(f"✅ Agent工作流执行完成: {final_state.task_id}")
-        return final_state
+        try:
+            compiled_graph = self.compile()
+            final_state = await compiled_graph.ainvoke(initial_state)
+            
+            logger.info(f"✅ 增强版Agent工作流执行完成: {final_state.task_id}")
+            _log_node_exit("invoke", initial_state.task_id, "success", {
+                "completed_tasks": len(final_state.completed_tasks),
+                "vulnerabilities_found": len(final_state.vulnerabilities),
+                "errors_count": len(final_state.errors)
+            })
+            
+            return final_state
+        except Exception as e:
+            logger.error(f"❌ 增强版Agent工作流执行失败: {initial_state.task_id}, 错误: {str(e)}")
+            _log_error(initial_state.task_id, "invoke", e, {"target": initial_state.target})
+            raise
     
     def get_graph_info(self) -> Dict[str, Any]:
         """
-        获取图信息
+        获取图信息（包含所有10个节点）
         
         Returns:
             Dict: 图结构信息
         """
         return {
             "nodes": [
+                "environment_awareness",  # 新增
                 "task_planning",
+                "intelligent_decision",  # 新增
                 "tool_execution",
+                "code_generation",  # 新增
+                "code_execution",  # 新增
+                "capability_enhancement",  # 新增
                 "result_verification",
                 "vulnerability_analysis",
                 "report_generation"
             ],
             "edges": [
-                ("task_planning", "tool_execution"),
+                ("environment_awareness", "task_planning"),  # 新增
+                ("task_planning", "intelligent_decision"),  # 新增
+                ("intelligent_decision", "tool_execution"),
+                ("intelligent_decision", "code_generation"),  # 新增
+                ("intelligent_decision", "capability_enhancement"),  # 新增
+                ("code_generation", "code_execution"),  # 新增
+                ("code_execution", "result_verification"),
+                ("code_execution", "capability_enhancement"),  # 新增
+                ("capability_enhancement", "code_execution"),  # 新增
                 ("tool_execution", "result_verification"),
                 ("result_verification", "tool_execution"),
                 ("result_verification", "vulnerability_analysis"),
                 ("vulnerability_analysis", "report_generation"),
                 ("report_generation", "END")
             ],
-            "entry_point": "task_planning",
-            "exit_points": ["report_generation"]
+            "entry_point": "environment_awareness",  # 更新为环境感知
+            "exit_points": ["report_generation"],
+            "total_nodes": 10,  # 更新为10个节点
+            "original_nodes": 5,  # 原有节点数
+            "new_nodes": 5  # 新增节点数
         }
     
     def visualize(self) -> str:
         """
-        生成图的可视化文本
+        生成图的可视化文本（增强版，包含所有10个节点）
         
         Returns:
             str: Mermaid格式的图描述
@@ -180,26 +420,28 @@ class ScanAgentGraph:
 graph TD
     A[环境感知] --> B[任务规划]
     B --> C[智能决策]
-    C --> D[工具执行]
-    D --> E[结果验证]
-    E -->|继续执行| D
-    E -->|需要代码生成| F[代码生成]
-    E -->|完成所有任务| G[漏洞分析]
-    F --> H[代码执行]
-    H --> I[功能补充]
-    I --> E
-    G --> J[报告生成]
+    C -->|固定工具| D[工具执行]
+    C -->|自定义代码| E[代码生成]
+    C -->|需要增强| F[功能补充]
+    E --> G[代码执行]
+    G -->|成功| H[结果验证]
+    G -->|失败| F
+    F --> G
+    D --> H
+    H -->|有任务| D
+    H -->|无任务| I[漏洞分析]
+    I --> J[报告生成]
     J --> K[结束]
     
     style A fill:#e1f5ff
     style B fill:#fff3cd
     style C fill:#e8f5e9
     style D fill:#fff3cd
-    style E fill:#d4edda
-    style F fill:#f8d7da
-    style H fill:#f8d7da
-    style I fill:#fce4ec
+    style E fill:#f8d7da
+    style F fill:#fce4ec
     style G fill:#f8d7da
+    style H fill:#d4edda
+    style I fill:#f8d7da
     style J fill:#fce4ec
     style K fill:#c3e6cb
         """
