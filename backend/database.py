@@ -31,6 +31,12 @@ async def init_db():
             if db_dir and not os.path.exists(db_dir):
                 os.makedirs(db_dir, exist_ok=True)
                 logger.info(f"✅ 创建数据库目录: {db_dir}")
+            
+            # 将相对路径转换为绝对路径（相对于backend目录）
+            if not os.path.isabs(db_path):
+                backend_dir = os.path.dirname(os.path.abspath(__file__))
+                db_path = os.path.normpath(os.path.join(backend_dir, db_path))
+                db_url = f"sqlite:///{db_path.replace(os.sep, '/')}"
         
         await Tortoise.init(
             db_url=db_url,

@@ -339,7 +339,7 @@ class Settings(BaseSettings):
         
         定义配置文件加载方式和行为。
         """
-        env_file = ".env"
+        env_file = "backend/.env"
         """
         环境变量文件路径
         
