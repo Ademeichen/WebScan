@@ -12,13 +12,14 @@ AI 对话 API 路由
 - 对话记忆管理
 """
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from uuid import UUID, uuid4
 from tortoise.expressions import Q
 from datetime import datetime
 import logging
 
-from models import AIChatInstance, AIChatMessage
+from backend.models import AIChatInstance, AIChatMessage
 from backend.config import settings
 
 from langchain_openai import ChatOpenAI

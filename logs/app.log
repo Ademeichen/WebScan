@@ -3,3 +3,4 @@
 2026-01-10 21:13:04,045 - main - INFO - 应用关闭
 2026-01-10 21:13:04,060 - tortoise - INFO - Tortoise-ORM shutdown
 2026-01-10 21:13:04,062 - database - INFO - 数据库连接已关闭
+2026-01-28 13:07:40,035 - backend.main - INFO - 启动 WebScan AI Security Platform v1.0.0

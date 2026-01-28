@@ -7,7 +7,7 @@ import os
 import tempfile
 import sys
 import subprocess
-from models import VulnerabilityKB
+from backend.models import VulnerabilityKB
 # from langchain_community.llms import OpenAI
 # from langchain.prompts import PromptTemplate
 # from langchain.chains import LLMChain

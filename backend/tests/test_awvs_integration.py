@@ -8,16 +8,16 @@ from unittest.mock import MagicMock, patch
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tortoise import Tortoise
-from models import Task
+from backend.models import Task
 
 # Mock the AWVS API modules
-sys.modules['AVWS.API.Scan'] = MagicMock()
-sys.modules['AVWS.API.Target'] = MagicMock()
-sys.modules['AVWS.API.Vuln'] = MagicMock()
-sys.modules['AVWS.API.Dashboard'] = MagicMock()
-sys.modules['AVWS.API.Base'] = MagicMock()
+sys.modules['backend.AVWS.API.Scan'] = MagicMock()
+sys.modules['backend.AVWS.API.Target'] = MagicMock()
+sys.modules['backend.AVWS.API.Vuln'] = MagicMock()
+sys.modules['backend.AVWS.API.Dashboard'] = MagicMock()
+sys.modules['backend.AVWS.API.Base'] = MagicMock()
 
-from api.awvs import sync_scans_from_awvs
+from backend.api.awvs import sync_scans_from_awvs
 
 async def run_test():
     print("Initializing DB...")

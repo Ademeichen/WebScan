@@ -307,7 +307,7 @@ export default {
       if (!report) return
       
       this.downloading = report.id
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3000/api'
       const url = `${baseUrl}/reports/${report.id}/export?format=${report.report_type}`
       
       const link = document.createElement('a')

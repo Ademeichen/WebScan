@@ -17,11 +17,11 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import uvicorn
 from backend.config import settings
-from database import init_db, close_db
+from backend.database import init_db, close_db
 import logging
 from pathlib import Path
 
-from api import agent
+from backend.api import agent
 
 # 创建必要的目录
 Path("logs").mkdir(exist_ok=True)
@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
     
     # 验证AWVS连接
     try:
-        from AVWS.API.Base import Base as AWVSBase
+        from backend.AVWS.API.Base import Base as AWVSBase
         awvs_base = AWVSBase(settings.AWVS_API_URL, settings.AWVS_API_KEY)
         success, message = awvs_base.check_connection()
         if success:
@@ -76,7 +76,7 @@ async def lifespan(app: FastAPI):
             
             # 启动后台同步任务
             try:
-                from api.awvs import sync_scans_from_awvs
+                from backend.api.awvs import sync_scans_from_awvs
                 import asyncio
                 logger.info("正在启动AWVS数据后台同步...")
                 asyncio.create_task(sync_scans_from_awvs())
@@ -186,7 +186,7 @@ async def global_exception_handler(request, exc):
 
 
 # 注册路由
-from api import api_router
+from backend.api import api_router
 app.include_router(api_router, prefix="/api")
 
 
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     使用 Uvicorn ASGI 服务器运行 FastAPI 应用。
     """
     uvicorn.run(
-        "main:app",
+        "backend.main:app",
         host=settings.HOST,
         port=settings.PORT,
         reload=False,

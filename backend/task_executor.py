@@ -9,25 +9,25 @@ import json
 from tortoise.expressions import Q
 
 # Import Plugins
-from plugins.portscan.portscan import ScanPort
-from plugins.infoleak.infoleak import get_infoleak
-from plugins.webside.webside import get_side_info
-from plugins.baseinfo.baseinfo import getbaseinfo
-from plugins.webweight.webweight import get_web_weight
-from plugins.iplocating.iplocating import get_locating
-from plugins.cdnexist.cdnexist import iscdn
-from plugins.waf.waf import getwaf
-from plugins.whatcms.whatcms import getwhatcms
-from plugins.subdomain.subdomain import get_subdomain
-from plugins.loginfo.loginfo import LogHandler
-from plugins.randheader.randheader import get_random_headers
+from backend.plugins.portscan.portscan import ScanPort
+from backend.plugins.infoleak.infoleak import get_infoleak
+from backend.plugins.webside.webside import get_side_info
+from backend.plugins.baseinfo.baseinfo import getbaseinfo
+from backend.plugins.webweight.webweight import get_web_weight
+from backend.plugins.iplocating.iplocating import get_locating
+from backend.plugins.cdnexist.cdnexist import iscdn
+from backend.plugins.waf.waf import getwaf
+from backend.plugins.whatcms.whatcms import getwhatcms
+from backend.plugins.subdomain.subdomain import get_subdomain
+from backend.plugins.loginfo.loginfo import LogHandler
+from backend.plugins.randheader.randheader import get_random_headers
 try:
     from dirsearcch.dir_scanner import DirScanner
 except ImportError:
     DirScanner = None
 
 # Import POCs
-from poc import (
+from backend.poc import (
     cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
     struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
     cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc,

@@ -25,7 +25,7 @@ import json
 import logging
 from datetime import datetime
 
-from poc import (
+from backend.poc import (
     cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc, cve_2020_14756_poc, cve_2023_21839_poc,
     struts2_009_poc, struts2_032_poc, cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc,
     cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc

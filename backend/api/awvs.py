@@ -15,22 +15,22 @@ from tortoise.functions import Count
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from backend.config import settings
-from models import Task, Vulnerability
+from backend.models import Task, Vulnerability
 
 # 导入 AWVS API 类
-from AVWS.API.Scan import Scan
-from AVWS.API.Target import Target
-from AVWS.API.Vuln import Vuln
-from AVWS.API.Dashboard import Dashboard
-from AVWS.API.Base import Base
+from backend.AVWS.API.Scan import Scan
+from backend.AVWS.API.Target import Target
+from backend.AVWS.API.Vuln import Vuln
+from backend.AVWS.API.Dashboard import Dashboard
+from backend.AVWS.API.Base import Base
 
 # 导入 POC 模块
-from poc.weblogic import cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc, cve_2020_14756_poc, cve_2023_21839_poc
-from poc.Drupal import cve_2018_7600_poc
-from poc.tomcat import cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc
-from poc.jboss import cve_2017_12149_poc
-from poc.nexus import cve_2020_10199_poc
-from poc.struts2 import struts2_009_poc, struts2_032_poc
+from backend.poc.weblogic import cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc, cve_2020_14756_poc, cve_2023_21839_poc
+from backend.poc.Drupal import cve_2018_7600_poc
+from backend.poc.tomcat import cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc
+from backend.poc.jboss import cve_2017_12149_poc
+from backend.poc.nexus import cve_2020_10199_poc
+from backend.poc.struts2 import struts2_009_poc, struts2_032_poc
 
 logger = logging.getLogger(__name__)
 

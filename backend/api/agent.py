@@ -11,13 +11,13 @@ AI Agent API 路由
 - 与 LangGraph 工作流集成
 """
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import logging
 
-from models import AgentTask, AgentResult
-from agent.core import agent_app
+from backend.models import AgentTask, AgentResult
+from backend.ai_agents.core.graph import create_agent_graph
 
 logger = logging.getLogger(__name__)
 

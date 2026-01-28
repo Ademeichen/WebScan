@@ -289,7 +289,7 @@ async def api_get_real_ip(request: Request):
         return error(code=500, msg="获取真实IP失败")
 
 # ======================== 原有示例路由（保留） ========================
-@app.get("/check/ip", summary="校验IP合法性")
+@router.get("/check/ip", summary="校验IP合法性")
 async def api_check_ip(ip: str):
     is_valid = check_ip(ip)
     if is_valid:
@@ -298,7 +298,7 @@ async def api_check_ip(ip: str):
         return error(code=403, data={"ip": ip, "is_valid": False}, msg="IP非法或禁止扫描")
 
 
-@app.get("/check/url", summary="校验URL合法性")
+@router.get("/check/url", summary="校验URL合法性")
 async def api_check_url(url: str):
     valid_url = check_url(url)
     if valid_url:

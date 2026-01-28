@@ -13,7 +13,7 @@
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from models import VulnerabilityKB
+from backend.models import VulnerabilityKB
 from tortoise.expressions import Q
 import logging
 import asyncio

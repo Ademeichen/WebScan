@@ -14,7 +14,7 @@ import platform
 import json
 from tortoise.functions import Count
 from tortoise.expressions import Q
-from models import Task, Vulnerability, SystemSettings, Report, SystemLog, POCScanResult, AIChatInstance
+from backend.models import Task, Vulnerability, SystemSettings, Report, SystemLog, POCScanResult, AIChatInstance
 
 logger = logging.getLogger(__name__)
 
