@@ -45,7 +45,7 @@ class Settings(BaseSettings):
         MAX_CONCURRENT_SCANS: 最大并发扫描任务数
         SCAN_TIMEOUT: 扫描任务超时时间（秒）
         OPENAI_API_KEY: OpenAI API 密钥
-        QWEN_API_KEY: 阿里云通义千问 API 密钥
+        OPENAI_API_KEY: 阿里云通义千问 API 密钥
         AWVS_API_URL: AWVS API 地址
         AWVS_API_KEY: AWVS API 密钥
         CODE_EXECUTOR_WORKSPACE: 代码执行工作空间路径
@@ -199,7 +199,7 @@ class Settings(BaseSettings):
     """
     
     # ====================== API 密钥配置 ======================
-    OPENAI_API_KEY: str = "341787347bdc5374dc6377f29a192907:Nzk5NTk4OTFkYmE5MTUzODI1YTM0MjNj"
+    OPENAI_API_KEY: str = ""
     """
     OpenAI API 密钥
     
@@ -211,7 +211,7 @@ class Settings(BaseSettings):
     必须通过环境变量 OPENAI_API_KEY 设置，不要在代码中硬编码。
     """
     
-    OPENAI_BASE_URL: str = "https://maas-api.cn-huabei-1.xf-yun.com/v2"
+    OPENAI_BASE_URL: str = ""
     """
     OpenAI API 基础 URL
     
@@ -221,7 +221,7 @@ class Settings(BaseSettings):
     可以通过环境变量 OPENAI_BASE_URL 覆盖。
     """
     
-    MODEL_ID: str = "xop3qwen1b7"
+    MODEL_ID: str = ""
     """
     AI 模型 ID
     
@@ -231,20 +231,8 @@ class Settings(BaseSettings):
     可以通过环境变量 MODEL_ID 覆盖。
     """
     
-    QWEN_API_KEY: Optional[str] = None
-    """
-    阿里云通义千问 API 密钥
-    
-    用于访问阿里云的通义千问大语言模型。
-    作为 OpenAI 的替代方案，提供中文优化的 AI 能力。
-    获取方式：https://dashscope.console.aliyun.com/apiKey
-    
-    如果不使用通义千问模型，可以留空。
-    必须通过环境变量 QWEN_API_KEY 设置，不要在代码中硬编码。
-    """
-    
     # ====================== AWVS 配置 ======================
-    AWVS_API_URL: str = "https://127.0.0.1:3443"
+    AWVS_API_URL: str = ""
     """
     AWVS API 地址
     
@@ -256,7 +244,7 @@ class Settings(BaseSettings):
     可以通过环境变量 AWVS_API_URL 覆盖。
     """
     
-    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c986f9835bbf243cb9b33aee376ee7da9"
+    AWVS_API_KEY: str = ""
     """
     AWVS API 密钥
     
@@ -271,13 +259,13 @@ class Settings(BaseSettings):
     """
     
     # ====================== Seebug 配置 ======================
-    SEEBUG_API_KEY: str = "c2720fbc7a590da49f23a9df64fda1c48d48f077"
+    SEEBUG_API_KEY: str = ""
     """
     Seebug API 密钥
     
     用于访问 Seebug 漏洞平台的 API。
     Seebug 是国内知名的漏洞平台，提供详细的漏洞信息和 POC。
-    获取方式：https://www.seebug.org/user/api
+    获取方式：https://www.seebug.org/api
     
     功能包括：
     - 搜索 POC
@@ -292,7 +280,7 @@ class Settings(BaseSettings):
     可以通过环境变量 SEEBUG_API_KEY 覆盖。
     """
     
-    SEEBUG_API_BASE_URL: str = "https://www.seebug.org/api"
+    SEEBUG_API_BASE_URL: str = ""
     """
     Seebug API 基础 URL
     

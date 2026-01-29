@@ -11,6 +11,16 @@ FastAPI 主应用入口文件
 - 验证外部服务连接（如 AWVS）
 - 启动后台任务
 """
+import sys
+import os
+from pathlib import Path
+
+# 添加项目根目录到 Python 路径
+current_dir = Path(__file__).parent
+project_root = current_dir.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,7 +29,6 @@ import uvicorn
 from backend.config import settings
 from backend.database import init_db, close_db
 import logging
-from pathlib import Path
 
 from backend.api import agent
 

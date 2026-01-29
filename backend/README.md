@@ -138,7 +138,7 @@ python main.py
 - `OPENAI_API_KEY`: OpenAI API 密钥
 - `OPENAI_BASE_URL`: OpenAI API 基础 URL
 - `MODEL_ID`: AI 模型 ID
-- `QWEN_API_KEY`: 通义千问 API 密钥
+- `OPENAI_API_KEY`: 通义千问 API 密钥
 - `AWVS_API_URL`: AWVS API 地址
 - `AWVS_API_KEY`: AWVS API 密钥
 - `CODE_EXECUTOR_ENABLED`: 是否启用代码执行功能
@@ -541,7 +541,7 @@ LOG_LEVEL=INFO
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_BASE_URL=https://maas-api.cn-huabei-1.xf-yun.com/v2
 MODEL_ID=xop3qwen1b7
-QWEN_API_KEY=your_qwen_api_key
+OPENAI_API_KEY=your_OPENAI_API_KEY
 AWVS_API_URL=https://127.0.0.1:3443
 AWVS_API_KEY=your_awvs_api_key
 CODE_EXECUTOR_ENABLED=True

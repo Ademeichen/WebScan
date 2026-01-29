@@ -1,6 +1,6 @@
 """
 扫描功能相关的 API 路由
-整合原有的 plugins 功能模块，统一使用异步任务执行
+整合原有的 backend.plugins 功能模块，统一使用异步任务执行
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, HttpUrl
@@ -51,7 +51,7 @@ async def port_scan(request: PortScanRequest):
     端口扫描 (异步)
     """
     try:
-        from plugins.common.common import check_ip
+        from backend.plugins.common.common import check_ip
         
         if not check_ip(request.ip):
             raise HTTPException(status_code=400, detail="请填写正确的IP地址")
@@ -87,7 +87,7 @@ async def info_leak(request: URLRequest):
     信息泄露检测 (异步)
     """
     try:
-        from plugins.common.common import check_url
+        from backend.plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
@@ -124,7 +124,7 @@ async def web_side_scan(request: IPRequest):
     获取旁站信息 (异步)
     """
     try:
-        from plugins.common.common import check_ip
+        from backend.plugins.common.common import check_ip
         
         if not check_ip(request.ip):
             raise HTTPException(status_code=400, detail="请填写正确的IP地址")
@@ -160,7 +160,7 @@ async def get_base_info(request: URLRequest):
     获取网站基本信息 (异步)
     """
     try:
-        from plugins.common.common import check_url
+        from backend.plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
@@ -197,7 +197,7 @@ async def get_web_weight(request: URLRequest):
     获取网站权重 (异步)
     """
     try:
-        from plugins.common.common import check_url
+        from backend.plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
@@ -234,7 +234,7 @@ async def ip_locating(request: IPRequest):
     IP定位 (异步)
     """
     try:
-        from plugins.common.common import check_ip
+        from backend.plugins.common.common import check_ip
         
         if not check_ip(request.ip):
             raise HTTPException(status_code=400, detail="请填写正确的IP地址")
@@ -270,7 +270,7 @@ async def cdn_check(request: URLRequest):
     CDN检测 (异步)
     """
     try:
-        from plugins.common.common import check_url
+        from backend.plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
@@ -307,7 +307,7 @@ async def waf_check(request: URLRequest):
     WAF检测 (异步)
     """
     try:
-        from plugins.common.common import check_url
+        from backend.plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
@@ -344,7 +344,7 @@ async def what_cms(request: URLRequest):
     CMS指纹识别 (异步)
     """
     try:
-        from plugins.common.common import check_url
+        from backend.plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
@@ -415,7 +415,7 @@ async def dir_scan(request: URLRequest):
     目录扫描 (异步)
     """
     try:
-        from plugins.common.common import check_url
+        from backend.plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:
@@ -452,7 +452,7 @@ async def comprehensive_scan(request: URLRequest):
     综合扫描 (异步)
     """
     try:
-        from plugins.common.common import check_url
+        from backend.plugins.common.common import check_url
         
         url = check_url(request.url)
         if not url:

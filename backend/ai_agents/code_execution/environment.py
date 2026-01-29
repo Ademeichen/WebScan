@@ -52,7 +52,7 @@ class EnvironmentAwareness:
     
     # 全局配置
     MAX_WORKERS = 5  # 最大并发工作线程数
-    TOOL_TIMEOUT = 5  # 单个工具检测超时时间（秒）
+    TOOL_TIMEOUT = 5  # 单个工具检测超时时间（秒）- 减少超时时间以加快检测
     NETWORK_TIMEOUT = 3  # 网络检测超时时间（秒）
     GLOBAL_TIMEOUT = 30  # 全局初始化超时时间（秒）
     
@@ -285,7 +285,7 @@ class EnvironmentAwareness:
             if process:
                 process.kill()
                 process.wait()
-            logger.warning(f"工具 {tool_name} 检测超时")
+            logger.warning(f"工具 {tool_name} 检测超时（{self.TOOL_TIMEOUT}秒）")
             return {
                 "name": tool_name,
                 "available": False,
@@ -396,7 +396,7 @@ class EnvironmentAwareness:
                 )
                 stdout, stderr = process.communicate(timeout=self.NETWORK_TIMEOUT)
                 return process.returncode == 0
-        except subprocess.TimeoutExpired:
+        except TimeoutError:
             if process:
                 process.kill()
                 process.wait()
