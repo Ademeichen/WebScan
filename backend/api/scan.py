@@ -3,8 +3,8 @@
 整合原有的 backend.plugins 功能模块，统一使用异步任务执行
 """
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, HttpUrl
-from typing import Optional, List, Dict, Any
+from pydantic import BaseModel
+from typing import Optional, Any
 import logging
 import asyncio
 import json

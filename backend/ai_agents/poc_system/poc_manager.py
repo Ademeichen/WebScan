@@ -4,14 +4,12 @@ POC 脚本管理器
 负责 POC 脚本的管理，包括从 Seebug 同步、本地加载、版本控制等。
 """
 import logging
-import asyncio
-import httpx
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from pathlib import Path
 
 from backend.config import settings
-from backend.models import POCVerificationTask, POCVerificationResult
+from backend.models import POCVerificationTask
 from backend.api.kb import search_seebug_poc, download_seebug_poc
 
 logger = logging.getLogger(__name__)
@@ -125,7 +123,7 @@ class POCManager:
             poc_list = await search_seebug_poc(keyword=keyword, page=1, page_size=limit)
             
             if not poc_list:
-                logger.warning(f"⚠️ 从 Seebug 未获取到 POC 数据")
+                logger.warning("⚠️ 从 Seebug 未获取到 POC 数据")
                 return []
             
             # 转换为 POC 元数据
@@ -177,7 +175,7 @@ class POCManager:
             # 检查缓存
             cache_key = f"poc_code_{ssvid}"
             if cache_key in self.poc_cache:
-                logger.info(f"✅ 使用缓存的 POC 代码")
+                logger.info("✅ 使用缓存的 POC 代码")
                 return self.poc_cache[cache_key]["code"]
             
             # 从 Seebug 下载 POC

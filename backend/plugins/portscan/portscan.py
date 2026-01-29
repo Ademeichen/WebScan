@@ -8,7 +8,6 @@ import socket
 import re
 from concurrent.futures import ThreadPoolExecutor
 import sys
-import os
 from typing import List, Dict, Set
 from dataclasses import dataclass
 import threading
@@ -232,7 +231,7 @@ def main():
     print(f"[INFO] 开始扫描目标：{target}")
     if scanner.run_scan():
         results = scanner.get_results()
-        print(f"[INFO] 扫描完成，开放端口及服务：")
+        print("[INFO] 扫描完成，开放端口及服务：")
         for res in results:
             print(f"  {res}")
     else:

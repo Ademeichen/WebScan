@@ -28,9 +28,8 @@
 """
 import json
 import logging
-import os
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Optional, Dict
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from threading import Lock
@@ -113,7 +112,7 @@ def load_infoleak_payloads() -> Dict[str, List[str]]:
             json_data = json.load(fp)
         # 校验JSON结构（兼容原代码格式）
         if not isinstance(json_data, dict) or 'data' not in json_data:
-            logger.error(f"infoleak.json格式错误，缺少'data'字段")
+            logger.error("infoleak.json格式错误，缺少'data'字段")
             return {}
         # 取第一个data元素（兼容原代码json_data['data'][0]）
         payload_dict = json_data['data'][0] if isinstance(json_data['data'], list) else json_data['data']

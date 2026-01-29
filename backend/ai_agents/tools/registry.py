@@ -6,7 +6,6 @@
 import asyncio
 import logging
 from typing import Dict, Callable, Any, List, Optional
-from functools import wraps
 from .wrappers import AsyncToolWrapper
 
 logger = logging.getLogger(__name__)

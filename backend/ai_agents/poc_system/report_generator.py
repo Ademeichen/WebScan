@@ -10,7 +10,6 @@ from datetime import datetime
 from pathlib import Path
 
 from backend.models import POCVerificationTask, POCVerificationResult
-from backend.ai_agents.poc_system.result_analyzer import BatchAnalysisSummary
 
 logger = logging.getLogger(__name__)
 

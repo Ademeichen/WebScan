@@ -6,13 +6,12 @@ POC 验证 API 路由
 import logging
 from typing import Dict, Any, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from backend.models import POCVerificationTask, POCVerificationResult
 from backend.ai_agents.poc_system import (
     poc_manager,
-    target_manager,
     verification_engine,
     result_analyzer,
     report_generator
@@ -179,7 +178,7 @@ async def create_batch_verification_tasks(request: CreateBatchVerificationTaskRe
         # 批量分析结果
         analysis_summary = await result_analyzer.analyze_batch_results(results)
         
-        logger.info(f"✅ 批量 POC 验证任务创建并执行完成")
+        logger.info("✅ 批量 POC 验证任务创建并执行完成")
         
         return {
             "code": 200,

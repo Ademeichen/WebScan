@@ -34,7 +34,6 @@ JBoss Application Server 的 JMXInvokerServlet 存在反序列化漏洞。
 """
 
 import requests
-import sys
 
 headers = {
     'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:63.0) Gecko/20100101 Firefox/63.0",

@@ -19,7 +19,6 @@
     >>> log.info('这是一条测试日志')
     >>> log.reset_name('test_new')  # 重置日志名称
 """
-import os
 import logging
 from pathlib import Path
 from typing import Optional, bool

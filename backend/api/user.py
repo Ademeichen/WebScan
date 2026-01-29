@@ -6,9 +6,9 @@
 - 更新用户信息
 - 用户权限管理
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Any
 from datetime import datetime
 import logging
 

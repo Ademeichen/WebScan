@@ -5,8 +5,7 @@
 """
 import asyncio
 import logging
-from typing import Callable, Any, Optional
-from functools import partial
+from typing import Callable, Any
 
 logger = logging.getLogger(__name__)
 

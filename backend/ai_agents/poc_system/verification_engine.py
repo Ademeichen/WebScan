@@ -5,18 +5,14 @@ POC 验证执行引擎
 """
 import logging
 import asyncio
-import tempfile
-import sys
-import os
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from backend.config import settings
 from backend.models import POCVerificationTask, POCVerificationResult, POCExecutionLog
 from backend.ai_agents.poc_system.poc_manager import poc_manager
-from backend.Pocsuite3Agent.agent import Pocsuite3Agent, POCResult, ScanResult
+from backend.Pocsuite3Agent.agent import Pocsuite3Agent, POCResult
 
 logger = logging.getLogger(__name__)
 

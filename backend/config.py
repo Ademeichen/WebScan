@@ -21,7 +21,6 @@ FastAPI 应用配置文件
     # DEBUG=True
 """
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -453,13 +452,14 @@ class Settings(BaseSettings):
         """
         环境变量文件路径
         
-        从项目根目录的 .env 文件加载配置。
+        从项目根目录的 backend/.env 文件加载配置。
         文件格式：KEY=VALUE
         例如：
             APP_NAME=My App
             DEBUG=True
             DATABASE_URL=sqlite://./data/mydb.db
         """
+        env_file_encoding = "utf-8"
         
         case_sensitive = True
         """

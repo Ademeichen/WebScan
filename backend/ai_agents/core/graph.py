@@ -28,7 +28,6 @@ from .nodes import (
     IntelligentDecisionNode
 )
 from .poc_verification_node import poc_verification_node
-from ..agent_config import agent_config
 
 logger = logging.getLogger(__name__)
 

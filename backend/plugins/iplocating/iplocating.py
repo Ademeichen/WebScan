@@ -17,7 +17,7 @@ IP归属地查询模块
 """
 import logging
 import re
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 import requests
 from requests.exceptions import ConnectTimeout, ReadTimeout, RequestException
 

@@ -24,7 +24,7 @@
 import logging
 import re
 import json
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry

@@ -5,7 +5,6 @@
 """
 import asyncio
 import logging
-import subprocess
 import tempfile
 from pathlib import Path
 from typing import Dict, Any, Optional, List

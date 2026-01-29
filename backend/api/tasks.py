@@ -14,7 +14,6 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
-from tortoise import connections
 from tortoise.functions import Count
 import json
 import asyncio
@@ -208,7 +207,7 @@ async def create_task(request: CreateTaskRequest):
         if request.task_type == 'poc_scan':
             poc_types = request.config.get('poc_types', [])
             if not poc_types:
-                 logger.warning(f"POC扫描未指定POC类型，默认扫描所有")
+                 logger.warning("POC扫描未指定POC类型，默认扫描所有")
             
             # 简单的 POC 类型验证
             # 这里不强制失败，只是记录日志

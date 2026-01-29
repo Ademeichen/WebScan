@@ -5,7 +5,6 @@
 """
 import asyncio
 import sys
-import os
 from pathlib import Path
 
 # 统一导入路径配置
@@ -31,7 +30,7 @@ async def test_fixed_tool_workflow():
     try:
         final_state = await graph.invoke(initial_state)
         
-        print(f"✅ 固定工具扫描完成")
+        print("✅ 固定工具扫描完成")
         print(f"  任务ID: {final_state.task_id}")
         print(f"  完成任务: {len(final_state.completed_tasks)}")
         print(f"  发现漏洞: {len(final_state.vulnerabilities)}")
@@ -67,7 +66,7 @@ async def test_code_generation_workflow():
     try:
         final_state = await graph.invoke(initial_state)
         
-        print(f"✅ 代码生成扫描完成")
+        print("✅ 代码生成扫描完成")
         print(f"  任务ID: {final_state.task_id}")
         print(f"  完成任务: {len(final_state.completed_tasks)}")
         print(f"  发现漏洞: {len(final_state.vulnerabilities)}")
@@ -76,9 +75,9 @@ async def test_code_generation_workflow():
         # 验证代码生成节点被执行
         code_gen_found = any(h["task"] == "code_generation" for h in final_state.execution_history)
         if code_gen_found:
-            print(f"  ✓ 代码生成节点已执行")
+            print("  ✓ 代码生成节点已执行")
         else:
-            print(f"  ✗ 代码生成节点未执行")
+            print("  ✗ 代码生成节点未执行")
         
         return True
     except Exception as e:
@@ -107,7 +106,7 @@ async def test_capability_enhancement_workflow():
     try:
         final_state = await graph.invoke(initial_state)
         
-        print(f"✅ 功能补充流程完成")
+        print("✅ 功能补充流程完成")
         print(f"  任务ID: {final_state.task_id}")
         print(f"  完成任务: {len(final_state.completed_tasks)}")
         print(f"  执行步骤: {len(final_state.execution_history)}")
@@ -136,7 +135,7 @@ async def test_full_workflow():
     try:
         final_state = await graph.invoke(initial_state)
         
-        print(f"✅ 完整工作流执行完成")
+        print("✅ 完整工作流执行完成")
         print(f"  任务ID: {final_state.task_id}")
         print(f"  完成任务: {len(final_state.completed_tasks)}")
         print(f"  发现漏洞: {len(final_state.vulnerabilities)}")
@@ -150,7 +149,7 @@ async def test_full_workflow():
             "tool_execution", "result_verification", "vulnerability_analysis", "report_generation"
         }
         
-        print(f"\n节点执行情况:")
+        print("\n节点执行情况:")
         for node in expected_nodes:
             if node in executed_nodes:
                 print(f"  ✓ {node}")
@@ -182,7 +181,7 @@ async def test_error_recovery():
     
     try:
         final_state = await graph.invoke(initial_state)
-        print(f"✅ 错误恢复测试完成")
+        print("✅ 错误恢复测试完成")
         print(f"  任务ID: {final_state.task_id}")
         print(f"  错误数量: {len(final_state.errors)}")
         

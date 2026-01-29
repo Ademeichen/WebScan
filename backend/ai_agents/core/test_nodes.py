@@ -4,12 +4,9 @@
 测试所有10个节点（原有5个 + 新增5个）的功能和异常处理。
 """
 import unittest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
-from datetime import datetime
+from unittest.mock import Mock, patch
 
 import sys
-import os
 from pathlib import Path
 
 # 统一导入路径配置
@@ -667,7 +664,7 @@ def run_tests():
     result = runner.run(suite)
     
     print(f"\n{'='*60}")
-    print(f"节点单元测试结果:")
+    print("节点单元测试结果:")
     print(f"  运行测试: {result.testsRun}")
     print(f"  成功: {result.testsRun - len(result.failures) - len(result.errors)}")
     print(f"  失败: {len(result.failures)}")

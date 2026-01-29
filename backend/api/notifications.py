@@ -7,10 +7,9 @@
 - 标记通知为已读
 - 删除通知
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from typing import Optional, Any
 import logging
 
 logger = logging.getLogger(__name__)

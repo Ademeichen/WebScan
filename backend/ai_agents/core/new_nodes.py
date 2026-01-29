@@ -4,9 +4,6 @@
 添加环境感知、代码生成和功能补充节点到AI Agent系统。
 """
 import logging
-from typing import Dict, Any, Optional
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 
 from ..core.state import AgentState
 from ..code_execution.environment import EnvironmentAwareness

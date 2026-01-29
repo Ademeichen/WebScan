@@ -3,8 +3,8 @@ AWVS 漏洞扫描相关的 API 路由
 整合 AVWS 工具包的功能
 """
 from fastapi import APIRouter, HTTPException, BackgroundTasks
-from pydantic import BaseModel, HttpUrl
-from typing import Optional, List, Dict, Any
+from pydantic import BaseModel
+from typing import Optional, Any
 import logging
 import json
 import re
@@ -13,7 +13,6 @@ import time
 from functools import partial
 from tortoise.functions import Count
 from urllib.parse import urlparse
-from bs4 import BeautifulSoup
 from backend.config import settings
 from backend.models import Task, Vulnerability
 
@@ -22,7 +21,6 @@ from backend.AVWS.API.Scan import Scan
 from backend.AVWS.API.Target import Target
 from backend.AVWS.API.Vuln import Vuln
 from backend.AVWS.API.Dashboard import Dashboard
-from backend.AVWS.API.Base import Base
 
 # 导入 POC 模块
 from backend.poc.weblogic import cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc, cve_2020_14756_poc, cve_2023_21839_poc

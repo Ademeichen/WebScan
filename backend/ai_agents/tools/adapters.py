@@ -4,7 +4,7 @@
 适配现有插件和POC，提供统一的调用接口。
 """
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from .wrappers import wrap_async
 
 logger = logging.getLogger(__name__)

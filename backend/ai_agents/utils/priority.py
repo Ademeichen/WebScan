@@ -134,7 +134,7 @@ class TaskPriorityManager:
         # 如果检测到CDN，降低端口扫描优先级
         if context.get("cdn") and task_name == "portscan":
             adjusted_priority *= 0.7
-            logger.debug(f"检测到CDN，降低端口扫描优先级")
+            logger.debug("检测到CDN，降低端口扫描优先级")
         
         # 如果CMS已知，提高相关POC优先级
         cms = context.get("cms", "").lower()

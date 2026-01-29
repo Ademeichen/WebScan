@@ -4,10 +4,8 @@
 负责分析 POC 验证结果，包括漏洞验证状态判定、漏洞等级评估、误报检测、结果置信度计算等。
 """
 import logging
-import re
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any
 from dataclasses import dataclass
-from datetime import datetime
 
 from backend.models import POCVerificationResult, POCExecutionLog
 from backend.config import settings

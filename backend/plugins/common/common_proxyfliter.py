@@ -24,7 +24,7 @@ FastAPI通用工具函数模块（增强版）
 
 import re
 import socket
-from typing import Optional, Union, Dict, Any, List
+from typing import Optional, Union, Dict, Any
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 

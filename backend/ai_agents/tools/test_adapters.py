@@ -5,9 +5,8 @@
 """
 import pytest
 import sys
-import asyncio
 from pathlib import Path
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 

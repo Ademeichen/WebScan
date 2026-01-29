@@ -12,7 +12,6 @@ FastAPI 主应用入口文件
 - 启动后台任务
 """
 import sys
-import os
 from pathlib import Path
 
 # 添加项目根目录到 Python 路径
@@ -30,7 +29,6 @@ from backend.config import settings
 from backend.database import init_db, close_db
 import logging
 
-from backend.api import agent
 
 # 创建必要的目录
 Path("logs").mkdir(exist_ok=True)

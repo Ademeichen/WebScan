@@ -179,8 +179,6 @@ front/
 │   │   └── index.js            # 路由定义
 │   ├── utils/                  # 工具函数
 │   │   └── api.js              # API 请求封装
-│   ├── data/                   # 示例数据
-│   │   └── mockData.js         # 模拟数据
 │   ├── style.css               # 全局样式
 │   ├── App.vue                 # 根组件
 │   └── main.js                 # 应用入口

@@ -4,15 +4,11 @@
 负责目标信息的管理，包括批量导入、单个输入、去重验证、分组管理等功能。
 """
 import logging
-import asyncio
 import csv
 import json
 from typing import Dict, List, Any, Optional
-from pathlib import Path
-from datetime import datetime
 from urllib.parse import urlparse
 
-from backend.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -465,7 +461,7 @@ class TargetManager:
                     logger.warning(f"⚠️ 目标不存在: {url}")
             
             if not valid_urls:
-                logger.warning(f"⚠️ 没有有效目标，分组创建失败")
+                logger.warning("⚠️ 没有有效目标，分组创建失败")
                 return False
             
             self.target_groups[group_name] = valid_urls

@@ -4,18 +4,16 @@
 测试完整的工作流执行，包括所有10个节点的协同工作。
 """
 import unittest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 
 import sys
-import os
 from pathlib import Path
 
 # 统一导入路径配置
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from backend.ai_agents.core.state import AgentState
-from backend.ai_agents.core.graph import ScanAgentGraph, create_agent_graph
+from backend.ai_agents.core.graph import create_agent_graph
 
 
 class TestGraphBuilding(unittest.TestCase):
@@ -491,7 +489,7 @@ def run_tests():
     result = runner.run(suite)
     
     print(f"\n{'='*60}")
-    print(f"图集成测试结果:")
+    print("图集成测试结果:")
     print(f"  运行测试: {result.testsRun}")
     print(f"  成功: {result.testsRun - len(result.failures) - len(result.errors)}")
     print(f"  失败: {len(result.failures)}")

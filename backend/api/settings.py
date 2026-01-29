@@ -4,17 +4,16 @@
 提供系统配置管理、系统信息查询、统计数据等功能。
 所有设置通过数据库持久化，支持动态配置管理。
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 import logging
 import psutil
 import platform
 import json
 from tortoise.functions import Count
-from tortoise.expressions import Q
-from backend.models import Task, Vulnerability, SystemSettings, Report, SystemLog, POCScanResult, AIChatInstance
+from backend.models import Task, Vulnerability, SystemSettings, Report, SystemLog, AIChatInstance
 
 logger = logging.getLogger(__name__)
 

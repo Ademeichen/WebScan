@@ -551,7 +551,7 @@ async def generate_code(request: CodeGenerationRequest) -> Dict[str, Any]:
             additional_params=request.additional_params
         )
         
-        logger.info(f"✅ 代码生成完成")
+        logger.info("✅ 代码生成完成")
         return {
             "status": "success",
             "data": result.to_dict()
@@ -623,7 +623,7 @@ async def generate_and_execute_code(request: CodeGenerationRequest) -> Dict[str,
             additional_params=request.additional_params
         )
         
-        logger.info(f"✅ 生成并执行代码完成")
+        logger.info("✅ 生成并执行代码完成")
         return {
             "status": "success",
             "data": result
@@ -658,7 +658,7 @@ async def enhance_capability(request: CapabilityEnhancementRequest) -> Dict[str,
             capability_name=request.capability_name
         )
         
-        logger.info(f"✅ 功能增强完成")
+        logger.info("✅ 功能增强完成")
         return {
             "status": "success",
             "data": result

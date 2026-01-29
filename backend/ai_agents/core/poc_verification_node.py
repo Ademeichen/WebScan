@@ -7,18 +7,14 @@ import logging
 from typing import Dict, Any, List
 from datetime import datetime
 
-from langchain_core.messages import HumanMessage, AIMessage
-from langgraph.graph import StateGraph
 
 from backend.ai_agents.core.state import AgentState
 from backend.ai_agents.poc_system import (
     poc_manager,
-    target_manager,
     verification_engine,
-    result_analyzer,
-    report_generator
+    result_analyzer
 )
-from backend.models import POCVerificationTask, POCVerificationResult
+from backend.models import POCVerificationResult
 from backend.config import settings
 
 logger = logging.getLogger(__name__)

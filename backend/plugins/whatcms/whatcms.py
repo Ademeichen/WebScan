@@ -40,7 +40,7 @@ import os
 import re
 import json
 import logging
-from typing import Dict, List, Set, Optional, Union
+from typing import Dict, List, Set, Union
 import requests
 import chardet
 from bs4 import BeautifulSoup

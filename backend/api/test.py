@@ -4,7 +4,7 @@
 提供各个组件的连接测试接口，用于验证系统各模块是否正常工作。
 包括：AI模型、Seebug、Pocsuite3智能体库、LangGraph等。
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import logging
@@ -101,7 +101,7 @@ async def test_ai_model():
 @router.post("/seebug", response_model=TestResponse)
 async def test_seebug():
     """
-    测试Seebug API连接
+    测试Seebug API连接（使用Pocsuite3内置API）
     
     验证Seebug API是否可以正常访问和获取数据。
     
@@ -109,8 +109,6 @@ async def test_seebug():
         TestResponse: 测试结果，包含连接状态、API密钥验证、测试查询结果等
     """
     try:
-        import httpx
-        
         logger.info("🧪 开始测试Seebug API连接")
         start_time = time.time()
         
@@ -118,44 +116,43 @@ async def test_seebug():
         if not settings.SEEBUG_API_KEY:
             raise Exception("Seebug API密钥未配置")
         
-        # 构建测试请求
-        test_url = f"{settings.SEEBUG_API_BASE_URL}/poc_list"
-        headers = {
-            "Authorization": f"Bearer {settings.SEEBUG_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        params = {
-            "page": 1,
-            "page_size": 1
-        }
-        
-        # 发送请求
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(test_url, headers=headers, params=params)
-        
-        response_time = time.time() - start_time
-        
-        # 验证响应
-        if response.status_code == 200:
-            result = response.json()
-            logger.info(f"✅ Seebug API测试成功，响应时间: {response_time:.2f}秒")
+        # 使用Pocsuite3的Seebug API
+        try:
+            from pocsuite3.lib.request import requests
             
-            return TestResponse(
-                code=200,
-                message="Seebug API连接正常",
-                data={
-                    "status": "success",
-                    "api_base_url": settings.SEEBUG_API_BASE_URL,
-                    "response_time": f"{response_time:.2f}s",
-                    "api_key_configured": True,
-                    "test_query_result": {
-                        "total": result.get("total", 0),
-                        "data_sample": result.get("data", [])[:1] if result.get("data") else []
+            # 直接使用Pocsuite3的requests库调用Seebug API
+            url = 'https://www.seebug.org/api/user/poc_list'
+            headers = {
+                'User-Agent': 'curl/7.80.0',
+                'Authorization': f'Token {settings.SEEBUG_API_KEY}'
+            }
+            
+            resp = requests.get(url, headers=headers, timeout=10.0)
+            
+            response_time = time.time() - start_time
+            
+            if resp and resp.status_code == 200:
+                logger.info(f"✅ Seebug API测试成功，响应时间: {response_time:.2f}秒")
+                
+                return TestResponse(
+                    code=200,
+                    message="Seebug API连接正常",
+                    data={
+                        "status": "success",
+                        "api_base_url": "Pocsuite3内置Seebug API",
+                        "response_time": f"{response_time:.2f}s",
+                        "api_key_configured": True,
+                        "test_query_result": {
+                            "message": "API Key验证成功",
+                            "poc_count": len(resp.json()) if resp.json() else 0
+                        }
                     }
-                }
-            )
-        else:
-            raise Exception(f"Seebug API返回错误状态码: {response.status_code}")
+                )
+            else:
+                raise Exception(f"Seebug API返回错误状态码: {resp.status_code}")
+                
+        except ImportError:
+            raise Exception("Pocsuite3未安装，无法使用Seebug API")
             
     except Exception as e:
         logger.error(f"❌ Seebug API测试失败: {str(e)}")
@@ -165,7 +162,7 @@ async def test_seebug():
             data={
                 "status": "failed",
                 "error": str(e),
-                "api_base_url": settings.SEEBUG_API_BASE_URL,
+                "api_base_url": "Pocsuite3内置Seebug API",
                 "api_key_configured": bool(settings.SEEBUG_API_KEY)
             }
         )

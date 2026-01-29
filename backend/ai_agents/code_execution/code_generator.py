@@ -4,7 +4,7 @@
 基于模板和LLM生成扫描脚本。
 """
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
@@ -315,7 +315,7 @@ def main():
 环境信息：
 - 操作系统: {env_info['os_info'].get('system', 'Unknown')}
 - Python版本: {env_info['python_info'].get('version', 'Unknown')}
-- 可用工具: {', '.join([f'{{k}}: {{v}}' for k, v in env_info['available_tools'].items() if v.get('available')])}
+- 可用工具: {', '.join(['{k}: {v}' for k, v in env_info['available_tools'].items() if v.get('available')])}
 
 扫描任务：
 - 扫描类型: {scan_type}

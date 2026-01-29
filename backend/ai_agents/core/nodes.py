@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from ..core.state import AgentState
 from ..tools.registry import registry
-from ..tools.adapters import PluginAdapter, POCAdapter
+from ..tools.adapters import POCAdapter
 from ..agent_config import agent_config
 from ..utils.priority import TaskPriorityManager
 

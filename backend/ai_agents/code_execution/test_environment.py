@@ -2,7 +2,6 @@
 简单的功能测试脚本
 """
 import sys
-import os
 from pathlib import Path
 
 # 统一导入路径配置

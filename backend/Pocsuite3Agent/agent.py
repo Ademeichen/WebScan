@@ -16,10 +16,8 @@ import os
 import tempfile
 import sys
 import asyncio
-import subprocess
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

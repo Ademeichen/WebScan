@@ -17,9 +17,9 @@ POC 漏洞扫描 API 路由
 - 扫描结果存储和查询
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from pydantic import BaseModel, HttpUrl
-from typing import List, Optional, Dict, Any
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional, Any
 import asyncio
 import json
 import logging

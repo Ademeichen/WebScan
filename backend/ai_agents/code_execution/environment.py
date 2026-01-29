@@ -22,11 +22,8 @@ import os
 import logging
 import socket
 import shutil
-import signal
 from typing import Dict, List, Any, Optional, Tuple
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
-from functools import partial
 import threading
 import time
 
@@ -615,7 +612,7 @@ def benchmark_performance(iterations: int = 5) -> Dict[str, Any]:
             "errors": errors
         }
     
-    logger.info(f"✅ 性能基准测试完成")
+    logger.info("✅ 性能基准测试完成")
     logger.info(f"  平均耗时: {results.get('avg_time', 0):.2f}秒")
     logger.info(f"  最小耗时: {results.get('min_time', 0):.2f}秒")
     logger.info(f"  最大耗时: {results.get('max_time', 0):.2f}秒")

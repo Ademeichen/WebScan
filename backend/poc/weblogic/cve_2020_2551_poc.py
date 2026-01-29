@@ -60,7 +60,7 @@ def doSendOne(ip,port,data):
         res = sock.recv(20)
         if b'GIOP' in res:
             return True
-    except Exception as e:
+    except Exception:
         pass
     finally:
         if sock!=None:

@@ -19,8 +19,6 @@ CDN检测模块
 import logging
 import socket
 import ipaddress
-import re
-import os
 from typing import Union, Optional
 from pathlib import Path
 

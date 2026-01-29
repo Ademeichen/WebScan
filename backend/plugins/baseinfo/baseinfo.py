@@ -35,7 +35,7 @@
 import logging
 import socket
 import json
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Any
 import requests
 from requests.exceptions import (
     ConnectTimeout,

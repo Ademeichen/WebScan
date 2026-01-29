@@ -33,7 +33,6 @@ Drupal Core 的用户注册表单存在远程代码执行漏洞（Drupalgeddon 2
 """
 
 import requests
-import sys
 
 def poc(url, timeout=10):
     """

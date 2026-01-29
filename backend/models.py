@@ -3,8 +3,6 @@
 """
 from tortoise import fields
 from tortoise.models import Model
-from datetime import datetime
-from typing import Optional
 from uuid import uuid4
 
 

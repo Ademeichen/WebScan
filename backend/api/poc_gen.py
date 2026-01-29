@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import logging
@@ -6,7 +6,6 @@ import asyncio
 import os
 import tempfile
 import sys
-import subprocess
 from backend.models import VulnerabilityKB
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate

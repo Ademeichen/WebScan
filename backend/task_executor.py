@@ -3,8 +3,7 @@
 """
 import asyncio
 import logging
-from datetime import datetime
-from typing import Dict, Optional, Any, List
+from typing import Dict, Any
 import json
 from tortoise.expressions import Q
 
@@ -19,8 +18,6 @@ from backend.plugins.cdnexist.cdnexist import iscdn
 from backend.plugins.waf.waf import getwaf
 from backend.plugins.whatcms.whatcms import getwhatcms
 from backend.plugins.subdomain.subdomain import get_subdomain
-from backend.plugins.loginfo.loginfo import LogHandler
-from backend.plugins.randheader.randheader import get_random_headers
 try:
     from dirsearcch.dir_scanner import DirScanner
 except ImportError:
@@ -557,7 +554,6 @@ class TaskExecutor:
             try:
                 # 使用 subprocess 调用 pocsuite3
                 # 假设 pocsuite3 在 PATH 中，或者使用 python -m pocsuite3
-                import subprocess
                 import sys
                 
                 cmd = [sys.executable, "-m", "pocsuite3.cli", "-r", tmp_path, "-u", target, "--verify"]
