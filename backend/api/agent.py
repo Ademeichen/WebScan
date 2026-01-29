@@ -17,13 +17,18 @@ from pydantic import BaseModel
 import logging
 
 from backend.models import AgentTask, AgentResult
-from backend.ai_agents.core.graph import create_agent_graph
+from backend.ai_agents.core.graph import create_agent_graph, initialize_tools
+from backend.ai_agents.core.state import AgentState
+import uuid
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["AI Agent"])
 
-# TODO: 完善图结构，添加工具调用节点，搭建完整的工作流
+# 初始化 Agent 图和工具
+agent_graph = create_agent_graph()
+initialize_tools()
+
 class ToolDef(BaseModel):
     """
     工具定义模型
@@ -105,21 +110,27 @@ async def run_agent(request: AgentRequest):
         )
         
         # 2. 构建初始状态
-        initial_state = {
-            "user_tools": [t.dict() for t in request.tools],
-            "user_requirement": request.user_requirement,
-            "memory_info": request.memory_info,
-            "plan_data": None,
-            "execution_results": []
-        }
+        initial_state = AgentState(
+            target=request.tools[0].args.get("target", "unknown") if request.tools else "unknown",
+            task_id=str(uuid.uuid4()),
+            user_tools=[t.dict() for t in request.tools],
+            user_requirement=request.user_requirement,
+            memory_info=request.memory_info,
+            planned_tasks=[],
+            tool_results={}
+        )
         
         # 3. 调用 LangGraph 工作流执行任务
-        final_state = await agent_app.ainvoke(initial_state)
+        final_state = await agent_graph.invoke(initial_state)
         
         # 4. 构建最终输出
         final_output = {
-            "plan": final_state.get("plan_data"),
-            "results": final_state.get("execution_results")
+            "plan": final_state.planned_tasks,
+            "results": final_state.tool_results,
+            "vulnerabilities": final_state.vulnerabilities,
+            "completed_tasks": final_state.completed_tasks,
+            "errors": final_state.errors,
+            "progress": final_state.get_progress()
         }
 
         # 5. 保存执行结果

@@ -19,3 +19,6 @@
 2026-01-28 15:20:33,779 - backend.main - INFO - 启动 WebScan AI Security Platform v1.0.0
 2026-01-28 15:20:35,189 - backend.main - INFO - AWVS API 连接测试成功
 2026-01-28 15:20:35,189 - backend.main - INFO - 正在启动AWVS数据后台同步...
+2026-01-28 15:28:46,126 - backend.main - INFO - 启动 WebScan AI Security Platform v1.0.0
+2026-01-28 15:28:46,919 - backend.main - INFO - AWVS API 连接测试成功
+2026-01-28 15:28:46,920 - backend.main - INFO - 正在启动AWVS数据后台同步...

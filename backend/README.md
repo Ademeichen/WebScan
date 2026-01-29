@@ -560,19 +560,19 @@ python -c "from database import init_db; import asyncio; asyncio.run(init_db())"
 python main.py
 ```
 
-服务将在 `http://127.0.0.1:3000` 启动。
+服务将在 `http://127.0.0.1:8888` 启动。
 
 ### 访问 API 文档
 
 启动服务后，访问以下地址查看 API 文档：
 
-- Swagger UI: http://127.0.0.1:3000/docs
-- ReDoc: http://127.0.0.1:3000/redoc
+- Swagger UI: http://127.0.0.1:8888/docs
+- ReDoc: http://127.0.0.1:8888/redoc
 
 ### 健康检查
 
 ```bash
-curl http://127.0.0.1:3000/health
+curl http://127.0.0.1:8888/health
 ```
 
 返回示例：

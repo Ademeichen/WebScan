@@ -301,7 +301,7 @@ class Settings(BaseSettings):
     PORT: int = 8888
     
     # CORS配置
-    CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:8888"]
     
     # 数据库配置
     DATABASE_URL: str = "sqlite://./webscan.db"

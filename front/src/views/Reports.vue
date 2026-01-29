@@ -261,7 +261,7 @@ export default {
     async fetchReports() {
       this.loadingReports = true
       try {
-        const response = await reportsApi.list()
+        const response = await reportsApi.getReports()
         if (response.code === 200 && response.data && response.data.reports) {
           this.reports = response.data.reports
         } else {
@@ -307,7 +307,7 @@ export default {
       if (!report) return
       
       this.downloading = report.id
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3000/api'
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
       const url = `${baseUrl}/reports/${report.id}/export?format=${report.report_type}`
       
       const link = document.createElement('a')

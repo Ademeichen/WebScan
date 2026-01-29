@@ -270,6 +270,37 @@ class Settings(BaseSettings):
     可以通过环境变量 AWVS_API_KEY 覆盖。
     """
     
+    # ====================== Seebug 配置 ======================
+    SEEBUG_API_KEY: str = "c2720fbc7a590da49f23a9df64fda1c48d48f077"
+    """
+    Seebug API 密钥
+    
+    用于访问 Seebug 漏洞平台的 API。
+    Seebug 是国内知名的漏洞平台，提供详细的漏洞信息和 POC。
+    获取方式：https://www.seebug.org/user/api
+    
+    功能包括：
+    - 搜索 POC
+    - 下载 POC 代码
+    - 获取 POC 详情
+    - 验证 API Key
+    
+    安全提示：
+    - 不要将此密钥提交到版本控制系统
+    - 生产环境应通过环境变量设置
+    - 定期更换密钥以提高安全性
+    可以通过环境变量 SEEBUG_API_KEY 覆盖。
+    """
+    
+    SEEBUG_API_BASE_URL: str = "https://www.seebug.org/api"
+    """
+    Seebug API 基础 URL
+    
+    Seebug API 的基础端点。
+    默认为官方 Seebug API 地址。
+    可以通过环境变量 SEEBUG_API_BASE_URL 覆盖。
+    """
+    
     # ====================== 代码执行配置 ======================
     CODE_EXECUTOR_WORKSPACE: str = "executor_workspace"
     """
@@ -325,12 +356,103 @@ class Settings(BaseSettings):
     """
     AI Agent 最大重试次数
     
-    当 AI Agent 任务失败时的最大重试次数。
-    提高任务执行的成功率。
+    单个任务的最大重试次数。
+    超过此次数后任务将被标记为失败。
     
     默认为 3 次。
-    可以根据实际需求调整。
     可以通过环境变量 AGENT_MAX_RETRIES 覆盖。
+    """
+    
+    # ====================== POC 验证配置 ======================
+    POC_VERIFICATION_ENABLED: bool = True
+    """
+    是否启用 POC 验证功能
+    
+    设置为 False 时，POC 验证相关的 API 将被禁用。
+    用于在不需要 POC 验证功能时提高安全性。
+    
+    生产环境如果不需要 POC 验证功能，建议设置为 False。
+    可以通过环境变量 POC_VERIFICATION_ENABLED 覆盖。
+    """
+    
+    POC_MAX_CONCURRENT_EXECUTIONS: int = 5
+    """
+    POC 最大并发执行数
+    
+    同时执行的最大 POC 验证任务数量。
+    用于控制资源使用和防止系统过载。
+    
+    默认为 5 个。
+    可以通过环境变量 POC_MAX_CONCURRENT_EXECUTIONS 覆盖。
+    """
+    
+    POC_EXECUTION_TIMEOUT: int = 60
+    """
+    POC 执行超时时间（秒）
+    
+    单个 POC 验证任务的最大执行时间。
+    超过此时间后 POC 执行将被终止。
+    防止恶意或死循环 POC 占用过多资源。
+    
+    默认为 60 秒。
+    可以通过环境变量 POC_EXECUTION_TIMEOUT 覆盖。
+    """
+    
+    POC_RETRY_MAX_COUNT: int = 3
+    """
+    POC 验证最大重试次数
+    
+    单个 POC 验证失败后的最大重试次数。
+    用于处理网络抖动等临时性问题。
+    
+    默认为 3 次。
+    可以通过环境变量 POC_RETRY_MAX_COUNT 覆盖。
+    """
+    
+    POC_RESULT_ACCURACY_THRESHOLD: float = 0.95
+    """
+    POC 结果准确率阈值
+    
+    要求 POC 验证结果的最低准确率。
+    用于质量控制和结果可信度评估。
+    
+    默认为 0.95（95%）。
+    可以通过环境变量 POC_RESULT_ACCURACY_THRESHOLD 覆盖。
+    """
+    
+    POC_CACHE_ENABLED: bool = True
+    """
+    是否启用 POC 缓存
+    
+    启用后会缓存已验证的 POC 结果，避免重复验证。
+    提高系统性能和减少 API 调用。
+    
+    默认为 True。
+    可以通过环境变量 POC_CACHE_ENABLED 覆盖。
+    """
+    
+    POC_CACHE_TTL: int = 3600
+    """
+    POC 缓存生存时间（秒）
+    
+    POC 验证结果在缓存中的存活时间。
+    超过此时间后缓存将被清除。
+    
+    默认为 3600 秒（1 小时）。
+    可以通过环境变量 POC_CACHE_TTL 覆盖。
+    """
+    
+    POC_REPORT_FORMAT: str = "html"
+    """
+    POC 验证报告默认格式
+    
+    支持的格式：
+    - html: HTML 格式（带图表）
+    - json: JSON 格式（结构化数据）
+    - pdf: PDF 格式（可打印）
+    
+    默认为 html。
+    可以通过环境变量 POC_REPORT_FORMAT 覆盖。
     """
     
     class Config:

@@ -3,7 +3,7 @@ import { errorHandler } from './errorHandler'
 import { loadingManager } from './loading'
 import { handleResponse, handleApiError } from './apiResponse'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -471,6 +471,101 @@ export const pocGenApi = {
   }
 }
 
+export const userApi = {
+  getProfile: async (userId = 1) => {
+    return request({
+      url: '/user/profile',
+      method: 'get',
+      params: { user_id: userId }
+    })
+  },
+
+  updateProfile: async (userId, data) => {
+    return request({
+      url: '/user/profile',
+      method: 'put',
+      params: { user_id: userId },
+      data
+    })
+  },
+
+  getPermissions: async (userId = 1) => {
+    return request({
+      url: '/user/permissions',
+      method: 'get',
+      params: { user_id: userId }
+    })
+  },
+
+  getList: async (params = {}) => {
+    return request({
+      url: '/user/list',
+      method: 'get',
+      params
+    })
+  }
+}
+
+export const notificationsApi = {
+  getNotifications: async (params = {}) => {
+    return request({
+      url: '/notifications/',
+      method: 'get',
+      params
+    })
+  },
+
+  getNotification: async (notificationId) => {
+    return request({
+      url: `/notifications/${notificationId}`,
+      method: 'get'
+    })
+  },
+
+  createNotification: async (data) => {
+    return request({
+      url: '/notifications/',
+      method: 'post',
+      data
+    })
+  },
+
+  markAsRead: async (notificationId) => {
+    return request({
+      url: `/notifications/${notificationId}/read`,
+      method: 'put'
+    })
+  },
+
+  markAllAsRead: async () => {
+    return request({
+      url: '/notifications/read-all',
+      method: 'put'
+    })
+  },
+
+  deleteNotification: async (notificationId) => {
+    return request({
+      url: `/notifications/${notificationId}`,
+      method: 'delete'
+    })
+  },
+
+  deleteReadNotifications: async () => {
+    return request({
+      url: '/notifications/',
+      method: 'delete'
+    })
+  },
+
+  getUnreadCount: async () => {
+    return request({
+      url: '/notifications/count/unread',
+      method: 'get'
+    })
+  }
+}
+
 export default {
   request,
   scan: scanApi,
@@ -482,5 +577,7 @@ export default {
   ai: aiApi,
   agent: agentApi,
   kb: kbApi,
-  pocGen: pocGenApi
+  pocGen: pocGenApi,
+  user: userApi,
+  notifications: notificationsApi
 }

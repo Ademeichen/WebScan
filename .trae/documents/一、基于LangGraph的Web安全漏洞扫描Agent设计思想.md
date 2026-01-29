@@ -466,12 +466,12 @@ for vuln in state.vulnerabilities:
 python main.py
 
 # 2. 调用Agent扫描API
-curl -X POST "http://127.0.0.1:3000/agent/execute" \
+curl -X POST "http://127.0.0.1:8888/agent/execute" \
 -H "Content-Type: application/json" \
 -d '{"target": "https://www.baidu.com"}'
 
 # 3. 查询任务结果
-curl "http://127.0.0.1:3000/agent/tasks/{task_id}"
+curl "http://127.0.0.1:8888/agent/tasks/{task_id}"
 ```
 
 该设计完全适配项目现有目录结构和技术栈，补齐了AI Agent的核心业务逻辑，同时具备良好的可扩展性和异步兼容性，可直接集成到现有项目中。

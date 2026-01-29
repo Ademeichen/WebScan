@@ -24,8 +24,8 @@
             </div>
             <div v-if="showUserMenu" class="user-dropdown">
               <div class="user-info">
-                <div class="user-name">管理员</div>
-                <div class="user-email">admin@webscan.ai</div>
+                <div class="user-name">{{ userInfo?.username || '管理员' }}</div>
+                <div class="user-email">{{ userInfo?.email || 'admin@webscan.ai' }}</div>
               </div>
               <hr>
               <a href="#" class="dropdown-item">个人设置</a>
@@ -86,7 +86,8 @@
 </template>
 
 <script>
-import { mockNotifications, mockUserInfo } from '../../data/mockData.js'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { userApi, notificationsApi } from '@/utils/api'
 
 export default {
   name: 'AppLayout',
@@ -108,10 +109,8 @@ export default {
         { name: 'Settings', path: '/settings', label: '设置', icon: '⚙️' }
       ],
       
-      notifications: mockNotifications,
-      
-      // TODO: 从API获取用户信息 - GET /api/user/profile
-      userInfo: mockUserInfo
+      notifications: [],
+      userInfo: null
     }
   },
   computed: {
@@ -134,16 +133,36 @@ export default {
       if (this.isMobile) {
         this.sidebarCollapsed = false
       }
+    },
+    async loadUserInfo() {
+      try {
+        const response = await userApi.getProfile()
+        if (response.code === 200) {
+          this.userInfo = response.data
+        }
+      } catch (error) {
+        console.error('加载用户信息失败:', error)
+      }
+    },
+    async loadNotifications() {
+      try {
+        const response = await notificationsApi.getNotifications({ limit: 10 })
+        if (response.code === 200) {
+          this.notifications = response.data.notifications || []
+        }
+      } catch (error) {
+        console.error('加载通知失败:', error)
+      }
     }
   },
   mounted() {
-    // 检查是否为移动设备
+    this.loadUserInfo()
+    this.loadNotifications()
+    
     this.checkMobile()
     
-    // 监听窗口大小变化
     window.addEventListener('resize', this.checkMobile)
     
-    // 点击外部关闭下拉菜单
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.user-menu')) {
         this.showUserMenu = false

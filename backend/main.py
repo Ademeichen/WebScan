@@ -73,19 +73,8 @@ async def lifespan(app: FastAPI):
         success, message = awvs_base.check_connection()
         if success:
             logger.info("AWVS API 连接测试成功")
-            
-            # 启动后台同步任务
-            try:
-                from backend.api.awvs import sync_scans_from_awvs
-                import asyncio
-                logger.info("正在启动AWVS数据后台同步...")
-                asyncio.create_task(sync_scans_from_awvs())
-            except Exception as e:
-                logger.error(f"启动AWVS同步任务失败: {e}")
-                
         else:
             logger.error(f"AWVS API 连接测试失败: {message}")
-            # 可以在这里选择是否抛出异常阻止启动，或者只是记录警告
             logger.warning("请检查配置文件中的 AWVS_API_URL 和 AWVS_API_KEY")
     except Exception as e:
         logger.error(f"执行 AWVS 连接测试时发生错误: {str(e)}")
@@ -109,11 +98,10 @@ app = FastAPI(
 # 配置 CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 开发环境允许所有来源
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 

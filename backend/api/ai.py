@@ -3,7 +3,7 @@ AI 对话 API 路由
 
 提供 AI 对话功能，支持创建对话实例、发送消息、获取历史等。
 使用 LangChain 和 OpenAI GPT-3.5-turbo 模型实现智能对话。
-使用 ConversationSummaryMemory 进行对话总结和记忆管理。
+使用 LangChain 0.3.x 的消息历史管理进行对话记忆。
 
 主要功能：
 - 创建和管理对话实例
@@ -23,9 +23,9 @@ from backend.models import AIChatInstance, AIChatMessage
 from backend.config import settings
 
 from langchain_openai import ChatOpenAI
-from langchain.memory import ConversationSummaryMemory
-from langchain.chains import ConversationChain
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.chat_history import InMemoryChatMessageHistory
 
 logger = logging.getLogger(__name__)
 
@@ -39,73 +39,87 @@ llm = ChatOpenAI(
     streaming=True
 )
 
-# TODO: 优化系统提示词
 SYSTEM_PROMPT = """
 你是一个专业的Web安全顾问，名为WebScan AI。你的任务是帮助用户解决Web安全相关问题，包括漏洞分析、安全加固建议、扫描报告解读等。
 
+你的专业领域包括但不限于：
+- OWASP Top 10 漏洞（SQL注入、XSS、CSRF、文件上传等）
+- 常见Web框架漏洞（Spring、Struts2、ThinkPHP、WordPress等）
+- 网络安全扫描与渗透测试
+- 安全加固与最佳实践
+- 漏洞修复方案与代码审计
+
 你需要：
-1. 提供专业、准确的安全建议
-2. 解释技术概念时要清晰易懂
-3. 针对用户的具体问题给出具体解决方案
-4. 保持友好、专业的语气
-5. 当用户提供扫描报告或漏洞信息时，进行深入分析
+1. 提供专业、准确的安全建议，基于最新的安全研究和CVE数据库
+2. 解释技术概念时要清晰易懂，根据用户的背景调整解释深度
+3. 针对用户的具体问题给出具体、可执行的解决方案
+4. 保持友好、专业的语气，同时保持客观中立
+5. 当用户提供扫描报告或漏洞信息时，进行深入分析，包括：
+   - 漏洞的危害程度评估
+   - 可能的攻击场景和影响范围
+   - 详细的修复建议和代码示例
+   - 预防措施和安全加固建议
+6. 如果问题涉及敏感操作，提醒用户遵守法律法规和道德准则
+7. 对于不确定的问题，诚实说明并建议用户参考官方文档或寻求专业帮助
+
+回答格式要求：
+- 使用清晰的段落结构，适当使用列表和代码块
+- 对于技术术语，首次出现时提供简要解释
+- 提供的代码示例要完整且经过验证
+- 重要信息使用加粗或特殊标记突出显示
 """
 
-# 对话记忆缓存
-conversation_memory_cache: Dict[str, ConversationSummaryMemory] = {}
+# 对话历史缓存
+conversation_history_cache: Dict[str, InMemoryChatMessageHistory] = {}
 
 
-async def get_or_create_memory(chat_instance_id: UUID) -> ConversationSummaryMemory:
+async def get_or_create_history(chat_instance_id: UUID) -> InMemoryChatMessageHistory:
     """
-    获取或创建对话记忆
+    获取或创建对话历史
     
-    从缓存中获取对话记忆，如果不存在则创建新的记忆对象并加载历史消息。
+    从缓存中获取对话历史，如果不存在则创建新的历史对象并加载历史消息。
     
     Args:
         chat_instance_id: 对话实例 ID
         
     Returns:
-        ConversationSummaryMemory: 对话记忆对象，包含历史对话内容
+        InMemoryChatMessageHistory: 对话历史对象，包含历史对话内容
     """
     chat_id = str(chat_instance_id)
     
-    if chat_id not in conversation_memory_cache:
-        memory = ConversationSummaryMemory(
-            llm=llm,
-            return_messages=True,
-            max_token_limit=2000
-        )
+    if chat_id not in conversation_history_cache:
+        history = InMemoryChatMessageHistory()
         
-        # 加载历史消息到记忆中
+        # 加载历史消息到历史中
         history_messages = await AIChatMessage.filter(
             chat_instance_id=chat_instance_id
         ).order_by("created_at")
         
         for msg in history_messages:
             if msg.role == "user":
-                memory.chat_memory.add_user_message(msg.content)
+                history.add_message(HumanMessage(content=msg.content))
             elif msg.role == "assistant":
-                memory.chat_memory.add_ai_message(msg.content)
+                history.add_message(AIMessage(content=msg.content))
         
-        conversation_memory_cache[chat_id] = memory
-        logger.info(f"✅ 创建对话记忆: {chat_id}")
+        conversation_history_cache[chat_id] = history
+        logger.info(f"✅ 创建对话历史: {chat_id}")
     
-    return conversation_memory_cache[chat_id]
+    return conversation_history_cache[chat_id]
 
 
-async def clear_memory(chat_instance_id: UUID):
+async def clear_history(chat_instance_id: UUID):
     """
-    清除对话记忆
+    清除对话历史
     
-    从缓存中删除指定对话实例的记忆对象。
+    从缓存中删除指定对话实例的历史对象。
     
     Args:
         chat_instance_id: 对话实例 ID
     """
     chat_id = str(chat_instance_id)
-    if chat_id in conversation_memory_cache:
-        del conversation_memory_cache[chat_id]
-        logger.info(f"✅ 清除对话记忆: {chat_id}")
+    if chat_id in conversation_history_cache:
+        del conversation_history_cache[chat_id]
+        logger.info(f"✅ 清除对话历史: {chat_id}")
 
 
 @router.post("/chat/instances", response_model=Dict[str, Any])
@@ -117,7 +131,7 @@ async def create_chat_instance(
     """
     创建新的对话实例
     
-    创建一个新的对话会话，并初始化对话记忆。
+    创建一个新的对话会话，并初始化对话历史。
     
     Args:
         chat_name: 对话名称，如果不提供则自动生成
@@ -159,8 +173,8 @@ async def create_chat_instance(
             status="active"
         )
         
-        # 初始化对话记忆
-        await get_or_create_memory(chat_instance.id)
+        # 初始化对话历史
+        await get_or_create_history(chat_instance.id)
         
         logger.info(f"✅ 创建对话实例: {chat_instance.id}")
         
@@ -345,7 +359,7 @@ async def delete_chat_instance(chat_instance_id: UUID):
     """
     删除对话实例
     
-    删除指定的对话实例及其所有消息，并清除对话记忆缓存。
+    删除指定的对话实例及其所有消息，并清除对话历史缓存。
     
     Args:
         chat_instance_id: 对话实例 ID
@@ -373,8 +387,8 @@ async def delete_chat_instance(chat_instance_id: UUID):
         await AIChatMessage.filter(chat_instance_id=chat_instance_id).delete()
         # 删除对话实例
         await chat_instance.delete()
-        # 清除记忆缓存
-        await clear_memory(chat_instance_id)
+        # 清除历史缓存
+        await clear_history(chat_instance_id)
         
         return {
             "code": 200,
@@ -455,33 +469,39 @@ async def send_message(
             message_type=request.message_type
         )
         
-        # 获取对话记忆
-        memory = await get_or_create_memory(chat_instance_id)
+        # 获取对话历史
+        history = await get_or_create_history(chat_instance_id)
         
-        # 构建对话链
+        # 添加用户消息到历史
+        history.add_message(HumanMessage(content=request.content))
+        
+        # 构建提示模板
         prompt = ChatPromptTemplate.from_messages([
             ("system", SYSTEM_PROMPT),
             MessagesPlaceholder(variable_name="history"),
             ("human", "{input}")
         ])
         
-        conversation = ConversationChain(
-            llm=llm,
-            memory=memory,
-            prompt=prompt,
-            verbose=False
-        )
+        # 获取历史消息
+        history_messages = await history.aget_messages()
         
-        # 调用 AI 获取响应
-        response_content = await conversation.ainvoke(
-            {"input": request.content}
-        )
+        # 调用 LLM 获取响应
+        chain = prompt | llm
+        response = await chain.ainvoke({
+            "history": history_messages,
+            "input": request.content
+        })
+        
+        response_content = response.content
+        
+        # 添加 AI 响应到历史
+        history.add_message(AIMessage(content=response_content))
         
         # 保存 AI 响应
         ai_message = await AIChatMessage.create(
             chat_instance_id=chat_instance_id,
             role="assistant",
-            content=response_content["response"],
+            content=response_content,
             message_type="text"
         )
         
@@ -599,7 +619,7 @@ async def close_chat_instance(chat_instance_id: UUID):
     """
     关闭对话实例
     
-    关闭指定的对话实例，并清除对话记忆缓存。
+    关闭指定的对话实例，并清除对话历史缓存。
     
     Args:
         chat_instance_id: 对话实例 ID
@@ -623,12 +643,13 @@ async def close_chat_instance(chat_instance_id: UUID):
         if not chat_instance:
             raise HTTPException(status_code=404, detail="对话实例不存在")
         
-        # 更新状态
         chat_instance.status = "closed"
         await chat_instance.save()
         
-        # 清除记忆缓存
-        await clear_memory(chat_instance_id)
+        # 清除历史缓存
+        await clear_history(chat_instance_id)
+        
+        logger.info(f"✅ 关闭对话实例: {chat_instance_id}")
         
         return {
             "code": 200,
