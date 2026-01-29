@@ -1,12 +1,17 @@
 # -*- coding:utf-8 -*-
 """
+<<<<<<< HEAD
 FastAPI通用工具函数模块（增强版）
+=======
+FastAPI通用工具函数模块
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 功能：
 1. 标准化JSON响应（成功/失败）
 2. 用户IP获取（自动检测反向代理+防伪造+兼容Nginx/Apache/CDN）
 3. 字符串安全过滤（防注入/XSS）
 4. IP/URL/域名合法性校验（过滤禁止目标）
 5. 域名解析（转IP）
+<<<<<<< HEAD
 
 增强特性：
 - 支持反向代理IP检测和验证
@@ -20,16 +25,25 @@ FastAPI通用工具函数模块（增强版）
     >>> async def test_route(request: Request):
     ...     user_ip = get_user_ip(request)
     ...     return {"ip": user_ip}
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 """
 
 import re
 import socket
 from typing import Optional, Union, Dict, Any, List
+<<<<<<< HEAD
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 # ======================== 核心配置（可根据服务器部署调整） ========================
 #  这是Web 安全扫描的核心约束：防止扫描工具被用来探测内网资产或敏感域名。
+=======
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+# ======================== 核心配置（可根据服务器部署调整） ========================
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 # 禁止扫描的域名/IP特征（正则，忽略大小写）
 FORBIDDEN_DOMAIN_PATTERN = re.compile(
     r'(127.0.*.*)'
@@ -75,8 +89,13 @@ PROXY_IP_HEADERS = [
     "WL-Proxy-Client-IP"  # WebLogic常用
 ]
 
+<<<<<<< HEAD
 # 初始化API路由（注册到主应用）
 router = APIRouter(prefix="/common-proxy", tags=["通用工具-增强版"])
+=======
+# 初始化FastAPI应用
+app = FastAPI(title="通用工具函数API", version="1.0")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 # ======================== 辅助函数：校验IP是否在可信代理列表 ========================
 def is_trusted_proxy_ip(ip: str) -> bool:
@@ -84,10 +103,13 @@ def is_trusted_proxy_ip(ip: str) -> bool:
     校验IP是否属于可信反向代理服务器IP
     :param ip: 待校验IP
     :return: True（可信）| False（不可信）
+<<<<<<< HEAD
     说明：
         1. 支持精确IP匹配（如127.0.0.1）
         2. 支持CIDR网段匹配（如192.168.1.0/24）
         3. 用于防止IP伪造攻击
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     if not ip or not check_ip(ip):
         return False
@@ -112,6 +134,7 @@ def is_trusted_proxy_ip(ip: str) -> bool:
 def get_user_ip(request: Request) -> str:
     """
     获取用户真实IP（自动检测反向代理+防伪造+兼容多种代理场景）
+<<<<<<< HEAD
     :param request: FastAPI Request对象
     :return: 用户真实IP字符串（默认空字符串）
     说明：
@@ -119,6 +142,14 @@ def get_user_ip(request: Request) -> str:
         2. 若未启用反向代理 或 代理IP不可信 → 直接取客户端IP；
         3. 防伪造：仅信任可信代理IP的X-Forwarded-For头，避免恶意用户伪造。
         4. 支持多种代理头：X-Real-IP、X-Forwarded-For、Proxy-Client-IP、WL-Proxy-Client-IP
+=======
+    逻辑：
+    1. 若配置启用反向代理 + 请求来源是可信代理IP → 从代理头取真实IP；
+    2. 若未启用反向代理 或 代理IP不可信 → 直接取客户端IP；
+    3. 防伪造：仅信任可信代理IP的X-Forwarded-For头，避免恶意用户伪造。
+    :param request: FastAPI Request对象
+    :return: 用户真实IP字符串（默认空字符串）
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     real_ip = ""
     try:
@@ -277,7 +308,11 @@ def check_url(url: Optional[str]) -> Union[str, bool]:
     return url_clean.lower()
 
 # ======================== 新增：测试反向代理IP获取的接口 ========================
+<<<<<<< HEAD
 @router.get("/get/real-ip", summary="获取用户真实IP（自动检测反向代理）")
+=======
+@app.get("/get/real-ip", summary="获取用户真实IP（自动检测反向代理）")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 async def api_get_real_ip(request: Request):
     """
     测试接口：获取用户真实IP，自动适配反向代理/直连场景
@@ -289,7 +324,11 @@ async def api_get_real_ip(request: Request):
         return error(code=500, msg="获取真实IP失败")
 
 # ======================== 原有示例路由（保留） ========================
+<<<<<<< HEAD
 @router.get("/check/ip", summary="校验IP合法性")
+=======
+@app.get("/check/ip", summary="校验IP合法性")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 async def api_check_ip(ip: str):
     is_valid = check_ip(ip)
     if is_valid:
@@ -298,7 +337,11 @@ async def api_check_ip(ip: str):
         return error(code=403, data={"ip": ip, "is_valid": False}, msg="IP非法或禁止扫描")
 
 
+<<<<<<< HEAD
 @router.get("/check/url", summary="校验URL合法性")
+=======
+@app.get("/check/url", summary="校验URL合法性")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 async def api_check_url(url: str):
     valid_url = check_url(url)
     if valid_url:
@@ -307,7 +350,11 @@ async def api_check_url(url: str):
         return error(code=403, data={"url": url, "is_valid": False}, msg="URL非法或禁止扫描")
 
 
+<<<<<<< HEAD
 @router.get("/domain/ip", summary="域名/URL转IP")
+=======
+@app.get("/domain/ip", summary="域名/URL转IP")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 async def api_domain_to_ip(host: str):
     ip = get_domain_ip(host)
     if ip == "目标站点不可访问":
@@ -425,4 +472,17 @@ def test_all_functions():
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     test_all_functions()
+=======
+    # 第一步：运行所有工具函数测试
+    test_all_functions()
+
+    # 第二步：启动FastAPI测试服务器
+    print("\n启动FastAPI测试服务器...")
+    print("访问文档地址: http://127.0.0.1:8001/docs")
+    print("测试获取真实IP接口: http://127.0.0.1:8001/get/real-ip")
+    print("按 Ctrl+C 停止服务器")
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8001)
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

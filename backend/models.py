@@ -5,6 +5,7 @@ from tortoise import fields
 from tortoise.models import Model
 from datetime import datetime
 from typing import Optional
+<<<<<<< HEAD
 from uuid import uuid4
 
 
@@ -37,11 +38,30 @@ class Task(Model):
     progress = fields.IntField(default=0, description="任务进度 0-100")
     config = fields.TextField(null=True, description="任务配置信息（JSON格式）")
     result = fields.TextField(null=True, description="任务执行结果（JSON格式）")
+=======
+
+
+class Task(Model):
+    """任务表"""
+    
+    id = fields.IntField(pk=True, description="任务ID")
+    task_name = fields.CharField(max_length=255, description="任务名称")
+    task_type = fields.CharField(max_length=50, description="任务类型：scan, vulnerability, etc.")
+    target = fields.CharField(max_length=500, description="扫描目标")
+    status = fields.CharField(max_length=50, default="pending", description="状态：pending, running, completed, failed, cancelled")
+    progress = fields.IntField(default=0, description="进度 0-100")
+    config = fields.TextField(null=True, description="配置信息（JSON格式）")
+    result = fields.TextField(null=True, description="结果信息（JSON格式）")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     error_message = fields.TextField(null=True, description="错误信息")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
     
+<<<<<<< HEAD
     # 关系定义
+=======
+    # 关系
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     reports: fields.ReverseRelation["Report"]
     vulnerabilities: fields.ReverseRelation["Vulnerability"]
     scan_results: fields.ReverseRelation["ScanResult"]
@@ -54,6 +74,7 @@ class Task(Model):
     
     def __str__(self):
         return f"{self.task_name} ({self.status})"
+<<<<<<< HEAD
     
     def is_running(self) -> bool:
         """检查任务是否正在运行"""
@@ -85,15 +106,27 @@ class Report(Model):
         created_at: 报告创建时间
         updated_at: 报告最后更新时间
     """
+=======
+
+
+class Report(Model):
+    """报告表"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     
     id = fields.IntField(pk=True, description="报告ID")
     task: fields.ForeignKeyRelation[Task] = fields.ForeignKeyField(
         "models.Task", related_name="reports", description="关联任务"
     )
     report_name = fields.CharField(max_length=255, description="报告名称")
+<<<<<<< HEAD
     report_type = fields.CharField(max_length=50, description="报告类型：pdf, html, json, docx, etc.")
     content = fields.TextField(null=True, description="报告内容（JSON格式）")
     file_path = fields.CharField(max_length=500, null=True, description="报告文件存储路径")
+=======
+    report_type = fields.CharField(max_length=50, description="报告类型：pdf, html, json, etc.")
+    content = fields.TextField(null=True, description="报告内容（JSON格式）")
+    file_path = fields.CharField(max_length=500, null=True, description="报告文件路径")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
     
@@ -104,6 +137,7 @@ class Report(Model):
     
     def __str__(self):
         return f"{self.report_name} ({self.report_type})"
+<<<<<<< HEAD
     
     def has_file(self) -> bool:
         """检查报告是否有文件"""
@@ -132,11 +166,18 @@ class Vulnerability(Model):
         created_at: 漏洞发现时间
         updated_at: 漏洞最后更新时间
     """
+=======
+
+
+class Vulnerability(Model):
+    """漏洞表"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     
     id = fields.IntField(pk=True, description="漏洞ID")
     task: fields.ForeignKeyRelation[Task] = fields.ForeignKeyField(
         "models.Task", related_name="vulnerabilities", description="关联任务"
     )
+<<<<<<< HEAD
     vuln_type = fields.CharField(max_length=100, description="漏洞类型：XSS, SQLInjection, CSRF, RCE, SSRF, etc.")
     severity = fields.CharField(max_length=20, description="严重程度：critical, high, medium, low, info")
     title = fields.CharField(max_length=255, description="漏洞标题")
@@ -146,6 +187,17 @@ class Vulnerability(Model):
     evidence = fields.TextField(null=True, description="漏洞证据（截图/响应数据等）")
     remediation = fields.TextField(null=True, description="修复建议")
     status = fields.CharField(max_length=50, default="open", description="状态：open, fixed, ignored, false_positive")
+=======
+    vuln_type = fields.CharField(max_length=100, description="漏洞类型：XSS, SQLInjection, CSRF, etc.")
+    severity = fields.CharField(max_length=20, description="严重程度：high, medium, low, info")
+    title = fields.CharField(max_length=255, description="漏洞标题")
+    description = fields.TextField(null=True, description="漏洞描述")
+    url = fields.CharField(max_length=500, null=True, description="漏洞URL")
+    payload = fields.TextField(null=True, description="测试Payload")
+    evidence = fields.TextField(null=True, description="漏洞证据")
+    remediation = fields.TextField(null=True, description="修复建议")
+    status = fields.CharField(max_length=50, default="open", description="状态：open, fixed, ignored")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     source_id = fields.CharField(max_length=100, null=True, description="来源ID (如AWVS vuln_id)")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
@@ -157,6 +209,7 @@ class Vulnerability(Model):
     
     def __str__(self):
         return f"{self.title} ({self.severity})"
+<<<<<<< HEAD
     
     def is_critical(self) -> bool:
         """检查是否为高危漏洞"""
@@ -188,13 +241,24 @@ class ScanResult(Model):
         error_message: 错误信息，记录扫描失败原因
         created_at: 扫描时间
     """
+=======
+
+
+class ScanResult(Model):
+    """扫描结果表"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     
     id = fields.IntField(pk=True, description="结果ID")
     task: fields.ForeignKeyRelation[Task] = fields.ForeignKeyField(
         "models.Task", related_name="scan_results", description="关联任务"
     )
+<<<<<<< HEAD
     scan_type = fields.CharField(max_length=50, description="扫描类型：port_scan, subdomain, directory, etc.")
     target = fields.CharField(max_length=500, description="扫描目标（域名/IP/URL）")
+=======
+    scan_type = fields.CharField(max_length=50, description="扫描类型：port_scan, subdomain, etc.")
+    target = fields.CharField(max_length=500, description="扫描目标")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     result = fields.TextField(null=True, description="扫描结果（JSON格式）")
     status = fields.CharField(max_length=50, default="success", description="状态：success, failed")
     error_message = fields.TextField(null=True, description="错误信息")
@@ -207,6 +271,7 @@ class ScanResult(Model):
     
     def __str__(self):
         return f"{self.scan_type} - {self.target}"
+<<<<<<< HEAD
     
     def is_success(self) -> bool:
         """检查扫描是否成功"""
@@ -236,12 +301,26 @@ class SystemLog(Model):
     message = fields.TextField(description="日志消息内容")
     ip_address = fields.CharField(max_length=50, null=True, description="客户端IP地址")
     user_agent = fields.CharField(max_length=500, null=True, description="用户代理（User-Agent）")
+=======
+
+
+class SystemLog(Model):
+    """系统日志表"""
+    
+    id = fields.IntField(pk=True, description="日志ID")
+    level = fields.CharField(max_length=20, description="日志级别：INFO, WARNING, ERROR")
+    module = fields.CharField(max_length=100, null=True, description="模块名称")
+    message = fields.TextField(description="日志消息")
+    ip_address = fields.CharField(max_length=50, null=True, description="IP地址")
+    user_agent = fields.CharField(max_length=500, null=True, description="用户代理")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     
     class Meta:
         table = "system_logs"
         table_description = "系统日志表"
         ordering = ["-created_at"]
+<<<<<<< HEAD
         indexes = [
             ("level",),
             ("created_at",),
@@ -277,21 +356,40 @@ class POCScanResult(Model):
         cve_id: CVE编号，如CVE-2020-2551
         created_at: 扫描时间
     """
+=======
+    
+    def __str__(self):
+        return f"[{self.level}] {self.message[:50]}..."
+
+
+class POCScanResult(Model):
+    """POC 扫描结果表"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     
     id = fields.IntField(pk=True, description="结果ID")
     task: fields.ForeignKeyRelation[Task] = fields.ForeignKeyField(
         "models.Task", related_name="poc_results", description="关联任务"
     )
+<<<<<<< HEAD
     poc_type = fields.CharField(max_length=100, description="POC类型：weblogic_cve_2020_2551, struts2_009, etc.")
     target = fields.CharField(max_length=500, description="扫描目标（域名/IP/URL）")
     vulnerable = fields.BooleanField(default=False, description="是否存在漏洞")
     message = fields.TextField(null=True, description="扫描结果消息")
     severity = fields.CharField(max_length=20, null=True, description="严重程度：critical, high, medium, low")
     cve_id = fields.CharField(max_length=50, null=True, description="CVE编号（如CVE-2020-2551）")
+=======
+    poc_type = fields.CharField(max_length=100, description="POC 类型：weblogic_cve_2020_2551, struts2_009, etc.")
+    target = fields.CharField(max_length=500, description="扫描目标")
+    vulnerable = fields.BooleanField(default=False, description="是否存在漏洞")
+    message = fields.TextField(null=True, description="扫描结果消息")
+    severity = fields.CharField(max_length=20, null=True, description="严重程度：high, medium, low")
+    cve_id = fields.CharField(max_length=50, null=True, description="CVE 编号")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     
     class Meta:
         table = "poc_scan_results"
+<<<<<<< HEAD
         table_description = "POC扫描结果表"
         ordering = ["-created_at"]
         indexes = [
@@ -542,6 +640,27 @@ class VulnerabilityKB(Model):
     affected_product = fields.TextField(null=True, description="影响组件/产品")
     solution = fields.TextField(null=True, description="修复建议")
     references = fields.TextField(null=True, description="参考链接（JSON格式）")
+=======
+        table_description = "POC 扫描结果表"
+        ordering = ["-created_at"]
+    
+    def __str__(self):
+        return f"{self.poc_type} - {self.target} ({'存在漏洞' if self.vulnerable else '安全'})"
+
+
+class VulnerabilityKB(Model):
+    """漏洞知识库表"""
+    
+    id = fields.IntField(pk=True, description="知识库ID")
+    cve_id = fields.CharField(max_length=50, unique=True, null=True, description="CVE 编号")
+    name = fields.CharField(max_length=500, description="漏洞名称")
+    description = fields.TextField(null=True, description="漏洞描述")
+    severity = fields.CharField(max_length=20, null=True, description="严重程度")
+    cvss_score = fields.FloatField(null=True, description="CVSS 评分")
+    affected_product = fields.TextField(null=True, description="影响组件/产品")
+    solution = fields.TextField(null=True, description="修复建议")
+    references = fields.TextField(null=True, description="参考链接（JSON/List）")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     poc_code = fields.TextField(null=True, description="POC 代码")
     has_poc = fields.BooleanField(default=False, description="是否有 POC")
     source = fields.CharField(max_length=50, default="manual", description="来源：seebug, exploit-db, manual")
@@ -552,6 +671,7 @@ class VulnerabilityKB(Model):
         table = "vulnerability_kb"
         table_description = "漏洞知识库表"
         ordering = ["-updated_at"]
+<<<<<<< HEAD
         indexes = [
             ("cve_id",),
             ("severity",),
@@ -798,3 +918,8 @@ class POCExecutionLog(Model):
     
     def __str__(self):
         return f"[{self.log_level.upper()}] {self.message[:50]}..."
+=======
+    
+    def __str__(self):
+        return f"{self.cve_id or 'No CVE'} - {self.name}"
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

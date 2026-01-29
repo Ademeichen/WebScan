@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 旁站查询模块
 功能：
@@ -21,6 +22,8 @@
     >>> print(result)
     {"success": True, "has_data": True, "data": [...], "message": "..."}
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import logging
 import re
 import json
@@ -57,9 +60,12 @@ def is_valid_ipv4(ip: str) -> bool:
     校验是否为合法的 IPv4 地址
     :param ip: 待校验的 IP 字符串
     :return: True（合法）/False（非法）
+<<<<<<< HEAD
     说明：
         使用正则表达式匹配IPv4地址格式
         格式：xxx.xxx.xxx.xxx，每个xxx为0-255
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     if not isinstance(ip, str) or not ip.strip():
         logger.warning(f"IP 输入为空或非字符串：{ip}")

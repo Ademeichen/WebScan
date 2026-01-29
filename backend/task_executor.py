@@ -9,6 +9,7 @@ import json
 from tortoise.expressions import Q
 
 # Import Plugins
+<<<<<<< HEAD
 from backend.plugins.portscan.portscan import ScanPort
 from backend.plugins.infoleak.infoleak import get_infoleak
 from backend.plugins.webside.webside import get_side_info
@@ -21,17 +22,36 @@ from backend.plugins.whatcms.whatcms import getwhatcms
 from backend.plugins.subdomain.subdomain import get_subdomain
 from backend.plugins.loginfo.loginfo import LogHandler
 from backend.plugins.randheader.randheader import get_random_headers
+=======
+from plugins.portscan.portscan import ScanPort
+from plugins.infoleak.infoleak import get_infoleak
+from plugins.webside.webside import get_side_info
+from plugins.baseinfo.baseinfo import getbaseinfo
+from plugins.webweight.webweight import get_web_weight
+from plugins.iplocating.iplocating import get_locating
+from plugins.cdnexist.cdnexist import iscdn
+from plugins.waf.waf import getwaf
+from plugins.whatcms.whatcms import getwhatcms
+from plugins.subdomain.subdomain import get_subdomain
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 try:
     from dirsearcch.dir_scanner import DirScanner
 except ImportError:
     DirScanner = None
 
 # Import POCs
+<<<<<<< HEAD
 from backend.poc import (
     cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
     struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
     cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc,
     cve_2022_22965_poc, cve_2022_47986_poc, cve_2020_14756_poc, cve_2023_21839_poc
+=======
+from poc import (
+    cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
+    struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
+    cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 )
 
 logger = logging.getLogger(__name__)
@@ -40,6 +60,7 @@ POC_FUNCTIONS = {
     "weblogic_cve_2020_2551": cve_2020_2551_poc,
     "weblogic_cve_2018_2628": cve_2018_2628_poc,
     "weblogic_cve_2018_2894": cve_2018_2894_poc,
+<<<<<<< HEAD
     "weblogic_cve_2020_14756": cve_2020_14756_poc,
     "weblogic_cve_2023_21839": cve_2023_21839_poc,
     "struts2_009": struts2_009_poc,
@@ -47,6 +68,11 @@ POC_FUNCTIONS = {
     "tomcat_cve_2017_12615": cve_2017_12615_poc,
     "tomcat_cve_2022_22965": cve_2022_22965_poc,
     "tomcat_cve_2022_47986": cve_2022_47986_poc,
+=======
+    "struts2_009": struts2_009_poc,
+    "struts2_032": struts2_032_poc,
+    "tomcat_cve_2017_12615": cve_2017_12615_poc,
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     "jboss_cve_2017_12149": cve_2017_12149_poc,
     "nexus_cve_2020_10199": cve_2020_10199_poc,
     "drupal_cve_2018_7600": cve_2018_7600_poc,

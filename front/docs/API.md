@@ -140,7 +140,11 @@ Authorization: Bearer {token}
       {
         "id": 1,
         "name": "电商网站安全扫描",
+<<<<<<< HEAD
         "targetUrl": "https://shop.www.baidu.com",
+=======
+        "targetUrl": "https://shop.example.com",
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         "status": "completed",
         "priority": "high",
         "scanType": "深度扫描",
@@ -170,7 +174,11 @@ Content-Type: application/json
 
 {
   "name": "新扫描任务",
+<<<<<<< HEAD
   "targetUrls": ["https://www.baidu.com", "https://api.www.baidu.com"],
+=======
+  "targetUrls": ["https://example.com", "https://api.example.com"],
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
   "scanType": "deep",
   "priority": "high",
   "scheduleType": "immediate",
@@ -594,7 +602,11 @@ Authorization: Bearer {token}
     {
       "id": 1,
       "title": "高危漏洞发现",
+<<<<<<< HEAD
       "message": "在 shop.www.baidu.com 发现 SQL 注入漏洞",
+=======
+      "message": "在 shop.example.com 发现 SQL 注入漏洞",
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
       "type": "high-vulnerability",
       "time": "5分钟前",
       "read": false

@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 IP归属地查询模块
 功能：
@@ -15,6 +16,8 @@ IP归属地查询模块
     >>> result = get_locating('139.224.112.182')
     >>> print(result)  # "国家(中国)，省份(浙江)，城市(杭州)"
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import logging
 import re
 from typing import Optional, Dict, Any
@@ -45,9 +48,12 @@ def is_valid_ipv4(ip: str) -> bool:
     校验是否为合法IPv4地址
     :param ip: 待校验的IP字符串
     :return: True（合法）/False（非法）
+<<<<<<< HEAD
     说明：
         使用正则表达式匹配IPv4地址格式
         格式：xxx.xxx.xxx.xxx，每个xxx为0-255
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     if not isinstance(ip, str) or not ip.strip():
         return False
@@ -58,12 +64,15 @@ def get_locating(ip: str) -> str:
     获取IP归属地（健壮版）
     :param ip: 待查询的IPv4地址
     :return: 格式化的归属地字符串 / 错误提示字符串
+<<<<<<< HEAD
     说明：
         1. 先校验IP格式是否合法
         2. 调用ip-api.com API查询归属地
         3. 返回格式：国家(国家名)，省份(省份名)，城市(城市名)
         4. 若查询失败，返回错误提示
         5. 设置4秒超时，避免长时间阻塞
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     # 1. 输入校验
     if not is_valid_ipv4(ip):

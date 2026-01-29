@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+<<<<<<< HEAD
 """
 AWVS Dashboard API 类
 
@@ -26,17 +27,28 @@ class Dashboard(AWVSBase):
             api_base_url: AWVS API 基础 URL
             api_key: AWVS API 密钥
         """
+=======
+from .Base import Base
+import requests
+
+
+class Dashboard(Base):
+    def __init__(self, api_base_url, api_key):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         super().__init__(api_base_url, api_key)
 
         self.logger = self.get_logger
 
     def stats(self):
+<<<<<<< HEAD
         """
         获取仪表板统计信息
 
         Returns:
             str: 统计信息的 JSON 字符串
         """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         dashboard_stats_api = f'{self.api_base_url}/api/v1/me/stats'
         print(dashboard_stats_api)
         try:
@@ -44,6 +56,7 @@ class Dashboard(AWVSBase):
             return response.text
         except Exception:
             self.logger.error('Get Dashboard Stats Failed......', exc_info=True)
+<<<<<<< HEAD
 
 if __name__ == '__main__':
     import sys
@@ -52,3 +65,5 @@ if __name__ == '__main__':
     from config import settings
     dashboard = Dashboard(settings.AWVS_API_URL, settings.AWVS_API_KEY)
     print(dashboard.stats())
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

@@ -1,4 +1,5 @@
 '''
+<<<<<<< HEAD
 Tomcat CVE-2017-12615 POC 检测脚本
 
 漏洞描述：
@@ -36,6 +37,11 @@ Apache Tomcat 在 Windows 系统下存在 PUT 方法任意文件写入漏洞。
     http://wooyun.jozxing.cc/static/bugs/wooyun-2015-0107097.html
     https://mp.weixin.qq.com/s?__biz=MzI1NDg4MTIxMw==&mid=2247483659&idx=1&sn=c23b3a3b3b43d70999bdbe644e79f7e5
     https://mp.weixin.qq.com/s?__biz=MzU3ODAyMjg4OQ==&mid=2247483805&idx=1&sn=503a3e29165d57d3c20ced671761bb5e
+=======
+http://wooyun.jozxing.cc/static/bugs/wooyun-2015-0107097.html
+https://mp.weixin.qq.com/s?__biz=MzI1NDg4MTIxMw==&mid=2247483659&idx=1&sn=c23b3a3b3b43d70999bdbe644e79f7e5
+https://mp.weixin.qq.com/s?__biz=MzU3ODAyMjg4OQ==&mid=2247483805&idx=1&sn=503a3e29165d57d3c20ced671761bb5e
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 '''
 
 import requests
@@ -43,6 +49,7 @@ import uuid
 from urllib.parse import urlparse
 
 def poc(url, timeout=10):
+<<<<<<< HEAD
     """
     检测目标是否存在 Tomcat CVE-2017-12615 漏洞
     
@@ -53,6 +60,8 @@ def poc(url, timeout=10):
     Returns:
         tuple: (是否存在漏洞, 结果消息)
     """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     uu = uuid.uuid4()
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:56.0) Gecko/20100101 Firefox/56.0',
@@ -85,5 +94,12 @@ def poc(url, timeout=10):
 
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     url = "http://127.0.0.1:8080"
     poc(url)
+=======
+    # url = "http://node3.buuoj.cn:29118"
+    url = "http://127.0.0.1:8080"
+    poc(url)
+
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

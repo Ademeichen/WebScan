@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """
 漏洞知识库 API 路由
 
@@ -20,11 +21,21 @@ from backend.config import settings
 import logging
 import asyncio
 import httpx
+=======
+from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+from models import VulnerabilityKB
+from tortoise.expressions import Q
+import logging
+import asyncio
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 class VulnerabilityKBResponse(BaseModel):
+<<<<<<< HEAD
     """
     漏洞知识库响应模型
     
@@ -41,6 +52,8 @@ class VulnerabilityKBResponse(BaseModel):
         source: 数据源
         created_at: 创建时间
     """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     id: int
     cve_id: Optional[str]
     name: str
@@ -57,6 +70,7 @@ class VulnerabilityKBResponse(BaseModel):
         from_attributes = True
 
 class SyncResponse(BaseModel):
+<<<<<<< HEAD
     """
     同步响应模型
     
@@ -102,6 +116,11 @@ class SeebugAPIResponse(BaseModel):
     message: str
     data: Optional[Dict[str, Any]] = None
 
+=======
+    message: str
+    count: int
+
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 @router.get("/vulnerabilities", response_model=Dict[str, Any])
 async def list_kb_vulnerabilities(
     page: int = 1,
@@ -112,6 +131,7 @@ async def list_kb_vulnerabilities(
 ):
     """
     获取漏洞知识库列表
+<<<<<<< HEAD
     
     支持按关键词、数据源、是否有 POC 等条件过滤，以及分页查询。
     
@@ -134,6 +154,8 @@ async def list_kb_vulnerabilities(
     Examples:
         >>> 搜索 SQL 注入相关漏洞
         >>> GET /kb/vulnerabilities?keyword=SQL%20Injection
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     query = VulnerabilityKB.all()
     
@@ -149,7 +171,11 @@ async def list_kb_vulnerabilities(
     total = await query.count()
     items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-updated_at")
     
+<<<<<<< HEAD
     # 格式化日期
+=======
+    # Format dates
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     formatted_items = []
     for item in items:
         item_dict = dict(item)
@@ -168,6 +194,7 @@ async def list_kb_vulnerabilities(
 async def get_kb_vulnerability(kb_id: int):
     """
     获取漏洞知识库详情
+<<<<<<< HEAD
     
     根据漏洞 ID 获取详细的漏洞信息。
     
@@ -183,6 +210,8 @@ async def get_kb_vulnerability(kb_id: int):
     Examples:
         >>> 获取漏洞详情
         >>> GET /kb/vulnerabilities/1
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     item = await VulnerabilityKB.get_or_none(id=kb_id)
     if not item:
@@ -194,6 +223,7 @@ async def get_kb_vulnerability(kb_id: int):
     
     return item_dict
 
+<<<<<<< HEAD
 async def validate_seebug_apikey(api_key: str) -> bool:
     """
     验证 Seebug API Key 是否有效
@@ -710,6 +740,14 @@ def _get_mock_seebug_data():
     Returns:
         List[Dict]: 模拟漏洞数据列表
     """
+=======
+async def fetch_seebug_data():
+    """模拟从 Seebug 获取数据"""
+    # 在实际生产环境中，这里应该调用 Seebug API 或爬取数据
+    # import requests
+    # resp = requests.get("https://www.seebug.org/api/...")
+    await asyncio.sleep(1) # Simulate network delay
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     return [
         {
             "cve_id": "CVE-2021-44228",
@@ -737,6 +775,7 @@ def _get_mock_seebug_data():
         }
     ]
 
+<<<<<<< HEAD
 # TODO: 实际生产环境中，这里应该调用 Exploit-DB API 或爬取数据
 async def fetch_exploit_db_data():
     """
@@ -833,38 +872,75 @@ async def fetch_exploit_db_data():
                 "source": "exploit-db"
             }
         ]
+=======
+async def fetch_exploit_db_data():
+    """模拟从 Exploit-DB 获取数据"""
+    await asyncio.sleep(1)
+    return [
+        {
+            "cve_id": "CVE-2017-0144",
+            "name": "EternalBlue (MS17-010)",
+            "description": "Remote Code Execution vulnerability in Microsoft SMBv1 server.",
+            "severity": "High",
+            "cvss_score": 9.3,
+            "affected_product": "Windows 7, Windows Server 2008, etc.",
+            "solution": "Apply Microsoft MS17-010 patch.",
+            "has_poc": True,
+            "source": "exploit-db"
+        }
+    ]
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 async def sync_vulnerabilities_task():
     """
     后台同步漏洞数据任务
+<<<<<<< HEAD
     
     从 Seebug 和 Exploit-DB 等数据源同步漏洞信息到本地数据库。
     该任务在后台异步执行，不阻塞主线程。
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     logger.info("开始同步漏洞知识库...")
     
     count = 0
     
     try:
+<<<<<<< HEAD
         # 1. 从 Seebug 同步
         seebug_data = await fetch_seebug_data()
         # DEBUG: 打印原始 Seebug 数据
         print(f"原始 Seebug 数据: {seebug_data}")
+=======
+        # 1. Sync from Seebug
+        seebug_data = await fetch_seebug_data()
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         for data in seebug_data:
             exists = await VulnerabilityKB.get_or_none(cve_id=data['cve_id'])
             if not exists:
                 await VulnerabilityKB.create(**data)
                 count += 1
             else:
+<<<<<<< HEAD
                 # 更新现有记录（可选）
+=======
+                # Update existing?
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                 # exists.update_from_dict(data)
                 # await exists.save()
                 pass
 
+<<<<<<< HEAD
         # 2. 从 Exploit-DB 同步
         edb_data = await fetch_exploit_db_data()
         for data in edb_data:
             # 通过 CVE 或名称检查
+=======
+        # 2. Sync from Exploit-DB
+        edb_data = await fetch_exploit_db_data()
+        for data in edb_data:
+            # check by CVE or Name
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
             exists = await VulnerabilityKB.get_or_none(cve_id=data['cve_id'])
             if not exists:
                 await VulnerabilityKB.create(**data)
@@ -879,6 +955,7 @@ async def sync_vulnerabilities_task():
 async def sync_vulnerabilities(background_tasks: BackgroundTasks):
     """
     触发漏洞库同步
+<<<<<<< HEAD
     
     在后台启动漏洞数据同步任务。
     
@@ -895,6 +972,8 @@ async def sync_vulnerabilities(background_tasks: BackgroundTasks):
     Examples:
         >>> 触发同步
         >>> POST /kb/sync
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     background_tasks.add_task(sync_vulnerabilities_task)
     return {"message": "Sync task started", "status": "running"}

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # coding:utf-8
+<<<<<<< HEAD
 """
 Drupal CVE-2018-7600 POC 检测脚本
 
@@ -46,6 +47,11 @@ def poc(url, timeout=10):
     Returns:
         tuple: (是否存在漏洞, 结果消息)
     """
+=======
+import requests
+import sys
+def poc(url, timeout=10):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     try:
         target = url
         commands = 'echo "test:)" | tee index1.txt'   # index1.txt文件
@@ -66,4 +72,8 @@ def poc(url, timeout=10):
 
 if __name__ == "__main__":
     url = "http://node3.buuoj.cn:26848/"
+<<<<<<< HEAD
     poc(url)
+=======
+    poc(url)
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

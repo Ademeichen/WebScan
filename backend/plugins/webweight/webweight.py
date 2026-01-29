@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 网站权重查询模块
 功能：
@@ -22,6 +23,8 @@
     >>> print(result)
     {"success": True, "result": "PC权重(1)，移动权重(0)，预计来路(0) --数据来源于aizhan.com", ...}
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import logging
 import json
 from typing import Dict, Union, Optional
@@ -55,10 +58,13 @@ def getdomain(domain: str) -> str:
     提取纯域名（移除协议、路径、端口等）
     :param domain: 原始域名/URL（如https://jwt1399.top/）
     :return: 纯域名（如jwt1399.top）
+<<<<<<< HEAD
     说明：
         1. 移除协议头（http://或https://）
         2. 移除路径（/后的内容）
         3. 移除端口（:后的内容）
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     if not isinstance(domain, str) or not domain.strip():
         return ""
@@ -75,9 +81,12 @@ def is_valid_domain(domain: str) -> bool:
     校验域名格式是否合法（简单校验，满足基础需求）
     :param domain: 纯域名
     :return: True（合法）/False（非法）
+<<<<<<< HEAD
     说明：
         使用正则表达式匹配域名格式
         格式：xxx.xxx，其中xxx为字母、数字或连字符
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     if not domain or "." not in domain:
         return False
@@ -97,11 +106,14 @@ def get_web_weight(domain: str) -> Dict[str, Union[bool, str, Dict]]:
             "raw_data": {},         # API返回的原始数据（便于调试）
             "message": ""           # 成功/失败原因
         }
+<<<<<<< HEAD
     说明：
         1. 提取纯域名并校验格式
         2. 调用爱站网API查询权重
         3. 返回格式：PC权重(x)，移动权重(y)，预计来路(z)
         4. 设置4秒超时，支持2次重试
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     """
     # 初始化标准化返回结果
     result = {

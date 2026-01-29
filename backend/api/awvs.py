@@ -2,13 +2,18 @@
 AWVS 漏洞扫描相关的 API 路由
 整合 AVWS 工具包的功能
 """
+<<<<<<< HEAD
 from fastapi import APIRouter, HTTPException, BackgroundTasks
+=======
+from fastapi import APIRouter, HTTPException
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 from pydantic import BaseModel, HttpUrl
 from typing import Optional, List, Dict, Any
 import logging
 import json
 import re
 import asyncio
+<<<<<<< HEAD
 import time
 from functools import partial
 from tortoise.functions import Count
@@ -31,14 +36,30 @@ from backend.poc.tomcat import cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_
 from backend.poc.jboss import cve_2017_12149_poc
 from backend.poc.nexus import cve_2020_10199_poc
 from backend.poc.struts2 import struts2_009_poc, struts2_032_poc
+=======
+from functools import partial
+from tortoise.functions import Count
+from config import settings
+from models import Task, Vulnerability
+
+# 导入 AWVS API 类
+from AVWS.API.Scan import Scan
+from AVWS.API.Target import Target
+from AVWS.API.Vuln import Vuln
+from AVWS.API.Dashboard import Dashboard
+from AVWS.API.Base import Base
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+<<<<<<< HEAD
 # 全局变量用于存储中间件扫描时间戳
 middleware_scan_time = 0.0
 
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 async def run_sync(func, *args, **kwargs):
     """在线程池中运行同步阻塞函数"""
     loop = asyncio.get_running_loop()
@@ -102,9 +123,13 @@ async def sync_vulnerabilities(scan_id: str, scan_session_id: str, task_id: int)
         
         # 获取漏洞列表 (使用线程池避免阻塞)
         vulns = await run_sync(s.get_vulns, scan_id, scan_session_id)
+<<<<<<< HEAD
         # DEBUG: 打印原始漏洞数据
         print(f"原始漏洞数据: {vulns}")
 
+=======
+        
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         if not vulns:
             return
 
@@ -167,9 +192,13 @@ async def sync_scans_from_awvs():
         s = Scan(client['api_url'], client['api_key'])
         # 获取AWVS中所有扫描 (使用线程池)
         awvs_scans = await run_sync(s.get_all)
+<<<<<<< HEAD
         # DEBUG: 打印原始扫描数据
         print(f"原始扫描数据: {awvs_scans}")
 
+=======
+        
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         # 获取数据库中所有AWVS任务
         # 注意：这里假设task_type='awvs_scan'
         db_tasks = await Task.filter(task_type='awvs_scan').all()
@@ -281,8 +310,11 @@ async def get_all_scans():
         
         # 从数据库读取
         tasks = await Task.filter(task_type='awvs_scan').order_by('-created_at').all()
+<<<<<<< HEAD
         # DEBUG: 打印原始任务数据
         print(f"原始任务数据: {tasks}")
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         
         data = []
         for task in tasks:
@@ -362,8 +394,11 @@ async def get_target_vulnerabilities(target_id: str):
     try:
         client = get_awvs_client()
         v = Vuln(client['api_url'], client['api_key'])
+<<<<<<< HEAD
         # DEBUG: 打印原始漏洞搜索参数
         print(f"原始漏洞搜索参数: target_id={target_id}")
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         
         # 搜索该目标的所有已打开的漏洞
         # search 方法返回的是 JSON 字符串，需要解析
@@ -373,8 +408,11 @@ async def get_target_vulnerabilities(target_id: str):
             status='open',
             target_id=target_id
         )
+<<<<<<< HEAD
         # DEBUG: 打印原始漏洞搜索结果
         print(f"原始漏洞搜索结果: {result_text}")
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         
         data = []
         if result_text:
@@ -389,8 +427,11 @@ async def get_target_vulnerabilities(target_id: str):
                     1: 'Low',
                     0: 'Info'
                 }
+<<<<<<< HEAD
                 # DEBUG: 打印原始漏洞数据
                 print(f"原始漏洞数据: {vulnerabilities}")
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                 
                 for val in vulnerabilities:
                     # Handle severity if it's an integer
@@ -427,9 +468,13 @@ async def get_vulnerability_detail(vuln_id: str):
         v = Vuln(client['api_url'], client['api_key'])
         
         vuln_data = v.get(vuln_id)
+<<<<<<< HEAD
         # DEBUG: 打印原始漏洞数据
         print(f"原始漏洞数据: {vuln_data}")
 
+=======
+        
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         if vuln_data:
             return APIResponse(code=200, message="获取漏洞详情成功", data=vuln_data)
         else:
@@ -500,6 +545,109 @@ async def create_scan(request: AWVSScanRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+<<<<<<< HEAD
+=======
+# ==================== 获取目标的漏洞结果 ====================
+@router.get("/vulnerabilities/{target_id}", response_model=APIResponse)
+async def get_target_vulnerabilities(target_id: str):
+    """
+    获取指定目标的漏洞列表
+    """
+    try:
+        client = get_awvs_client()
+        d = Vuln(client['api_url'], client['api_key'])
+        
+        vuln_details = json.loads(d.search(None, None, "open", target_id=target_id))
+        data = []
+        
+        if 'vulnerabilities' in vuln_details:
+            for idx, item_data in enumerate(vuln_details['vulnerabilities'], 1):
+                # Log first item for debugging
+                if idx == 1:
+                    logger.info(f"First vulnerability item data: {json.dumps(item_data)}")
+
+                # Handle severity mapping using standardized function
+                severity_val = item_data.get('severity')
+                vt_name = item_data.get('vt_name', '')
+                severity = map_severity(severity_val, vt_name)
+
+                # SQL Injection prefix logic
+                vt_name = item_data.get('vt_name', 'Unknown Vulnerability')
+                vuln_name = vt_name
+                if 'SQL Injection' in vt_name and not vt_name.startswith('[SQL'):
+                    vuln_name = f"[SQL Injection] {vt_name}"
+
+                item = {
+                    'id': idx,
+                    'severity': severity,
+                    'target': item_data.get('affects_url', ''),
+                    'vuln_id': item_data.get('vuln_id'),
+                    'vuln_name': vuln_name,
+                    'time': re.sub(r'T|\..*$', " ", item_data.get('last_seen', '')) if item_data.get('last_seen') else ''
+                }
+                data.append(item)
+        
+        logger.info(f"获取目标 {target_id} 的漏洞列表成功，共 {len(data)} 个漏洞")
+        return APIResponse(code=200, message="获取成功", data=data)
+    except Exception as e:
+        logger.error(f"获取漏洞列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== 获取漏洞详情 ====================
+@router.get("/vulnerability/{vuln_id}", response_model=APIResponse)
+async def get_vulnerability_detail(vuln_id: str):
+    """
+    获取指定漏洞的详细信息
+    """
+    try:
+        client = get_awvs_client()
+        d = Vuln(client['api_url'], client['api_key'])
+        data = d.get(vuln_id)
+        
+        if not data:
+            return APIResponse(code=404, message="漏洞不存在", data=None)
+        
+        # 解析HTML内容
+        parameter_list = BeautifulSoup(data['details'], features="html.parser").findAll('span')
+        request_list = BeautifulSoup(data['details'], features="html.parser").findAll('li')
+        
+        data_dict = {
+            'affects_url': data['affects_url'],
+            'last_seen': re.sub(r'T|\..*$', " ", data['last_seen']),
+            'vt_name': data['vt_name'],
+            'details': data['details'].replace("  ", '').replace('</p>', ''),
+            'request': data['request'],
+            'recommendation': data['recommendation'].replace('<br/>', '\n')
+        }
+        
+        try:
+            data_dict['parameter_name'] = parameter_list[0].contents[0]
+            data_dict['parameter_data'] = parameter_list[1].contents[0]
+        except:
+            pass
+        
+        num = 1
+        try:
+            test_str = ''
+            for i in range(len(request_list)):
+                test_str += str(request_list[i].contents[0]) + str(request_list[i].contents[1]).replace('<strong>', '').replace('</strong>', '') + '\n'
+                num += 1
+            data_dict['tests_performed'] = test_str
+            data_dict['num'] = num
+        except:
+            pass
+        
+        data_dict['details'] = data_dict['details'].replace('class="bb-dark"', 'style="color: #ff0000"')
+        
+        logger.info(f"获取漏洞 {vuln_id} 详情成功")
+        return APIResponse(code=200, message="获取成功", data=data_dict)
+    except Exception as e:
+        logger.error(f"获取漏洞详情失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 # ==================== 获取漏洞排名 ====================
 @router.get("/vulnerabilities/rank", response_model=APIResponse)
 async def get_vulnerability_rank():
@@ -611,6 +759,7 @@ async def awvs_health_check():
     except Exception as e:
         logger.error(f"AWVS健康检查失败: {str(e)}")
         return APIResponse(code=503, message="AWVS服务连接失败", data={"status": "disconnected", "error": str(e)})
+<<<<<<< HEAD
 
 
 # ==================== 中间件POC扫描相关 ====================
@@ -900,3 +1049,5 @@ async def get_middleware_poc_list():
         logger.error(f"获取中间件POC列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

@@ -1,5 +1,6 @@
 """
 FastAPI 主应用入口文件
+<<<<<<< HEAD
 
 本文件是 WebScan AI Security Platform 的主入口，负责：
 - 创建和配置 FastAPI 应用实例
@@ -10,12 +11,15 @@ FastAPI 主应用入口文件
 - 初始化数据库连接
 - 验证外部服务连接（如 AWVS）
 - 启动后台任务
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import uvicorn
+<<<<<<< HEAD
 from backend.config import settings
 from backend.database import init_db, close_db
 import logging
@@ -23,6 +27,13 @@ from pathlib import Path
 
 from backend.api import agent
 
+=======
+from config import settings
+from database import init_db, close_db
+import logging
+from pathlib import Path
+
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 # 创建必要的目录
 Path("logs").mkdir(exist_ok=True)
 Path("data").mkdir(exist_ok=True)
@@ -41,6 +52,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+<<<<<<< HEAD
     """
     应用生命周期管理
     
@@ -60,6 +72,9 @@ async def lifespan(app: FastAPI):
     Yields:
         None: 控制权交还给应用
     """
+=======
+    """应用生命周期管理"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     # 启动时执行
     logger.info(f"启动 {settings.APP_NAME} v{settings.APP_VERSION}")
     
@@ -68,6 +83,7 @@ async def lifespan(app: FastAPI):
     
     # 验证AWVS连接
     try:
+<<<<<<< HEAD
         from backend.AVWS.API.Base import Base as AWVSBase
         awvs_base = AWVSBase(settings.AWVS_API_URL, settings.AWVS_API_KEY)
         success, message = awvs_base.check_connection()
@@ -75,6 +91,26 @@ async def lifespan(app: FastAPI):
             logger.info("AWVS API 连接测试成功")
         else:
             logger.error(f"AWVS API 连接测试失败: {message}")
+=======
+        from AVWS.API.Base import Base
+        awvs_base = Base(settings.AWVS_API_URL, settings.AWVS_API_KEY)
+        success, message = awvs_base.check_connection()
+        if success:
+            logger.info("AWVS API 连接测试成功")
+            
+            # 启动后台同步任务
+            try:
+                from api.awvs import sync_scans_from_awvs
+                import asyncio
+                logger.info("正在启动AWVS数据后台同步...")
+                asyncio.create_task(sync_scans_from_awvs())
+            except Exception as e:
+                logger.error(f"启动AWVS同步任务失败: {e}")
+                
+        else:
+            logger.error(f"AWVS API 连接测试失败: {message}")
+            # 可以在这里选择是否抛出异常阻止启动，或者只是记录警告
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
             logger.warning("请检查配置文件中的 AWVS_API_URL 和 AWVS_API_KEY")
     except Exception as e:
         logger.error(f"执行 AWVS 连接测试时发生错误: {str(e)}")
@@ -87,6 +123,10 @@ async def lifespan(app: FastAPI):
     # 关闭数据库连接
     await close_db()
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 # 创建 FastAPI 应用实例
 app = FastAPI(
     title=settings.APP_NAME,
@@ -98,6 +138,7 @@ app = FastAPI(
 # 配置 CORS
 app.add_middleware(
     CORSMiddleware,
+<<<<<<< HEAD
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
@@ -123,6 +164,20 @@ async def root():
         ...     "status": "running"
         ... }
     """
+=======
+    allow_origins=["*"],  # 开发环境允许所有来源
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
+
+# 根路径
+@app.get("/")
+async def root():
+    """根路径，返回API信息"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     return {
         "message": "Welcome to WebScan AI Security Platform",
         "version": settings.APP_VERSION,
@@ -130,6 +185,7 @@ async def root():
     }
 
 
+<<<<<<< HEAD
 @app.get("/health")
 async def health_check():
     """
@@ -162,6 +218,19 @@ async def global_exception_handler(request, exc):
     Returns:
         JSONResponse: 统一的错误响应格式
     """
+=======
+# 健康检查
+@app.get("/health")
+async def health_check():
+    """健康检查端点"""
+    return {"status": "healthy"}
+
+
+# 全局异常处理
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """全局异常处理器"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     logger.error(f"未处理的异常: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
@@ -174,11 +243,16 @@ async def global_exception_handler(request, exc):
 
 
 # 注册路由
+<<<<<<< HEAD
 from backend.api import api_router
+=======
+from api import api_router
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 app.include_router(api_router, prefix="/api")
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     """
     应用启动入口
     
@@ -186,8 +260,19 @@ if __name__ == "__main__":
     """
     uvicorn.run(
         "backend.main:app",
+=======
+    uvicorn.run(
+        "main:app",
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         host=settings.HOST,
         port=settings.PORT,
         reload=False,
         log_level=settings.LOG_LEVEL.lower()
     )
+<<<<<<< HEAD
+=======
+
+
+
+
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

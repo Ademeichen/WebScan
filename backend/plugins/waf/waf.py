@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 WAF（Web应用防火墙）检测模块
 功能：
@@ -27,6 +28,8 @@ WAF（Web应用防火墙）检测模块
         "message": "检测到CloudFlare CDN/WAF"
     }
 """ 
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import re
 import logging
 from typing import Dict, Tuple, List, Optional

@@ -1,5 +1,6 @@
 #!/usr/bin/python3 
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 WebLogic CVE-2020-2551 POC 检测脚本
 
@@ -31,6 +32,8 @@ T3/IIOP 请求来执行任意代码。
     (False, '安全') - 未检测到漏洞
     (False, '扫描失败 - 错误信息') - 扫描过程中出现错误
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 import socket
 from urllib.parse import urlparse
@@ -38,6 +41,7 @@ from urllib.parse import urlparse
 result_data = ''
 
 def doSendOne(ip,port,data):
+<<<<<<< HEAD
     """
     发送单个数据包并接收响应
     
@@ -49,6 +53,8 @@ def doSendOne(ip,port,data):
     Returns:
         bool: 如果响应中包含 'GIOP' 则返回 True，否则返回 False
     """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     sock=None
     res=None
     try:
@@ -66,6 +72,7 @@ def doSendOne(ip,port,data):
         if sock!=None:
             sock.close()
     return False
+<<<<<<< HEAD
 
 g_bPipe=False
 
@@ -80,6 +87,10 @@ def poc(url, timeout=10):
     Returns:
         tuple: (是否存在漏洞, 结果消息)
     """
+=======
+g_bPipe=False
+def poc(url, timeout=10):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     global g_bPipe
     global result_data
     try:
@@ -108,3 +119,7 @@ if __name__=='__main__':
     print(poc('http://127.0.0.1:7001'))
     end = datetime.datetime.now()
     print(end - start)
+<<<<<<< HEAD
+=======
+
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

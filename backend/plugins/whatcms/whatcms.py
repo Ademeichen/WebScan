@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 CMS（内容管理系统）检测模块
 功能：
@@ -36,6 +37,8 @@ CMS（内容管理系统）检测模块
         "message": "识别到X个CMS"
     }
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import os
 import re
 import json

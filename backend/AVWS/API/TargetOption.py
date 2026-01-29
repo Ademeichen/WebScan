@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+<<<<<<< HEAD
 """
 AWVS Target Option API 类
 
 提供与 AWVS 目标配置 API 交互的功能，包括设置危险程度、扫描速度、登录信息、代理等
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 from .Base import Base
 import requests
@@ -13,6 +16,7 @@ import json
 
 
 class TargetOption(Base):
+<<<<<<< HEAD
     """
     AWVS 目标配置 API 类
 
@@ -27,6 +31,9 @@ class TargetOption(Base):
             api_base_url: AWVS API 基础 URL
             api_key: AWVS API 密钥
         """
+=======
+    def __init__(self, api_base_url, api_key):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         super().__init__(api_base_url, api_key)
 
         self.excluded_hours_dict = {
@@ -39,6 +46,7 @@ class TargetOption(Base):
         self.logger = self.get_logger
 
     def set_criticality(self, target_id, criticality, description=None):
+<<<<<<< HEAD
         """
         设置目标危险程度和描述
 
@@ -49,6 +57,18 @@ class TargetOption(Base):
 
         Returns:
             bool: 成功返回 True，失败返回 False
+=======
+        """设置目标危险程度和描述
+
+        Args:
+            target_id (string): 目标ID
+            criticality (int): 30->critical, 20->high, 10-normal, 0->low
+            description (None, optional): 目标描述
+
+        Returns:
+            接口请求成功返回空，失败返回错误信息
+            该函数成功返回True, 失败返回False
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         set_criticality_api = f'{self.targets_api}/{target_id}'
         try:
@@ -67,6 +87,7 @@ class TargetOption(Base):
             return False
 
     def set_scan_speed(self, target_id, scan_speed):
+<<<<<<< HEAD
         """
         设置扫描速度
 
@@ -76,6 +97,17 @@ class TargetOption(Base):
 
         Returns:
             bool: 成功返回 True，失败返回 False
+=======
+        """设置扫描速度
+
+        Args:
+            target_id (string): 目标ID
+            scan_speed (string): 可选值为，sequential/slow/moderate/fast
+
+        Returns:
+            接口请求成功返回空，失败返回错误信息
+            该函数成功返回True, 失败返回False
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         set_scan_speed_api = f'{self.targets_api}/{target_id}/configuration'
         try:
@@ -91,6 +123,7 @@ class TargetOption(Base):
             return False
 
     def set_continuous_scan(self, target_id, enabled=False):
+<<<<<<< HEAD
         """
         启用或关闭持续扫描
 
@@ -100,6 +133,17 @@ class TargetOption(Base):
 
         Returns:
             bool: 成功返回 True，失败返回 False
+=======
+        """启用持续扫描
+
+        Args:
+            target_id (string): 目标ID
+            enabled (bool, optional): 启用True, 关闭False
+
+        Returns:
+            接口请求成功返回对应JSON，失败返回错误信息
+            该函数成功返回True, 失败返回False
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         set_continuous_scan_api = f'{self.targets_api}/{target_id}/continuous_scan'
         try:
@@ -116,6 +160,7 @@ class TargetOption(Base):
             return False
 
     def set_site_login(self, target_id, login_kind, login_info):
+<<<<<<< HEAD
         """
         设置目标登录信息
 
@@ -126,6 +171,18 @@ class TargetOption(Base):
 
         Returns:
             bool: 成功返回 True，失败返回 False
+=======
+        """设置目标登录信息
+
+        Args:
+            target_id (string): 目标ID
+            login_kind (string): 无登录none, 用户名和密码登录automatic, 暂不实现录屏登录序列
+            login_info (dict): 登录信息，格式: {'username': 'tudouya', 'password': 'password123'}
+
+        Returns:
+            接口请求成功返回空，失败返回错误信息
+            该函数成功返回True, 失败返回False
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         set_site_login_api = f'{self.targets_api}/{target_id}/configuration'
         try:
@@ -152,6 +209,7 @@ class TargetOption(Base):
             return False
 
     def set_crawler(self, target_id, user_agent, case_sensitive, excluded_paths, limit_crawler_scope):
+<<<<<<< HEAD
         """
         设置爬虫信息
 
@@ -164,6 +222,20 @@ class TargetOption(Base):
 
         Returns:
             bool: 成功返回 True，失败返回 False
+=======
+        """设置爬虫信息
+
+        Args:
+            target_id (string): 目标ID
+            limit_crawler_scope (bool): 仅限爬行到地址和子目录
+            case_sensitive (string): 大小写敏感, auto/no/yes
+            excluded_paths (list): 排除路径
+            user_agent (string): UA头
+
+        Returns:
+            接口请求成功返回空，失败返回错误信息
+            该函数成功返回True, 失败返回False
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         set_crawler_api = f'{self.targets_api}/{target_id}/configuration'
         data = {
@@ -184,6 +256,7 @@ class TargetOption(Base):
             self.logger.error('Set Crawler Failed......', exc_info=True)
 
     def set_http_auth(self, target_id, enabled, username=None, password=None):
+<<<<<<< HEAD
         """
         设置 HTTP 认证信息
 
@@ -195,6 +268,19 @@ class TargetOption(Base):
 
         Returns:
             bool: 成功返回 True，失败返回 False
+=======
+        """设置HTTP认证信息
+
+        Args:
+            target_id (string): 目标ID
+            enabled (bool): 启用True, 关闭False
+            username (string, optional): 用户名
+            password (string, optional): 密码
+
+        Returns:
+            接口请求成功返回空，失败返回错误信息
+            该函数成功返回True, 失败返回False
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         set_http_auth_api = f'{self.targets_api}/{target_id}/configuration'
         data = {
@@ -217,16 +303,20 @@ class TargetOption(Base):
             return False
 
     def set_http_cert(self, target_id):
+<<<<<<< HEAD
         """
         设置 HTTP 证书（未实现）
 
         Args:
             target_id: 目标 ID
         """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         set_http_cert_api = f'{self.targets_api}/{target_id}/client_certificate'
         pass
 
     def upload_http_cert(self, upload_url):
+<<<<<<< HEAD
         """
         上传 HTTP 证书（未实现）
 
@@ -245,6 +335,20 @@ class TargetOption(Base):
 
         Returns:
             bool: 成功返回 True，失败返回 False
+=======
+        pass
+
+    def set_http_cert_password(self, target_id, client_certificate_password):
+        """设置客户端证书密码
+
+        Args:
+            target_id (string): 目标ID
+            client_certificate_password (string): 密码
+
+        Returns:
+            接口请求成功返回空，失败返回错误信息
+            该函数成功返回True, 失败返回False
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         set_http_cert_password_api = f'{self.targets_api}/{target_id}/configuration'
         data = {
@@ -263,6 +367,7 @@ class TargetOption(Base):
             return False
 
     def set_proxy(self, target_id, enabled, proxy_info=None):
+<<<<<<< HEAD
         """
         设置代理
 
@@ -273,6 +378,18 @@ class TargetOption(Base):
 
         Returns:
             bool: 成功返回 True，失败返回 False
+=======
+        """设置代理
+
+        Args:
+            target_id (string): 目标ID
+            enabled (bool): 启用True, 关闭False
+            proxy_info (dict, optional): {'address': '', 'protocol': '', 'port': '', 'username': '', 'password': ''}
+
+        Returns:
+            接口请求成功返回空，失败返回错误信息
+            该函数成功返回True, 失败返回False
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         set_proxy_api = f'{self.targets_api}/{target_id}/configuration'
         data = {
@@ -298,6 +415,7 @@ class TargetOption(Base):
             self.logger.error('Set Proxy Failed......', exc_info=True)
 
     def set_advance(self, target_id, technologies, custom_headers, custom_cookies, excluded_hours_id, debug=False, issue_tracker_id=''):
+<<<<<<< HEAD
         """
         高级设置
 
@@ -312,6 +430,22 @@ class TargetOption(Base):
 
         Returns:
             bool: 成功返回 True，失败返回 False
+=======
+        """高级设置
+
+        Args:
+            target_id (string): 目标ID
+            issue_tracker_id (TYPE): Description
+            technologies (list): 目标相关技术
+            custom_headers (list): 自定义HTTP头
+            custom_cookies (list): 自定义Cookie
+            debug (bool): 启用True, 关闭False
+            excluded_hours_id (string): 非扫描时段, 如果为空，则使用默认值
+
+        Returns:
+            接口请求成功返回空，失败返回错误信息
+            该函数成功返回True, 失败返回False
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         set_advance_api = f'{self.targets_api}/{target_id}/configuration'
         data = {

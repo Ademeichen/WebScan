@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 基础信息收集模块
 功能：
@@ -32,6 +33,8 @@
         "register": "http://whois.chinaz.com/www.taobao.com"
     }
 """ 
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import logging
 import socket
 import json
@@ -233,7 +236,11 @@ def getbaseinfo(url: str) -> Dict[str, Any]:
 
 if __name__ == '__main__':
     # 测试示例
+<<<<<<< HEAD
     test_url = "https://www.taobao.com/"
+=======
+    test_url = "https://jwt1399.top/"
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     result = getbaseinfo(test_url)
     # 格式化输出测试结果
     print(json.dumps(result, ensure_ascii=False, indent=2))

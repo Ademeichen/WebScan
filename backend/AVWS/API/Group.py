@@ -1,16 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+<<<<<<< HEAD
 """
 AWVS Group API 类
 
 提供与 AWVS 目标分组 API 交互的功能，包括创建分组、获取分组、添加/删除目标到分组等
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 from .Base import Base
 import requests
 
 class Group(Base):
+<<<<<<< HEAD
     """
     AWVS 目标分组 API 类
 
@@ -25,10 +29,14 @@ class Group(Base):
             api_base_url: AWVS API 基础 URL
             api_key: AWVS API 密钥
         """
+=======
+    def __init__(self, api_base_url, api_key):
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         super().__init__(api_base_url, api_key)
         self.logger = self.get_logger
 
     def create_new_group(self, group_name, description = None):
+<<<<<<< HEAD
         """
         创建新的目标分组
 
@@ -39,6 +47,8 @@ class Group(Base):
         Returns:
             str: 成功返回分组 ID，失败返回 False
         """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         if not description:
             description = f'{group_name} group'
         
@@ -49,16 +59,24 @@ class Group(Base):
             return False
         else: 
             group_id = response.headers['Location'].split('/')[-1]
+<<<<<<< HEAD
+=======
+            # group_id格式如下图所示
+            #8b78443f-8bcd-4408-a8fd-0692868e265b
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
             group_id = '{0}-{1}-{2}-{3}-{4}'.format(group_id[0:8], group_id[8:12], group_id[12:16], group_id[16:20], group_id[20:len(group_id)])
             return group_id
     
     def get_existed_groups(self):
+<<<<<<< HEAD
         """
         获取所有已存在的分组
 
         Returns:
             dict: 分组名称到分组 ID 的映射字典
         """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         groups = {}
         response = requests.get(self.create_group_api, headers=self.auth_headers, verify=False)
         print(response.status_code)
@@ -73,6 +91,7 @@ class Group(Base):
 
 
     def add_to_group(self, target_id, group_id):
+<<<<<<< HEAD
         """
         将目标添加到分组
 
@@ -85,6 +104,12 @@ class Group(Base):
         """
         add_to_group_api = self.create_group_api + '/{0}/targets'.format(group_id)
         data = {'add':[target_id],'remove':[]}
+=======
+        add_to_group_api = self.create_group_api + '/{0}/targets'.format(group_id)
+        # print(add_to_group_api)
+        data = {'add':[target_id],'remove':[]}
+        # print(data)
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         response = requests.patch(add_to_group_api, json=data, headers=self.auth_headers, verify=False)
         if response.status_code != 206:
             self.logger.error("添加失败~！", exc_info=True)
@@ -94,6 +119,7 @@ class Group(Base):
             return True
     
     def remove_from_group(self, target_id, group_id):
+<<<<<<< HEAD
         """
         从分组中移除目标
 
@@ -104,6 +130,8 @@ class Group(Base):
         Returns:
             bool: 成功返回 True，失败返回 False
         """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         add_to_group_api = self.create_group_api + '/{0}/targets'.format(group_id)
         print(add_to_group_api)
         data = {'add':[],'remove':[target_id]}

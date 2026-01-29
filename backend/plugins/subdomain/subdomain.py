@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 子域名枚举模块
 功能：
@@ -21,6 +22,8 @@
     >>> print(result)
     ['www.baidu.com', 'tieba.baidu.com', 'zhidao.baidu.com', ...]
 """ 
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import logging
 import re
 from typing import List, Optional

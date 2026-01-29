@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 CDN检测模块
 功能：
@@ -16,6 +17,8 @@ CDN检测模块
     >>> result = is_cdn("https://www.baidu.com")
     >>> print(result)  # True or False
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import logging
 import socket
 import ipaddress
@@ -106,7 +109,10 @@ GEOIP2_ASN_DB_PATH = Path(__file__).parent.parent.parent / "database" / "GeoLite
 # 预编译CDN网段为ip_network对象，避免每次调用重复解析
 try:
     CDN_NETWORKS = [ipaddress.ip_network(cidr, strict=False) for cidr in CDN_CIDR_LIST]
+<<<<<<< HEAD
     print(f"CDN_NETWORKS: {CDN_NETWORKS}")
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 except ValueError as e:
     logger.error(f"CDN网段解析失败：{e}")
     CDN_NETWORKS = []
@@ -117,6 +123,7 @@ def parse_host_to_ip(host: str) -> Optional[str]:
     将URL/域名解析为IPv4地址（优化版）
     :param host: URL/域名/IP
     :return: 第一个有效IPv4地址 | None
+<<<<<<< HEAD
     说明：
         1. 若输入已是合法IPv4，直接返回
         2. 否则尝试提取域名并解析为IP
@@ -127,6 +134,12 @@ def parse_host_to_ip(host: str) -> Optional[str]:
     try:
         ip_obj = ipaddress.IPv4Address(host.strip())
         print(f"IPv4地址 {ip_obj} 格式校验通过")
+=======
+    """
+    # 1. 若已是合法IPv4，直接返回
+    try:
+        ip_obj = ipaddress.IPv4Address(host.strip())
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         return str(ip_obj)
     except ipaddress.AddressValueError:
         pass
@@ -168,8 +181,11 @@ def check_ip_in_cdn_networks(ip: str) -> bool:
     """
     try:
         ip_obj = ipaddress.IPv4Address(ip.strip())
+<<<<<<< HEAD
         
 
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         # 遍历预编译的网段，匹配到立即返回
         for network in CDN_NETWORKS:
             if ip_obj in network:

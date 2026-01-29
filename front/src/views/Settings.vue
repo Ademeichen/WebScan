@@ -36,6 +36,7 @@
 
       <!-- 设置内容 -->
       <div class="settings-content">
+<<<<<<< HEAD
         <!-- 加载状态 -->
         <div v-if="loading" class="loading-state">
           <div class="loading-spinner"></div>
@@ -44,6 +45,10 @@
         
         <!-- 常规设置 -->
         <div v-if="!loading && activeTab === 'general'" class="settings-panel">
+=======
+        <!-- 常规设置 -->
+        <div v-if="activeTab === 'general'" class="settings-panel">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">系统配置</h3>
@@ -51,12 +56,20 @@
             <div class="settings-form">
               <div class="form-group">
                 <label class="form-label">系统名称</label>
+<<<<<<< HEAD
                 <input v-model="settings.general.systemName" type="text" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.general.systemName" type="text" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
               </div>
               
               <div class="form-group">
                 <label class="form-label">默认语言</label>
+<<<<<<< HEAD
                 <select v-model="settings.general.language" class="form-select" :disabled="saving">
+=======
+                <select v-model="settings.general.language" class="form-select">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                   <option value="zh-CN">简体中文</option>
                   <option value="en-US">English</option>
                 </select>
@@ -64,7 +77,11 @@
               
               <div class="form-group">
                 <label class="form-label">时区设置</label>
+<<<<<<< HEAD
                 <select v-model="settings.general.timezone" class="form-select" :disabled="saving">
+=======
+                <select v-model="settings.general.timezone" class="form-select">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                   <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
                   <option value="UTC">UTC (UTC+0)</option>
                   <option value="America/New_York">America/New_York (UTC-5)</option>
@@ -73,7 +90,11 @@
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.general.autoUpdate" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.general.autoUpdate" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                   <span class="checkbox-custom"></span>
                   自动更新漏洞库
                 </label>
@@ -83,7 +104,11 @@
         </div>
 
         <!-- 扫描配置 -->
+<<<<<<< HEAD
         <div v-if="!loading && activeTab === 'scan'" class="settings-panel">
+=======
+        <div v-if="activeTab === 'scan'" class="settings-panel">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">默认扫描参数</h3>
@@ -91,7 +116,11 @@
             <div class="settings-form">
               <div class="form-group">
                 <label class="form-label">默认扫描深度</label>
+<<<<<<< HEAD
                 <select v-model="settings.scan.defaultDepth" class="form-select" :disabled="saving">
+=======
+                <select v-model="settings.scan.defaultDepth" class="form-select">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                   <option value="1">浅层扫描 (深度1)</option>
                   <option value="2">中等扫描 (深度2)</option>
                   <option value="3">深度扫描 (深度3)</option>
@@ -100,22 +129,38 @@
               
               <div class="form-group">
                 <label class="form-label">默认并发数</label>
+<<<<<<< HEAD
                 <input v-model="settings.scan.defaultConcurrency" type="number" min="1" max="20" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.scan.defaultConcurrency" type="number" min="1" max="20" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
               </div>
               
               <div class="form-group">
                 <label class="form-label">请求超时时间 (秒)</label>
+<<<<<<< HEAD
                 <input v-model="settings.scan.requestTimeout" type="number" min="5" max="300" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.scan.requestTimeout" type="number" min="5" max="300" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
               </div>
               
               <div class="form-group">
                 <label class="form-label">用户代理字符串</label>
+<<<<<<< HEAD
                 <input v-model="settings.scan.userAgent" type="text" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.scan.userAgent" type="text" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
               </div>
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.scan.followRedirects" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.scan.followRedirects" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                   <span class="checkbox-custom"></span>
                   跟随重定向
                 </label>
@@ -123,7 +168,11 @@
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.scan.enableCookies" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.scan.enableCookies" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                   <span class="checkbox-custom"></span>
                   启用Cookie支持
                 </label>
@@ -143,7 +192,11 @@
                 </div>
                 <div class="rule-toggle">
                   <label class="switch">
+<<<<<<< HEAD
                     <input v-model="rule.enabled" type="checkbox" :disabled="saving">
+=======
+                    <input v-model="rule.enabled" type="checkbox">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                     <span class="slider"></span>
                   </label>
                 </div>
@@ -153,7 +206,11 @@
         </div>
 
         <!-- 通知设置 -->
+<<<<<<< HEAD
         <div v-if="!loading && activeTab === 'notification'" class="settings-panel">
+=======
+        <div v-if="activeTab === 'notification'" class="settings-panel">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">通知配置</h3>
@@ -161,7 +218,11 @@
             <div class="settings-form">
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.notification.emailEnabled" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.notification.emailEnabled" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                   <span class="checkbox-custom"></span>
                   启用邮件通知
                 </label>
@@ -170,23 +231,39 @@
               <div v-if="settings.notification.emailEnabled" class="email-settings">
                 <div class="form-group">
                   <label class="form-label">SMTP服务器</label>
+<<<<<<< HEAD
                   <input v-model="settings.notification.smtpServer" type="text" class="form-input" :disabled="saving">
+=======
+                  <input v-model="settings.notification.smtpServer" type="text" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                 </div>
                 
                 <div class="form-group">
                   <label class="form-label">SMTP端口</label>
+<<<<<<< HEAD
                   <input v-model="settings.notification.smtpPort" type="number" class="form-input" :disabled="saving">
+=======
+                  <input v-model="settings.notification.smtpPort" type="number" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                 </div>
                 
                 <div class="form-group">
                   <label class="form-label">发件人邮箱</label>
+<<<<<<< HEAD
                   <input v-model="settings.notification.senderEmail" type="email" class="form-input" :disabled="saving">
+=======
+                  <input v-model="settings.notification.senderEmail" type="email" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                 </div>
                 
                 <div class="form-group">
                   <label class="form-label">收件人邮箱</label>
                   <textarea v-model="settings.notification.recipientEmails" class="form-input" rows="3" 
+<<<<<<< HEAD
                            placeholder="每行一个邮箱地址" :disabled="saving"></textarea>
+=======
+                           placeholder="每行一个邮箱地址"></textarea>
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                 </div>
               </div>
               
@@ -194,7 +271,11 @@
                 <h4>通知事件</h4>
                 <div class="event-list">
                   <label v-for="event in notificationEvents" :key="event.value" class="checkbox-label">
+<<<<<<< HEAD
                     <input v-model="settings.notification.events" type="checkbox" :value="event.value" class="checkbox-input" :disabled="saving">
+=======
+                    <input v-model="settings.notification.events" type="checkbox" :value="event.value" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                     <span class="checkbox-custom"></span>
                     {{ event.label }}
                   </label>
@@ -205,7 +286,11 @@
         </div>
 
         <!-- 安全设置 -->
+<<<<<<< HEAD
         <div v-if="!loading && activeTab === 'security'" class="settings-panel">
+=======
+        <div v-if="activeTab === 'security'" class="settings-panel">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">访问控制</h3>
@@ -213,12 +298,20 @@
             <div class="settings-form">
               <div class="form-group">
                 <label class="form-label">会话超时时间 (分钟)</label>
+<<<<<<< HEAD
                 <input v-model="settings.security.sessionTimeout" type="number" min="5" max="1440" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.security.sessionTimeout" type="number" min="5" max="1440" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
               </div>
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.security.requireHttps" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.security.requireHttps" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                   <span class="checkbox-custom"></span>
                   强制使用HTTPS
                 </label>
@@ -226,7 +319,11 @@
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.security.enableTwoFactor" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.security.enableTwoFactor" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                   <span class="checkbox-custom"></span>
                   启用双因素认证
                 </label>
@@ -235,7 +332,11 @@
               <div class="form-group">
                 <label class="form-label">允许的IP地址</label>
                 <textarea v-model="settings.security.allowedIPs" class="form-input" rows="3" 
+<<<<<<< HEAD
                          placeholder="每行一个IP地址或CIDR块，留空表示允许所有IP" :disabled="saving"></textarea>
+=======
+                         placeholder="每行一个IP地址或CIDR块，留空表示允许所有IP"></textarea>
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
               </div>
             </div>
           </div>
@@ -252,12 +353,21 @@
                   <div class="key-created">创建时间: {{ key.createdAt }}</div>
                 </div>
                 <div class="key-actions">
+<<<<<<< HEAD
                   <button @click="regenerateKey(key.id)" class="btn btn-outline" :disabled="saving">重新生成</button>
                   <button @click="deleteKey(key.id)" class="btn btn-outline btn-danger" :disabled="saving">删除</button>
                 </div>
               </div>
               
               <button @click="createApiKey" class="btn btn-secondary" :disabled="saving">
+=======
+                  <button @click="regenerateKey(key.id)" class="btn btn-outline">重新生成</button>
+                  <button @click="deleteKey(key.id)" class="btn btn-outline btn-danger">删除</button>
+                </div>
+              </div>
+              
+              <button @click="createApiKey" class="btn btn-secondary">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                 ➕ 创建新密钥
               </button>
             </div>
@@ -269,6 +379,7 @@
     <!-- 保存按钮 -->
     <div class="settings-footer">
       <div class="footer-actions">
+<<<<<<< HEAD
         <button @click="resetSettings" class="btn btn-outline" :disabled="loading || saving">
           重置为默认
         </button>
@@ -276,20 +387,34 @@
           <span v-if="saving">⏳ 保存中...</span>
           <span v-else>💾 保存设置</span>
         </button>
+=======
+        <button @click="resetSettings" class="btn btn-outline">重置为默认</button>
+        <button @click="saveSettings" class="btn btn-success">保存设置</button>
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
       </div>
     </div>
   </div>
 </template>
 
 <script>
+<<<<<<< HEAD
 import { settingsApi } from '../utils/api.js'
 import { formatDate } from '../utils/date.js'
+=======
+// TODO: 替换为真实的API调用
+import { 
+  mockSettings, 
+  mockScanRules, 
+  mockApiKeys 
+} from '../data/mockData.js'
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 export default {
   name: 'Settings',
   data() {
     return {
       activeTab: 'general',
+<<<<<<< HEAD
       loading: false,
       saving: false,
       
@@ -336,6 +461,14 @@ export default {
         { id: 5, name: '命令注入', description: '检测命令注入漏洞', enabled: true },
         { id: 6, name: 'SSRF服务端请求伪造', description: '检测服务端请求伪造', enabled: true }
       ],
+=======
+      
+      // TODO: 从API获取系统设置 - GET /api/settings
+      settings: mockSettings,
+      
+      // TODO: 从API获取扫描规则 - GET /api/scan-rules
+      scanRules: mockScanRules,
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
       
       notificationEvents: [
         { value: 'high-vulnerability', label: '发现高危漏洞' },
@@ -344,6 +477,7 @@ export default {
         { value: 'system-update', label: '系统更新' }
       ],
       
+<<<<<<< HEAD
       apiKeys: []
     }
   },
@@ -406,6 +540,22 @@ export default {
           console.error('重置设置失败:', error)
           alert('重置设置失败: ' + error.message)
         }
+=======
+      // TODO: 从API获取API密钥 - GET /api/api-keys
+      apiKeys: mockApiKeys
+    }
+  },
+  methods: {
+    saveSettings() {
+      // 实现保存设置功能
+      console.log('保存设置:', this.settings)
+      alert('设置已保存！')
+    },
+    resetSettings() {
+      if (confirm('确定要重置为默认设置吗？')) {
+        // 重置设置逻辑
+        console.log('重置设置')
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
       }
     },
     createApiKey() {
@@ -503,6 +653,7 @@ export default {
   gap: var(--spacing-lg);
 }
 
+<<<<<<< HEAD
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -531,6 +682,8 @@ export default {
   font-size: 14px;
 }
 
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 .settings-form {
   display: flex;
   flex-direction: column;

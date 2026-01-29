@@ -2,6 +2,7 @@ from .cve_2020_2551_poc import poc as cve_2020_2551_poc
 from .cve_2018_2628_poc import poc as cve_2018_2628_poc
 from .cve_2018_2894_poc import poc as cve_2018_2894_poc
 
+<<<<<<< HEAD
 # 新增 POC 适配器
 def cve_2020_14756_poc(url, timeout=10):
     """
@@ -49,3 +50,6 @@ __all__ = [
     'cve_2020_14756_poc',
     'cve_2023_21839_poc'
 ]
+=======
+__all__ = ['cve_2020_2551_poc', 'cve_2018_2628_poc', 'cve_2018_2894_poc']
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 日志处理模块
 功能：
@@ -19,6 +20,8 @@
     >>> log.info('这是一条测试日志')
     >>> log.reset_name('test_new')  # 重置日志名称
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import os
 import logging
 from pathlib import Path
@@ -46,6 +49,7 @@ ROOT_PATH = CURRENT_PATH.parent
 LOG_PATH = ROOT_PATH / "loginfo" / "log"
 
 class LogHandler(logging.Logger):
+<<<<<<< HEAD
     """
     自定义日志处理器（优化版）
     特性：
@@ -54,11 +58,15 @@ class LogHandler(logging.Logger):
     - 按天自动切割日志文件
     - 支持动态重置日志名称
     """
+=======
+    """自定义日志处理器（优化版）"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     # 类级缓存，实现单例（避免重复创建handler导致日志重复输出）
     _instance_cache = {}
 
     def __new__(cls, name: str, level: int = DEFAULT_LOG_LEVEL, 
                 stream: bool = False, file: bool = True):
+<<<<<<< HEAD
         """
         单例创建，同名日志器仅初始化一次
         :param name: 日志器名称
@@ -66,6 +74,9 @@ class LogHandler(logging.Logger):
         :param stream: 是否输出到控制台（默认False）
         :param file: 是否输出到文件（默认True）
         """
+=======
+        """单例创建，同名日志器仅初始化一次"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         key = (name, level)
         if key not in cls._instance_cache:
             cls._instance_cache[key] = super().__new__(cls)
@@ -73,6 +84,7 @@ class LogHandler(logging.Logger):
 
     def __init__(self, name: str, level: int = DEFAULT_LOG_LEVEL, 
                  stream: bool = False, file: bool = True):
+<<<<<<< HEAD
         """
         初始化日志处理器
         :param name: 日志器名称
@@ -80,6 +92,9 @@ class LogHandler(logging.Logger):
         :param stream: 是否输出到控制台（默认False）
         :param file: 是否输出到文件（默认True）
         """
+=======
+        # 单例防重复初始化
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         if hasattr(self, '_initialized') and self._initialized:
             return
         
@@ -99,6 +114,7 @@ class LogHandler(logging.Logger):
             self._set_file_handler()
 
     def _ensure_log_dir_exists(self) -> None:
+<<<<<<< HEAD
         """
         确保日志目录存在，不存在则创建
         说明：
@@ -106,6 +122,9 @@ class LogHandler(logging.Logger):
             - parents=True：创建多级目录
             - exist_ok=True：目录已存在时不报错
         """
+=======
+        """确保日志目录存在，不存在则创建"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         try:
             LOG_PATH.mkdir(parents=True, exist_ok=True)  # parents=True：创建多级目录；exist_ok=True：已存在不报错
         except PermissionError:
@@ -117,11 +136,14 @@ class LogHandler(logging.Logger):
         """
         创建文件日志处理器（单下划线表示私有方法，避免名称改写）
         :param level: 日志级别，默认使用实例级别
+<<<<<<< HEAD
         说明：
             使用TimedRotatingFileHandler按天切割日志文件
             - when='MIDNIGHT'：午夜触发日志切割
             - interval=1：每天切割一次
             - backupCount=60：保留60天的日志
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         try:
             # 日志文件路径（Path转字符串）
@@ -152,9 +174,12 @@ class LogHandler(logging.Logger):
         """
         创建控制台日志处理器（单下划线私有方法）
         :param level: 日志级别，默认使用实例级别
+<<<<<<< HEAD
         说明：
             将日志输出到标准输出（控制台）
             用于开发调试和实时查看日志
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         stream_handler = logging.StreamHandler()
         # 复用公共日志格式
@@ -167,10 +192,13 @@ class LogHandler(logging.Logger):
         """
         重置日志名称（优化命名+完整资源释放）
         :param new_name: 新的日志名称
+<<<<<<< HEAD
         说明：
             1. 移除并关闭旧文件处理器（释放文件句柄）
             2. 更新日志名称
             3. 重建文件处理器（使用新名称）
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         """
         if not new_name or new_name == self.name:
             return  # 空值/同名不处理

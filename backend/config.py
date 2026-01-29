@@ -1,5 +1,6 @@
 """
 FastAPI 应用配置文件
+<<<<<<< HEAD
 
 使用 Pydantic Settings 管理应用配置，支持从环境变量和 .env 文件加载。
 配置包括：服务器、数据库、日志、扫描、API密钥等。
@@ -19,12 +20,15 @@ FastAPI 应用配置文件
     # 在 .env 文件中覆盖配置
     # APP_NAME=My Custom App
     # DEBUG=True
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 """
 from pydantic_settings import BaseSettings
 from typing import Optional
 
 
 class Settings(BaseSettings):
+<<<<<<< HEAD
     """
     应用配置类
     
@@ -509,6 +513,61 @@ TORTOISE_ORM = {
           - aerich.models: Aerich 迁移模型
         - default_connection: 使用的连接名称
     """
+=======
+    """应用配置类"""
+    
+    # 应用基础配置
+    APP_NAME: str = "WebScan AI Security Platform"
+    APP_VERSION: str = "1.0.0"
+    DEBUG: bool = False
+    
+    # 服务器配置
+    HOST: str = "127.0.0.1"
+    PORT: int = 3000
+    
+    # CORS 配置
+    CORS_ORIGINS: list = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:3000"
+    ]
+    
+    # 数据库配置 - Tortoise-ORM 格式
+    # SQLite: sqlite://./database.db
+    # MySQL: mysql://user:password@host:port/database
+    # PostgreSQL: postgres://user:password@host:port/database
+    # DATABASE_URL: str = "mysql://root:wmYWSY404@localhost:3306/webscan"
+    DATABASE_URL: str = "sqlite://./webscan.db"
+    
+    # 日志配置
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: str = "logs/app.log"
+    
+    # 扫描配置
+    MAX_CONCURRENT_SCANS: int = 5
+    SCAN_TIMEOUT: int = 300
+    
+    # API 密钥配置（可选）
+    API_KEY: Optional[str] = None
+    
+    # AWVS 配置
+    AWVS_API_URL: str = "https://127.0.0.1:3443"
+    # 建议通过环境变量设置 AWVS_API_KEY
+    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c266a8376a6364a69bf946e064f869b09"
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
+
+settings = Settings()
+
+# Tortoise-ORM 配置（用于 Aerich 迁移工具）
+TORTOISE_ORM = {
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     "connections": {
         "default": settings.DATABASE_URL
     },
@@ -519,3 +578,21 @@ TORTOISE_ORM = {
         },
     },
 }
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

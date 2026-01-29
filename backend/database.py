@@ -1,5 +1,6 @@
 """
 数据库连接和会话管理 - 使用 Tortoise-ORM
+<<<<<<< HEAD
 
 提供数据库初始化、连接管理、健康检查等功能。
 支持异步操作，与 FastAPI 集成使用。
@@ -7,12 +8,18 @@
 import os
 from tortoise import Tortoise, connections
 from backend.config import settings
+=======
+"""
+from tortoise import Tortoise, connections
+from config import settings
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 async def init_db():
+<<<<<<< HEAD
     """
     初始化数据库连接
     
@@ -47,10 +54,24 @@ async def init_db():
         logger.info(f"✅ 数据库初始化成功 - {db_url}")
     except Exception as e:
         logger.error(f"❌ 数据库初始化失败: {str(e)}")
+=======
+    """初始化数据库连接"""
+    try:
+        await Tortoise.init(
+            db_url=settings.DATABASE_URL,
+            modules={"models": ["models"]},
+            _create_db=True
+        )
+        await Tortoise.generate_schemas()
+        logger.info("数据库初始化成功")
+    except Exception as e:
+        logger.error(f"数据库初始化失败: {str(e)}")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         raise
 
 
 async def close_db():
+<<<<<<< HEAD
     """
     关闭数据库连接
     
@@ -64,21 +85,34 @@ async def close_db():
         logger.info("✅ 数据库连接已关闭")
     except Exception as e:
         logger.error(f"❌ 关闭数据库连接失败: {str(e)}")
+=======
+    """关闭数据库连接"""
+    try:
+        await Tortoise.close_connections()
+        logger.info("数据库连接已关闭")
+    except Exception as e:
+        logger.error(f"关闭数据库连接失败: {str(e)}")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         raise
 
 
 async def get_db_connection():
+<<<<<<< HEAD
     """
     获取数据库连接
     
     Returns:
         Connection: 默认数据库连接对象
     """
+=======
+    """获取数据库连接"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     conn = connections.get("default")
     return conn
 
 
 async def health_check():
+<<<<<<< HEAD
     """
     数据库健康检查
     
@@ -87,10 +121,17 @@ async def health_check():
     Returns:
         bool: True表示健康，False表示异常
     """
+=======
+    """数据库健康检查"""
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     try:
         conn = connections.get("default")
         await conn.execute_query("SELECT 1")
         return True
     except Exception as e:
+<<<<<<< HEAD
         logger.error(f"❌ 数据库健康检查失败: {str(e)}")
+=======
+        logger.error(f"数据库健康检查失败: {str(e)}")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         return False

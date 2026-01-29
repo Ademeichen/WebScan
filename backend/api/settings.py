@@ -1,5 +1,6 @@
 """
 系统设置相关的 API 路由
+<<<<<<< HEAD
 
 提供系统配置管理、系统信息查询、统计数据等功能。
 所有设置通过数据库持久化，支持动态配置管理。
@@ -15,12 +16,23 @@ import json
 from tortoise.functions import Count
 from tortoise.expressions import Q
 from backend.models import Task, Vulnerability, SystemSettings, Report, SystemLog, POCScanResult, AIChatInstance
+=======
+"""
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
+from datetime import datetime, timedelta
+import logging
+from tortoise.functions import Count
+from models import Task, Vulnerability
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
+<<<<<<< HEAD
 # ====================== 请求/响应模型 ======================
 
 class APIResponse(BaseModel):
@@ -157,10 +169,20 @@ def get_value_type(value: Any) -> str:
 
 # ====================== 路由定义 ======================
 
+=======
+# 响应模型
+class APIResponse(BaseModel):
+    code: int
+    message: str
+    data: Optional[Any] = None
+
+
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 @router.get("/", response_model=APIResponse)
 async def get_settings():
     """
     获取系统设置
+<<<<<<< HEAD
     
     从数据库读取系统配置，如果数据库中没有配置则返回默认值。
     设置分为以下分类：
@@ -174,6 +196,33 @@ async def get_settings():
     """
     try:
         settings_data = await get_settings_from_db()
+=======
+    """
+    try:
+        # TODO: 从数据库或配置文件读取实际设置
+        settings_data = {
+            "general": {
+                "systemName": "WebScan AI",
+                "language": "zh-CN",
+                "timezone": "Asia/Shanghai",
+                "autoUpdate": True
+            },
+            "scan": {
+                "defaultDepth": "2",
+                "defaultConcurrency": 5,
+                "requestTimeout": 30
+            },
+            "notification": {
+                "emailEnabled": False,
+                "smtpServer": "",
+                "events": ["high-vulnerability"]
+            },
+            "security": {
+                "sessionTimeout": 120,
+                "requireHttps": True
+            }
+        }
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         
         return APIResponse(
             code=200,
@@ -185,6 +234,7 @@ async def get_settings():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+<<<<<<< HEAD
 @router.put("/", response_model=APIResponse)
 async def update_settings(request: SettingsUpdateRequest):
     """
@@ -247,17 +297,34 @@ async def update_settings(request: SettingsUpdateRequest):
             settings_data["security"].update(request.security)
         
         logger.info(f"更新系统设置成功: {request.dict(exclude_none=True)}")
+=======
+
+
+@router.put("/", response_model=APIResponse)
+async def update_settings(settings: Dict[str, Any]):
+    """
+    更新系统设置
+    """
+    try:
+        # TODO: 将设置保存到数据库或配置文件
+        logger.info(f"更新系统设置: {settings}")
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         
         return APIResponse(
             code=200,
             message="更新成功",
+<<<<<<< HEAD
             data=settings_data
+=======
+            data=settings
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         )
     except Exception as e:
         logger.error(f"更新系统设置失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
+<<<<<<< HEAD
 @router.get("/item/{category}/{key}", response_model=APIResponse)
 async def get_setting_item(category: str, key: str):
     """
@@ -371,10 +438,13 @@ async def delete_setting_item(category: str, key: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 @router.get("/system-info", response_model=APIResponse)
 async def get_system_info():
     """
     获取系统信息
+<<<<<<< HEAD
     
     返回服务器运行状态、资源使用情况等系统信息。
     
@@ -432,6 +502,16 @@ async def get_system_info():
             "network": {
                 "connections": len(psutil.net_connections())
             }
+=======
+    """
+    try:
+        system_info = {
+            "version": "1.0.0",
+            "uptime": "2天 3小时 45分钟",
+            "cpuUsage": "25%",
+            "memoryUsage": "45%",
+            "diskUsage": "60%"
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         }
         
         return APIResponse(
@@ -448,6 +528,7 @@ async def get_system_info():
 async def get_statistics(period: int = 7):
     """
     获取统计信息
+<<<<<<< HEAD
     
     返回扫描任务、漏洞发现、系统运行等统计数据。
     
@@ -467,11 +548,23 @@ async def get_statistics(period: int = 7):
             created_at__gte=today_start
         ).count()
         
+=======
+    """
+    try:
+        # 1. 今日扫描任务
+        today = datetime.now().date()
+        today_scans = await Task.filter(
+            created_at__gte=datetime.combine(today, datetime.min.time())
+        ).count()
+        
+        # 2. 未修复高危漏洞 (Critical + High)
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         high_risk_vulns = await Vulnerability.filter(
             severity__in=['Critical', 'High'],
             status='open'
         ).count()
         
+<<<<<<< HEAD
         completed_scans = await Task.filter(status='completed').count()
         
         failed_scans = await Task.filter(status='failed').count()
@@ -482,16 +575,28 @@ async def get_statistics(period: int = 7):
         
         total_chats = await AIChatInstance.all().count()
         
+=======
+        # 3. 已完成扫描
+        completed_scans = await Task.filter(status='completed').count()
+        
+        # 4. 趋势数据
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         trend_data = []
         for i in range(period - 1, -1, -1):
             date = today - timedelta(days=i)
             next_date = date + timedelta(days=1)
             
+<<<<<<< HEAD
             daily_vulns = await Vulnerability.filter(
+=======
+            # Count vulns created on this day
+            daily_counts = await Vulnerability.filter(
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                 created_at__gte=datetime.combine(date, datetime.min.time()),
                 created_at__lt=datetime.combine(next_date, datetime.min.time())
             ).group_by('severity').annotate(count=Count('id')).values('severity', 'count')
             
+<<<<<<< HEAD
             daily_scans_count = await Task.filter(
                 created_at__gte=datetime.combine(date, datetime.min.time()),
                 created_at__lt=datetime.combine(next_date, datetime.min.time())
@@ -510,10 +615,24 @@ async def get_statistics(period: int = 7):
                 sev = str(item['severity']).lower()
                 if sev == 'critical':
                     day_stats['high'] += item['count']
+=======
+            day_stats = {
+                'date': date.strftime("%m/%d"),
+                'high': 0,
+                'medium': 0,
+                'low': 0
+            }
+            
+            for item in daily_counts:
+                sev = str(item['severity']).lower()
+                if sev == 'critical':
+                    day_stats['high'] += item['count'] # Merge critical into high for chart compatibility
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
                 elif sev in day_stats:
                     day_stats[sev] += item['count']
             
             trend_data.append(day_stats)
+<<<<<<< HEAD
         
         severity_stats = await Vulnerability.all().group_by('severity').annotate(
             count=Count('id')
@@ -551,12 +670,16 @@ async def get_statistics(period: int = 7):
                 'time': log['created_at'].strftime("%Y-%m-%d %H:%M:%S")
             })
         
+=======
+            
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
         return APIResponse(
             code=200,
             message="获取成功",
             data={
                 "today_scans": today_scans,
                 "high_risk_vulns": high_risk_vulns,
+<<<<<<< HEAD
                 "completed_scans": completed_scans,
                 "failed_scans": failed_scans,
                 "total_vulns": total_vulns,
@@ -567,11 +690,17 @@ async def get_statistics(period: int = 7):
                 "severity_distribution": severity_distribution,
                 "task_status_distribution": task_status_distribution,
                 "recent_logs": recent_logs_list
+=======
+                "weekly_trend": 0,
+                "completed_scans": completed_scans,
+                "trend_data": trend_data
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
             }
         )
     except Exception as e:
         logger.error(f"获取统计数据失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+<<<<<<< HEAD
 
 
 @router.get("/categories", response_model=APIResponse)
@@ -730,3 +859,5 @@ async def reset_category_settings(category: str):
     except Exception as e:
         logger.error(f"重置分类设置失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15

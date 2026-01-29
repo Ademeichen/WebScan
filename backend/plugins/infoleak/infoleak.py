@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+<<<<<<< HEAD
 """
 信息泄露扫描模块
 功能：
@@ -26,6 +27,8 @@
      ('config', 'https://www.www.baidu.com/config.php'),
      ...]
 """
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 import json
 import logging
 import os
