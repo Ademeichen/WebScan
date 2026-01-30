@@ -1,6 +1,6 @@
 """
 扫描功能相关的 API 路由
-整合原有的 backend.plugins 功能模块，统一使用异步任务执行
+整合原有的 backend.plugins 功能模块,统一使用异步任务执行
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -44,7 +44,7 @@ class APIResponse(BaseModel):
     data: Optional[Any] = None
 
 
-# ==================== 端口扫描 ====================
+# ====== 端口扫描 ======
 @router.post("/port-scan", response_model=APIResponse)
 async def port_scan(request: PortScanRequest):
     """
@@ -80,7 +80,7 @@ async def port_scan(request: PortScanRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 信息泄露检测 ====================
+# ====== 信息泄露检测 ======
 @router.post("/info-leak", response_model=APIResponse)
 async def info_leak(request: URLRequest):
     """
@@ -117,7 +117,7 @@ async def info_leak(request: URLRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 旁站扫描 ====================
+# ====== 旁站扫描 ======
 @router.post("/web-side", response_model=APIResponse)
 async def web_side_scan(request: IPRequest):
     """
@@ -153,7 +153,7 @@ async def web_side_scan(request: IPRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 网站基本信息 ====================
+# ====== 网站基本信息 ======
 @router.post("/baseinfo", response_model=APIResponse)
 async def get_base_info(request: URLRequest):
     """
@@ -190,7 +190,7 @@ async def get_base_info(request: URLRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 网站权重 ====================
+# ====== 网站权重 ======
 @router.post("/web-weight", response_model=APIResponse)
 async def get_web_weight(request: URLRequest):
     """
@@ -227,7 +227,7 @@ async def get_web_weight(request: URLRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== IP定位 ====================
+# ====== IP定位 ======
 @router.post("/ip-locating", response_model=APIResponse)
 async def ip_locating(request: IPRequest):
     """
@@ -263,7 +263,7 @@ async def ip_locating(request: IPRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== CDN检测 ====================
+# ====== CDN检测 ======
 @router.post("/cdn-check", response_model=APIResponse)
 async def cdn_check(request: URLRequest):
     """
@@ -300,7 +300,7 @@ async def cdn_check(request: URLRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== WAF检测 ====================
+# ====== WAF检测 ======
 @router.post("/waf-check", response_model=APIResponse)
 async def waf_check(request: URLRequest):
     """
@@ -337,7 +337,7 @@ async def waf_check(request: URLRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== CMS指纹识别 ====================
+# ====== CMS指纹识别 ======
 @router.post("/what-cms", response_model=APIResponse)
 async def what_cms(request: URLRequest):
     """
@@ -374,7 +374,7 @@ async def what_cms(request: URLRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 子域名扫描 ====================
+# ====== 子域名扫描 ======
 @router.post("/subdomain", response_model=APIResponse)
 async def subdomain_scan(request: SubdomainRequest):
     """
@@ -408,7 +408,7 @@ async def subdomain_scan(request: SubdomainRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 目录扫描 ====================
+# ====== 目录扫描 ======
 @router.post("/dir-scan", response_model=APIResponse)
 async def dir_scan(request: URLRequest):
     """
@@ -445,7 +445,7 @@ async def dir_scan(request: URLRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 综合扫描 ====================
+# ====== 综合扫描 ======
 @router.post("/comprehensive", response_model=APIResponse)
 async def comprehensive_scan(request: URLRequest):
     """

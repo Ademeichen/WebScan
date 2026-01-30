@@ -4,6 +4,9 @@
 添加环境感知、代码生成和功能补充节点到AI Agent系统。
 """
 import logging
+from typing import Dict, Any, Optional
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
 
 from ..core.state import AgentState
 from ..code_execution.environment import EnvironmentAwareness
@@ -19,7 +22,7 @@ class EnvironmentAwarenessNode:
     """
     环境感知节点
     
-    负责收集和分析环境信息，为后续决策提供依据。
+    负责收集和分析环境信息,为后续决策提供依据。
     """
     
     def __init__(self):
@@ -83,7 +86,7 @@ class CodeGenerationNode:
             target = state.target
             
             if not state.target_context.get("need_custom_scan"):
-                logger.info(f"[{state.task_id}] ⏭️ 无需自定义扫描，跳过代码生成")
+                logger.info(f"[{state.task_id}] ⏭️ 无需自定义扫描,跳过代码生成")
                 return state
             
             scan_type = state.target_context.get("custom_scan_type", "vuln_scan")
@@ -135,14 +138,14 @@ class CapabilityEnhancementNode:
         
         try:
             if not state.target_context.get("need_capability_enhancement"):
-                logger.info(f"[{state.task_id}] ⏭️ 无需功能补充，跳过")
+                logger.info(f"[{state.task_id}] ⏭️ 无需功能补充,跳过")
                 return state
             
             requirement = state.target_context.get("capability_requirement", "")
             target = state.target
             
             if not requirement:
-                logger.warning(f"[{state.task_id}] ⚠️ 未指定功能需求，跳过功能补充")
+                logger.warning(f"[{state.task_id}] ⚠️ 未指定功能需求,跳过功能补充")
                 return state
             
             enhance_result = await self.capability_enhancer.enhance_capability(
@@ -191,7 +194,7 @@ class CodeExecutionNode:
         
         try:
             if not state.target_context.get("generated_code"):
-                logger.info(f"[{state.task_id}] ⏭️ 无代码可执行，跳过")
+                logger.info(f"[{state.task_id}] ⏭️ 无代码可执行,跳过")
                 return state
             
             generated_code = state.target_context["generated_code"]
@@ -224,7 +227,7 @@ class IntelligentDecisionNode:
     """
     智能决策节点
     
-    基于环境信息和扫描结果，智能决定下一步操作。
+    基于环境信息和扫描结果,智能决定下一步操作。
     """
     
     def __init__(self):
@@ -279,9 +282,9 @@ class IntelligentDecisionNode:
             # 基于网络状态决策
             network_info = env_info["network_info"]
             if network_info.get("proxy_detected"):
-                decisions.append("检测到代理，调整扫描策略")
+                decisions.append("检测到代理,调整扫描策略")
             if network_info.get("firewall_detected"):
-                decisions.append("检测到防火墙，降低扫描速度")
+                decisions.append("检测到防火墙,降低扫描速度")
             
             state.update_context("intelligent_decisions", decisions)
             

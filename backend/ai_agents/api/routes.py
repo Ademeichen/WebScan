@@ -30,9 +30,9 @@ class AgentScanRequest(BaseModel):
     Agent扫描请求模型
     
     Attributes:
-        target: 扫描目标（URL/IP）
+        target: 扫描目标(URL/IP)
         enable_llm_planning: 是否启用LLM增强规划
-        custom_tasks: 自定义任务列表（可选）
+        custom_tasks: 自定义任务列表(可选)
         need_custom_scan: 是否需要自定义扫描
         custom_scan_type: 自定义扫描类型
         custom_scan_requirements: 自定义扫描需求
@@ -148,7 +148,7 @@ async def start_agent_scan(
             task_id=task_id
         )
         
-        # 如果有自定义任务，使用自定义任务
+        # 如果有自定义任务,使用自定义任务
         if request.custom_tasks:
             initial_state.planned_tasks = request.custom_tasks.copy()
         
@@ -334,12 +334,12 @@ async def list_agent_tasks(
     """
     获取Agent任务列表
     
-    支持按状态和类型过滤，以及分页查询。
+    支持按状态和类型过滤,以及分页查询。
     
     Args:
         status: 按任务状态过滤
         task_type: 按任务类型过滤
-        page: 页码，从1开始
+        page: 页码,从1开始
         page_size: 每页数量
         
     Returns:
@@ -444,7 +444,7 @@ async def list_tools(category: Optional[str] = None) -> Dict[str, Any]:
     列出所有已注册的扫描工具。
     
     Args:
-        category: 按分类过滤（plugin/poc/general）
+        category: 按分类过滤(plugin/poc/general)
         
     Returns:
         Dict: 工具列表
@@ -551,7 +551,7 @@ async def generate_code(request: CodeGenerationRequest) -> Dict[str, Any]:
             additional_params=request.additional_params
         )
         
-        logger.info("✅ 代码生成完成")
+
         return {
             "status": "success",
             "data": result.to_dict()
@@ -623,7 +623,7 @@ async def generate_and_execute_code(request: CodeGenerationRequest) -> Dict[str,
             additional_params=request.additional_params
         )
         
-        logger.info("✅ 生成并执行代码完成")
+
         return {
             "status": "success",
             "data": result
@@ -658,7 +658,7 @@ async def enhance_capability(request: CapabilityEnhancementRequest) -> Dict[str,
             capability_name=request.capability_name
         )
         
-        logger.info("✅ 功能增强完成")
+
         return {
             "status": "success",
             "data": result

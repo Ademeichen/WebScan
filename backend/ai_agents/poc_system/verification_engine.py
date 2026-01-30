@@ -1,18 +1,20 @@
 """
 POC 验证执行引擎
 
-负责 POC 验证的核心执行逻辑，包括多线程并发执行、资源限制管理、超时控制、错误重试机制等。
+负责 POC 验证的核心执行逻辑,包括多线程并发执行、资源限制管理、超时控制、错误重试机制等。
 """
 import logging
 import asyncio
-from typing import Dict, List, Any, Optional
 from datetime import datetime
 from dataclasses import dataclass
+from typing import List, Optional, Dict, Any
+
 
 from backend.config import settings
 from backend.models import POCVerificationTask, POCVerificationResult, POCExecutionLog
 from backend.ai_agents.poc_system.poc_manager import poc_manager
-from backend.Pocsuite3Agent.agent import Pocsuite3Agent, POCResult
+from backend.Pocsuite3Agent.agent import POCResult, Pocsuite3Agent
+
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,7 @@ class VerificationEngine:
     """
     POC 验证执行引擎类
     
-    负责管理 POC 验证任务的执行，包括：
+    负责管理 POC 验证任务的执行,包括:
     - 多线程并发执行
     - 资源限制管理
     - 超时控制
@@ -188,12 +190,12 @@ class VerificationEngine:
         
         Args:
             verification_tasks: POC 验证任务列表
-            max_concurrent: 最大并发数，None 则使用配置值
+            max_concurrent: 最大并发数,None 则使用配置值
             
         Returns:
             List[POCVerificationResult]: 验证结果列表
         """
-        logger.info(f"🚀 开始批量 POC 验证，任务数: {len(verification_tasks)}")
+        logger.info(f"🚀 开始批量 POC 验证,任务数: {len(verification_tasks)}")
         
         concurrent_limit = max_concurrent or settings.POC_MAX_CONCURRENT_EXECUTIONS
         semaphore = asyncio.Semaphore(concurrent_limit)
@@ -213,7 +215,7 @@ class VerificationEngine:
             if isinstance(result, Exception):
                 logger.error(f"❌ 任务 {verification_tasks[i].poc_name} 执行异常: {str(result)}")
         
-        logger.info(f"✅ 批量 POC 验证完成，成功: {len(results)}")
+        logger.info(f"✅ 批量 POC 验证完成,成功: {len(results)}")
         
         return [r for r in results if isinstance(r, POCVerificationResult)]
     
@@ -246,7 +248,7 @@ class VerificationEngine:
                 else:
                     logger.warning(f"[{config.poc_id}] ⚠️ POC 验证未发现漏洞: {result.message}")
                     
-                    # 如果不是最后一次尝试，继续重试
+                    # 如果不是最后一次尝试,继续重试
                     if attempt < config.max_retries - 1:
                         await asyncio.sleep(2 ** attempt)
                         continue
@@ -256,7 +258,7 @@ class VerificationEngine:
             except Exception as e:
                 logger.error(f"[{config.poc_id}] ❌ POC 执行异常 (第 {attempt + 1} 次): {str(e)}")
                 
-                # 如果不是最后一次尝试，继续重试
+                # 如果不是最后一次尝试,继续重试
                 if attempt < config.max_retries - 1:
                     await asyncio.sleep(2 ** attempt)
                     continue
@@ -446,7 +448,7 @@ class VerificationEngine:
             poc_result: POC 执行结果
             
         Returns:
-            float: 置信度（0-1）
+            float: 置信度(0-1)
         """
         confidence = 0.5
         
@@ -472,7 +474,7 @@ class VerificationEngine:
             poc_result: POC 执行结果
             
         Returns:
-            str: 严重度（critical, high, medium, low, info）
+            str: 严重度(critical, high, medium, low, info)
         """
         if poc_result.vulnerable:
             return "high"
@@ -489,7 +491,7 @@ class VerificationEngine:
             poc_result: POC 执行结果
             
         Returns:
-            float: CVSS 评分（0-10）
+            float: CVSS 评分(0-10)
         """
         if poc_result.vulnerable:
             return 7.5
@@ -528,7 +530,7 @@ class VerificationEngine:
                 }
             )
             
-            # 如果有 POC 执行结果，记录执行日志
+            # 如果有 POC 执行结果,记录执行日志
             if poc_result:
                 await POCExecutionLog.create(
                     verification_result=result,
@@ -541,7 +543,7 @@ class VerificationEngine:
                     }
                 )
             
-            # 如果有错误，记录错误日志
+            # 如果有错误,记录错误日志
             if error:
                 await POCExecutionLog.create(
                     verification_result=result,

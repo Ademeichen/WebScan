@@ -1,21 +1,24 @@
 # -*- coding:utf-8 -*-
+
 """
 CDN检测模块
-功能：
-1. 检测目标主机是否使用CDN（通过IP段匹配和ASN匹配）
+功能:
+1. 检测目标主机是否使用CDN(通过IP段匹配和ASN匹配)
 2. 支持URL、域名、IP地址作为输入
 3. 使用GeoIP2数据库进行ASN查询
-4. 预编译CDN网段，提升检测性能
+4. 预编译CDN网段,提升检测性能
 
-依赖：
+依赖:
 - geoip2: 用于查询IP的ASN信息
 - ipaddress: 用于IP地址和网段处理
 
-使用示例：
+使用示例:
     >>> from backend.plugins.cdnexist.cdnexist import is_cdn
     >>> result = is_cdn("https://www.baidu.com")
     >>> print(result)  # True or False
 """
+
+
 import logging
 import socket
 import ipaddress
@@ -25,7 +28,7 @@ from pathlib import Path
 import geoip2.database
 from geoip2.errors import AddressNotFoundError, GeoIP2Error
 
-# 配置日志（统一管理日志输出）
+# 配置日志(统一管理日志输出)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -33,8 +36,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ======================== 可配置常量（便于维护） ========================
-# 国内外常见CDN IP段（CIDR格式）
+# === 可配置常量(便于维护) ===
+# 国内外常见CDN IP段(CIDR格式)
 CDN_CIDR_LIST = [
     '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18',
     '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22', '198.41.128.0/17',
@@ -97,34 +100,38 @@ CDN_ASN_LIST = [
     '395747', '394536', '209242', '203898', '202623', '14789', '133877', '13335', '132892'
 ]
 
-# GeoIP2数据库路径配置（支持相对/绝对路径）
+# GeoIP2数据库路径配置(支持相对/绝对路径)
 GEOIP2_ASN_DB_PATH = Path(__file__).parent.parent.parent / "database" / "GeoLite2-ASN.mmdb"
 
-# ======================== 缓存初始化（提升性能） ========================
-# 预编译CDN网段为ip_network对象，避免每次调用重复解析
+# === 缓存初始化(提升性能) ===
+# 预编译CDN网段为ip_network对象,避免每次调用重复解析
 try:
     CDN_NETWORKS = [ipaddress.ip_network(cidr, strict=False) for cidr in CDN_CIDR_LIST]
-    print(f"CDN_NETWORKS: {CDN_NETWORKS}")
+
+
 except ValueError as e:
-    logger.error(f"CDN网段解析失败：{e}")
+    logger.error(f"CDN网段解析失败:{e}")
     CDN_NETWORKS = []
 
-# ======================== 核心工具函数 ========================
+# === 核心工具函数 ===
 def parse_host_to_ip(host: str) -> Optional[str]:
     """
-    将URL/域名解析为IPv4地址（优化版）
+    将URL/域名解析为IPv4地址(优化版)
     :param host: URL/域名/IP
     :return: 第一个有效IPv4地址 | None
-    说明：
-        1. 若输入已是合法IPv4，直接返回
+
+    说明:
+        1. 若输入已是合法IPv4,直接返回
         2. 否则尝试提取域名并解析为IP
-        3. 支持多种URL格式（http/https）
-        4. 设置1秒超时，避免长时间阻塞
+        3. 支持多种URL格式(http/https)
+        4. 设置1秒超时,避免长时间阻塞
+
     """
-    # 1. 若已是合法IPv4，直接返回，校验IPv4格式
+    # 1. 若已是合法IPv4,直接返回,校验IPv4格式
     try:
         ip_obj = ipaddress.IPv4Address(host.strip())
-        print(f"IPv4地址 {ip_obj} 格式校验通过")
+
+
         return str(ip_obj)
     except ipaddress.AddressValueError:
         pass
@@ -138,37 +145,37 @@ def parse_host_to_ip(host: str) -> Optional[str]:
             logger.warning(f"无法从{host}提取域名")
             return None
     except ImportError:
-        logger.error("未找到get_domain函数，使用简单域名提取逻辑")
-        # 简单降级：提取//后的第一个/前的内容
+        logger.error("未找到get_domain函数,使用简单域名提取逻辑")
+        # 简单降级:提取//后的第一个/前的内容
         if "://" in host:
             domain = host.split("://")[1].split("/")[0]
         else:
             domain = host.split("/")[0]
 
-    # 3. 解析域名到IP（支持超时+多IP）
+    # 3. 解析域名到IP(支持超时+多IP)
     socket.setdefaulttimeout(1)
     try:
-        # getaddrinfo支持IPv4/IPv6，优先取IPv4
+        # getaddrinfo支持IPv4/IPv6,优先取IPv4
         addrs = socket.getaddrinfo(domain, None, socket.AF_INET)
         if addrs:
             return addrs[0][4][0]  # 返回第一个IPv4地址
     except socket.gaierror as e:
-        logger.error(f"域名{domain}解析失败：{e}")
+        logger.error(f"域名{domain}解析失败:{e}")
     except Exception as e:
-        logger.error(f"域名{domain}解析异常：{e}")
+        logger.error(f"域名{domain}解析异常:{e}")
     return None
 
 def check_ip_in_cdn_networks(ip: str) -> bool:
     """
-    检查IP是否在CDN网段中（优化性能）
+    检查IP是否在CDN网段中(优化性能)
     :param ip: IPv4地址
     :return: True/False
     """
     try:
         ip_obj = ipaddress.IPv4Address(ip.strip())
-        
 
-        # 遍历预编译的网段，匹配到立即返回
+
+        # 遍历预编译的网段,匹配到立即返回
         for network in CDN_NETWORKS:
             if ip_obj in network:
                 return True
@@ -185,7 +192,7 @@ def check_ip_asn_in_cdn_list(ip: str) -> bool:
     """
     # 检查数据库文件是否存在
     if not GEOIP2_ASN_DB_PATH.exists():
-        logger.error(f"GeoIP2数据库文件不存在：{GEOIP2_ASN_DB_PATH}")
+        logger.error(f"GeoIP2数据库文件不存在:{GEOIP2_ASN_DB_PATH}")
         return False
 
     try:
@@ -198,17 +205,17 @@ def check_ip_asn_in_cdn_list(ip: str) -> bool:
     except AddressNotFoundError:
         logger.warning(f"IP {ip} 未在GeoIP2数据库中找到ASN信息")
     except GeoIP2Error as e:
-        logger.error(f"GeoIP2数据库读取失败：{e}")
+        logger.error(f"GeoIP2数据库读取失败:{e}")
     except Exception as e:
-        logger.error(f"查询IP {ip} ASN异常：{e}")
+        logger.error(f"查询IP {ip} ASN异常:{e}")
     return False
 
-# ======================== 核心校验函数 ========================
+# === 核心校验函数 ===
 def is_cdn(host: Union[str, None]) -> Union[bool, str]:
     """
-    判断目标主机是否使用CDN（统一返回值+优化逻辑）
+    判断目标主机是否使用CDN(统一返回值+优化逻辑)
     :param host: URL/域名/IPv4地址
-    :return: True（有CDN）| False（无CDN）| 错误信息字符串
+    :return: True(有CDN)| False(无CDN)| 错误信息字符串
     """
     # 输入校验
     if not host or not isinstance(host, str):
@@ -225,43 +232,43 @@ def is_cdn(host: Union[str, None]) -> Union[bool, str]:
     # 解析主机到IP
     ip = parse_host_to_ip(host)
     if not ip:
-        error_msg = "目标站点不可访问（解析IP失败）"
+        error_msg = "目标站点不可访问(解析IP失败)"
         logger.error(error_msg)
         return error_msg
 
-    # 维度1：IP段匹配（匹配到直接返回True，无需查ASN）
+    # 维度1:IP段匹配(匹配到直接返回True,无需查ASN)
     if check_ip_in_cdn_networks(ip):
-        logger.info(f"IP {ip} 匹配CDN网段，判定为使用CDN")
+        logger.info(f"IP {ip} 匹配CDN网段,判定为使用CDN")
         return True
 
-    # 维度2：ASN匹配
+    # 维度2:ASN匹配
     if check_ip_asn_in_cdn_list(ip):
-        logger.info(f"IP {ip} ASN匹配CDN列表，判定为使用CDN")
+        logger.info(f"IP {ip} ASN匹配CDN列表,判定为使用CDN")
         return True
 
     # 无匹配
-    logger.info(f"IP {ip} 未匹配CDN网段/ASN，判定为无CDN")
+    logger.info(f"IP {ip} 未匹配CDN网段/ASN,判定为无CDN")
     return False
 
-# ======================== 兼容函数 ========================
+# === 兼容函数 ===
 def iscdn(host: Union[str, None]) -> Union[bool, str]:
     """
-    兼容函数：判断目标主机是否使用CDN
+    兼容函数:判断目标主机是否使用CDN
     :param host: URL/域名/IPv4地址
-    :return: True（有CDN）| False（无CDN）| 错误信息字符串
+    :return: True(有CDN)| False(无CDN)| 错误信息字符串
     """
     return is_cdn(host)
 
-# ======================== 测试入口 ========================
+# === 测试入口 ===
 if __name__ == '__main__':
-    # 测试用例1：无CDN的域名/IP
+    # 测试用例1:无CDN的域名/IP
     test_host1 = "https://jwt1399.top/"
-    print(f"测试1 {test_host1} 是否使用CDN：{is_cdn(test_host1)}")
+    print(f"测试1 {test_host1} 是否使用CDN:{is_cdn(test_host1)}")
 
-    # 测试用例2：使用CDN的域名（如百度）
+    # 测试用例2:使用CDN的域名(如百度)
     test_host2 = "https://www.baidu.com/"
-    print(f"测试2 {test_host2} 是否使用CDN：{is_cdn(test_host2)}")
+    print(f"测试2 {test_host2} 是否使用CDN:{is_cdn(test_host2)}")
 
-    # 测试用例3：直接输入CDN IP
+    # 测试用例3:直接输入CDN IP
     test_host3 = "180.101.50.188"  # 百度CDN IP
-    print(f"测试3 {test_host3} 是否使用CDN：{is_cdn(test_host3)}")
+    print(f"测试3 {test_host3} 是否使用CDN:{is_cdn(test_host3)}")

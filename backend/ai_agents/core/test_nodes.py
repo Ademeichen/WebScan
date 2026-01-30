@@ -1,12 +1,10 @@
 """
 节点单元测试
 
-测试所有10个节点（原有5个 + 新增5个）的功能和异常处理。
+测试所有10个节点(原有5个 + 新增5个)的功能和异常处理。
 """
 import unittest
-from unittest.mock import Mock, patch
 
-import sys
 from pathlib import Path
 
 # 统一导入路径配置
@@ -291,7 +289,7 @@ class TestReportGenerationNode(unittest.TestCase):
 
 
 class TestEnvironmentAwarenessNode(unittest.TestCase):
-    """环境感知节点测试（新增）"""
+    """环境感知节点测试(新增)"""
     
     def setUp(self):
         self.node = EnvironmentAwarenessNode()
@@ -342,7 +340,7 @@ class TestEnvironmentAwarenessNode(unittest.TestCase):
 
 
 class TestCodeGenerationNode(unittest.TestCase):
-    """代码生成节点测试（新增）"""
+    """代码生成节点测试(新增)"""
     
     def setUp(self):
         self.node = CodeGenerationNode()
@@ -400,7 +398,7 @@ class TestCodeGenerationNode(unittest.TestCase):
 
 
 class TestCapabilityEnhancementNode(unittest.TestCase):
-    """功能补充节点测试（新增）"""
+    """功能补充节点测试(新增)"""
     
     def setUp(self):
         self.node = CapabilityEnhancementNode()
@@ -454,7 +452,7 @@ class TestCapabilityEnhancementNode(unittest.TestCase):
 
 
 class TestCodeExecutionNode(unittest.TestCase):
-    """代码执行节点测试（新增）"""
+    """代码执行节点测试(新增)"""
     
     def setUp(self):
         self.node = CodeExecutionNode()
@@ -527,7 +525,7 @@ class TestCodeExecutionNode(unittest.TestCase):
 
 
 class TestIntelligentDecisionNode(unittest.TestCase):
-    """智能决策节点测试（新增）"""
+    """智能决策节点测试(新增)"""
     
     def setUp(self):
         self.node = IntelligentDecisionNode()
@@ -639,8 +637,8 @@ class TestIntelligentDecisionNode(unittest.TestCase):
             state = await self.node(self.state)
             
             decisions = state.target_context["intelligent_decisions"]
-            self.assertIn("检测到代理，调整扫描策略", decisions)
-            self.assertIn("检测到防火墙，降低扫描速度", decisions)
+            self.assertIn("检测到代理,调整扫描策略", decisions)
+            self.assertIn("检测到防火墙,降低扫描速度", decisions)
 
 
 def run_tests():
@@ -664,7 +662,7 @@ def run_tests():
     result = runner.run(suite)
     
     print(f"\n{'='*60}")
-    print("节点单元测试结果:")
+
     print(f"  运行测试: {result.testsRun}")
     print(f"  成功: {result.testsRun - len(result.failures) - len(result.errors)}")
     print(f"  失败: {len(result.failures)}")

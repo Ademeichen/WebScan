@@ -1,14 +1,14 @@
 """
 FastAPI 主应用入口文件
 
-本文件是 WebScan AI Security Platform 的主入口，负责：
+本文件是 WebScan AI Security Platform 的主入口,负责:
 - 创建和配置 FastAPI 应用实例
 - 设置 CORS 中间件
 - 注册 API 路由
 - 配置日志系统
-- 管理应用生命周期（启动/关闭）
+- 管理应用生命周期(启动/关闭)
 - 初始化数据库连接
-- 验证外部服务连接（如 AWVS）
+- 验证外部服务连接(如 AWVS)
 - 启动后台任务
 """
 import sys
@@ -29,7 +29,6 @@ from backend.config import settings
 from backend.database import init_db, close_db
 import logging
 
-
 # 创建必要的目录
 Path("logs").mkdir(exist_ok=True)
 Path("data").mkdir(exist_ok=True)
@@ -39,7 +38,7 @@ logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(settings.LOG_FILE),
+        logging.FileHandler(settings.LOG_FILE, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -51,13 +50,13 @@ async def lifespan(app: FastAPI):
     """
     应用生命周期管理
     
-    管理应用的启动和关闭流程：
-    启动时：
+    管理应用的启动和关闭流程:
+    启动时:
     - 初始化数据库连接
     - 验证 AWVS API 连接
     - 启动后台数据同步任务
     
-    关闭时：
+    关闭时:
     - 关闭数据库连接
     - 清理资源
     
@@ -117,7 +116,7 @@ async def root():
     """
     根路径
     
-    返回 API 基本信息，用于验证服务是否正常运行。
+    返回 API 基本信息,用于验证服务是否正常运行。
     
     Returns:
         Dict: 包含欢迎消息、版本号和状态的响应
@@ -142,7 +141,7 @@ async def health_check():
     """
     健康检查端点
     
-    用于监控服务健康状态，负载均衡器和容器编排系统可以定期调用此端点。
+    用于监控服务健康状态,负载均衡器和容器编排系统可以定期调用此端点。
     
     Returns:
         Dict: 包含健康状态的响应
@@ -159,8 +158,8 @@ async def global_exception_handler(request, exc):
     """
     全局异常处理器
     
-    捕获所有未处理的异常，统一返回错误响应。
-    在生产环境中，不会返回详细的错误信息以避免泄露敏感信息。
+    捕获所有未处理的异常,统一返回错误响应。
+    在生产环境中,不会返回详细的错误信息以避免泄露敏感信息。
     
     Args:
         request: 请求对象

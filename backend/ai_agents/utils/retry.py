@@ -1,10 +1,11 @@
 """
 重试策略
 
-实现多种重试策略，包括指数退避、固定间隔等。
+实现多种重试策略,包括指数退避、固定间隔等。
 """
 import asyncio
 import logging
+
 from typing import Callable, Any, Optional
 from functools import wraps
 
@@ -47,7 +48,7 @@ class ExponentialBackoffRetry(RetryStrategy):
     """
     指数退避重试策略
     
-    每次重试的等待时间按指数增长，避免频繁重试。
+    每次重试的等待时间按指数增长,避免频繁重试。
     """
     
     def __init__(self, base_delay: float = 1.0, max_delay: float = 60.0):
@@ -55,8 +56,8 @@ class ExponentialBackoffRetry(RetryStrategy):
         初始化指数退避重试策略
         
         Args:
-            base_delay: 基础延迟时间（秒）
-            max_delay: 最大延迟时间（秒）
+            base_delay: 基础延迟时间(秒)
+            max_delay: 最大延迟时间(秒)
         """
         self.base_delay = base_delay
         self.max_delay = max_delay
@@ -122,7 +123,7 @@ class FixedIntervalRetry(RetryStrategy):
         初始化固定间隔重试策略
         
         Args:
-            delay: 固定延迟时间（秒）
+            delay: 固定延迟时间(秒)
         """
         self.delay = delay
         logger.debug(f"固定间隔重试策略初始化: delay={delay}s")
@@ -183,7 +184,7 @@ def retry_on_failure(
     
     Args:
         max_retries: 最大重试次数
-        strategy: 重试策略，默认为指数退避
+        strategy: 重试策略,默认为指数退避
         exceptions: 要捕获的异常类型
         
     Examples:

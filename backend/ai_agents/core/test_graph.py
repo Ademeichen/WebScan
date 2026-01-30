@@ -1,19 +1,17 @@
 """
 图集成测试
 
-测试完整的工作流执行，包括所有10个节点的协同工作。
+测试完整的工作流执行,包括所有10个节点的协同工作。
 """
 import unittest
-from unittest.mock import Mock, patch
 
-import sys
 from pathlib import Path
 
 # 统一导入路径配置
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from backend.ai_agents.core.state import AgentState
-from backend.ai_agents.core.graph import create_agent_graph
+
 
 
 class TestGraphBuilding(unittest.TestCase):
@@ -357,7 +355,7 @@ class TestErrorHandling(unittest.TestCase):
             
             try:
                 final_state = await self.graph.invoke(initial_state)
-                # 应该捕获错误，但继续执行
+                # 应该捕获错误,但继续执行
                 self.assertGreater(len(final_state.errors), 0)
             except Exception as e:
                 # 应该抛出异常
@@ -489,7 +487,7 @@ def run_tests():
     result = runner.run(suite)
     
     print(f"\n{'='*60}")
-    print("图集成测试结果:")
+
     print(f"  运行测试: {result.testsRun}")
     print(f"  成功: {result.testsRun - len(result.failures) - len(result.errors)}")
     print(f"  失败: {len(result.failures)}")

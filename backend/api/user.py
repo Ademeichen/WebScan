@@ -1,13 +1,14 @@
 """
 用户信息 API
 
-提供用户信息管理功能，包括：
+提供用户信息管理功能,包括:
 - 获取用户信息
 - 更新用户信息
 - 用户权限管理
 """
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr, Field
+
+from fastapi import APIRouter
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List, Any
 from datetime import datetime
 import logging
@@ -85,7 +86,7 @@ async def get_user_profile(user_id: int = 1):
     获取当前登录用户的详细信息
     
     Args:
-        user_id: 用户ID，默认为1（管理员）
+        user_id: 用户ID,默认为1(管理员)
         
     Returns:
         APIResponse: 包含用户信息的响应
@@ -134,7 +135,7 @@ async def update_user_profile(user_id: int = 1, update_data: UpdateUserInfo = No
     更新当前登录用户的信息
     
     Args:
-        user_id: 用户ID，默认为1（管理员）
+        user_id: 用户ID,默认为1(管理员)
         update_data: 要更新的用户信息
         
     Returns:
@@ -189,7 +190,7 @@ async def get_user_permissions(user_id: int = 1):
     获取当前用户的权限列表
     
     Args:
-        user_id: 用户ID，默认为1（管理员）
+        user_id: 用户ID,默认为1(管理员)
         
     Returns:
         APIResponse: 包含用户权限列表的响应
@@ -226,7 +227,7 @@ async def get_user_permissions(user_id: int = 1):
 @router.get("/list", response_model=APIResponse, summary="获取用户列表")
 async def get_user_list(skip: int = 0, limit: int = 20):
     """
-    获取用户列表（仅管理员可用）
+    获取用户列表(仅管理员可用)
     
     Args:
         skip: 跳过的记录数

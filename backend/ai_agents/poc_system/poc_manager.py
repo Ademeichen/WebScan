@@ -1,16 +1,16 @@
 """
 POC 脚本管理器
 
-负责 POC 脚本的管理，包括从 Seebug 同步、本地加载、版本控制等。
+负责 POC 脚本的管理,包括从 Seebug 同步、本地加载、版本控制等。
 """
 import logging
+
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from pathlib import Path
 
 from backend.config import settings
 from backend.models import POCVerificationTask
-from backend.api.kb import search_seebug_poc, download_seebug_poc
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class POCMetadata:
     """
     POC 元数据类
     
-    用于存储 POC 的元信息，包括名称、类型、严重度等。
+    用于存储 POC 的元信息,包括名称、类型、严重度等。
     """
     
     def __init__(
@@ -71,7 +71,7 @@ class POCManager:
     """
     POC 管理器类
     
-    负责管理 POC 脚本的生命周期，包括：
+    负责管理 POC 脚本的生命周期,包括:
     - 从 Seebug 同步 POC
     - 本地自定义 POC 脚本加载
     - POC 版本控制
@@ -99,7 +99,7 @@ class POCManager:
         从 Seebug 同步 POC
         
         Args:
-            keyword: 搜索关键词，为空时同步所有 POC
+            keyword: 搜索关键词,为空时同步所有 POC
             limit: 同步数量限制
             force_refresh: 是否强制刷新缓存
             
@@ -107,7 +107,7 @@ class POCManager:
             List[POCMetadata]: POC 元数据列表
         """
         try:
-            logger.info(f"🔍 开始从 Seebug 同步 POC，关键词: {keyword}, 限制: {limit}")
+            logger.info(f"🔍 开始从 Seebug 同步 POC,关键词: {keyword}, 限制: {limit}")
             
             # 检查缓存
             cache_key = f"seebug_{keyword}_{limit}"
@@ -116,14 +116,14 @@ class POCManager:
                 cache_age = (datetime.now() - cache_time).total_seconds()
                 
                 if cache_age < settings.POC_CACHE_TTL:
-                    logger.info(f"✅ 使用缓存数据，缓存年龄: {cache_age}秒")
+                    logger.info(f"✅ 使用缓存数据,缓存年龄: {cache_age}秒")
                     return self.poc_cache[cache_key]["pocs"]
             
-            # 从 Seebug 搜索 POC
+            # 从 Seebug 搜索 POC (延迟导入避免循环依赖)
+            from backend.api.kb import search_seebug_poc
             poc_list = await search_seebug_poc(keyword=keyword, page=1, page_size=limit)
             
             if not poc_list:
-                logger.warning("⚠️ 从 Seebug 未获取到 POC 数据")
                 return []
             
             # 转换为 POC 元数据
@@ -152,7 +152,7 @@ class POCManager:
                 "pocs": poc_metadata_list
             }
             
-            logger.info(f"✅ 从 Seebug 同步完成，获取 {len(poc_metadata_list)} 个 POC")
+            logger.info(f"✅ 从 Seebug 同步完成,获取 {len(poc_metadata_list)} 个 POC")
             return poc_metadata_list
             
         except Exception as e:
@@ -167,22 +167,22 @@ class POCManager:
             ssvid: POC 的 SSVID
             
         Returns:
-            Optional[str]: POC 代码，失败返回 None
+            Optional[str]: POC 代码,失败返回 None
         """
         try:
-            logger.info(f"📥 开始从 Seebug 下载 POC，SSVID: {ssvid}")
+            logger.info(f"📥 开始从 Seebug 下载 POC,SSVID: {ssvid}")
             
             # 检查缓存
             cache_key = f"poc_code_{ssvid}"
             if cache_key in self.poc_cache:
-                logger.info("✅ 使用缓存的 POC 代码")
                 return self.poc_cache[cache_key]["code"]
             
-            # 从 Seebug 下载 POC
+            # 从 Seebug 下载 POC (延迟导入避免循环依赖)
+            from backend.api.kb import download_seebug_poc
             poc_code = await download_seebug_poc(ssvid)
             
             if not poc_code:
-                logger.warning(f"⚠️ 从 Seebug 下载 POC 失败，SSVID: {ssvid}")
+                logger.warning(f"⚠️ 从 Seebug 下载 POC 失败,SSVID: {ssvid}")
                 return None
             
             # 更新缓存
@@ -191,7 +191,7 @@ class POCManager:
                 "code": poc_code
             }
             
-            logger.info(f"✅ 从 Seebug 下载 POC 完成，代码长度: {len(poc_code)}")
+            logger.info(f"✅ 从 Seebug 下载 POC 完成,代码长度: {len(poc_code)}")
             return poc_code
             
         except Exception as e:
@@ -206,10 +206,10 @@ class POCManager:
             poc_path: POC 文件路径
             
         Returns:
-            Optional[POCMetadata]: POC 元数据，失败返回 None
+            Optional[POCMetadata]: POC 元数据,失败返回 None
         """
         try:
-            logger.info(f"📂 开始加载本地 POC，路径: {poc_path}")
+            logger.info(f"📂 开始加载本地 POC,路径: {poc_path}")
             
             path = Path(poc_path)
             if not path.exists():
@@ -220,7 +220,7 @@ class POCManager:
             with open(path, 'r', encoding='utf-8') as f:
                 poc_code = f.read()
             
-            # 解析 POC 元数据（从注释中提取）
+            # 解析 POC 元数据(从注释中提取)
             poc_name = path.stem
             poc_id = f"local_{poc_name}"
             
@@ -261,7 +261,7 @@ class POCManager:
             List[POCMetadata]: POC 元数据列表
         """
         try:
-            logger.info(f"📂 开始从目录加载 POC，路径: {directory}, 模式: {pattern}")
+            logger.info(f"📂 开始从目录加载 POC,路径: {directory}, 模式: {pattern}")
             
             dir_path = Path(directory)
             if not dir_path.exists():
@@ -275,7 +275,7 @@ class POCManager:
                 if metadata:
                     poc_metadata_list.append(metadata)
             
-            logger.info(f"✅ 从目录加载 POC 完成，获取 {len(poc_metadata_list)} 个 POC")
+            logger.info(f"✅ 从目录加载 POC 完成,获取 {len(poc_metadata_list)} 个 POC")
             return poc_metadata_list
             
         except Exception as e:
@@ -290,7 +290,7 @@ class POCManager:
             poc_id: POC ID
             
         Returns:
-            Optional[POCMetadata]: POC 元数据，不存在返回 None
+            Optional[POCMetadata]: POC 元数据,不存在返回 None
         """
         return self.poc_registry.get(poc_id)
     
@@ -323,7 +323,7 @@ class POCManager:
         按严重度获取 POC
         
         Args:
-            severity: 严重度（critical, high, medium, low, info）
+            severity: 严重度(critical, high, medium, low, info)
             
         Returns:
             List[POCMetadata]: 指定严重度的 POC 列表
@@ -432,7 +432,7 @@ class POCManager:
         if cache_key in self.poc_cache:
             return self.poc_cache[cache_key]["code"]
         
-        # 如果是本地 POC，从文件读取
+        # 如果是本地 POC,从文件读取
         if poc_id.startswith("local_"):
             poc_name = poc_id.replace("local_", "")
             local_path = Path("pocs") / f"{poc_name}.py"
@@ -440,7 +440,7 @@ class POCManager:
                 with open(local_path, 'r', encoding='utf-8') as f:
                     return f.read()
         
-        # 如果是 Seebug POC，从缓存或重新下载
+        # 如果是 Seebug POC,从缓存或重新下载
         ssvid = poc_id.replace("seebug_", "")
         try:
             return await self.download_poc_from_seebug(int(ssvid))

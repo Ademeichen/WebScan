@@ -1,10 +1,11 @@
 """
 统一执行器
 
-整合环境感知、代码生成和功能补充能力，提供统一的代码执行接口。
+整合环境感知、代码生成和功能补充能力,提供统一的代码执行接口。
 """
 import asyncio
 import logging
+
 import tempfile
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -56,7 +57,7 @@ class UnifiedExecutor:
     """
     统一执行器类
     
-    整合环境感知、代码生成和功能补充能力，
+    整合环境感知、代码生成和功能补充能力,
     提供安全的代码执行环境。
     """
     
@@ -70,8 +71,8 @@ class UnifiedExecutor:
         初始化统一执行器
         
         Args:
-            timeout: 执行超时时间（秒）
-            max_memory: 最大内存限制（MB）
+            timeout: 执行超时时间(秒)
+            max_memory: 最大内存限制(MB)
             enable_sandbox: 是否启用沙箱隔离
         """
         self.timeout = timeout
@@ -101,7 +102,7 @@ class UnifiedExecutor:
         Args:
             code: 代码内容
             language: 代码语言
-            target: 扫描目标（可选）
+            target: 扫描目标(可选)
             **kwargs: 额外参数
             
         Returns:
@@ -207,7 +208,7 @@ class UnifiedExecutor:
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                # cwd=str(self.workspace)  # 移除工作目录设置，使用默认路径
+                # cwd=str(self.workspace)  # 移除工作目录设置,使用默认路径
             )
             
             try:
@@ -231,7 +232,7 @@ class UnifiedExecutor:
                 process.kill()
                 return ExecutionResult(
                     status="timeout",
-                    error=f"执行超时（{self.timeout}秒）",
+                    error=f"执行超时({self.timeout}秒)",
                     output="",
                     exit_code=-1
                 )
@@ -293,7 +294,7 @@ class UnifiedExecutor:
                 process.kill()
                 return ExecutionResult(
                     status="timeout",
-                    error=f"执行超时（{self.timeout}秒）",
+                    error=f"执行超时({self.timeout}秒)",
                     output="",
                     exit_code=-1
                 )
@@ -355,7 +356,7 @@ class UnifiedExecutor:
                 process.kill()
                 return ExecutionResult(
                     status="timeout",
-                    error=f"执行超时（{self.timeout}秒）",
+                    error=f"执行超时({self.timeout}秒)",
                     output="",
                     exit_code=-1
                 )
@@ -437,7 +438,7 @@ class UnifiedExecutor:
         Args:
             requirement: 功能需求
             target: 扫描目标
-            capability_name: 能力名称（可选）
+            capability_name: 能力名称(可选)
             
         Returns:
             Dict: 执行结果

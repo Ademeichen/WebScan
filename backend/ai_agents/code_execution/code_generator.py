@@ -4,7 +4,8 @@
 基于模板和LLM生成扫描脚本。
 """
 import logging
-from typing import Dict, List, Any
+from typing import Dict, Any, List, Optional
+
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
@@ -21,11 +22,11 @@ class CodeGenerationRequest(BaseModel):
     代码生成请求模型
     """
     scan_type: str = Field(
-        description="扫描类型：port_scan、vuln_scan、dir_scan、subdomain_scan等"
+        description="扫描类型:port_scan、vuln_scan、dir_scan、subdomain_scan等"
     )
-    target: str = Field(description="扫描目标（URL/IP）")
+    target: str = Field(description="扫描目标(URL/IP)")
     requirements: str = Field(default="", description="特殊需求或要求")
-    language: str = Field(default="python", description="代码语言：python、bash、powershell")
+    language: str = Field(default="python", description="代码语言:python、bash、powershell")
     additional_params: Dict[str, Any] = Field(default_factory=dict, description="额外参数")
 
 
@@ -36,7 +37,7 @@ class CodeGenerationResponse(BaseModel):
     code: str = Field(description="生成的代码")
     language: str = Field(description="代码语言")
     description: str = Field(description="代码说明")
-    estimated_time: int = Field(description="预计执行时间（秒）")
+    estimated_time: int = Field(description="预计执行时间(秒)")
     dependencies: List[str] = Field(default_factory=list, description="依赖列表")
     
     def to_dict(self) -> Dict[str, Any]:
@@ -116,7 +117,7 @@ def main():
     
     open_ports = [p for p, is_open in zip(ports, results) if is_open]
     
-    print(f"扫描完成，开放端口: {open_ports}")
+    print(f"扫描完成,开放端口: {open_ports}")
 """,
             "vuln_scan": """
 #!/usr/bin/env python3
@@ -195,7 +196,7 @@ def scan_directory(target: str, wordlist: str = None, extensions: str = None):
                 except:
                     pass
         
-        print(f"目录扫描完成，发现: {{len(found_dirs)}} 个目录")
+        print(f"目录扫描完成,发现: {{len(found_dirs)}} 个目录")
         return found_dirs
 
 def main():
@@ -233,7 +234,7 @@ def brute_subdomain(domain: str, wordlist: str = None):
         except:
             pass
     
-    print(f"子域名扫描完成，发现: {{len(subdomains)}} 个子域名")
+    print(f"子域名扫描完成,发现: {{len(subdomains)}} 个子域名")
     return subdomains
 
 def main():
@@ -312,28 +313,28 @@ def main():
         system_prompt = f"""
 你是专业的Web安全扫描脚本编写专家。
 
-环境信息：
+环境信息:
 - 操作系统: {env_info['os_info'].get('system', 'Unknown')}
 - Python版本: {env_info['python_info'].get('version', 'Unknown')}
-- 可用工具: {', '.join(['{k}: {v}' for k, v in env_info['available_tools'].items() if v.get('available')])}
 
-扫描任务：
+
+扫描任务:
 - 扫描类型: {scan_type}
 - 扫描目标: {target}
 - 特殊需求: {requirements}
 - 代码语言: {language}
 
-要求：
+要求:
 1. 生成安全、高效的扫描脚本
 2. 避免使用危险操作
 3. 包含适当的错误处理
 4. 添加必要的注释说明
-5. 代码应该可以直接执行，无需额外配置
+5. 代码应该可以直接执行,无需额外配置
 
-请生成完整的扫描脚本代码，只返回代码内容，不要包含其他说明。
+请生成完整的扫描脚本代码,只返回代码内容,不要包含其他说明。
 """
         
-        user_prompt = f"生成一个{scan_type}扫描脚本，目标为{target}"
+        user_prompt = f"生成一个{scan_type}扫描脚本,目标为{target}"
         
         try:
             prompt = ChatPromptTemplate.from_messages([
@@ -448,7 +449,7 @@ def main():
             pattern: 模式
             
         Returns:
-            int: 行号（从1开始）
+            int: 行号(从1开始)
         """
         lines = code.split('\n')
         for i, line in enumerate(lines, 1):

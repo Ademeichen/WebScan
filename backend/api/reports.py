@@ -1,6 +1,6 @@
 """
 报告管理相关的 API 路由
-已迁移至数据库存储（Tortoise-ORM）
+已迁移至数据库存储(Tortoise-ORM)
 """
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import JSONResponse
@@ -138,7 +138,7 @@ async def list_reports(
     limit: int = 20
 ):
     """
-    获取报告列表（使用数据库）
+    获取报告列表(使用数据库)
     """
     try:
         from models import Report
@@ -150,7 +150,7 @@ async def list_reports(
         if task_id:
             query = query.filter(task_id=task_id)
         
-        # 排序（最新的在前）
+        # 排序(最新的在前)
         query = query.order_by('-created_at')
         
         # 获取总数
@@ -202,7 +202,7 @@ async def list_reports(
 @router.post("/", response_model=APIResponse)
 async def create_report(report: ReportCreate):
     """
-    创建新报告（使用数据库）
+    创建新报告(使用数据库)
     """
     try:
         from models import Report
@@ -272,7 +272,7 @@ async def create_report(report: ReportCreate):
 @router.get("/{report_id}", response_model=APIResponse)
 async def get_report(report_id: int):
     """
-    获取报告详情（使用数据库）
+    获取报告详情(使用数据库)
     """
     try:
         from models import Report
@@ -304,7 +304,7 @@ async def get_report(report_id: int):
 @router.put("/{report_id}", response_model=APIResponse)
 async def update_report(report_id: int, report_update: ReportUpdate):
     """
-    更新报告（使用数据库）
+    更新报告(使用数据库)
     """
     try:
         from models import Report
@@ -354,7 +354,7 @@ async def update_report(report_id: int, report_update: ReportUpdate):
 @router.delete("/{report_id}", response_model=APIResponse)
 async def delete_report(report_id: int):
     """
-    删除报告（使用数据库）
+    删除报告(使用数据库)
     """
     try:
         from models import Report
@@ -381,7 +381,7 @@ async def delete_report(report_id: int):
 @router.get("/{report_id}/export")
 async def export_report(report_id: int, format: str = "json"):
     """
-    导出报告（使用数据库）
+    导出报告(使用数据库)
     """
     try:
         from models import Report

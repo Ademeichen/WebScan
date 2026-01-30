@@ -41,7 +41,7 @@ class TestExponentialBackoffRetry:
     @pytest.mark.asyncio
     async def test_execute_success_first_attempt(self, retry_strategy):
         """
-        测试执行（第一次成功）
+        测试执行(第一次成功)
         """
         async def successful_func():
             return 'success'
@@ -53,7 +53,7 @@ class TestExponentialBackoffRetry:
     @pytest.mark.asyncio
     async def test_execute_success_after_retry(self, retry_strategy):
         """
-        测试执行（重试后成功）
+        测试执行(重试后成功)
         """
         attempt_count = [0]
         
@@ -71,7 +71,7 @@ class TestExponentialBackoffRetry:
     @pytest.mark.asyncio
     async def test_execute_all_retries_failed(self, retry_strategy):
         """
-        测试执行（所有重试失败）
+        测试执行(所有重试失败)
         """
         async def failing_func():
             raise ValueError('Persistent error')
@@ -157,7 +157,7 @@ class TestFixedIntervalRetry:
     @pytest.mark.asyncio
     async def test_execute_success_first_attempt(self, retry_strategy):
         """
-        测试执行（第一次成功）
+        测试执行(第一次成功)
         """
         async def successful_func():
             return 'success'
@@ -169,7 +169,7 @@ class TestFixedIntervalRetry:
     @pytest.mark.asyncio
     async def test_execute_success_after_retry(self, retry_strategy):
         """
-        测试执行（重试后成功）
+        测试执行(重试后成功)
         """
         attempt_count = [0]
         
@@ -187,7 +187,7 @@ class TestFixedIntervalRetry:
     @pytest.mark.asyncio
     async def test_execute_all_retries_failed(self, retry_strategy):
         """
-        测试执行（所有重试失败）
+        测试执行(所有重试失败)
         """
         async def failing_func():
             raise ValueError('Persistent error')
@@ -225,7 +225,7 @@ class TestRetryDecorator:
     @pytest.mark.asyncio
     async def test_retry_decorator_async_function(self):
         """
-        测试重试装饰器（异步函数）
+        测试重试装饰器(异步函数)
         """
         attempt_count = [0]
         
@@ -244,7 +244,7 @@ class TestRetryDecorator:
     @pytest.mark.asyncio
     async def test_retry_decorator_sync_function(self):
         """
-        测试重试装饰器（同步函数）
+        测试重试装饰器(同步函数)
         """
         attempt_count = [0]
         
@@ -263,7 +263,7 @@ class TestRetryDecorator:
     @pytest.mark.asyncio
     async def test_retry_decorator_custom_strategy(self):
         """
-        测试重试装饰器（自定义策略）
+        测试重试装饰器(自定义策略)
         """
         attempt_count = [0]
         strategy = FixedIntervalRetry(delay=0.1)
@@ -283,7 +283,7 @@ class TestRetryDecorator:
     @pytest.mark.asyncio
     async def test_retry_decorator_specific_exception(self):
         """
-        测试重试装饰器（特定异常）
+        测试重试装饰器(特定异常)
         """
         attempt_count = [0]
         
@@ -302,7 +302,7 @@ class TestRetryDecorator:
     @pytest.mark.asyncio
     async def test_retry_decorator_uncaught_exception(self):
         """
-        测试重试装饰器（未捕获异常）
+        测试重试装饰器(未捕获异常)
         """
         @retry_on_failure(max_retries=3, exceptions=(ValueError,))
         async def async_func():
@@ -314,7 +314,7 @@ class TestRetryDecorator:
     @pytest.mark.asyncio
     async def test_retry_decorator_no_retries(self):
         """
-        测试重试装饰器（无重试）
+        测试重试装饰器(无重试)
         """
         @retry_on_failure(max_retries=0)
         async def async_func():
@@ -326,7 +326,7 @@ class TestRetryDecorator:
     @pytest.mark.asyncio
     async def test_retry_decorator_preserves_function_name(self):
         """
-        测试重试装饰器（保留函数名）
+        测试重试装饰器(保留函数名)
         """
         @retry_on_failure(max_retries=3)
         async def my_function():

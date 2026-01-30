@@ -2,6 +2,7 @@
 简单的功能测试脚本
 """
 import sys
+
 from pathlib import Path
 
 # 统一导入路径配置
@@ -32,7 +33,7 @@ try:
     print("\n4. 测试工具检测...")
     tools = env.available_tools
     available_count = sum(1 for t in tools.values() if t.get('available'))
-    print(f"   检测到 {len(tools)} 个工具，其中 {available_count} 个可用")
+    print(f"   检测到 {len(tools)} 个工具,其中 {available_count} 个可用")
     for tool_name, tool_info in tools.items():
         status = "✓" if tool_info['available'] else "✗"
         print(f"   {status} {tool_name}: {tool_info.get('version', 'unknown')}")

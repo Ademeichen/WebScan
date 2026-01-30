@@ -8,6 +8,7 @@ import json
 from tortoise.expressions import Q
 
 # Import Plugins
+
 from backend.plugins.portscan.portscan import ScanPort
 from backend.plugins.infoleak.infoleak import get_infoleak
 from backend.plugins.webside.webside import get_side_info
@@ -18,17 +19,16 @@ from backend.plugins.cdnexist.cdnexist import iscdn
 from backend.plugins.waf.waf import getwaf
 from backend.plugins.whatcms.whatcms import getwhatcms
 from backend.plugins.subdomain.subdomain import get_subdomain
+
+
 try:
     from dirsearcch.dir_scanner import DirScanner
 except ImportError:
     DirScanner = None
 
 # Import POCs
-from backend.poc import (
-    cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
-    struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
-    cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc,
-    cve_2022_22965_poc, cve_2022_47986_poc, cve_2020_14756_poc, cve_2023_21839_poc
+
+
 )
 
 logger = logging.getLogger(__name__)
@@ -37,6 +37,7 @@ POC_FUNCTIONS = {
     "weblogic_cve_2020_2551": cve_2020_2551_poc,
     "weblogic_cve_2018_2628": cve_2018_2628_poc,
     "weblogic_cve_2018_2894": cve_2018_2894_poc,
+
     "weblogic_cve_2020_14756": cve_2020_14756_poc,
     "weblogic_cve_2023_21839": cve_2023_21839_poc,
     "struts2_009": struts2_009_poc,
@@ -44,6 +45,8 @@ POC_FUNCTIONS = {
     "tomcat_cve_2017_12615": cve_2017_12615_poc,
     "tomcat_cve_2022_22965": cve_2022_22965_poc,
     "tomcat_cve_2022_47986": cve_2022_47986_poc,
+
+
     "jboss_cve_2017_12149": cve_2017_12149_poc,
     "nexus_cve_2020_10199": cve_2020_10199_poc,
     "drupal_cve_2018_7600": cve_2018_7600_poc,
@@ -118,7 +121,7 @@ class TaskExecutor:
             target_id = target_response['target_id']
             logger.info(f"任务 {task_id} 创建AWVS目标成功: {target_id}")
             
-            # 更新任务配置，保存target_id
+            # 更新任务配置,保存target_id
             current_config = json.loads(task.config) if task.config else {}
             current_config['awvs_target_id'] = target_id
             task.config = json.dumps(current_config)
@@ -159,7 +162,7 @@ class TaskExecutor:
             
             logger.info(f"任务 {task_id} 扫描ID: {scan_id}")
 
-            # 更新任务配置，保存scan_id
+            # 更新任务配置,保存scan_id
             current_config['awvs_scan_id'] = scan_id
             task.config = json.dumps(current_config)
             await task.save()
@@ -230,7 +233,7 @@ class TaskExecutor:
                     task.status = 'completed'
                     task.progress = 100
                     await task.save()
-                    logger.info(f"任务 {task_id} 扫描完成（无变化超时）")
+                    logger.info(f"任务 {task_id} 扫描完成(无变化超时)")
                     await self._save_scan_results(task_id, scan_id, scan_client)
                     break
                 
@@ -275,9 +278,9 @@ class TaskExecutor:
                 vulns = scan_client.get_vulns(scan_id, scan_session_id)
                 if vulns:
                     # 获取现有漏洞记录以避免重复 (根据 vuln_id)
-                    existing_vulns = await Vulnerability.filter(task_id=task_id).values_list('title', flat=True) # 使用title作为简单去重，实际应存vuln_id
-                    # 由于Vulnerability模型目前没有 awvs_vuln_id 字段，我们暂时用 title 和 url 组合判断，或者直接清空重建
-                    # 为了安全起见，我们先删除该任务的所有旧漏洞记录，重新保存
+                    existing_vulns = await Vulnerability.filter(task_id=task_id).values_list('title', flat=True) # 使用title作为简单去重,实际应存vuln_id
+                    # 由于Vulnerability模型目前没有 awvs_vuln_id 字段,我们暂时用 title 和 url 组合判断,或者直接清空重建
+                    # 为了安全起见,我们先删除该任务的所有旧漏洞记录,重新保存
                     await Vulnerability.filter(task_id=task_id).delete()
                     
                     for vuln in vulns:
@@ -553,7 +556,7 @@ class TaskExecutor:
             
             try:
                 # 使用 subprocess 调用 pocsuite3
-                # 假设 pocsuite3 在 PATH 中，或者使用 python -m pocsuite3
+                # 假设 pocsuite3 在 PATH 中,或者使用 python -m pocsuite3
                 import sys
                 
                 cmd = [sys.executable, "-m", "pocsuite3.cli", "-r", tmp_path, "-u", target, "--verify"]
@@ -597,7 +600,7 @@ class TaskExecutor:
             
             logger.info(f"插件任务 {task_id} ({task_type}) 开始执行: {target}")
             
-            # 在线程池中执行插件，避免阻塞事件循环
+            # 在线程池中执行插件,避免阻塞事件循环
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(None, self._run_plugin, task_type, target, scan_config)
             

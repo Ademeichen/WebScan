@@ -36,14 +36,27 @@
 
       <!-- 设置内容 -->
       <div class="settings-content">
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
         <!-- 加载状态 -->
         <div v-if="loading" class="loading-state">
           <div class="loading-spinner"></div>
           <div class="loading-text">加载设置中...</div>
         </div>
         
+<<<<<<< HEAD
         <!-- 常规设置 -->
         <div v-if="!loading && activeTab === 'general'" class="settings-panel">
+=======
+        <!-- 常规设置 -->
+        <div v-if="!loading && activeTab === 'general'" class="settings-panel">
+=======
+        <!-- 常规设置 -->
+        <div v-if="activeTab === 'general'" class="settings-panel">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">系统配置</h3>
@@ -51,12 +64,28 @@
             <div class="settings-form">
               <div class="form-group">
                 <label class="form-label">系统名称</label>
+<<<<<<< HEAD
                 <input v-model="settings.general.systemName" type="text" class="form-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                <input v-model="settings.general.systemName" type="text" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.general.systemName" type="text" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
               </div>
               
               <div class="form-group">
                 <label class="form-label">默认语言</label>
+<<<<<<< HEAD
                 <select v-model="settings.general.language" class="form-select" :disabled="saving">
+=======
+<<<<<<< HEAD
+                <select v-model="settings.general.language" class="form-select" :disabled="saving">
+=======
+                <select v-model="settings.general.language" class="form-select">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                   <option value="zh-CN">简体中文</option>
                   <option value="en-US">English</option>
                 </select>
@@ -64,7 +93,15 @@
               
               <div class="form-group">
                 <label class="form-label">时区设置</label>
+<<<<<<< HEAD
                 <select v-model="settings.general.timezone" class="form-select" :disabled="saving">
+=======
+<<<<<<< HEAD
+                <select v-model="settings.general.timezone" class="form-select" :disabled="saving">
+=======
+                <select v-model="settings.general.timezone" class="form-select">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                   <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
                   <option value="UTC">UTC (UTC+0)</option>
                   <option value="America/New_York">America/New_York (UTC-5)</option>
@@ -73,7 +110,15 @@
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.general.autoUpdate" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <input v-model="settings.general.autoUpdate" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.general.autoUpdate" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                   <span class="checkbox-custom"></span>
                   自动更新漏洞库
                 </label>
@@ -83,7 +128,15 @@
         </div>
 
         <!-- 扫描配置 -->
+<<<<<<< HEAD
         <div v-if="!loading && activeTab === 'scan'" class="settings-panel">
+=======
+<<<<<<< HEAD
+        <div v-if="!loading && activeTab === 'scan'" class="settings-panel">
+=======
+        <div v-if="activeTab === 'scan'" class="settings-panel">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">默认扫描参数</h3>
@@ -91,7 +144,15 @@
             <div class="settings-form">
               <div class="form-group">
                 <label class="form-label">默认扫描深度</label>
+<<<<<<< HEAD
                 <select v-model="settings.scan.defaultDepth" class="form-select" :disabled="saving">
+=======
+<<<<<<< HEAD
+                <select v-model="settings.scan.defaultDepth" class="form-select" :disabled="saving">
+=======
+                <select v-model="settings.scan.defaultDepth" class="form-select">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                   <option value="1">浅层扫描 (深度1)</option>
                   <option value="2">中等扫描 (深度2)</option>
                   <option value="3">深度扫描 (深度3)</option>
@@ -100,22 +161,54 @@
               
               <div class="form-group">
                 <label class="form-label">默认并发数</label>
+<<<<<<< HEAD
                 <input v-model="settings.scan.defaultConcurrency" type="number" min="1" max="20" class="form-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                <input v-model="settings.scan.defaultConcurrency" type="number" min="1" max="20" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.scan.defaultConcurrency" type="number" min="1" max="20" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
               </div>
               
               <div class="form-group">
                 <label class="form-label">请求超时时间 (秒)</label>
+<<<<<<< HEAD
                 <input v-model="settings.scan.requestTimeout" type="number" min="5" max="300" class="form-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                <input v-model="settings.scan.requestTimeout" type="number" min="5" max="300" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.scan.requestTimeout" type="number" min="5" max="300" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
               </div>
               
               <div class="form-group">
                 <label class="form-label">用户代理字符串</label>
+<<<<<<< HEAD
                 <input v-model="settings.scan.userAgent" type="text" class="form-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                <input v-model="settings.scan.userAgent" type="text" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.scan.userAgent" type="text" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
               </div>
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.scan.followRedirects" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <input v-model="settings.scan.followRedirects" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.scan.followRedirects" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                   <span class="checkbox-custom"></span>
                   跟随重定向
                 </label>
@@ -123,7 +216,15 @@
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.scan.enableCookies" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <input v-model="settings.scan.enableCookies" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.scan.enableCookies" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                   <span class="checkbox-custom"></span>
                   启用Cookie支持
                 </label>
@@ -143,7 +244,15 @@
                 </div>
                 <div class="rule-toggle">
                   <label class="switch">
+<<<<<<< HEAD
                     <input v-model="rule.enabled" type="checkbox" :disabled="saving">
+=======
+<<<<<<< HEAD
+                    <input v-model="rule.enabled" type="checkbox" :disabled="saving">
+=======
+                    <input v-model="rule.enabled" type="checkbox">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                     <span class="slider"></span>
                   </label>
                 </div>
@@ -153,7 +262,15 @@
         </div>
 
         <!-- 通知设置 -->
+<<<<<<< HEAD
         <div v-if="!loading && activeTab === 'notification'" class="settings-panel">
+=======
+<<<<<<< HEAD
+        <div v-if="!loading && activeTab === 'notification'" class="settings-panel">
+=======
+        <div v-if="activeTab === 'notification'" class="settings-panel">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">通知配置</h3>
@@ -161,7 +278,15 @@
             <div class="settings-form">
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.notification.emailEnabled" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <input v-model="settings.notification.emailEnabled" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.notification.emailEnabled" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                   <span class="checkbox-custom"></span>
                   启用邮件通知
                 </label>
@@ -170,23 +295,55 @@
               <div v-if="settings.notification.emailEnabled" class="email-settings">
                 <div class="form-group">
                   <label class="form-label">SMTP服务器</label>
+<<<<<<< HEAD
                   <input v-model="settings.notification.smtpServer" type="text" class="form-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <input v-model="settings.notification.smtpServer" type="text" class="form-input" :disabled="saving">
+=======
+                  <input v-model="settings.notification.smtpServer" type="text" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                 </div>
                 
                 <div class="form-group">
                   <label class="form-label">SMTP端口</label>
+<<<<<<< HEAD
                   <input v-model="settings.notification.smtpPort" type="number" class="form-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <input v-model="settings.notification.smtpPort" type="number" class="form-input" :disabled="saving">
+=======
+                  <input v-model="settings.notification.smtpPort" type="number" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                 </div>
                 
                 <div class="form-group">
                   <label class="form-label">发件人邮箱</label>
+<<<<<<< HEAD
                   <input v-model="settings.notification.senderEmail" type="email" class="form-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <input v-model="settings.notification.senderEmail" type="email" class="form-input" :disabled="saving">
+=======
+                  <input v-model="settings.notification.senderEmail" type="email" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                 </div>
                 
                 <div class="form-group">
                   <label class="form-label">收件人邮箱</label>
                   <textarea v-model="settings.notification.recipientEmails" class="form-input" rows="3" 
+<<<<<<< HEAD
                            placeholder="每行一个邮箱地址" :disabled="saving"></textarea>
+=======
+<<<<<<< HEAD
+                           placeholder="每行一个邮箱地址" :disabled="saving"></textarea>
+=======
+                           placeholder="每行一个邮箱地址"></textarea>
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                 </div>
               </div>
               
@@ -194,7 +351,15 @@
                 <h4>通知事件</h4>
                 <div class="event-list">
                   <label v-for="event in notificationEvents" :key="event.value" class="checkbox-label">
+<<<<<<< HEAD
                     <input v-model="settings.notification.events" type="checkbox" :value="event.value" class="checkbox-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                    <input v-model="settings.notification.events" type="checkbox" :value="event.value" class="checkbox-input" :disabled="saving">
+=======
+                    <input v-model="settings.notification.events" type="checkbox" :value="event.value" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                     <span class="checkbox-custom"></span>
                     {{ event.label }}
                   </label>
@@ -205,7 +370,15 @@
         </div>
 
         <!-- 安全设置 -->
+<<<<<<< HEAD
         <div v-if="!loading && activeTab === 'security'" class="settings-panel">
+=======
+<<<<<<< HEAD
+        <div v-if="!loading && activeTab === 'security'" class="settings-panel">
+=======
+        <div v-if="activeTab === 'security'" class="settings-panel">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">访问控制</h3>
@@ -213,12 +386,28 @@
             <div class="settings-form">
               <div class="form-group">
                 <label class="form-label">会话超时时间 (分钟)</label>
+<<<<<<< HEAD
                 <input v-model="settings.security.sessionTimeout" type="number" min="5" max="1440" class="form-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                <input v-model="settings.security.sessionTimeout" type="number" min="5" max="1440" class="form-input" :disabled="saving">
+=======
+                <input v-model="settings.security.sessionTimeout" type="number" min="5" max="1440" class="form-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
               </div>
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.security.requireHttps" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <input v-model="settings.security.requireHttps" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.security.requireHttps" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                   <span class="checkbox-custom"></span>
                   强制使用HTTPS
                 </label>
@@ -226,7 +415,15 @@
               
               <div class="form-group">
                 <label class="checkbox-label">
+<<<<<<< HEAD
                   <input v-model="settings.security.enableTwoFactor" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <input v-model="settings.security.enableTwoFactor" type="checkbox" class="checkbox-input" :disabled="saving">
+=======
+                  <input v-model="settings.security.enableTwoFactor" type="checkbox" class="checkbox-input">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                   <span class="checkbox-custom"></span>
                   启用双因素认证
                 </label>
@@ -235,7 +432,15 @@
               <div class="form-group">
                 <label class="form-label">允许的IP地址</label>
                 <textarea v-model="settings.security.allowedIPs" class="form-input" rows="3" 
+<<<<<<< HEAD
                          placeholder="每行一个IP地址或CIDR块，留空表示允许所有IP" :disabled="saving"></textarea>
+=======
+<<<<<<< HEAD
+                         placeholder="每行一个IP地址或CIDR块，留空表示允许所有IP" :disabled="saving"></textarea>
+=======
+                         placeholder="每行一个IP地址或CIDR块，留空表示允许所有IP"></textarea>
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
               </div>
             </div>
           </div>
@@ -252,12 +457,30 @@
                   <div class="key-created">创建时间: {{ key.createdAt }}</div>
                 </div>
                 <div class="key-actions">
+<<<<<<< HEAD
                   <button @click="regenerateKey(key.id)" class="btn btn-outline" :disabled="saving">重新生成</button>
                   <button @click="deleteKey(key.id)" class="btn btn-outline btn-danger" :disabled="saving">删除</button>
                 </div>
               </div>
               
               <button @click="createApiKey" class="btn btn-secondary" :disabled="saving">
+=======
+<<<<<<< HEAD
+                  <button @click="regenerateKey(key.id)" class="btn btn-outline" :disabled="saving">重新生成</button>
+                  <button @click="deleteKey(key.id)" class="btn btn-outline btn-danger" :disabled="saving">删除</button>
+                </div>
+              </div>
+              
+              <button @click="createApiKey" class="btn btn-secondary" :disabled="saving">
+=======
+                  <button @click="regenerateKey(key.id)" class="btn btn-outline">重新生成</button>
+                  <button @click="deleteKey(key.id)" class="btn btn-outline btn-danger">删除</button>
+                </div>
+              </div>
+              
+              <button @click="createApiKey" class="btn btn-secondary">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                 ➕ 创建新密钥
               </button>
             </div>
@@ -269,6 +492,10 @@
     <!-- 保存按钮 -->
     <div class="settings-footer">
       <div class="footer-actions">
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
         <button @click="resetSettings" class="btn btn-outline" :disabled="loading || saving">
           重置为默认
         </button>
@@ -276,20 +503,46 @@
           <span v-if="saving">⏳ 保存中...</span>
           <span v-else>💾 保存设置</span>
         </button>
+<<<<<<< HEAD
+=======
+=======
+        <button @click="resetSettings" class="btn btn-outline">重置为默认</button>
+        <button @click="saveSettings" class="btn btn-success">保存设置</button>
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
       </div>
     </div>
   </div>
 </template>
 
 <script>
+<<<<<<< HEAD
 import { settingsApi } from '../utils/api.js'
 import { formatDate } from '../utils/date.js'
+=======
+<<<<<<< HEAD
+import { settingsApi } from '../utils/api.js'
+import { formatDate } from '../utils/date.js'
+=======
+// TODO: 替换为真实的API调用
+import { 
+  mockSettings, 
+  mockScanRules, 
+  mockApiKeys 
+} from '../data/mockData.js'
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 
 export default {
   name: 'Settings',
   data() {
     return {
       activeTab: 'general',
+<<<<<<< HEAD
+      loading: false,
+      saving: false,
+=======
+<<<<<<< HEAD
       loading: false,
       saving: false,
       
@@ -336,6 +589,58 @@ export default {
         { id: 5, name: '命令注入', description: '检测命令注入漏洞', enabled: true },
         { id: 6, name: 'SSRF服务端请求伪造', description: '检测服务端请求伪造', enabled: true }
       ],
+=======
+>>>>>>> origin/renruipeng
+      
+      settings: {
+        general: {
+          systemName: 'WebScan AI',
+          language: 'zh-CN',
+          timezone: 'Asia/Shanghai',
+          autoUpdate: true,
+          theme: 'dark'
+        },
+        scan: {
+          defaultDepth: 2,
+          defaultConcurrency: 5,
+          requestTimeout: 30,
+          maxRetries: 3,
+          enableProxy: false,
+          followRedirects: true,
+          enableCookies: true,
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        notification: {
+          emailEnabled: false,
+          smtpServer: '',
+          smtpPort: 587,
+          smtpUser: '',
+          senderEmail: '',
+          recipientEmails: '',
+          events: ['high-vulnerability', 'scan-completed']
+        },
+        security: {
+          sessionTimeout: 120,
+          requireHttps: true,
+          enableTwoFactor: false,
+          allowedIPs: ''
+        }
+      },
+      
+<<<<<<< HEAD
+      scanRules: [
+        { id: 1, name: 'SQL注入检测', description: '检测SQL注入漏洞', enabled: true },
+        { id: 2, name: 'XSS跨站脚本', description: '检测跨站脚本攻击', enabled: true },
+        { id: 3, name: 'CSRF跨站请求伪造', description: '检测跨站请求伪造漏洞', enabled: true },
+        { id: 4, name: '文件包含漏洞', description: '检测文件包含漏洞', enabled: true },
+        { id: 5, name: '命令注入', description: '检测命令注入漏洞', enabled: true },
+        { id: 6, name: 'SSRF服务端请求伪造', description: '检测服务端请求伪造', enabled: true }
+      ],
+=======
+      // TODO: 从API获取扫描规则 - GET /api/scan-rules
+      scanRules: mockScanRules,
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
       
       notificationEvents: [
         { value: 'high-vulnerability', label: '发现高危漏洞' },
@@ -344,6 +649,10 @@ export default {
         { value: 'system-update', label: '系统更新' }
       ],
       
+<<<<<<< HEAD
+      apiKeys: []
+=======
+<<<<<<< HEAD
       apiKeys: []
     }
   },
@@ -406,6 +715,77 @@ export default {
           console.error('重置设置失败:', error)
           alert('重置设置失败: ' + error.message)
         }
+=======
+      // TODO: 从API获取API密钥 - GET /api/api-keys
+      apiKeys: mockApiKeys
+>>>>>>> origin/renruipeng
+    }
+  },
+  mounted() {
+    this.fetchSettings()
+  },
+  methods: {
+    formatDate,
+    async fetchSettings() {
+      this.loading = true
+      try {
+        const response = await settingsApi.getSettings()
+        if (response.code === 200 && response.data) {
+          this.settings = {
+            general: { ...this.settings.general, ...response.data.general },
+            scan: { ...this.settings.scan, ...response.data.scan },
+            notification: { ...this.settings.notification, ...response.data.notification },
+            security: { ...this.settings.security, ...response.data.security }
+          }
+        }
+      } catch (error) {
+        console.error('获取设置失败:', error)
+      } finally {
+        this.loading = false
+      }
+    },
+    async saveSettings() {
+      this.saving = true
+      try {
+        const response = await settingsApi.updateSettings({
+          general: this.settings.general,
+          scan: this.settings.scan,
+          notification: this.settings.notification,
+          security: this.settings.security
+        })
+        
+        if (response.code === 200) {
+          alert('设置已保存！')
+        } else {
+          alert('保存失败: ' + (response.message || '未知错误'))
+        }
+      } catch (error) {
+        console.error('保存设置失败:', error)
+        alert('保存设置失败: ' + error.message)
+      } finally {
+        this.saving = false
+      }
+    },
+    async resetSettings() {
+      if (confirm('确定要重置为默认设置吗？')) {
+<<<<<<< HEAD
+        try {
+          const response = await settingsApi.resetSettings()
+          if (response.code === 200) {
+            await this.fetchSettings()
+            alert('已重置为默认设置')
+          } else {
+            alert('重置失败: ' + (response.message || '未知错误'))
+          }
+        } catch (error) {
+          console.error('重置设置失败:', error)
+          alert('重置设置失败: ' + error.message)
+        }
+=======
+        // 重置设置逻辑
+        console.log('重置设置')
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
       }
     },
     createApiKey() {
@@ -503,6 +883,10 @@ export default {
   gap: var(--spacing-lg);
 }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -531,6 +915,11 @@ export default {
   font-size: 14px;
 }
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 .settings-form {
   display: flex;
   flex-direction: column;

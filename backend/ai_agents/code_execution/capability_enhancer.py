@@ -1,10 +1,11 @@
 """
 功能补充模块
 
-支持动态功能补充，允许AI根据需求执行代码以增强自身能力。
+支持动态功能补充,允许AI根据需求执行代码以增强自身能力。
 """
 import logging
 import importlib.util
+
 from typing import Dict, List, Any, Optional, Callable
 from pathlib import Path
 from datetime import datetime
@@ -119,7 +120,7 @@ class CapabilityEnhancer:
         Args:
             requirement: 功能需求描述
             target: 扫描目标
-            capability_name: 能力名称（可选）
+            capability_name: 能力名称(可选)
             
         Returns:
             Dict: 增强结果

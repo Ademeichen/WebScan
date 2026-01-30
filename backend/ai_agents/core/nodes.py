@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from ..core.state import AgentState
 from ..tools.registry import registry
-from ..tools.adapters import POCAdapter
+from ..tools.adapters import PluginAdapter, POCAdapter
 from ..agent_config import agent_config
 from ..utils.priority import TaskPriorityManager
 
@@ -34,7 +34,7 @@ class TaskPlanningNode:
     """
     任务规划节点
     
-    根据用户需求和目标特征，生成扫描任务计划。
+    根据用户需求和目标特征,生成扫描任务计划。
     支持规则化规划和LLM增强规划两种模式。
     """
     
@@ -64,7 +64,7 @@ class TaskPlanningNode:
         Returns:
             AgentState: 更新后的状态
         """
-        logger.info(f"[{state.task_id}] 📋 开始任务规划，目标: {state.target}")
+        logger.info(f"[{state.task_id}] 📋 开始任务规划,目标: {state.target}")
         
         try:
             if self.use_llm:
@@ -145,17 +145,17 @@ class TaskPlanningNode:
             context_info = f"\n目标上下文: {state.target_context}"
         
         system_prompt = """
-        你是Web安全扫描专家，需要为目标规划扫描任务。
+        你是Web安全扫描专家,需要为目标规划扫描任务。
         
-        可用工具列表：
+        可用工具列表:
         {tools}
         
-        规划规则：
-        1. 先执行基础信息收集类任务（baseinfo、portscan、waf_detect、cdn_detect、cms_identify）
-        2. 根据基础信息结果选择POC验证任务（如CMS为WordPress则跳过WebLogic POC）
+        规划规则:
+        1. 先执行基础信息收集类任务(baseinfo、portscan、waf_detect、cdn_detect、cms_identify)
+        2. 根据基础信息结果选择POC验证任务(如CMS为WordPress则跳过WebLogic POC)
         3. 避免无意义的POC扫描
-        4. 返回格式为JSON数组，仅包含任务名称
-        5. 任务优先级：POC验证 > 端口扫描 > 基础信息收集
+        4. 返回格式为JSON数组,仅包含任务名称
+        5. 任务优先级:POC验证 > 端口扫描 > 基础信息收集
         """
         
         user_prompt = f"目标: {state.target}{context_info}"
@@ -172,7 +172,7 @@ class TaskPlanningNode:
             logger.info(f"LLM规划结果: {result.plan}")
             return result.plan
         except Exception as e:
-            logger.error(f"LLM规划失败，使用规则化规划: {str(e)}")
+            logger.error(f"LLM规划失败,使用规则化规划: {str(e)}")
             return await self._rule_based_planning(state)
 
 
@@ -180,12 +180,12 @@ class ToolExecutionNode:
     """
     工具执行节点
     
-    执行当前规划的任务，调用相应的工具并更新状态。
+    执行当前规划的任务,调用相应的工具并更新状态。
     """
     
     def __init__(self):
         self.semaphore = asyncio.Semaphore(agent_config.MAX_CONCURRENT_TOOLS)
-        logger.info(f"🔧 工具执行节点初始化，最大并发: {agent_config.MAX_CONCURRENT_TOOLS}")
+        logger.info(f"🔧 工具执行节点初始化,最大并发: {agent_config.MAX_CONCURRENT_TOOLS}")
     
     async def __call__(self, state: AgentState) -> AgentState:
         """
@@ -302,7 +302,7 @@ class ToolExecutionNode:
             poc_name: POC名称
             
         Returns:
-            str: 严重度（critical/high/medium/low）
+            str: 严重度(critical/high/medium/low)
         """
         poc_lower = poc_name.lower()
         if "cve_2020_2551" in poc_lower or "cve_2023_21839" in poc_lower:
@@ -317,7 +317,7 @@ class ResultVerificationNode:
     """
     结果验证节点
     
-    验证扫描结果，根据上下文补充任务，决定是否继续执行。
+    验证扫描结果,根据上下文补充任务,决定是否继续执行。
     """
     
     async def __call__(self, state: AgentState) -> AgentState:
@@ -383,7 +383,7 @@ class VulnerabilityAnalysisNode:
     """
     漏洞分析节点
     
-    分析发现的漏洞，进行去重、排序和严重度评估。
+    分析发现的漏洞,进行去重、排序和严重度评估。
     """
     
     def __init__(self):
@@ -401,7 +401,7 @@ class VulnerabilityAnalysisNode:
         Returns:
             AgentState: 更新后的状态
         """
-        logger.info(f"[{state.task_id}] 🔍 分析漏洞结果，共发现 {len(state.vulnerabilities)} 个漏洞")
+        logger.info(f"[{state.task_id}] 🔍 分析漏洞结果,共发现 {len(state.vulnerabilities)} 个漏洞")
         
         if not state.vulnerabilities:
             logger.info(f"[{state.task_id}] ✅ 未发现漏洞")
@@ -417,7 +417,7 @@ class VulnerabilityAnalysisNode:
             # 更新状态
             state.vulnerabilities = sorted_vulns
             
-            logger.info(f"[{state.task_id}] ✅ 漏洞分析完成，去重后: {len(sorted_vulns)} 个")
+            logger.info(f"[{state.task_id}] ✅ 漏洞分析完成,去重后: {len(sorted_vulns)} 个")
             state.add_execution_step("vulnerability_analysis", {
                 "total": len(sorted_vulns),
                 "vulnerabilities": sorted_vulns
@@ -434,7 +434,7 @@ class ReportGenerationNode:
     """
     报告生成节点
     
-    生成最终的扫描报告，包含所有结果和漏洞信息。
+    生成最终的扫描报告,包含所有结果和漏洞信息。
     """
     
     def __init__(self):
@@ -470,13 +470,13 @@ class ReportGenerationNode:
         return state
 
 
-# ====================== 新增节点（从new_nodes.py合并）======================
+# = 新增节点(从new_nodes.py合并)=
 
 class EnvironmentAwarenessNode:
     """
     环境感知节点
     
-    负责收集和分析环境信息，为后续决策提供依据。
+    负责收集和分析环境信息,为后续决策提供依据。
     """
     
     def __init__(self):
@@ -542,7 +542,7 @@ class CodeGenerationNode:
             target = state.target
             
             if not state.target_context.get("need_custom_scan"):
-                logger.info(f"[{state.task_id}] ⏭️ 无需自定义扫描，跳过代码生成")
+                logger.info(f"[{state.task_id}] ⏭️ 无需自定义扫描,跳过代码生成")
                 return state
             
             scan_type = state.target_context.get("custom_scan_type", "vuln_scan")
@@ -595,14 +595,14 @@ class CapabilityEnhancementNode:
         
         try:
             if not state.target_context.get("need_capability_enhancement"):
-                logger.info(f"[{state.task_id}] ⏭️ 无需功能补充，跳过")
+                logger.info(f"[{state.task_id}] ⏭️ 无需功能补充,跳过")
                 return state
             
             requirement = state.target_context.get("capability_requirement", "")
             target = state.target
             
             if not requirement:
-                logger.warning(f"[{state.task_id}] ⚠️ 未指定功能需求，跳过功能补充")
+                logger.warning(f"[{state.task_id}] ⚠️ 未指定功能需求,跳过功能补充")
                 return state
             
             enhance_result = await self.capability_enhancer.enhance_capability(
@@ -653,7 +653,7 @@ class CodeExecutionNode:
         
         try:
             if not state.target_context.get("generated_code"):
-                logger.info(f"[{state.task_id}] ⏭️ 无代码可执行，跳过")
+                logger.info(f"[{state.task_id}] ⏭️ 无代码可执行,跳过")
                 return state
             
             generated_code = state.target_context["generated_code"]
@@ -686,7 +686,7 @@ class IntelligentDecisionNode:
     """
     智能决策节点
     
-    基于环境信息和扫描结果，智能决定下一步操作。
+    基于环境信息和扫描结果,智能决定下一步操作。
     """
     
     def __init__(self):
@@ -742,9 +742,9 @@ class IntelligentDecisionNode:
             # 基于网络状态决策
             network_info = env_info["network_info"]
             if network_info.get("proxy_detected"):
-                decisions.append("检测到代理，调整扫描策略")
+                decisions.append("检测到代理,调整扫描策略")
             if network_info.get("firewall_detected"):
-                decisions.append("检测到防火墙，降低扫描速度")
+                decisions.append("检测到防火墙,降低扫描速度")
             
             state.update_context("intelligent_decisions", decisions)
             

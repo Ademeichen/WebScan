@@ -5,8 +5,7 @@
 """
 import pytest
 import sys
-from pathlib import Path
-from unittest.mock import Mock
+
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
@@ -108,7 +107,7 @@ class TestPluginAdapter:
     @pytest.mark.asyncio
     async def test_cdn_wrapper_success(self):
         """
-        测试CDN检测包装器（成功情况）
+        测试CDN检测包装器(成功情况)
         """
         func = PluginAdapter.adapt_cdn_detect()
         
@@ -130,7 +129,7 @@ class TestPluginAdapter:
     @pytest.mark.asyncio
     async def test_cdn_wrapper_no_cdn(self):
         """
-        测试CDN检测包装器（无CDN）
+        测试CDN检测包装器(无CDN)
         """
         func = PluginAdapter.adapt_cdn_detect()
         
@@ -273,7 +272,7 @@ class TestPOCAdapter:
 
     def test_get_poc_by_cms_case_insensitive(self, poc_adapter):
         """
-        测试根据CMS获取POC（不区分大小写）
+        测试根据CMS获取POC(不区分大小写)
         """
         pocs1 = poc_adapter.get_poc_by_cms('weblogic')
         pocs2 = poc_adapter.get_poc_by_cms('WEBLOGIC')
@@ -284,7 +283,7 @@ class TestPOCAdapter:
     @pytest.mark.asyncio
     async def test_poc_wrapper_vulnerable(self, poc_adapter):
         """
-        测试POC包装器（存在漏洞）
+        测试POC包装器(存在漏洞)
         """
         mock_poc_module = Mock()
         mock_poc_module.poc = Mock(return_value=(True, 'Vulnerable!'))
@@ -301,7 +300,7 @@ class TestPOCAdapter:
     @pytest.mark.asyncio
     async def test_poc_wrapper_not_vulnerable(self, poc_adapter):
         """
-        测试POC包装器（不存在漏洞）
+        测试POC包装器(不存在漏洞)
         """
         mock_poc_module = Mock()
         mock_poc_module.poc = Mock(return_value=(False, 'Not vulnerable'))
@@ -318,7 +317,7 @@ class TestPOCAdapter:
     @pytest.mark.asyncio
     async def test_poc_wrapper_exception(self, poc_adapter):
         """
-        测试POC包装器（异常情况）
+        测试POC包装器(异常情况)
         """
         mock_poc_module = Mock()
         mock_poc_module.poc = Mock(side_effect=Exception('Test error'))

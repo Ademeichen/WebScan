@@ -1,11 +1,12 @@
 """
 工具异步封装
 
-将同步工具函数封装为异步调用，支持超时控制和错误处理。
+将同步工具函数封装为异步调用,支持超时控制和错误处理。
 """
 import asyncio
 import logging
 from typing import Callable, Any
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +15,11 @@ class AsyncToolWrapper:
     """
     异步工具包装器
     
-    将同步函数封装为异步调用，并提供超时控制。
+    将同步函数封装为异步调用,并提供超时控制。
     
     Attributes:
         func: 原始函数
-        timeout: 超时时间（秒）
+        timeout: 超时时间(秒)
     """
     
     def __init__(self, func: Callable, timeout: int = 60):
@@ -27,7 +28,7 @@ class AsyncToolWrapper:
         
         Args:
             func: 要封装的函数
-            timeout: 超时时间（秒）
+            timeout: 超时时间(秒)
         """
         self.func = func
         self.timeout = timeout
@@ -64,7 +65,7 @@ class AsyncToolWrapper:
                 )
             return result
         except asyncio.TimeoutError:
-            logger.error(f"工具 {func_name} 执行超时（{self.timeout}秒）")
+            logger.error(f"工具 {func_name} 执行超时({self.timeout}秒)")
             raise
         except Exception as e:
             logger.error(f"工具 {func_name} 执行失败: {str(e)}")
@@ -75,7 +76,7 @@ class AsyncToolWrapper:
         获取超时时间
         
         Returns:
-            int: 超时时间（秒）
+            int: 超时时间(秒)
         """
         return self.timeout
     
@@ -96,11 +97,11 @@ def wrap_async(
     """
     工具异步封装函数
     
-    便捷函数，用于快速创建工具包装器。
+    便捷函数,用于快速创建工具包装器。
     
     Args:
         func: 要封装的函数
-        timeout: 超时时间（秒）
+        timeout: 超时时间(秒)
         
     Returns:
         AsyncToolWrapper: 工具包装器实例

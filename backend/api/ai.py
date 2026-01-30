@@ -1,11 +1,11 @@
 """
 AI 对话 API 路由
 
-提供 AI 对话功能，支持创建对话实例、发送消息、获取历史等。
+提供 AI 对话功能,支持创建对话实例、发送消息、获取历史等。
 使用 LangChain 和 OpenAI GPT-3.5-turbo 模型实现智能对话。
 使用 LangChain 0.3.x 的消息历史管理进行对话记忆。
 
-主要功能：
+主要功能:
 - 创建和管理对话实例
 - 发送消息并获取 AI 响应
 - 对话历史记录查询
@@ -24,7 +24,7 @@ from backend.config import settings
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import HumanMessage, AIMessage
+
 from langchain_core.chat_history import InMemoryChatMessageHistory
 
 logger = logging.getLogger(__name__)
@@ -40,31 +40,31 @@ llm = ChatOpenAI(
 )
 
 SYSTEM_PROMPT = """
-你是一个专业的Web安全顾问，名为WebScan AI。你的任务是帮助用户解决Web安全相关问题，包括漏洞分析、安全加固建议、扫描报告解读等。
+你是一个专业的Web安全顾问,名为WebScan AI。你的任务是帮助用户解决Web安全相关问题,包括漏洞分析、安全加固建议、扫描报告解读等。
 
-你的专业领域包括但不限于：
-- OWASP Top 10 漏洞（SQL注入、XSS、CSRF、文件上传等）
-- 常见Web框架漏洞（Spring、Struts2、ThinkPHP、WordPress等）
+你的专业领域包括但不限于:
+- OWASP Top 10 漏洞(SQL注入、XSS、CSRF、文件上传等)
+- 常见Web框架漏洞(Spring、Struts2、ThinkPHP、WordPress等)
 - 网络安全扫描与渗透测试
 - 安全加固与最佳实践
 - 漏洞修复方案与代码审计
 
-你需要：
-1. 提供专业、准确的安全建议，基于最新的安全研究和CVE数据库
-2. 解释技术概念时要清晰易懂，根据用户的背景调整解释深度
+你需要:
+1. 提供专业、准确的安全建议,基于最新的安全研究和CVE数据库
+2. 解释技术概念时要清晰易懂,根据用户的背景调整解释深度
 3. 针对用户的具体问题给出具体、可执行的解决方案
-4. 保持友好、专业的语气，同时保持客观中立
-5. 当用户提供扫描报告或漏洞信息时，进行深入分析，包括：
+4. 保持友好、专业的语气,同时保持客观中立
+5. 当用户提供扫描报告或漏洞信息时,进行深入分析,包括:
    - 漏洞的危害程度评估
    - 可能的攻击场景和影响范围
    - 详细的修复建议和代码示例
    - 预防措施和安全加固建议
-6. 如果问题涉及敏感操作，提醒用户遵守法律法规和道德准则
-7. 对于不确定的问题，诚实说明并建议用户参考官方文档或寻求专业帮助
+6. 如果问题涉及敏感操作,提醒用户遵守法律法规和道德准则
+7. 对于不确定的问题,诚实说明并建议用户参考官方文档或寻求专业帮助
 
-回答格式要求：
-- 使用清晰的段落结构，适当使用列表和代码块
-- 对于技术术语，首次出现时提供简要解释
+回答格式要求:
+- 使用清晰的段落结构,适当使用列表和代码块
+- 对于技术术语,首次出现时提供简要解释
 - 提供的代码示例要完整且经过验证
 - 重要信息使用加粗或特殊标记突出显示
 """
@@ -77,13 +77,13 @@ async def get_or_create_history(chat_instance_id: UUID) -> InMemoryChatMessageHi
     """
     获取或创建对话历史
     
-    从缓存中获取对话历史，如果不存在则创建新的历史对象并加载历史消息。
+    从缓存中获取对话历史,如果不存在则创建新的历史对象并加载历史消息。
     
     Args:
         chat_instance_id: 对话实例 ID
         
     Returns:
-        InMemoryChatMessageHistory: 对话历史对象，包含历史对话内容
+        InMemoryChatMessageHistory: 对话历史对象,包含历史对话内容
     """
     chat_id = str(chat_instance_id)
     
@@ -131,15 +131,15 @@ async def create_chat_instance(
     """
     创建新的对话实例
     
-    创建一个新的对话会话，并初始化对话历史。
+    创建一个新的对话会话,并初始化对话历史。
     
     Args:
-        chat_name: 对话名称，如果不提供则自动生成
-        chat_type: 对话类型，默认为 'general'
-        user_id: 用户 ID，可选
+        chat_name: 对话名称,如果不提供则自动生成
+        chat_type: 对话类型,默认为 'general'
+        user_id: 用户 ID,可选
         
     Returns:
-        Dict: 包含对话实例信息的响应，结构如下:
+        Dict: 包含对话实例信息的响应,结构如下:
             {
                 "code": 200,
                 "message": "对话实例创建成功",
@@ -204,16 +204,16 @@ async def list_chat_instances(
     """
     列出对话实例
     
-    获取对话实例列表，支持按用户 ID 和状态过滤，以及分页查询。
+    获取对话实例列表,支持按用户 ID 和状态过滤,以及分页查询。
     
     Args:
-        user_id: 用户 ID，用于过滤
-        status: 对话状态，默认为 'active'
-        page: 页码，从 1 开始
+        user_id: 用户 ID,用于过滤
+        status: 对话状态,默认为 'active'
+        page: 页码,从 1 开始
         page_size: 每页数量
         
     Returns:
-        Dict: 包含对话实例列表的响应，结构如下:
+        Dict: 包含对话实例列表的响应,结构如下:
             {
                 "code": 200,
                 "message": "查询对话实例成功",
@@ -289,13 +289,13 @@ async def get_chat_instance(chat_instance_id: UUID):
     """
     获取对话实例详情
     
-    获取指定对话实例的详细信息，包括所有历史消息。
+    获取指定对话实例的详细信息,包括所有历史消息。
     
     Args:
         chat_instance_id: 对话实例 ID
         
     Returns:
-        Dict: 包含对话实例和消息列表的响应，结构如下:
+        Dict: 包含对话实例和消息列表的响应,结构如下:
             {
                 "code": 200,
                 "message": "查询对话实例成功",
@@ -359,13 +359,13 @@ async def delete_chat_instance(chat_instance_id: UUID):
     """
     删除对话实例
     
-    删除指定的对话实例及其所有消息，并清除对话历史缓存。
+    删除指定的对话实例及其所有消息,并清除对话历史缓存。
     
     Args:
         chat_instance_id: 对话实例 ID
         
     Returns:
-        Dict: 删除结果，结构如下:
+        Dict: 删除结果,结构如下:
             {
                 "code": 200,
                 "message": "对话实例删除成功"
@@ -407,8 +407,8 @@ class MessageRequest(BaseModel):
     
     Attributes:
         content: 消息内容
-        message_type: 消息类型，默认为 'text'
-        user_id: 用户 ID，可选
+        message_type: 消息类型,默认为 'text'
+        user_id: 用户 ID,可选
     """
     content: str
     message_type: Optional[str] = "text"
@@ -423,14 +423,14 @@ async def send_message(
     """
     发送消息到对话实例
     
-    向指定对话实例发送用户消息，并获取 AI 的响应。
+    向指定对话实例发送用户消息,并获取 AI 的响应。
     
     Args:
         chat_instance_id: 对话实例 ID
-        request: 消息请求，包含消息内容
+        request: 消息请求,包含消息内容
         
     Returns:
-        Dict: 包含用户消息和 AI 响应的响应，结构如下:
+        Dict: 包含用户消息和 AI 响应的响应,结构如下:
             {
                 "code": 200,
                 "message": "消息发送成功",
@@ -545,15 +545,15 @@ async def get_chat_messages(
     """
     获取对话消息历史
     
-    获取指定对话实例的消息历史，支持分页查询。
+    获取指定对话实例的消息历史,支持分页查询。
     
     Args:
         chat_instance_id: 对话实例 ID
-        page: 页码，从 1 开始
+        page: 页码,从 1 开始
         page_size: 每页数量
         
     Returns:
-        Dict: 包含消息列表的响应，结构如下:
+        Dict: 包含消息列表的响应,结构如下:
             {
                 "code": 200,
                 "message": "获取消息历史成功",
@@ -619,13 +619,13 @@ async def close_chat_instance(chat_instance_id: UUID):
     """
     关闭对话实例
     
-    关闭指定的对话实例，并清除对话历史缓存。
+    关闭指定的对话实例,并清除对话历史缓存。
     
     Args:
         chat_instance_id: 对话实例 ID
         
     Returns:
-        Dict: 关闭结果，结构如下:
+        Dict: 关闭结果,结构如下:
             {
                 "code": 200,
                 "message": "对话实例关闭成功"

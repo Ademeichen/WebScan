@@ -1,7 +1,7 @@
 """
 报告生成器
 
-负责生成 POC 验证报告，支持 HTML、JSON、PDF 等多种格式。
+负责生成 POC 验证报告,支持 HTML、JSON、PDF 等多种格式。
 """
 import logging
 import json
@@ -11,6 +11,7 @@ from pathlib import Path
 
 from backend.models import POCVerificationTask, POCVerificationResult
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,10 +19,10 @@ class ReportGenerator:
     """
     报告生成器类
     
-    负责生成 POC 验证报告，包括：
-    - HTML 格式报告（带图表）
-    - JSON 格式报告（结构化数据）
-    - PDF 格式报告（可打印）
+    负责生成 POC 验证报告,包括:
+    - HTML 格式报告(带图表)
+    - JSON 格式报告(结构化数据)
+    - PDF 格式报告(可打印)
     - 执行摘要生成
     - 漏洞详情列表
     - 统计信息
@@ -50,13 +51,13 @@ class ReportGenerator:
         
         Args:
             verification_task: POC 验证任务对象
-            format: 报告格式（html, json, pdf）
-            output_path: 输出文件路径，None 则返回内容
+            format: 报告格式(html, json, pdf)
+            output_path: 输出文件路径,None 则返回内容
             
         Returns:
             str: 报告内容或文件路径
         """
-        logger.info(f"📄 开始生成报告，格式: {format}, 任务: {verification_task.poc_name}")
+        logger.info(f"📄 开始生成报告,格式: {format}, 任务: {verification_task.poc_name}")
         
         # 获取验证结果
         results = await POCVerificationResult.filter(
@@ -93,13 +94,13 @@ class ReportGenerator:
         
         Args:
             verification_tasks: POC 验证任务列表
-            format: 报告格式（html, json, pdf）
-            output_path: 输出文件路径，None 则返回内容
+            format: 报告格式(html, json, pdf)
+            output_path: 输出文件路径,None 则返回内容
             
         Returns:
             str: 报告内容或文件路径
         """
-        logger.info(f"📄 开始生成批量报告，格式: {format}, 任务数: {len(verification_tasks)}")
+        logger.info(f"📄 开始生成批量报告,格式: {format}, 任务数: {len(verification_tasks)}")
         
         # 获取所有验证结果
         all_results = []
@@ -471,7 +472,7 @@ class ReportGenerator:
             pdf_bytes = HTML(string=html_content).write_pdf()
             return pdf_bytes.decode('latin-1')
         except ImportError:
-            logger.warning("⚠️ weasyprint 未安装，返回 HTML 格式")
+            logger.warning("⚠️ weasyprint 未安装,返回 HTML 格式")
             return html_content
         except Exception as e:
             logger.error(f"❌ 生成 PDF 失败: {str(e)}")

@@ -1,10 +1,10 @@
 """
 AI Agent API 路由
 
-提供 AI Agent 任务执行接口，支持工具调用、任务规划和结果存储。
-使用 LangGraph 构建工作流，实现智能任务执行。
+提供 AI Agent 任务执行接口,支持工具调用、任务规划和结果存储。
+使用 LangGraph 构建工作流,实现智能任务执行。
 
-主要功能：
+主要功能:
 - 创建和执行 AI Agent 任务
 - 工具调用和管理
 - 任务规划和执行结果存储
@@ -35,7 +35,7 @@ class ToolDef(BaseModel):
     
     Attributes:
         name: 工具名称
-        args: 工具参数，字典格式
+        args: 工具参数,字典格式
         description: 工具描述
     """
     name: str
@@ -49,7 +49,7 @@ class AgentRequest(BaseModel):
     
     Attributes:
         tools: 可用工具列表
-        memory_info: 记忆信息，用于上下文传递
+        memory_info: 记忆信息,用于上下文传递
         user_requirement: 用户需求描述
     """
     tools: List[ToolDef]
@@ -62,21 +62,21 @@ async def run_agent(request: AgentRequest):
     """
     执行 AI Agent 任务
     
-    流程：
+    流程:
     1. 创建任务记录并保存到数据库
     2. 调用 LangGraph 工作流执行任务
     3. 保存执行结果到数据库
     
-    工作流包括：
-    - 规划节点：根据用户需求和可用工具生成执行计划
-    - 执行节点：按照计划依次调用工具
-    - 总结节点：汇总执行结果
+    工作流包括:
+    - 规划节点:根据用户需求和可用工具生成执行计划
+    - 执行节点:按照计划依次调用工具
+    - 总结节点:汇总执行结果
     
     Args:
-        request: Agent 请求，包含工具列表和用户需求
+        request: Agent 请求,包含工具列表和用户需求
         
     Returns:
-        Dict: 包含任务ID和执行结果的响应，结构如下:
+        Dict: 包含任务ID和执行结果的响应,结构如下:
             {
                 "task_id": "任务ID",
                 "data": {
@@ -162,13 +162,13 @@ async def get_agent_task(task_id: str):
     """
     获取 Agent 任务详情
     
-    根据任务 ID 获取任务的详细信息，包括输入、状态和执行结果。
+    根据任务 ID 获取任务的详细信息,包括输入、状态和执行结果。
     
     Args:
         task_id: 任务 ID
         
     Returns:
-        Dict: 包含任务详细信息的响应，结构如下:
+        Dict: 包含任务详细信息的响应,结构如下:
             {
                 "task_id": "任务ID",
                 "input_json": "输入JSON",
@@ -219,12 +219,12 @@ async def list_agent_tasks(
     支持按状态过滤和分页查询。
     
     Args:
-        status: 按任务状态过滤，可选值: 'pending', 'running', 'completed', 'failed'
-        page: 页码，从 1 开始
+        status: 按任务状态过滤,可选值: 'pending', 'running', 'completed', 'failed'
+        page: 页码,从 1 开始
         page_size: 每页数量
         
     Returns:
-        Dict: 包含任务列表和分页信息的响应，结构如下:
+        Dict: 包含任务列表和分页信息的响应,结构如下:
             {
                 "tasks": [...],
                 "total": 总数,

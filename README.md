@@ -301,7 +301,15 @@ class Settings(BaseSettings):
     PORT: int = 8888
     
     # CORS配置
+<<<<<<< HEAD
     CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:8888"]
+=======
+<<<<<<< HEAD
+    CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:8888"]
+=======
+    CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
     
     # 数据库配置
     DATABASE_URL: str = "sqlite://./webscan.db"
@@ -372,7 +380,15 @@ POST /api/poc/scan
 Content-Type: application/json
 
 {
+<<<<<<< HEAD
   "target": "https://www.baidu.com",
+=======
+<<<<<<< HEAD
+  "target": "https://www.baidu.com",
+=======
+  "target": "http://example.com",
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
   "poc_list": ["poc1", "poc2"]
 }
 ```
@@ -384,7 +400,15 @@ POST /api/port/scan
 Content-Type: application/json
 
 {
+<<<<<<< HEAD
   "target": "www.baidu.com",
+=======
+<<<<<<< HEAD
+  "target": "www.baidu.com",
+=======
+  "target": "example.com",
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
   "ports": [80, 443, 8080]
 }
 ```
@@ -396,7 +420,15 @@ POST /api/awvs/scan
 Content-Type: application/json
 
 {
+<<<<<<< HEAD
   "url": "https://www.baidu.com",
+=======
+<<<<<<< HEAD
+  "url": "https://www.baidu.com",
+=======
+  "url": "http://example.com",
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
   "scan_type": "full_scan"
 }
 ```
@@ -661,7 +693,15 @@ lsof -ti:8888 | xargs kill -9
 
 - 项目主页: https://github.com/yourusername/webscan-ai
 - 问题反馈: https://github.com/yourusername/webscan-ai/issues
+<<<<<<< HEAD
 - 邮箱: your.email@www.baidu.com
+=======
+<<<<<<< HEAD
+- 邮箱: your.email@www.baidu.com
+=======
+- 邮箱: your.email@example.com
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 
 ---
 

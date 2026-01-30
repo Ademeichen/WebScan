@@ -4,8 +4,8 @@
 生成标准化的扫描报告。
 """
 import logging
-from typing import Dict, Any, List
-from datetime import datetime
+from typing import Any, Dict, List
+
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +155,7 @@ class ReportGenerator:
             state: Agent状态
             
         Returns:
-            float: 持续时间（秒）
+            float: 持续时间(秒)
         """
         if not state.execution_history:
             return 0.0

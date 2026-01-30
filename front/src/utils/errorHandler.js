@@ -2,8 +2,16 @@
  * 全局错误处理工具
  */
 
+<<<<<<< HEAD
 import toast from './toast.js'
 
+=======
+<<<<<<< HEAD
+import toast from './toast.js'
+
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 /**
  * 错误类型枚举
  */
@@ -127,6 +135,10 @@ class ErrorHandler {
    * 默认错误处理器
    */
   defaultHandler(error) {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
     // 根据错误类型显示不同的提示
     switch (error.type) {
       case ErrorType.NETWORK_ERROR:
@@ -153,10 +165,36 @@ class ErrorHandler {
         break
       default:
         toast.info('提示', error.message, 3000)
+<<<<<<< HEAD
+=======
+=======
+    // 显示用户友好的错误消息
+    if (typeof window !== 'undefined') {
+      // 在浏览器环境中显示错误
+      this.showErrorToast(error.message)
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
     }
 
     return error
   }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+
+  /**
+   * 显示错误提示
+   */
+  showErrorToast(message) {
+    // 如果使用了toast库，可以在这里调用
+    // 这里使用简单的alert作为后备
+    if (typeof alert !== 'undefined') {
+      alert(message)
+    }
+  }
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 }
 
 // 创建全局错误处理器实例
@@ -166,11 +204,36 @@ export const errorHandler = new ErrorHandler()
 errorHandler.setGlobalHandler((error) => {
   console.error('全局错误:', error)
   
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
   // 记录错误到日志服务（可选）
   // logErrorToService(error)
   
   // 上报错误到监控系统（可选）
   // reportErrorToMonitoring(error)
+<<<<<<< HEAD
+=======
+=======
+  // 根据错误类型进行不同处理
+  switch (error.type) {
+    case ErrorType.NETWORK_ERROR:
+      errorHandler.showErrorToast('网络连接失败，请检查您的网络设置')
+      break
+    case ErrorType.AUTH_ERROR:
+      errorHandler.showErrorToast(error.message)
+      // 可以在这里跳转到登录页面
+      // window.location.href = '/login'
+      break
+    case ErrorType.VALIDATION_ERROR:
+      errorHandler.showErrorToast('输入数据有误，请检查后重试')
+      break
+    default:
+      errorHandler.showErrorToast(error.message || '操作失败，请稍后重试')
+  }
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 })
 
 /**

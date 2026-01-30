@@ -1,11 +1,12 @@
 """
 结果分析器
 
-负责分析 POC 验证结果，包括漏洞验证状态判定、漏洞等级评估、误报检测、结果置信度计算等。
+负责分析 POC 验证结果,包括漏洞验证状态判定、漏洞等级评估、误报检测、结果置信度计算等。
 """
 import logging
-from typing import Dict, List, Any
 from dataclasses import dataclass
+from typing import List, Optional, Dict, Any
+
 
 from backend.models import POCVerificationResult, POCExecutionLog
 from backend.config import settings
@@ -59,7 +60,7 @@ class ResultAnalyzer:
     """
     结果分析器类
     
-    负责分析 POC 验证结果，包括：
+    负责分析 POC 验证结果,包括:
     - 漏洞验证状态判定
     - 漏洞等级评估
     - 误报检测
@@ -181,7 +182,7 @@ class ResultAnalyzer:
         Returns:
             BatchAnalysisSummary: 批量分析摘要
         """
-        logger.info(f"🔍 开始批量分析，结果数: {len(results)}")
+        logger.info(f"🔍 开始批量分析,结果数: {len(results)}")
         
         analysis_results = []
         for result in results:
@@ -227,7 +228,7 @@ class ResultAnalyzer:
             recommendations=recommendations
         )
         
-        logger.info(f"✅ 批量分析完成，漏洞: {vulnerable_count}, 误报: {false_positive_count}")
+        logger.info(f"✅ 批量分析完成,漏洞: {vulnerable_count}, 误报: {false_positive_count}")
         return summary
     
     def _detect_false_positive(
@@ -245,7 +246,7 @@ class ResultAnalyzer:
         Returns:
             bool: 是否为误报
         """
-        # 如果结果明确显示存在漏洞，不太可能是误报
+        # 如果结果明确显示存在漏洞,不太可能是误报
         if result.vulnerable and result.confidence > settings.POC_RESULT_ACCURACY_THRESHOLD:
             return False
         
@@ -290,13 +291,13 @@ class ResultAnalyzer:
             is_false_positive: 是否为误报
             
         Returns:
-            str: 风险等级（critical, high, medium, low, info）
+            str: 风险等级(critical, high, medium, low, info)
         """
-        # 如果是误报，风险等级为 info
+        # 如果是误报,风险等级为 info
         if is_false_positive:
             return "info"
         
-        # 如果不存在漏洞，风险等级为 low
+        # 如果不存在漏洞,风险等级为 low
         if not result.vulnerable:
             return "low"
         
@@ -331,7 +332,7 @@ class ResultAnalyzer:
         recommendations = []
         
         if is_false_positive:
-            recommendations.append("此结果可能是误报，建议进行人工验证")
+            recommendations.append("此结果可能是误报,建议进行人工验证")
             recommendations.append("检查网络连接是否正常")
             recommendations.append("确认目标服务是否正常运行")
         elif result.vulnerable:
@@ -375,13 +376,13 @@ class ResultAnalyzer:
         )
         
         if high_risk_targets:
-            recommendations.append(f"发现 {len(high_risk_targets)} 个高风险目标，需要立即处理")
+            recommendations.append(f"发现 {len(high_risk_targets)} 个高风险目标,需要立即处理")
             recommendations.append("优先处理 critical 和 high 级别的漏洞")
         
         # 统计误报
         false_positive_count = sum(1 for a in analysis_results if a.is_false_positive)
         if false_positive_count > 0:
-            recommendations.append(f"发现 {false_positive_count} 个可能的误报，建议人工验证")
+            recommendations.append(f"发现 {false_positive_count} 个可能的误报,建议人工验证")
         
         # 统计漏洞类型
         severity_distribution = {}
@@ -390,10 +391,10 @@ class ResultAnalyzer:
             severity_distribution[severity] = severity_distribution.get(severity, 0) + 1
         
         if severity_distribution.get("critical", 0) > 0:
-            recommendations.append(f"存在 {severity_distribution['critical']} 个严重漏洞，需要紧急修复")
+            recommendations.append(f"存在 {severity_distribution['critical']} 个严重漏洞,需要紧急修复")
         
         if severity_distribution.get("high", 0) > 0:
-            recommendations.append(f"存在 {severity_distribution['high']} 个高危漏洞，建议尽快修复")
+            recommendations.append(f"存在 {severity_distribution['high']} 个高危漏洞,建议尽快修复")
         
         return recommendations
     

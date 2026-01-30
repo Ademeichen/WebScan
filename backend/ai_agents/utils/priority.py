@@ -35,7 +35,7 @@ class TaskPriorityManager:
             context: 目标上下文
             
         Returns:
-            float: 优先级分数（越高优先级越高）
+            float: 优先级分数(越高优先级越高)
         """
         base_priority = self._get_base_priority(task_name)
         
@@ -126,17 +126,17 @@ class TaskPriorityManager:
         """
         adjusted_priority = base_priority
         
-        # 如果检测到WAF，降低POC优先级（避免被封禁）
+        # 如果检测到WAF,降低POC优先级(避免被封禁)
         if context.get("waf") and task_name.startswith("poc_"):
             adjusted_priority *= 0.5
-            logger.debug(f"检测到WAF，降低POC优先级: {task_name}")
+            logger.debug(f"检测到WAF,降低POC优先级: {task_name}")
         
-        # 如果检测到CDN，降低端口扫描优先级
+        # 如果检测到CDN,降低端口扫描优先级
         if context.get("cdn") and task_name == "portscan":
             adjusted_priority *= 0.7
-            logger.debug("检测到CDN，降低端口扫描优先级")
+
         
-        # 如果CMS已知，提高相关POC优先级
+        # 如果CMS已知,提高相关POC优先级
         cms = context.get("cms", "").lower()
         if cms and task_name.startswith("poc_"):
             poc_lower = task_name.lower()
@@ -144,7 +144,7 @@ class TaskPriorityManager:
                 adjusted_priority *= 1.5
                 logger.debug(f"提高相关POC优先级: {task_name}")
         
-        # 如果开放特定端口，提高相关POC优先级
+        # 如果开放特定端口,提高相关POC优先级
         open_ports = context.get("open_ports", [])
         if task_name.startswith("poc_"):
             for port in open_ports:

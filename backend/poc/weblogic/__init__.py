@@ -2,7 +2,6 @@ from .cve_2020_2551_poc import poc as cve_2020_2551_poc
 from .cve_2018_2628_poc import poc as cve_2018_2628_poc
 from .cve_2018_2894_poc import poc as cve_2018_2894_poc
 
-# 新增 POC 适配器
 def cve_2020_14756_poc(url, timeout=10):
     """
     WebLogic CVE-2020-14756 POC 适配器

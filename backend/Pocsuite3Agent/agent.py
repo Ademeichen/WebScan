@@ -2,9 +2,9 @@
 Pocsuite3Agent 模块
 
 提供基于 Pocsuite3 的 POC 执行代理功能。
-支持自动选择和执行 POC，并返回详细的漏洞检测结果。
+支持自动选择和执行 POC,并返回详细的漏洞检测结果。
 
-主要功能：
+主要功能:
 - POC 自动发现和加载
 - 目标扫描和漏洞验证
 - 结果解析和报告生成
@@ -16,8 +16,9 @@ import os
 import tempfile
 import sys
 import asyncio
-from typing import Dict, List, Optional
 from dataclasses import dataclass, field
+from typing import Optional, List, Dict
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class POCResult:
         message: 结果消息
         output: 完整输出
         error: 错误信息
-        execution_time: 执行时间（秒）
+        execution_time: 执行时间(秒)
     """
     poc_name: str
     target: str
@@ -55,7 +56,7 @@ class ScanResult:
         total_pocs: 执行的 POC 总数
         vulnerable_count: 发现的漏洞数量
         results: POC 结果列表
-        execution_time: 总执行时间（秒）
+        execution_time: 总执行时间(秒)
     """
     target: str
     total_pocs: int
@@ -76,7 +77,7 @@ class Pocsuite3Agent:
         初始化 Pocsuite3 代理
         
         Args:
-            pocsuite_path: Pocsuite3 安装路径，如果为 None 则使用系统默认路径
+            pocsuite_path: Pocsuite3 安装路径,如果为 None 则使用系统默认路径
         """
         self.pocsuite_path = pocsuite_path
         self.poc_registry: Dict[str, str] = {}
@@ -95,7 +96,7 @@ class Pocsuite3Agent:
             logger.info("Pocsuite3 已安装")
             return True
         except ImportError:
-            logger.warning("Pocsuite3 未安装，部分功能将不可用")
+            logger.warning("Pocsuite3 未安装,部分功能将不可用")
             return False
     
     def _load_pocs(self):
@@ -134,7 +135,7 @@ class Pocsuite3Agent:
         Args:
             poc_name: POC 名称
             target: 目标 URL 或 IP
-            verify: 是否仅验证（不攻击）
+            verify: 是否仅验证(不攻击)
             
         Returns:
             POCResult: 执行结果
@@ -208,7 +209,7 @@ class Pocsuite3Agent:
     
     def _parse_output(self, output: str) -> bool:
         """
-        解析 Pocsuite3 输出，判断是否存在漏洞
+        解析 Pocsuite3 输出,判断是否存在漏洞
         
         Args:
             output: Pocsuite3 输出内容
@@ -241,11 +242,11 @@ class Pocsuite3Agent:
         max_concurrent: int = 5
     ) -> ScanResult:
         """
-        扫描目标，执行多个 POC
+        扫描目标,执行多个 POC
         
         Args:
             target: 目标 URL 或 IP
-            poc_names: 要执行的 POC 名称列表，如果为 None 则执行所有 POC
+            poc_names: 要执行的 POC 名称列表,如果为 None 则执行所有 POC
             max_concurrent: 最大并发数
             
         Returns:
@@ -327,7 +328,7 @@ class Pocsuite3Agent:
         Args:
             poc_code: POC 代码字符串
             target: 目标 URL 或 IP
-            verify: 是否仅验证（不攻击）
+            verify: 是否仅验证(不攻击)
             
         Returns:
             POCResult: 执行结果
@@ -445,7 +446,7 @@ _pocsuite3_agent_instance: Optional[Pocsuite3Agent] = None
 
 def get_pocsuite3_agent() -> Pocsuite3Agent:
     """
-    获取 Pocsuite3 代理实例（单例模式）
+    获取 Pocsuite3 代理实例(单例模式)
     
     Returns:
         Pocsuite3Agent: 代理实例

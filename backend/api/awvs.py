@@ -2,14 +2,16 @@
 AWVS 漏洞扫描相关的 API 路由
 整合 AVWS 工具包的功能
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from pydantic import BaseModel
-from typing import Optional, Any
+
+from fastapi import APIRouter, BackgroundTasks
+from pydantic import BaseModel, HttpUrl
+from typing import Optional, List, Dict, Any
+
 import logging
 import json
 import re
 import asyncio
-import time
+
 from functools import partial
 from tortoise.functions import Count
 from urllib.parse import urlparse
@@ -17,25 +19,14 @@ from backend.config import settings
 from backend.models import Task, Vulnerability
 
 # 导入 AWVS API 类
-from backend.AVWS.API.Scan import Scan
-from backend.AVWS.API.Target import Target
-from backend.AVWS.API.Vuln import Vuln
-from backend.AVWS.API.Dashboard import Dashboard
 
-# 导入 POC 模块
-from backend.poc.weblogic import cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc, cve_2020_14756_poc, cve_2023_21839_poc
-from backend.poc.Drupal import cve_2018_7600_poc
-from backend.poc.tomcat import cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc
-from backend.poc.jboss import cve_2017_12149_poc
-from backend.poc.nexus import cve_2020_10199_poc
-from backend.poc.struts2 import struts2_009_poc, struts2_032_poc
+
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# 全局变量用于存储中间件扫描时间戳
-middleware_scan_time = 0.0
+
 
 async def run_sync(func, *args, **kwargs):
     """在线程池中运行同步阻塞函数"""
@@ -80,7 +71,7 @@ def map_severity(awvs_severity: int, vuln_title: str) -> str:
         return "Info"
         
     if s >= 3:
-        # 特殊规则：SQL注入、RCE 等提升为 Critical
+        # 特殊规则:SQL注入、RCE 等提升为 Critical
         critical_keywords = ['SQL Injection', 'Remote Code Execution', 'RCE', 'Command Injection']
         if any(k.lower() in vuln_title.lower() for k in critical_keywords):
             return "Critical"
@@ -100,8 +91,7 @@ async def sync_vulnerabilities(scan_id: str, scan_session_id: str, task_id: int)
         
         # 获取漏洞列表 (使用线程池避免阻塞)
         vulns = await run_sync(s.get_vulns, scan_id, scan_session_id)
-        # DEBUG: 打印原始漏洞数据
-        print(f"原始漏洞数据: {vulns}")
+
 
         if not vulns:
             return
@@ -117,7 +107,7 @@ async def sync_vulnerabilities(scan_id: str, scan_session_id: str, task_id: int)
             # 映射严重程度
             severity = map_severity(v.get('severity', 0), v.get('vt_name', ''))
             
-            # 获取详细信息 (仅对中高危漏洞或不存在的漏洞获取详情，以减少请求量)
+            # 获取详细信息 (仅对中高危漏洞或不存在的漏洞获取详情,以减少请求量)
             description = v.get('description', f"See AWVS for details. Target: {v.get('affects_url')}")
             remediation = v.get('recommendation', '')
             
@@ -165,11 +155,10 @@ async def sync_scans_from_awvs():
         s = Scan(client['api_url'], client['api_key'])
         # 获取AWVS中所有扫描 (使用线程池)
         awvs_scans = await run_sync(s.get_all)
-        # DEBUG: 打印原始扫描数据
-        print(f"原始扫描数据: {awvs_scans}")
+
 
         # 获取数据库中所有AWVS任务
-        # 注意：这里假设task_type='awvs_scan'
+        # 注意:这里假设task_type='awvs_scan'
         db_tasks = await Task.filter(task_type='awvs_scan').all()
         db_task_map = {}
         for task in db_tasks:
@@ -244,7 +233,7 @@ async def sync_scans_from_awvs():
                     db_task_map[scan_id] = existing_task
                     target_task = existing_task
                 else:
-                    # 创建新任务（可能是直接在AWVS创建的）
+                    # 创建新任务(可能是直接在AWVS创建的)
                     target_address = scan.get('target', {}).get('address', 'Unknown Target')
                     new_task = await Task.create(
                         task_name=f"AWVS Scan: {target_address}",
@@ -266,21 +255,21 @@ async def sync_scans_from_awvs():
         logger.error(f"同步AWVS扫描任务失败: {str(e)}")
 
 
-# ==================== 获取所有扫描任务 ====================
+# ====== 获取所有扫描任务 ======
 @router.get("/scans", response_model=APIResponse)
 async def get_all_scans():
     """
-    获取所有扫描任务列表 (从数据库获取，并尝试同步)
+    获取所有扫描任务列表 (从数据库获取,并尝试同步)
     """
     try:
-        # 异步触发同步，不阻塞返回（或者可以阻塞以保证最新）
-        # 为了保证显示最新状态，这里选择阻塞同步
+        # 异步触发同步,不阻塞返回(或者可以阻塞以保证最新)
+        # 为了保证显示最新状态,这里选择阻塞同步
         await sync_scans_from_awvs()
         
         # 从数据库读取
         tasks = await Task.filter(task_type='awvs_scan').order_by('-created_at').all()
-        # DEBUG: 打印原始任务数据
-        print(f"原始任务数据: {tasks}")
+
+
         
         data = []
         for task in tasks:
@@ -323,8 +312,8 @@ async def get_all_scans():
             if 'current_session' not in scan_data:
                 scan_data['current_session'] = {}
             
-            # 仅当数据库有数据时才覆盖，或者如果原始数据中没有统计信息
-            # 这样即使数据库同步失败，也能保留 AWVS 原始统计
+            # 仅当数据库有数据时才覆盖,或者如果原始数据中没有统计信息
+            # 这样即使数据库同步失败,也能保留 AWVS 原始统计
             if total_db_count > 0 or not scan_data['current_session'].get('severity_counts'):
                 scan_data['current_session']['severity_counts'] = severity_counts
             
@@ -344,14 +333,14 @@ async def get_all_scans():
             
             data.append(scan_data)
         
-        logger.info(f"获取扫描任务列表成功，共 {len(data)} 个任务")
+        logger.info(f"获取扫描任务列表成功,共 {len(data)} 个任务")
         return APIResponse(code=200, message="获取成功", data=data)
     except Exception as e:
         logger.error(f"获取扫描任务列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 获取目标漏洞列表 ====================
+# ====== 获取目标漏洞列表 ======
 @router.get("/vulnerabilities/{target_id}", response_model=APIResponse)
 async def get_target_vulnerabilities(target_id: str):
     """
@@ -360,19 +349,19 @@ async def get_target_vulnerabilities(target_id: str):
     try:
         client = get_awvs_client()
         v = Vuln(client['api_url'], client['api_key'])
-        # DEBUG: 打印原始漏洞搜索参数
-        print(f"原始漏洞搜索参数: target_id={target_id}")
+
+
         
         # 搜索该目标的所有已打开的漏洞
-        # search 方法返回的是 JSON 字符串，需要解析
+        # search 方法返回的是 JSON 字符串,需要解析
         result_text = v.search(
             severity=None,
             criticality=None,
             status='open',
             target_id=target_id
         )
-        # DEBUG: 打印原始漏洞搜索结果
-        print(f"原始漏洞搜索结果: {result_text}")
+
+
         
         data = []
         if result_text:
@@ -387,8 +376,8 @@ async def get_target_vulnerabilities(target_id: str):
                     1: 'Low',
                     0: 'Info'
                 }
-                # DEBUG: 打印原始漏洞数据
-                print(f"原始漏洞数据: {vulnerabilities}")
+
+
                 
                 for val in vulnerabilities:
                     # Handle severity if it's an integer
@@ -414,7 +403,7 @@ async def get_target_vulnerabilities(target_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 获取漏洞详情 ====================
+# ====== 获取漏洞详情 ======
 @router.get("/vulnerability/{vuln_id}", response_model=APIResponse)
 async def get_vulnerability_detail(vuln_id: str):
     """
@@ -425,8 +414,7 @@ async def get_vulnerability_detail(vuln_id: str):
         v = Vuln(client['api_url'], client['api_key'])
         
         vuln_data = v.get(vuln_id)
-        # DEBUG: 打印原始漏洞数据
-        print(f"原始漏洞数据: {vuln_data}")
+
 
         if vuln_data:
             return APIResponse(code=200, message="获取漏洞详情成功", data=vuln_data)
@@ -438,7 +426,7 @@ async def get_vulnerability_detail(vuln_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 创建新的扫描任务 ====================
+# ====== 创建新的扫描任务 ======
 @router.post("/scan", response_model=APIResponse)
 async def create_scan(request: AWVSScanRequest):
     """
@@ -483,7 +471,7 @@ async def create_scan(request: AWVSScanRequest):
             await task.save()
             
             # 尝试立即同步一次以获取 scan_id
-            # 但AWVS可能需要一点时间生成scan_id，所以这里可能获取不到
+            # 但AWVS可能需要一点时间生成scan_id,所以这里可能获取不到
             # 下次 list scans 时会自动同步
             
             return APIResponse(code=200, message="扫描任务创建成功", data={"target_id": target_id})
@@ -498,11 +486,13 @@ async def create_scan(request: AWVSScanRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 获取漏洞排名 ====================
+
+
+# ====== 获取漏洞排名 ======
 @router.get("/vulnerabilities/rank", response_model=APIResponse)
 async def get_vulnerability_rank():
     """
-    获取漏洞排名（前5名）
+    获取漏洞排名(前5名)
     """
     try:
         client = get_awvs_client()
@@ -524,7 +514,7 @@ async def get_vulnerability_rank():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 获取漏洞统计 ====================
+# ====== 获取漏洞统计 ======
 @router.get("/vulnerabilities/stats", response_model=APIResponse)
 async def get_vulnerability_stats():
     """
@@ -550,7 +540,7 @@ async def get_vulnerability_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 获取所有目标 ====================
+# ====== 获取所有目标 ======
 @router.get("/targets", response_model=APIResponse)
 async def get_all_targets():
     """
@@ -561,14 +551,14 @@ async def get_all_targets():
         t = Target(client['api_url'], client['api_key'])
         data = t.get_all()
         
-        logger.info(f"获取目标列表成功，共 {len(data) if data else 0} 个目标")
+        logger.info(f"获取目标列表成功,共 {len(data) if data else 0} 个目标")
         return APIResponse(code=200, message="获取成功", data=data)
     except Exception as e:
         logger.error(f"获取目标列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 添加目标 ====================
+# ====== 添加目标 ======
 @router.post("/target", response_model=APIResponse)
 async def add_target(request: AWVSTargetRequest):
     """
@@ -591,7 +581,7 @@ async def add_target(request: AWVSTargetRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==================== 健康检查 ====================
+# ====== 健康检查 ======
 @router.get("/health", response_model=APIResponse)
 async def awvs_health_check():
     """
@@ -611,7 +601,8 @@ async def awvs_health_check():
         return APIResponse(code=503, message="AWVS服务连接失败", data={"status": "disconnected", "error": str(e)})
 
 
-# ==================== 中间件POC扫描相关 ====================
+
+# ====== 中间件POC扫描相关 ======
 
 class MiddlewareScanRequest(BaseModel):
     url: str
@@ -684,7 +675,7 @@ def POC_Check(url: str, CVE_id: str) -> tuple:
 @router.post("/middleware/scan", response_model=APIResponse)
 async def middleware_scan(request: MiddlewareScanRequest):
     """
-    创建中间件POC扫描任务（插入数据库）
+    创建中间件POC扫描任务(插入数据库)
     """
     global middleware_scan_time
     
@@ -716,7 +707,7 @@ async def middleware_scan(request: MiddlewareScanRequest):
 @router.post("/middleware/scan/start", response_model=APIResponse)
 async def start_middleware_scan(request: MiddlewareScanStartRequest, background_tasks: BackgroundTasks):
     """
-    启动中间件POC扫描（后台任务）
+    启动中间件POC扫描(后台任务)
     """
     try:
         url = request.url
@@ -749,7 +740,7 @@ async def start_middleware_scan(request: MiddlewareScanStartRequest, background_
                             'message': message
                         })
                         
-                        # 如果存在漏洞，创建漏洞记录
+                        # 如果存在漏洞,创建漏洞记录
                         if result:
                             await Vulnerability.create(
                                 task_id=task.id,
@@ -813,7 +804,7 @@ async def get_middleware_scans():
             
             data.append(scan_data)
         
-        logger.info(f"获取中间件扫描列表成功，共 {len(data)} 个任务")
+        logger.info(f"获取中间件扫描列表成功,共 {len(data)} 个任务")
         return APIResponse(code=200, message="获取成功", data=data)
     except Exception as e:
         logger.error(f"获取中间件扫描列表失败: {str(e)}")
@@ -897,4 +888,6 @@ async def get_middleware_poc_list():
     except Exception as e:
         logger.error(f"获取中间件POC列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
 

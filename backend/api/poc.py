@@ -2,7 +2,7 @@
 POC 漏洞扫描 API 路由
 提供中间件和框架的 CVE 漏洞检测接口
 
-支持的 POC 类型：
+支持的 POC 类型:
 - WebLogic: CVE-2020-2551, CVE-2018-2628, CVE-2018-2894, CVE-2020-14756, CVE-2023-21839
 - Struts2: S2-009, S2-032
 - Tomcat: CVE-2017-12615, CVE-2022-22965, CVE-2022-47986
@@ -10,7 +10,7 @@ POC 漏洞扫描 API 路由
 - Nexus: CVE-2020-10199
 - Drupal: CVE-2018-7600
 
-主要功能：
+主要功能:
 - 创建和管理 POC 扫描任务
 - 执行单个或批量 POC 漏洞检测
 - 获取 POC 类型和详细信息
@@ -43,8 +43,8 @@ class POCScanRequest(BaseModel):
     
     Attributes:
         target: 扫描目标 URL
-        poc_types: POC 类型列表，如果不指定则扫描所有类型
-        timeout: 超时时间（秒），默认 10 秒
+        poc_types: POC 类型列表,如果不指定则扫描所有类型
+        timeout: 超时时间(秒),默认 10 秒
     """
     target: str
     poc_types: Optional[List[str]] = None
@@ -74,9 +74,9 @@ class APIResponse(BaseModel):
     统一 API 响应模型
     
     Attributes:
-        code: 响应状态码，200 表示成功
+        code: 响应状态码,200 表示成功
         message: 响应消息
-        data: 响应数据，可选
+        data: 响应数据,可选
     """
     code: int
     message: str
@@ -122,16 +122,16 @@ async def get_available_poc_types():
 @router.post("/scan", response_model=APIResponse)
 async def scan_poc(request: POCScanRequest):
     """
-    创建 POC 扫描任务（异步执行）
+    创建 POC 扫描任务(异步执行)
     
     创建一个新的 POC 扫描任务并启动异步执行。
-    支持指定多个 POC 类型，如果不指定则扫描所有类型。
+    支持指定多个 POC 类型,如果不指定则扫描所有类型。
     
     Args:
-        request: POC 扫描请求，包含目标 URL、POC 类型和超时时间
+        request: POC 扫描请求,包含目标 URL、POC 类型和超时时间
         
     Returns:
-        APIResponse: 包含任务信息的响应，结构如下:
+        APIResponse: 包含任务信息的响应,结构如下:
             {
                 "code": 200,
                 "message": "POC 扫描任务已创建",
@@ -208,17 +208,17 @@ async def scan_poc(request: POCScanRequest):
 @router.post("/scan/{poc_type}", response_model=POCScanResult)
 async def scan_single_poc(poc_type: str, target: str, timeout: int = 10):
     """
-    执行单个 POC 漏洞扫描（并保存记录）
+    执行单个 POC 漏洞扫描(并保存记录)
     
-    对指定目标执行单个 POC 漏洞检测，并将结果保存到数据库。
+    对指定目标执行单个 POC 漏洞检测,并将结果保存到数据库。
     
     Args:
         poc_type: POC 类型
         target: 扫描目标 URL
-        timeout: 超时时间（秒），默认 10 秒
+        timeout: 超时时间(秒),默认 10 秒
         
     Returns:
-        POCScanResult: 扫描结果，结构如下:
+        POCScanResult: 扫描结果,结构如下:
             {
                 "poc_type": "POC类型",
                 "target": "目标URL",
@@ -264,7 +264,7 @@ async def scan_single_poc(poc_type: str, target: str, timeout: int = 10):
             target=target,
             vulnerable=is_vulnerable,
             message=message,
-            severity="High" # 默认为高危，后续可根据POC信息调整
+            severity="High" # 默认为高危,后续可根据POC信息调整
         )
 
         # 4. 更新任务状态
@@ -302,13 +302,13 @@ async def get_poc_info(poc_type: str):
     """
     获取 POC 详细信息
     
-    获取指定 POC 类型的详细信息，包括名称、描述、严重程度和 CVE 编号。
+    获取指定 POC 类型的详细信息,包括名称、描述、严重程度和 CVE 编号。
     
     Args:
         poc_type: POC 类型
         
     Returns:
-        Dict: POC 详细信息，结构如下:
+        Dict: POC 详细信息,结构如下:
             {
                 "name": "POC名称",
                 "description": "POC描述",

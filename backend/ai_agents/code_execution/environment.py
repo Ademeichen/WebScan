@@ -1,19 +1,19 @@
 """
-环境感知模块（优化版）
+环境感知模块(优化版)
 
-提供环境信息收集和分析功能，使AI能够感知执行环境。
+提供环境信息收集和分析功能,使AI能够感知执行环境。
 
-性能优化：
-- 使用ThreadPoolExecutor实现并发检测，性能提升50%以上
-- 添加全局超时机制，防止无限运行
-- 优化subprocess和socket资源管理，避免资源泄漏
-- 实现优雅降级，单个检测失败不影响整体
+性能优化:
+- 使用ThreadPoolExecutor实现并发检测,性能提升50%以上
+- 添加全局超时机制,防止无限运行
+- 优化subprocess和socket资源管理,避免资源泄漏
+- 实现优雅降级,单个检测失败不影响整体
 
-Bug修复：
+Bug修复:
 - 修复subprocess可能永久阻塞的问题
 - 修复socket连接未正确关闭的问题
-- 添加完善的异常处理，确保程序不会挂起
-- 添加资源清理机制，避免内存泄漏
+- 添加完善的异常处理,确保程序不会挂起
+- 添加资源清理机制,避免内存泄漏
 """
 import platform
 import sys
@@ -22,8 +22,9 @@ import os
 import logging
 import socket
 import shutil
-from typing import Dict, List, Any, Optional, Tuple
-from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
+from typing import Dict, Any, List, Optional, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import threading
 import time
 
@@ -32,32 +33,32 @@ logger = logging.getLogger(__name__)
 
 class EnvironmentAwareness:
     """
-    环境感知类（优化版）
+    环境感知类(优化版)
     
-    负责收集和分析执行环境信息，包括：
+    负责收集和分析执行环境信息,包括:
     - 操作系统检测
     - Python版本和依赖检查
-    - 可用工具检测（并发执行）
-    - 网络状态检测（并发执行）
+    - 可用工具检测(并发执行)
+    - 网络状态检测(并发执行)
     - 磁盘空间和内存状态
     
-    性能优化：
+    性能优化:
     - 使用ThreadPoolExecutor并发执行检测任务
-    - 设置合理的超时时间，避免无限等待
-    - 实现资源自动清理，避免内存泄漏
+    - 设置合理的超时时间,避免无限等待
+    - 实现资源自动清理,避免内存泄漏
     """
     
     # 全局配置
     MAX_WORKERS = 5  # 最大并发工作线程数
-    TOOL_TIMEOUT = 5  # 单个工具检测超时时间（秒）- 减少超时时间以加快检测
-    NETWORK_TIMEOUT = 3  # 网络检测超时时间（秒）
-    GLOBAL_TIMEOUT = 30  # 全局初始化超时时间（秒）
+
+    NETWORK_TIMEOUT = 3  # 网络检测超时时间(秒)
+    GLOBAL_TIMEOUT = 30  # 全局初始化超时时间(秒)
     
     def __init__(self):
         """
         初始化环境感知模块
         
-        使用并发机制加速检测，并设置全局超时
+        使用并发机制加速检测,并设置全局超时
         """
         self._init_lock = threading.Lock()
         self._initialized = False
@@ -67,15 +68,15 @@ class EnvironmentAwareness:
             logger.info("🚀 开始初始化环境感知模块...")
             start_time = time.time()
             
-            # 快速检测（同步，无阻塞）
+            # 快速检测(同步,无阻塞)
             self.os_info = self._detect_os()
             self.python_info = self._detect_python()
             
-            # 并发检测（使用线程池）
+            # 并发检测(使用线程池)
             self.available_tools, self.network_info, self.system_resources = self._detect_concurrent()
             
             init_time = time.time() - start_time
-            logger.info(f"✅ 环境感知模块初始化完成，耗时: {init_time:.2f}秒")
+            logger.info(f"✅ 环境感知模块初始化完成,耗时: {init_time:.2f}秒")
             
             with self._init_lock:
                 self._initialized = True
@@ -89,7 +90,7 @@ class EnvironmentAwareness:
     
     def _detect_os(self) -> Dict[str, Any]:
         """
-        检测操作系统信息（快速检测，无阻塞）
+        检测操作系统信息(快速检测,无阻塞)
         
         Returns:
             Dict: 操作系统信息
@@ -117,7 +118,7 @@ class EnvironmentAwareness:
     
     def _detect_python(self) -> Dict[str, Any]:
         """
-        检测Python版本和依赖（快速检测，无阻塞）
+        检测Python版本和依赖(快速检测,无阻塞)
         
         Returns:
             Dict: Python信息
@@ -155,7 +156,7 @@ class EnvironmentAwareness:
         并发执行检测任务
         
         使用线程池并发执行工具检测、网络检测和资源检测
-        显著提升检测速度，减少等待时间
+        显著提升检测速度,减少等待时间
         
         Returns:
             Tuple: (工具信息, 网络信息, 资源信息)
@@ -166,13 +167,13 @@ class EnvironmentAwareness:
             future_network = executor.submit(self._detect_network)
             future_resources = executor.submit(self._detect_resources)
             
-            # 等待所有任务完成，设置超时
+            # 等待所有任务完成,设置超时
             try:
                 tools = future_tools.result(timeout=self.GLOBAL_TIMEOUT)
                 network = future_network.result(timeout=self.GLOBAL_TIMEOUT)
                 resources = future_resources.result(timeout=self.GLOBAL_TIMEOUT)
             except TimeoutError:
-                logger.warning("⚠️ 并发检测超时，返回部分结果")
+                logger.warning("⚠️ 并发检测超时,返回部分结果")
                 tools = future_tools.result(timeout=0) or {}
                 network = future_network.result(timeout=0) or {}
                 resources = future_resources.result(timeout=0) or {}
@@ -186,9 +187,9 @@ class EnvironmentAwareness:
     
     def _detect_tools(self) -> Dict[str, Any]:
         """
-        检测可用的安全工具（并发执行）
+        检测可用的安全工具(并发执行)
         
-        使用线程池并发检测多个工具，显著提升检测速度
+        使用线程池并发检测多个工具,显著提升检测速度
         每个工具检测都有独立的超时控制
         
         Returns:
@@ -240,11 +241,11 @@ class EnvironmentAwareness:
     
     def _check_tool(self, tool_name: str, version_cmd: str) -> Dict[str, Any]:
         """
-        检查工具是否可用（优化版）
+        检查工具是否可用(优化版)
         
         使用Popen + communicate(timeout)确保进程能被正确终止
         避免subprocess.run()可能永久阻塞的问题
-        使用errors='ignore'处理编码问题，避免UnicodeDecodeError
+        使用errors='ignore'处理编码问题,避免UnicodeDecodeError
         
         Args:
             tool_name: 工具名称
@@ -255,7 +256,7 @@ class EnvironmentAwareness:
         """
         process = None
         try:
-            # 使用Popen创建进程，可以更好地控制超时
+            # 使用Popen创建进程,可以更好地控制超时
             process = subprocess.Popen(
                 version_cmd,
                 stdout=subprocess.PIPE,
@@ -282,7 +283,7 @@ class EnvironmentAwareness:
             if process:
                 process.kill()
                 process.wait()
-            logger.warning(f"工具 {tool_name} 检测超时（{self.TOOL_TIMEOUT}秒）")
+
             return {
                 "name": tool_name,
                 "available": False,
@@ -307,7 +308,7 @@ class EnvironmentAwareness:
     
     def _detect_network(self) -> Dict[str, Any]:
         """
-        检测网络状态（并发执行）
+        检测网络状态(并发执行)
         
         使用线程池并发执行多个网络检测任务
         每个检测都有独立的超时控制
@@ -347,7 +348,7 @@ class EnvironmentAwareness:
     
     def _check_proxy(self) -> bool:
         """
-        检查是否配置了代理（快速检测）
+        检查是否配置了代理(快速检测)
         
         Returns:
             bool: 是否配置代理
@@ -360,11 +361,11 @@ class EnvironmentAwareness:
     
     def _check_firewall(self) -> bool:
         """
-        检查是否启用了防火墙（优化版）
+        检查是否启用了防火墙(优化版)
         
         使用Popen + communicate(timeout)确保进程能被正确终止
         避免subprocess.run()可能永久阻塞的问题
-        使用errors='ignore'处理编码问题，避免UnicodeDecodeError
+        使用errors='ignore'处理编码问题,避免UnicodeDecodeError
         
         Returns:
             bool: 是否启用防火墙
@@ -393,7 +394,7 @@ class EnvironmentAwareness:
                 )
                 stdout, stderr = process.communicate(timeout=self.NETWORK_TIMEOUT)
                 return process.returncode == 0
-        except TimeoutError:
+
             if process:
                 process.kill()
                 process.wait()
@@ -409,7 +410,7 @@ class EnvironmentAwareness:
     
     def _check_internet(self) -> bool:
         """
-        检查是否有网络连接（优化版）
+        检查是否有网络连接(优化版)
         
         使用上下文管理器确保socket连接被正确关闭
         避免socket连接泄漏
@@ -435,7 +436,7 @@ class EnvironmentAwareness:
     
     def _detect_resources(self) -> Dict[str, Any]:
         """
-        检测系统资源（快速检测）
+        检测系统资源(快速检测)
         
         Returns:
             Dict: 资源信息
@@ -512,7 +513,7 @@ class EnvironmentAwareness:
                 recommendations.append("建议启用LLM增强任务规划")
             
             if self.system_resources.get("disk_used_percent", 0) > 80:
-                recommendations.append("磁盘空间不足，建议清理临时文件")
+                recommendations.append("磁盘空间不足,建议清理临时文件")
         except Exception as e:
             logger.warning(f"生成扫描建议失败: {str(e)}")
         
@@ -561,7 +562,7 @@ class EnvironmentAwareness:
         获取初始化错误信息
         
         Returns:
-            Optional[str]: 错误信息，如果没有错误则返回None
+            Optional[str]: 错误信息,如果没有错误则返回None
         """
         with self._init_lock:
             return self._init_error
@@ -577,7 +578,7 @@ def benchmark_performance(iterations: int = 5) -> Dict[str, Any]:
     Returns:
         Dict: 性能测试结果
     """
-    logger.info(f"🧪 开始性能基准测试，迭代次数: {iterations}")
+    logger.info(f"🧪 开始性能基准测试,迭代次数: {iterations}")
     
     times = []
     errors = []
@@ -612,7 +613,7 @@ def benchmark_performance(iterations: int = 5) -> Dict[str, Any]:
             "errors": errors
         }
     
-    logger.info("✅ 性能基准测试完成")
+
     logger.info(f"  平均耗时: {results.get('avg_time', 0):.2f}秒")
     logger.info(f"  最小耗时: {results.get('min_time', 0):.2f}秒")
     logger.info(f"  最大耗时: {results.get('max_time', 0):.2f}秒")
@@ -623,7 +624,7 @@ def benchmark_performance(iterations: int = 5) -> Dict[str, Any]:
 if __name__ == "__main__":
     import json
     
-    # 设置日志级别为INFO，方便查看测试输出
+    # 设置日志级别为INFO,方便查看测试输出
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -634,7 +635,7 @@ if __name__ == "__main__":
         env = EnvironmentAwareness()
         report = env.get_environment_report()
         
-        print("\n📋 环境报告摘要：")
+        print("\n📋 环境报告摘要:")
         print(f"  操作系统: {report['os_info']['system']} {report['os_info']['release']}")
         print(f"  Python版本: {report['python_info']['version']}")
         print(f"  可用工具数量: {sum(1 for t in report['available_tools'].values() if t.get('available'))}")
@@ -644,20 +645,20 @@ if __name__ == "__main__":
         print(f"  磁盘已用空间: {report['system_resources']['disk_used'] / (1024**3):.2f}GB")
         print(f"  磁盘可用空间: {report['system_resources']['disk_free'] / (1024**3):.2f}GB")
         
-        print("\n🔍 扫描建议：")
+        print("\n🔍 扫描建议:")
         for idx, rec in enumerate(report["scan_recommendations"], 1):
             print(f"  {idx}. {rec}")
         
-        # 可选：输出完整JSON报告
+        # 可选:输出完整JSON报告
         if "--json" in sys.argv:
-            print("\n📄 完整JSON报告：")
+            print("\n📄 完整JSON报告:")
             print(json.dumps(report, ensure_ascii=False, indent=2))
         
         # 性能基准测试
         if "--benchmark" in sys.argv:
             print("\n🚀 开始性能基准测试...")
             benchmark_results = benchmark_performance(iterations=3)
-            print("\n📊 性能测试结果：")
+            print("\n📊 性能测试结果:")
             print(json.dumps(benchmark_results, ensure_ascii=False, indent=2))
         
         print("\n✅ 环境感知模块自测完成！")

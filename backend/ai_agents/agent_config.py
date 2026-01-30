@@ -10,16 +10,16 @@ class AgentConfig:
     """
     Agent配置类
     
-    集中管理Agent的所有配置参数，便于统一调整。
+    集中管理Agent的所有配置参数,便于统一调整。
     """
     
-    # ====================== 执行配置 ======================
+    # = 执行配置 =
     MAX_EXECUTION_TIME: int = settings.AGENT_MAX_EXECUTION_TIME
     """
-    Agent最大执行时间（秒）
+    Agent最大执行时间(秒)
     
     超过此时间后Agent将被强制终止。
-    默认为300秒（5分钟）。
+    默认为300秒(5分钟)。
     """
     
     MAX_RETRIES: int = settings.AGENT_MAX_RETRIES
@@ -40,12 +40,12 @@ class AgentConfig:
     
     TOOL_TIMEOUT: int = 60
     """
-    单个工具执行超时时间（秒）
+    单个工具执行超时时间(秒)
     
     默认为60秒。
     """
 
-    # ====================== LLM 配置 ======================
+    # = LLM 配置 =
     MODEL_ID: str = settings.MODEL_ID
     """
     AI 模型 ID
@@ -68,10 +68,10 @@ class AgentConfig:
     
     用于指定 OpenAI API 的自定义端点。
     默认为官方 OpenAI API 地址。
-    如果使用第三方兼容服务（如阿里云 MaaS），可以修改此地址。
+    如果使用第三方兼容服务(如阿里云 MaaS),可以修改此地址。
     """
     
-    # ====================== 任务规划配置 ======================
+    # = 任务规划配置 =
     ENABLE_LLM_PLANNING: bool = True
     """
     是否启用LLM增强任务规划
@@ -95,7 +95,7 @@ class AgentConfig:
     规则化规划器使用的默认任务序列。
     """
     
-    # ====================== 漏洞分析配置 ======================
+    # = 漏洞分析配置 =
     SEVERITY_ORDER: Dict[str, int] = {
         "critical": 4,
         "high": 3,
@@ -113,16 +113,16 @@ class AgentConfig:
     """
     是否启用漏洞知识库集成
     
-    设置为True时，漏洞分析会自动匹配知识库中的修复建议。
+    设置为True时,漏洞分析会自动匹配知识库中的修复建议。
     默认为True。
     """
     
-    # ====================== 记忆配置 ======================
+    # = 记忆配置 =
     ENABLE_MEMORY: bool = True
     """
     是否启用记忆机制
     
-    设置为True时，Agent会记录执行历史和目标上下文。
+    设置为True时,Agent会记录执行历史和目标上下文。
     默认为True。
     """
     
@@ -130,20 +130,20 @@ class AgentConfig:
     """
     记忆最大条目数
     
-    限制记忆存储的条目数量，避免内存占用过大。
+    限制记忆存储的条目数量,避免内存占用过大。
     默认为1000条。
     """
     
-    # ====================== 日志配置 ======================
+    # = 日志配置 =
     ENABLE_DETAILED_LOGGING: bool = settings.DEBUG
     """
     是否启用详细日志
     
-    设置为True时，记录Agent执行的详细步骤。
+    设置为True时,记录Agent执行的详细步骤。
     默认与settings.DEBUG一致。
     """
     
-    # ====================== 优先级配置 ======================
+    # = 优先级配置 =
     PRIORITY_WEIGHTS: Dict[str, float] = {
         "critical_vulnerability": 1.0,
         "high_vulnerability": 0.8,
@@ -163,7 +163,7 @@ agent_config = AgentConfig()
 """
 全局Agent配置实例
 
-在应用中导入此实例来访问配置：
+在应用中导入此实例来访问配置:
     from ai_agents.agent_config import agent_config
     max_time = agent_config.MAX_EXECUTION_TIME
 """

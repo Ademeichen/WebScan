@@ -15,13 +15,28 @@
           <div class="form-section">
             <div class="form-group">
               <label class="form-label">选择扫描任务</label>
+<<<<<<< HEAD
               <select v-model="selectedTask" class="form-select" :disabled="loadingTasks">
+=======
+<<<<<<< HEAD
+              <select v-model="selectedTask" class="form-select" :disabled="loadingTasks">
+=======
+              <select v-model="selectedTask" class="form-select">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
                 <option value="">请选择扫描任务</option>
                 <option v-for="task in scanTasks" :key="task.id" :value="task.id">
                   {{ task.task_name }} - {{ task.target }}
                 </option>
               </select>
+<<<<<<< HEAD
               <span v-if="loadingTasks" class="form-hint">加载中...</span>
+=======
+<<<<<<< HEAD
+              <span v-if="loadingTasks" class="form-hint">加载中...</span>
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
             </div>
             
             <div class="form-group">
@@ -59,9 +74,20 @@
         </div>
         
         <div class="generator-actions">
+<<<<<<< HEAD
           <button @click="generateReport" class="btn btn-success" :disabled="!canGenerate || generating">
             <span v-if="generating">⏳ 生成中...</span>
             <span v-else>📄 生成报告</span>
+=======
+<<<<<<< HEAD
+          <button @click="generateReport" class="btn btn-success" :disabled="!canGenerate || generating">
+            <span v-if="generating">⏳ 生成中...</span>
+            <span v-else>📄 生成报告</span>
+=======
+          <button @click="generateReport" class="btn btn-success" :disabled="!canGenerate">
+            📄 生成报告
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
           </button>
         </div>
       </div>
@@ -82,12 +108,22 @@
           </div>
         </div>
         
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
         <div v-if="loadingReports" class="loading-state">
           <div class="loading-spinner"></div>
           <div class="loading-text">加载报告列表...</div>
         </div>
         
         <div v-else class="history-list">
+<<<<<<< HEAD
+=======
+=======
+        <div class="history-list">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
           <div 
             v-for="report in filteredReports" 
             :key="report.id"
@@ -97,7 +133,15 @@
               <div class="report-name">{{ report.report_name }}</div>
               <div class="report-meta">
                 <span class="report-task">{{ report.task_name }}</span>
+<<<<<<< HEAD
                 <span class="report-date">{{ formatDate(report.created_at) }}</span>
+=======
+<<<<<<< HEAD
+                <span class="report-date">{{ formatDate(report.created_at) }}</span>
+=======
+                <span class="report-date">{{ report.created_at }}</span>
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
               </div>
             </div>
             
@@ -108,6 +152,7 @@
             </div>
             
             <div class="report-size">
+<<<<<<< HEAD
               {{ formatFileSize(report.file_size) }}
             </div>
             
@@ -115,25 +160,66 @@
               <button @click="downloadReport(report)" class="btn-icon" title="下载" :disabled="downloading === report.id">
                 <span v-if="downloading === report.id">⏳</span>
                 <span v-else>📥</span>
+=======
+<<<<<<< HEAD
+              {{ formatFileSize(report.file_size) }}
+            </div>
+            
+            <div class="report-actions">
+              <button @click="downloadReport(report)" class="btn-icon" title="下载" :disabled="downloading === report.id">
+                <span v-if="downloading === report.id">⏳</span>
+                <span v-else>📥</span>
+=======
+              {{ report.size }}
+            </div>
+            
+            <div class="report-actions">
+              <button @click="downloadReport(report)" class="btn-icon" title="下载">
+                📥
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
               </button>
               <button @click="viewReport(report)" class="btn-icon" title="预览">
                 👁️
               </button>
+<<<<<<< HEAD
               <button @click="deleteReport(report.id)" class="btn-icon btn-danger" title="删除" :disabled="deleting === report.id">
                 <span v-if="deleting === report.id">⏳</span>
                 <span v-else>🗑️</span>
+=======
+<<<<<<< HEAD
+              <button @click="deleteReport(report.id)" class="btn-icon btn-danger" title="删除" :disabled="deleting === report.id">
+                <span v-if="deleting === report.id">⏳</span>
+                <span v-else>🗑️</span>
+=======
+              <button @click="deleteReport(report.id)" class="btn-icon btn-danger" title="删除">
+                🗑️
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
               </button>
             </div>
           </div>
         </div>
         
+<<<<<<< HEAD
         <div v-if="!loadingReports && filteredReports.length === 0" class="empty-state">
+=======
+<<<<<<< HEAD
+        <div v-if="!loadingReports && filteredReports.length === 0" class="empty-state">
+=======
+        <div v-if="filteredReports.length === 0" class="empty-state">
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
           <div class="empty-icon">📋</div>
           <div class="empty-title">暂无报告</div>
           <div class="empty-description">生成第一个安全扫描报告</div>
         </div>
       </div>
     </div>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
 
     <!-- 报告预览模态框 -->
     <div v-if="showPreviewModal" class="modal-overlay" @click="closePreviewModal">
@@ -186,23 +272,49 @@
         </div>
       </div>
     </div>
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
   </div>
 </template>
 
 <script>
+<<<<<<< HEAD
 import { reportsApi, tasksApi } from '../utils/api.js'
 import { formatDate } from '../utils/date.js'
+=======
+<<<<<<< HEAD
+import { reportsApi, tasksApi } from '../utils/api.js'
+import { formatDate } from '../utils/date.js'
+=======
+import { reportApi, taskApi } from '../utils/api.js'
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 
 export default {
   name: 'Reports',
   data() {
     return {
+<<<<<<< HEAD
       scanTasks: [],
+=======
+<<<<<<< HEAD
+      scanTasks: [],
+=======
+      scanTasks: [], // Will be populated from API
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
       reports: [],
       selectedTask: '',
       selectedFormat: 'html',
       selectedContent: ['summary', 'vulnerabilities', 'recommendations'],
       historyFilter: '',
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
       loadingTasks: false,
       loadingReports: false,
       generating: false,
@@ -211,6 +323,11 @@ export default {
       showPreviewModal: false,
       previewLoading: false,
       currentPreviewReport: null,
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
       reportFormats: [
         { value: 'html', name: 'HTML', icon: '🌐' },
         { value: 'pdf', name: 'PDF', icon: '📄' },
@@ -239,6 +356,10 @@ export default {
     this.fetchReports()
   },
   methods: {
+<<<<<<< HEAD
+    formatDate,
+=======
+<<<<<<< HEAD
     formatDate,
     async fetchTasks() {
       this.loadingTasks = true
@@ -266,12 +387,54 @@ export default {
           this.reports = response.data.reports
         } else {
           this.reports = response.data || []
+=======
+>>>>>>> origin/renruipeng
+    async fetchTasks() {
+      this.loadingTasks = true
+      try {
+        const response = await tasksApi.getTasks()
+        if (response.code === 200 && response.data && response.data.tasks) {
+          this.scanTasks = response.data.tasks
+        } else if (Array.isArray(response.data)) {
+          this.scanTasks = response.data
+        } else {
+          this.scanTasks = []
+        }
+      } catch (error) {
+        console.error('获取任务列表失败:', error)
+        this.scanTasks = []
+      } finally {
+        this.loadingTasks = false
+      }
+    },
+    async fetchReports() {
+      this.loadingReports = true
+      try {
+        const response = await reportsApi.getReports()
+        if (response.code === 200 && response.data && response.data.reports) {
+          this.reports = response.data.reports
+        } else {
+<<<<<<< HEAD
+          this.reports = response.data || []
+=======
+             // Try direct array if format differs
+             this.reports = response.data || []
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
         }
       } catch (error) {
         console.error('获取报告列表失败:', error)
         this.reports = []
+<<<<<<< HEAD
       } finally {
         this.loadingReports = false
+=======
+<<<<<<< HEAD
+      } finally {
+        this.loadingReports = false
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
       }
     },
     async generateReport() {
@@ -280,7 +443,14 @@ export default {
       const task = this.scanTasks.find(t => t.id == this.selectedTask)
       if (!task) return
 
+<<<<<<< HEAD
       this.generating = true
+=======
+<<<<<<< HEAD
+      this.generating = true
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
       try {
         const reportData = {
           task_id: task.id,
@@ -289,6 +459,10 @@ export default {
           name: `${task.task_name}报告`
         }
         
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
         const response = await reportsApi.create(reportData)
         if (response.code === 200) {
           alert('报告生成成功！')
@@ -296,6 +470,8 @@ export default {
         } else {
           alert('生成报告失败: ' + (response.message || '未知错误'))
         }
+<<<<<<< HEAD
+=======
       } catch (error) {
         console.error('生成报告失败:', error)
         alert('生成报告失败: ' + error.message)
@@ -308,10 +484,38 @@ export default {
       
       this.downloading = report.id
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
+=======
+        await reportApi.create(reportData)
+        alert('报告生成成功！')
+        this.fetchReports()
+>>>>>>> origin/renruipeng
+      } catch (error) {
+        console.error('生成报告失败:', error)
+        alert('生成报告失败: ' + error.message)
+      } finally {
+        this.generating = false
+      }
+    },
+    downloadReport(report) {
+<<<<<<< HEAD
+      if (!report) return
+      
+      this.downloading = report.id
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
+=======
+      // 实现下载功能
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
       const url = `${baseUrl}/reports/${report.id}/export?format=${report.report_type}`
       
       const link = document.createElement('a')
       link.href = url
+<<<<<<< HEAD
+      link.download = report.report_name || `report.${report.report_type}`
+      link.target = '_blank'
+=======
+<<<<<<< HEAD
       link.download = report.report_name || `report.${report.report_type}`
       link.target = '_blank'
       document.body.appendChild(link)
@@ -368,6 +572,67 @@ export default {
       const sizes = ['B', 'KB', 'MB', 'GB']
       const i = Math.floor(Math.log(bytes) / Math.log(k))
       return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+=======
+      link.target = '_blank' // Open in new tab if it doesn't download immediately, though attachment header should force download
+>>>>>>> origin/renruipeng
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      setTimeout(() => {
+        this.downloading = null
+      }, 1000)
+    },
+    async viewReport(report) {
+      this.currentPreviewReport = report
+      this.showPreviewModal = true
+      this.previewLoading = true
+      
+      try {
+        const response = await reportsApi.get(report.id)
+        if (response.code === 200) {
+          this.currentPreviewReport = { ...report, ...response.data }
+        }
+      } catch (error) {
+        console.error('获取报告详情失败:', error)
+      } finally {
+        this.previewLoading = false
+      }
+    },
+    closePreviewModal() {
+      this.showPreviewModal = false
+      this.currentPreviewReport = null
+      this.previewLoading = false
+    },
+    async deleteReport(reportId) {
+      if (confirm('确定要删除这个报告吗？')) {
+        this.deleting = reportId
+        try {
+          const response = await reportsApi.delete(reportId)
+          if (response.code === 200) {
+            this.reports = this.reports.filter(r => r.id !== reportId)
+            alert('删除成功')
+          } else {
+            alert('删除失败: ' + (response.message || '未知错误'))
+          }
+        } catch (error) {
+          console.error('删除报告失败:', error)
+          alert('删除报告失败')
+        } finally {
+          this.deleting = null
+        }
+      }
+<<<<<<< HEAD
+    },
+    formatFileSize(bytes) {
+      if (!bytes) return '0 B'
+      const k = 1024
+      const sizes = ['B', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
     }
   }
 }
@@ -394,13 +659,25 @@ export default {
 }
 
 .generator-content {
+<<<<<<< HEAD
   display: block;
+=======
+<<<<<<< HEAD
+  display: block;
+=======
+  display: block; /* Removed grid to allow full width since preview is gone */
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
   max-width: 800px;
   margin: 0 auto;
 }
@@ -410,6 +687,13 @@ export default {
   font-size: 12px;
   color: var(--text-secondary);
   margin-top: var(--spacing-xs);
+<<<<<<< HEAD
+=======
+=======
+  max-width: 800px; /* Limit width for better readability */
+  margin: 0 auto; /* Center the form */
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 }
 
 /* 格式选择标签 */
@@ -514,6 +798,10 @@ export default {
   gap: var(--spacing-md);
 }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -542,6 +830,11 @@ export default {
   font-size: 14px;
 }
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 .history-list {
   display: flex;
   flex-direction: column;
@@ -626,6 +919,7 @@ export default {
   transition: background-color 0.2s ease;
 }
 
+<<<<<<< HEAD
 .btn-icon:hover:not(:disabled) {
   background-color: var(--background-color);
 }
@@ -636,6 +930,26 @@ export default {
 }
 
 .btn-icon.btn-danger:hover:not(:disabled) {
+=======
+<<<<<<< HEAD
+.btn-icon:hover:not(:disabled) {
+  background-color: var(--background-color);
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon.btn-danger:hover:not(:disabled) {
+=======
+.btn-icon:hover {
+  background-color: var(--background-color);
+}
+
+.btn-icon.btn-danger:hover {
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
   background-color: rgba(231, 76, 60, 0.1);
 }
 
@@ -661,6 +975,10 @@ export default {
   font-size: 14px;
 }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
 /* 模态框 */
 .modal-overlay {
   position: fixed;
@@ -786,6 +1104,11 @@ export default {
   border-top: 1px solid var(--border-color);
 }
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 /* 响应式设计 */
 @media (max-width: 768px) {
   .generator-content {
@@ -806,9 +1129,18 @@ export default {
     flex-direction: column;
     gap: var(--spacing-xs);
   }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> origin/renruipeng
   
   .modal-content {
     max-height: 95vh;
   }
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
+>>>>>>> origin/renruipeng
 }
 </style>

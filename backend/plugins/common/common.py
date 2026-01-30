@@ -1,28 +1,33 @@
 # -*- coding:utf-8 -*-
 """
 FastAPI通用工具函数模块
-功能：
-1. 标准化JSON响应（成功/失败）
-2. 用户IP获取（兼容反向代理/Nginx）
-3. 字符串安全过滤（防注入/XSS）
-4. IP/URL/域名合法性校验（过滤禁止目标）
-5. 域名解析（转IP）
+功能:
+1. 标准化JSON响应(成功/失败)
+2. 用户IP获取(兼容反向代理/Nginx)
+3. 字符串安全过滤(防注入/XSS)
+4. IP/URL/域名合法性校验(过滤禁止目标)
+5. 域名解析(转IP)
 
-使用示例：
+
+使用示例:
     >>> from backend.plugins.common.common import check_ip, check_url, get_domain_ip
     >>> check_ip("8.8.8.8")  # True
     >>> check_url("https://www.baidu.com")  # "https://www.baidu.com"
     >>> get_domain_ip("https://www.baidu.com")  # "110.242.68.4"
+
+
 """
 
 import re
 import socket
 from typing import Optional, Union, Dict, Any
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
 
-# ======================== 配置常量（正则预编译+注释清晰） ========================
-# 禁止扫描的域名/IP特征（正则，忽略大小写）
+
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
+# === 配置常量(正则预编译+注释清晰) ===
+# 禁止扫描的域名/IP特征(正则,忽略大小写)
 FORBIDDEN_DOMAIN_PATTERN = re.compile(
     r'(127.0.*.*)'
     r'|(^192\.168\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|[0-9])\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|[0-9])$)'
@@ -30,7 +35,7 @@ FORBIDDEN_DOMAIN_PATTERN = re.compile(
     re.IGNORECASE
 )
 
-# 禁止扫描的IP段（正则）
+# 禁止扫描的IP段(正则)
 FORBIDDEN_IP_PATTERN = re.compile(
     r'(^0\.0\.0\.0$)'
     r'|(120.55.58.175)'
@@ -40,7 +45,7 @@ FORBIDDEN_IP_PATTERN = re.compile(
     r'|(^192\.168\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|[0-9])\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|[0-9])$)'
 )
 
-# IP合法性校验正则（预编译）
+# IP合法性校验正则(预编译)
 IP_VALID_PATTERN = re.compile(
     r'^(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|[1-9])'
     r'\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)'
@@ -48,27 +53,26 @@ IP_VALID_PATTERN = re.compile(
     r'\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)$'
 )
 
-# DNS解析超时时间（秒）
+# DNS解析超时时间(秒)
 DNS_TIMEOUT = 1
 
-# 初始化API路由（注册到主应用）
-router = APIRouter(prefix="/common", tags=["通用工具"])
 
-# ======================== 标准化响应函数（适配FastAPI） ========================
+
+
+# === 标准化响应函数(适配FastAPI) ===
 def success(
     code: int = 200,
     data: Union[list, dict, None] = None,
     msg: str = 'success'
 ) -> JSONResponse:
     """
-    返回标准化的成功JSON响应（适配FastAPI）
-    :param code: 状态码（默认200）
-    :param data: 返回数据（默认空列表）
-    :param msg: 提示信息（默认success）
+    返回标准化的成功JSON响应(适配FastAPI)
+    :param code: 状态码(默认200)
+    :param data: 返回数据(默认空列表)
+    :param msg: 提示信息(默认success)
     :return: FastAPI JSONResponse
-    说明：
-        返回格式：{"code": 200, "data": [], "msg": "success"}
-        可用于API接口的成功响应
+
+
     """
     if data is None:
         data = []
@@ -86,14 +90,13 @@ def error(
     msg: str = 'error'
 ) -> JSONResponse:
     """
-    返回标准化的失败JSON响应（适配FastAPI）
-    :param code: 状态码（默认400）
-    :param data: 返回数据（默认空列表）
-    :param msg: 错误提示（默认error）
+    返回标准化的失败JSON响应(适配FastAPI)
+    :param code: 状态码(默认400)
+    :param data: 返回数据(默认空列表)
+    :param msg: 错误提示(默认error)
     :return: FastAPI JSONResponse
-    说明：
-        返回格式：{"code": 400, "data": [], "msg": "error"}
-        可用于API接口的错误响应
+
+
     """
     if data is None:
         data = []
@@ -104,42 +107,48 @@ def error(
     }
     return JSONResponse(content=result, status_code=code)
 
-# ======================== IP处理函数（适配FastAPI Request） ========================
+# === IP处理函数(适配FastAPI Request) ===
 def get_user_ip(request: Request) -> str:
     """
-    获取用户真实IP（适配FastAPI Request对象，兼容反向代理）
+    获取用户真实IP(适配FastAPI Request对象,兼容反向代理)
     :param request: FastAPI Request对象
-    :return: 用户IP字符串（默认空字符串）
-    说明：
-        1. 优先从X-Forwarded-For头获取真实IP（反向代理场景）
-        2. 若无X-Forwarded-For，则使用request.client.host（直连场景）
-        3. 多个IP用逗号分隔时，取第一个IP
+    :return: 用户IP字符串(默认空字符串)
+
+    说明:
+        1. 优先从X-Forwarded-For头获取真实IP(反向代理场景)
+        2. 若无X-Forwarded-For,则使用request.client.host(直连场景)
+        3. 多个IP用逗号分隔时,取第一个IP
+
+
     """
     real_ip = ""
     try:
-        # 场景1：反向代理（X-Forwarded-For）
+        # 场景1:反向代理(X-Forwarded-For)
         x_forwarded_for = request.headers.get("X-Forwarded-For", "")
         if x_forwarded_for and x_forwarded_for.strip():
-            # 多个IP用逗号分隔，取第一个
+            # 多个IP用逗号分隔,取第一个
             real_ip = x_forwarded_for.split(",")[0].strip()
         else:
-            # 场景2：直接访问（request.client.host）
+            # 场景2:直接访问(request.client.host)
             real_ip = request.client.host if request.client else ""
     except Exception as e:
-        print(f"[ERROR] 获取用户IP失败：{str(e)}")
+        print(f"[ERROR] 获取用户IP失败:{str(e)}")
         real_ip = ""
     return real_ip
 
-# ======================== 安全过滤函数 ========================
+# === 安全过滤函数 ===
 def safe_addslashes(sstr: Optional[str]) -> str:
     """
-    安全过滤字符串，转义特殊字符（防SQL注入/XSS）
-    :param sstr: 待过滤字符串（允许None）
+    安全过滤字符串,转义特殊字符(防SQL注入/XSS)
+    :param sstr: 待过滤字符串(允许None)
     :return: 过滤后的字符串
-    说明：
+
+    说明:
         1. 转义反斜杠、单引号、双引号
-        2. 移除尖括号（< >）防止XSS
+        2. 移除尖括号(< >)防止XSS
         3. 自动处理None和空字符串
+
+
     """
     if not sstr:
         return ""
@@ -152,16 +161,19 @@ def safe_addslashes(sstr: Optional[str]) -> str:
            .replace('>', '')
     return ss
 
-# ======================== 域名/URL处理函数 ========================
+# === 域名/URL处理函数 ===
 def get_domain(url: Optional[str]) -> Optional[str]:
     """
     从合法URL中提取域名
     :param url: 待解析URL
     :return: 域名字符串 | None
-    说明：
+
+    说明:
         1. 先通过check_url校验URL合法性
-        2. 从URL中提取域名部分（//后第一个/前的内容）
+        2. 从URL中提取域名部分(//后第一个/前的内容)
         3. 返回小写域名
+
+
     """
     valid_url = check_url(url)
     if not valid_url:
@@ -169,26 +181,29 @@ def get_domain(url: Optional[str]) -> Optional[str]:
     try:
         url_parts = valid_url.split('/')
         domain = url_parts[2]
-        print(f'[LOG] 提取域名成功：{domain}')
+        print(f'[LOG] 提取域名成功:{domain}')
         return domain
     except IndexError:
-        print(f"[ERROR] 提取域名失败，URL格式异常：{valid_url}")
+        print(f"[ERROR] 提取域名失败,URL格式异常:{valid_url}")
         return None
 
 
 def get_domain_ip(host: Optional[str]) -> str:
     """
-    域名/URL转IP，过滤禁止扫描的IP
+    域名/URL转IP,过滤禁止扫描的IP
     :param host: 域名/URL/IP字符串
     :return: 合法IP | 错误提示
-    说明：
-        1. 若输入已是IP，直接校验是否为禁止IP
-        2. 若输入是域名，先DNS解析为IP再校验
-        3. 禁止的IP段包括：内网IP、本地IP、特定IP
+
+    说明:
+        1. 若输入已是IP,直接校验是否为禁止IP
+        2. 若输入是域名,先DNS解析为IP再校验
+        3. 禁止的IP段包括:内网IP、本地IP、特定IP
         4. 设置1秒DNS解析超时
+
+
     """
     if not host:
-        print("[ERROR] 域名/IP为空，解析失败")
+        print("[ERROR] 域名/IP为空,解析失败")
         return '目标站点不可访问'
 
     # 判断是否为IP格式
@@ -201,10 +216,10 @@ def get_domain_ip(host: Optional[str]) -> str:
         try:
             host = socket.gethostbyname(domain)
         except socket.gaierror:
-            print(f"[ERROR] 域名解析失败：{domain}")
+            print(f"[ERROR] 域名解析失败:{domain}")
             return '目标站点不可访问'
         except Exception as e:
-            print(f"[ERROR] 域名解析异常：{str(e)}")
+            print(f"[ERROR] 域名解析异常:{str(e)}")
             return '目标站点不可访问'
 
     # 检查是否为禁止IP
@@ -213,21 +228,24 @@ def get_domain_ip(host: Optional[str]) -> str:
 
     return host if host else '目标站点不可访问'
 
-# ======================== 合法性校验函数 ========================
+# === 合法性校验函数 ===
 def check_ip(ipaddr: Optional[str]) -> bool:
     """
-    校验IP合法性（格式+非禁止IP）
+    校验IP合法性(格式+非禁止IP)
     :param ipaddr: 待校验IP字符串
-    :return: True（合法）| False（非法）
-    说明：
-        1. 校验IP格式（正则匹配）
-        2. 校验IP长度（6 < 长度 < 16）
-        3. 过滤禁止IP段（内网IP、本地IP等）
+    :return: True(合法)| False(非法)
+
+    说明:
+        1. 校验IP格式(正则匹配)
+        2. 校验IP长度(6 < 长度 < 16)
+        3. 过滤禁止IP段(内网IP、本地IP等)
+
+
     """
     if not ipaddr:
         return False
     ip_str = str(ipaddr).strip()
-    # 长度校验（6 < 长度 < 16）
+    # 长度校验(6 < 长度 < 16)
     if not (6 < len(ip_str) < 16):
         return False
     # 禁止IP校验
@@ -239,32 +257,35 @@ def check_ip(ipaddr: Optional[str]) -> bool:
 
 def check_url(url: Optional[str]) -> Union[str, bool]:
     """
-    校验URL合法性（格式+非禁止域名）
+    校验URL合法性(格式+非禁止域名)
     :param url: 待校验URL字符串
     :return: 小写合法URL | False
-    说明：
-        1. 清洗URL（移除危险字符）
-        2. 校验URL长度（10 < 长度 < 40）
-        3. 过滤禁止域名（内网域名、gov.cn等）
-        4. 校验协议（必须以http://或https://开头）
-        5. 校验域名格式（必须包含点号）
+
+    说明:
+        1. 清洗URL(移除危险字符)
+        2. 校验URL长度(10 < 长度 < 40)
+        3. 过滤禁止域名(内网域名、gov.cn等)
+        4. 校验协议(必须以http://或https://开头)
+        5. 校验域名格式(必须包含点号)
+
+
     """
     if not url:
         return False
-    # 清洗URL（移除危险字符）
+    # 清洗URL(移除危险字符)
     url_clean = str(url).strip()\
         .replace('"', '').replace("'", '').replace('<', '').replace('>', '').replace(';', '')\
         .replace('\\', '/')
-    # 长度校验（10 < 长度 < 40）
+    # 长度校验(10 < 长度 < 40)
     if not (10 < len(url_clean) < 40):
         return False
     # 禁止域名校验
     if FORBIDDEN_DOMAIN_PATTERN.search(url_clean):
         return False
-    # 协议校验（http/https开头）
+    # 协议校验(http/https开头)
     if not (url_clean.startswith('http://') or url_clean.startswith('https://')):
         return False
-    # 域名格式校验（含.）
+    # 域名格式校验(含.)
     try:
         url_parts = url_clean.split('/')
         domain = url_parts[2]
@@ -275,11 +296,12 @@ def check_url(url: Optional[str]) -> Union[str, bool]:
     # 返回小写URL
     return url_clean.lower()
 
-# ======================== FastAPI示例路由（可根据业务扩展） ========================
-@router.get("/check/ip", summary="校验IP合法性")
+# === FastAPI示例路由(可根据业务扩展) ===
+
+
 async def api_check_ip(ip: str):
     """
-    FastAPI接口示例：校验IP合法性
+    FastAPI接口示例:校验IP合法性
     :param ip: 待校验的IP地址
     """
     is_valid = check_ip(ip)
@@ -289,10 +311,11 @@ async def api_check_ip(ip: str):
         return error(code=403, data={"ip": ip, "is_valid": False}, msg="IP非法或禁止扫描")
 
 
-@router.get("/check/url", summary="校验URL合法性")
+
+
 async def api_check_url(url: str):
     """
-    FastAPI接口示例：校验URL合法性
+    FastAPI接口示例:校验URL合法性
     :param url: 待校验的URL
     """
     valid_url = check_url(url)
@@ -302,10 +325,11 @@ async def api_check_url(url: str):
         return error(code=403, data={"url": url, "is_valid": False}, msg="URL非法或禁止扫描")
 
 
-@router.get("/domain/ip", summary="域名/URL转IP")
+
+
 async def api_domain_to_ip(host: str):
     """
-    FastAPI接口示例：域名/URL转IP
+    FastAPI接口示例:域名/URL转IP
     :param host: 域名/URL/IP
     """
     ip = get_domain_ip(host)
@@ -314,7 +338,7 @@ async def api_domain_to_ip(host: str):
     else:
         return success(data={"host": host, "ip": ip}, msg="解析成功")
 
-# ======================== 完整测试代码 ========================
+# === 完整测试代码 ===
 def test_all_functions():
     """测试所有工具函数"""
     print("=" * 50)
@@ -374,7 +398,7 @@ def test_all_functions():
         result = safe_addslashes(s)
         print(f"原始字符串: {repr(s):30} | 过滤后: {repr(result)} | {'通过' if result == expected else '失败'}")
 
-    # 5. 测试响应函数（打印结构，不实际返回）
+    # 5. 测试响应函数(打印结构,不实际返回)
     print("\n【5. 测试响应函数】")
     success_resp = success(data={"test": "data"}, msg="测试成功")
     error_resp = error(code=403, msg="测试失败")
@@ -388,3 +412,5 @@ def test_all_functions():
 
 if __name__ == "__main__":
     test_all_functions()
+
+

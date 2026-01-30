@@ -1,10 +1,10 @@
 """
 Seebug API 客户端
 
-提供统一的Seebug API调用接口，包括：
-- 指数退避重试机制（最多3次）
-- 统一超时处理（5秒）
-- 分级错误日志记录（INFO/WARN/ERROR）
+提供统一的Seebug API调用接口,包括:
+- 指数退避重试机制(最多3次)
+- 统一超时处理(5秒)
+- 分级错误日志记录(INFO/WARN/ERROR)
 - 连接池管理
 - API响应缓存
 """
@@ -38,7 +38,7 @@ class SeebugAPIClient:
     """
     Seebug API客户端类
 
-    提供统一的Seebug API调用接口，支持：
+    提供统一的Seebug API调用接口,支持:
     - 指数退避重试机制
     - 统一超时处理
     - 分级错误日志记录
@@ -58,9 +58,9 @@ class SeebugAPIClient:
         初始化Seebug API客户端
 
         Args:
-            api_key: Seebug API密钥，默认从settings读取
+            api_key: Seebug API密钥,默认从settings读取
             base_url: API基础URL
-            timeout: 请求超时时间（秒）
+            timeout: 请求超时时间(秒)
             max_retries: 最大重试次数
             enable_cache: 是否启用缓存
         """
@@ -285,10 +285,10 @@ class SeebugAPIClient:
         data: Optional[Dict[str, Any]] = None
     ) -> APIResponse:
         """
-        发送HTTP请求（带重试机制）
+        发送HTTP请求(带重试机制)
 
         Args:
-            method: HTTP方法（GET/POST）
+            method: HTTP方法(GET/POST)
             endpoint: API端点
             params: 查询参数
             data: 请求体数据
@@ -389,7 +389,7 @@ class SeebugAPIClient:
                     )
                     await asyncio.sleep(delay)
                 else:
-                    logger.error(f"❌ 请求失败，已达最大重试次数: {error_type}: {str(e)}")
+                    logger.error(f"❌ 请求失败,已达最大重试次数: {error_type}: {str(e)}")
                     return APIResponse(
                         success=False,
                         message=f"请求异常: {str(e)}",

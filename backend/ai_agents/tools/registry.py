@@ -1,11 +1,12 @@
 """
 工具注册表
 
-管理所有扫描工具的注册和调用，提供统一的工具接口。
+管理所有扫描工具的注册和调用,提供统一的工具接口。
 """
 import asyncio
 import logging
 from typing import Dict, Callable, Any, List, Optional
+
 from .wrappers import AsyncToolWrapper
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class ToolRegistry:
     支持装饰器注册和直接注册两种方式。
     
     Attributes:
-        tools: 工具字典，键为工具名称，值为工具对象
+        tools: 工具字典,键为工具名称,值为工具对象
         tool_metadata: 工具元数据字典
     """
     
@@ -44,12 +45,12 @@ class ToolRegistry:
             name: 工具名称
             func: 工具函数
             description: 工具描述
-            category: 工具分类（plugin/poc/general）
-            timeout: 超时时间（秒）
-            priority: 工具优先级（1-10，数字越大优先级越高）
+            category: 工具分类(plugin/poc/general)
+            timeout: 超时时间(秒)
+            priority: 工具优先级(1-10,数字越大优先级越高)
         """
         if name in self.tools:
-            logger.warning(f"工具 {name} 已存在，将被覆盖")
+            logger.warning(f"工具 {name} 已存在,将被覆盖")
         
         wrapper = AsyncToolWrapper(func, timeout=timeout)
         self.tools[name] = wrapper
@@ -76,7 +77,7 @@ class ToolRegistry:
             **kwargs: 工具参数
             
         Returns:
-            Dict: 工具执行结果，包含status、data、error等字段
+            Dict: 工具执行结果,包含status、data、error等字段
             
         Raises:
             ValueError: 工具不存在
@@ -99,7 +100,7 @@ class ToolRegistry:
             logger.error(f"⏱️ 工具 {tool_name} 执行超时")
             return {
                 "status": "timeout",
-                "error": f"工具执行超时（{tool.timeout}秒）",
+                "error": f"工具执行超时({tool.timeout}秒)",
                 "tool_name": tool_name
             }
         except Exception as e:
@@ -118,7 +119,7 @@ class ToolRegistry:
             tool_name: 工具名称
             
         Returns:
-            Optional[AsyncToolWrapper]: 工具对象，不存在则返回None
+            Optional[AsyncToolWrapper]: 工具对象,不存在则返回None
         """
         return self.tools.get(tool_name)
     
@@ -133,7 +134,7 @@ class ToolRegistry:
             category: 按分类过滤
             
         Returns:
-            List[Dict]: 工具列表，包含名称和元数据
+            List[Dict]: 工具列表,包含名称和元数据
         """
         tools_list = []
         for name, wrapper in self.tools.items():
@@ -184,7 +185,7 @@ def register_tool(
     """
     工具注册装饰器
     
-    用于简化工具注册，使用装饰器语法：
+    用于简化工具注册,使用装饰器语法:
     
     Examples:
         >>> @register_tool(
@@ -214,7 +215,7 @@ registry = ToolRegistry()
 """
 全局工具注册表
 
-在应用中导入此实例来注册和调用工具：
+在应用中导入此实例来注册和调用工具:
     from ai_agents.tools import registry, register_tool
     
     @register_tool(name="my_tool", description="我的工具")

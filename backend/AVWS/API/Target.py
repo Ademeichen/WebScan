@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
 """
 AWVS Target API 类
 
-提供与 AWVS 目标 API 交互的功能，包括添加、删除、搜索目标
+提供与 AWVS 目标 API 交互的功能,包括添加、删除、搜索目标
 """
+
+
 
 import requests
 import requests.packages.urllib3
@@ -13,10 +16,11 @@ from .Base import Base
 
 
 class Target(Base):
+
     """
     AWVS 目标 API 类
 
-    用于管理 AWVS 的扫描目标，包括创建、删除、查询和搜索目标
+    用于管理 AWVS 的扫描目标,包括创建、删除、查询和搜索目标
     """
 
     def __init__(self, api_base_url, api_key):
@@ -27,18 +31,23 @@ class Target(Base):
             api_base_url: AWVS API 基础 URL
             api_key: AWVS API 密钥
         """
+
+
         super().__init__(api_base_url, api_key)
 
         self.logger = self.get_logger
 
 
     def get_all(self):
+
         """
         获取所有目标
 
         Returns:
-            list: 包含所有目标信息的列表，失败返回 None
+            list: 包含所有目标信息的列表,失败返回 None
         """
+
+
         try:
             response = requests.get(self.targets_api, headers=self.auth_headers, verify=False)
             result = response.json()
@@ -48,18 +57,8 @@ class Target(Base):
             self.logger.error('Get Targets Failed......', exc_info=True)
             return None
 
-    def search(self, threat=None, criticality=None, group_id=None, keyword=None):
-        """
-        搜索目标
 
-        Args:
-            threat: 威胁等级，高->低: [3,2,1,0]
-            criticality: 危险程度，高->低: [30,20,10,0]
-            group_id: 分组 ID
-            keyword: 筛选内容，支持通配符，如 *baidu.com
 
-        Returns:
-            list: 包含匹配目标的列表，失败返回 None
         """
         search_targets_api = f'{self.targets_api}?q=threat:{threat};criticality:{criticality};group_id:{group_id};text_search:{keyword}'
         try:
@@ -72,16 +71,19 @@ class Target(Base):
             return None
 
     def add(self, address, description=None):
+
         """
         添加新的扫描目标
 
         Args:
-            address: 目标地址（URL 或 IP）
-            description: 目标描述，默认为 address + ' 站点测试'
+            address: 目标地址(URL 或 IP)
+            description: 目标描述,默认为 address + ' 站点测试'
 
         Returns:
-            str: 成功返回目标 ID，失败返回 None
+            str: 成功返回目标 ID,失败返回 None
         """
+
+
         if not description:
             description = f'{address} 站点测试'
         data = {
@@ -99,6 +101,7 @@ class Target(Base):
             return None
 
     def delete(self, target_id):
+
         """
         删除目标
 
@@ -106,8 +109,10 @@ class Target(Base):
             target_id: 目标 ID
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+            bool: 成功返回 True,失败返回 False
         """
+
+
         delete_targets_api = f'{self.targets_api}/{target_id}'
         try:
             response = requests.delete(delete_targets_api, headers=self.auth_headers, verify=False)

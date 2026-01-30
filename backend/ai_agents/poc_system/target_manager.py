@@ -1,13 +1,10 @@
 """
 目标信息管理器
 
-负责目标信息的管理，包括批量导入、单个输入、去重验证、分组管理等功能。
+负责目标信息的管理,包括批量导入、单个输入、去重验证、分组管理等功能。
 """
 import logging
-import csv
-import json
-from typing import Dict, List, Any, Optional
-from urllib.parse import urlparse
+from typing import Optional, Dict, Any, List
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +50,7 @@ class TargetInfo:
         获取目标域名
         
         Returns:
-            Optional[str]: 域名，无法解析返回 None
+            Optional[str]: 域名,无法解析返回 None
         """
         try:
             result = urlparse(self.url)
@@ -82,7 +79,7 @@ class TargetManager:
     """
     目标管理器类
     
-    负责管理目标信息，包括：
+    负责管理目标信息,包括:
     - 批量导入目标
     - 单个目标输入
     - 目标去重和验证
@@ -114,7 +111,7 @@ class TargetManager:
             List[TargetInfo]: 目标信息列表
         """
         try:
-            logger.info(f"📥 开始从 CSV 导入目标，路径: {file_path}")
+            logger.info(f"📥 开始从 CSV 导入目标,路径: {file_path}")
             
             targets = []
             with open(file_path, 'r', encoding=encoding) as f:
@@ -143,7 +140,7 @@ class TargetManager:
                     
                     targets.append(target_info)
             
-            logger.info(f"✅ 从 CSV 导入完成，获取 {len(targets)} 个目标")
+            logger.info(f"✅ 从 CSV 导入完成,获取 {len(targets)} 个目标")
             return targets
             
         except Exception as e:
@@ -166,7 +163,7 @@ class TargetManager:
             List[TargetInfo]: 目标信息列表
         """
         try:
-            logger.info(f"📥 开始从 JSON 导入目标，路径: {file_path}")
+            logger.info(f"📥 开始从 JSON 导入目标,路径: {file_path}")
             
             with open(file_path, 'r', encoding=encoding) as f:
                 data = json.load(f)
@@ -190,7 +187,7 @@ class TargetManager:
                 
                 targets.append(target_info)
             
-            logger.info(f"✅ 从 JSON 导入完成，获取 {len(targets)} 个目标")
+            logger.info(f"✅ 从 JSON 导入完成,获取 {len(targets)} 个目标")
             return targets
             
         except Exception as e:
@@ -211,12 +208,12 @@ class TargetManager:
             List[TargetInfo]: 目标信息列表
         """
         try:
-            logger.info(f"📥 开始从 Excel 导入目标，路径: {file_path}")
+            logger.info(f"📥 开始从 Excel 导入目标,路径: {file_path}")
             
             try:
                 import openpyxl
             except ImportError:
-                logger.warning("⚠️ openpyxl 未安装，尝试使用 pandas")
+                logger.warning("⚠️ openpyxl 未安装,尝试使用 pandas")
                 return await self._import_targets_from_excel_pandas(file_path)
             
             workbook = openpyxl.load_workbook(file_path)
@@ -239,7 +236,7 @@ class TargetManager:
                 
                 targets.append(target_info)
             
-            logger.info(f"✅ 从 Excel 导入完成，获取 {len(targets)} 个目标")
+            logger.info(f"✅ 从 Excel 导入完成,获取 {len(targets)} 个目标")
             return targets
             
         except Exception as e:
@@ -281,7 +278,7 @@ class TargetManager:
                 
                 targets.append(target_info)
             
-            logger.info(f"✅ 使用 pandas 从 Excel 导入完成，获取 {len(targets)} 个目标")
+            logger.info(f"✅ 使用 pandas 从 Excel 导入完成,获取 {len(targets)} 个目标")
             return targets
             
         except ImportError:
@@ -377,7 +374,7 @@ class TargetManager:
                         targets.append(target_info)
                         self.targets[target_url] = target_info
             
-            logger.info(f"✅ 从智能体工作流接收目标完成，获取 {len(targets)} 个目标")
+            logger.info(f"✅ 从智能体工作流接收目标完成,获取 {len(targets)} 个目标")
             return targets
             
         except Exception as e:
@@ -391,7 +388,7 @@ class TargetManager:
         Returns:
             List[TargetInfo]: 去重后的目标列表
         """
-        logger.info(f"🔄 开始目标去重，当前目标数: {len(self.targets)}")
+        logger.info(f"🔄 开始目标去重,当前目标数: {len(self.targets)}")
         
         seen_urls = set()
         unique_targets = []
@@ -403,7 +400,7 @@ class TargetManager:
         
         self.targets = {target.url: target for target in unique_targets}
         
-        logger.info(f"✅ 目标去重完成，去重后: {len(unique_targets)} 个目标")
+        logger.info(f"✅ 目标去重完成,去重后: {len(unique_targets)} 个目标")
         return unique_targets
     
     async def validate_targets(self) -> Dict[str, Any]:
@@ -413,7 +410,7 @@ class TargetManager:
         Returns:
             Dict: 包含验证结果的字典
         """
-        logger.info(f"🔍 开始验证目标，目标数: {len(self.targets)}")
+        logger.info(f"🔍 开始验证目标,目标数: {len(self.targets)}")
         
         valid_targets = []
         invalid_targets = []
@@ -432,7 +429,7 @@ class TargetManager:
             "invalid_targets": [t.to_dict() for t in invalid_targets]
         }
         
-        logger.info(f"✅ 目标验证完成，有效: {result['valid']}, 无效: {result['invalid']}")
+        logger.info(f"✅ 目标验证完成,有效: {result['valid']}, 无效: {result['invalid']}")
         return result
     
     async def create_target_group(
@@ -461,7 +458,7 @@ class TargetManager:
                     logger.warning(f"⚠️ 目标不存在: {url}")
             
             if not valid_urls:
-                logger.warning("⚠️ 没有有效目标，分组创建失败")
+
                 return False
             
             self.target_groups[group_name] = valid_urls

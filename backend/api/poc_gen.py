@@ -6,6 +6,7 @@ import asyncio
 import os
 import tempfile
 import sys
+
 from backend.models import VulnerabilityKB
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -22,6 +23,8 @@ llm = ChatOpenAI(
     base_url=settings.OPENAI_BASE_URL
 )
 
+
+
 # 尝试导入 pocsuite3
 try:
     from pocsuite3.api import init_pocsuite
@@ -29,6 +32,8 @@ try:
     HAS_POCSUITE = True
 except ImportError:
     HAS_POCSUITE = False
+
+
 
 class POCGenRequest(BaseModel):
     vuln_id: Optional[int] = None
@@ -46,14 +51,15 @@ You are a security researcher. Write a Pocsuite3 POC script for the following vu
 Name/Description: {description}
 
 The POC should inherit from `PocTestCase` and implement `_verify` and `_attack` methods.
-Return ONLY python code.
+
+
 """
 
 class POCGenerator:
     """POC 生成与执行引擎"""
     
     def __init__(self):
-        self.llm = llm
+        self.llm = None
         
     async def generate_from_kb(self, kb_item: VulnerabilityKB) -> str:
         """从知识库条目生成 POC"""
@@ -63,7 +69,7 @@ class POCGenerator:
     async def generate_from_description(self, description: str) -> str:
         """基于描述生成 POC 代码"""
         try:
-            logger.info(f"正在调用 AI 生成 POC，模型: {self.llm.model_name}, 描述长度: {len(description)}")
+
             
             # 构建提示模板
             prompt = ChatPromptTemplate.from_template(POC_PROMPT_TEMPLATE)
@@ -75,9 +81,10 @@ class POCGenerator:
             response = await chain.ainvoke({"description": description})
             poc_code = response.content
             
-            logger.info(f"POC 生成成功，代码长度: {len(poc_code)}")
+            logger.info(f"POC 生成成功,代码长度: {len(poc_code)}")
             return poc_code
-            
+
+
         except Exception as e:
             logger.error(f"AI POC Generation failed: {e}")
             raise e
@@ -109,8 +116,8 @@ class POCGenerator:
             output = stdout.decode()
             error = stderr.decode()
             
-            # 解析输出判断是否漏洞存在
-            is_vulnerable = self._parse_pocsuite_output(output)
+
+
             
             msg = "Vulnerable" if is_vulnerable else "Not Vulnerable"
             if len(output) > 200:
@@ -122,8 +129,8 @@ class POCGenerator:
                 "status": "completed",
                 "vulnerable": is_vulnerable,
                 "message": msg,
-                "full_output": output,
-                "error": error if error else None
+
+
             }
             
         except Exception as e:
@@ -132,10 +139,11 @@ class POCGenerator:
         finally:
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
+
     
     def _parse_pocsuite_output(self, output: str) -> bool:
         """
-        解析 Pocsuite3 输出，判断是否存在漏洞
+        解析 Pocsuite3 输出,判断是否存在漏洞
         
         Args:
             output: Pocsuite3 的输出内容
@@ -165,6 +173,8 @@ class POCGenerator:
             
         return False
 
+
+
 # 全局实例
 poc_generator = POCGenerator()
 
@@ -175,7 +185,7 @@ async def generate_poc(request: POCGenRequest):
     """
     description = request.vuln_description
     
-    # 如果提供了 ID，从 KB 获取描述
+    # 如果提供了 ID,从 KB 获取描述
     if request.vuln_id:
         kb_item = await VulnerabilityKB.get_or_none(id=request.vuln_id)
         if kb_item:

@@ -5,6 +5,7 @@
 """
 import pytest
 import sys
+
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
@@ -120,7 +121,7 @@ raise ValueError("Test error")
     @pytest.mark.asyncio
     async def test_execute_code_dangerous(self, executor):
         """
-        测试执行危险代码（应该被拒绝）
+        测试执行危险代码(应该被拒绝)
         """
         code = """
 import os

@@ -5,6 +5,7 @@
 """
 import pytest
 import sys
+
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
@@ -170,14 +171,14 @@ class TestAgentState:
 
     def test_get_progress_empty(self, state):
         """
-        测试获取进度（空任务列表）
+        测试获取进度(空任务列表)
         """
         progress = state.get_progress()
         assert progress == 100.0
 
     def test_get_progress_with_tasks(self, state):
         """
-        测试获取进度（有任务列表）
+        测试获取进度(有任务列表)
         """
         state.planned_tasks = ['task1', 'task2', 'task3']
         state.completed_tasks = ['task1']
@@ -187,7 +188,7 @@ class TestAgentState:
 
     def test_get_progress_half_complete(self, state):
         """
-        测试获取进度（完成一半）
+        测试获取进度(完成一半)
         """
         state.planned_tasks = ['task1', 'task2', 'task3', 'task4']
         state.completed_tasks = ['task1', 'task2']
@@ -197,7 +198,7 @@ class TestAgentState:
 
     def test_get_progress_all_complete(self, state):
         """
-        测试获取进度（全部完成）
+        测试获取进度(全部完成)
         """
         state.planned_tasks = ['task1', 'task2', 'task3']
         state.completed_tasks = ['task1', 'task2', 'task3']

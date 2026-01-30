@@ -1,8 +1,8 @@
 """
 测试 API 路由
 
-提供各个组件的连接测试接口，用于验证系统各模块是否正常工作。
-包括：AI模型、Seebug、Pocsuite3智能体库、LangGraph等。
+提供各个组件的连接测试接口,用于验证系统各模块是否正常工作。
+包括:AI模型、Seebug、Pocsuite3智能体库、LangGraph等。
 """
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["测试接口"])
 
 
-# ==================== 响应模型 ====================
+# ====== 响应模型 ======
 class TestResponse(BaseModel):
     """
     测试响应模型
@@ -34,7 +34,7 @@ class TestResponse(BaseModel):
     data: Optional[Dict[str, Any]] = None
 
 
-# ==================== AI模型测试 ====================
+# ====== AI模型测试 ======
 @router.post("/ai-model", response_model=TestResponse)
 async def test_ai_model():
     """
@@ -43,7 +43,7 @@ async def test_ai_model():
     验证AI模型是否可以正常连接和响应。
     
     Returns:
-        TestResponse: 测试结果，包含连接状态、响应时间、模型信息等
+        TestResponse: 测试结果,包含连接状态、响应时间、模型信息等
     """
     try:
         logger.info("🧪 开始测试AI模型连接")
@@ -58,14 +58,14 @@ async def test_ai_model():
         )
         
         # 发送测试消息
-        test_message = HumanMessage(content="你好，请回复'连接成功'")
+        test_message = HumanMessage(content="你好,请回复'连接成功'")
         response = await llm.ainvoke([test_message])
         
         response_time = time.time() - start_time
         
         # 验证响应
         if response and response.content:
-            logger.info(f"✅ AI模型测试成功，响应时间: {response_time:.2f}秒")
+            logger.info(f"✅ AI模型测试成功,响应时间: {response_time:.2f}秒")
             
             return TestResponse(
                 code=200,
@@ -97,16 +97,16 @@ async def test_ai_model():
         )
 
 
-# ==================== Seebug测试 ====================
+# ====== Seebug测试 ======
 @router.post("/seebug", response_model=TestResponse)
 async def test_seebug():
     """
-    测试Seebug API连接（使用Pocsuite3内置API）
+    测试Seebug API连接(使用Pocsuite3内置API)
     
     验证Seebug API是否可以正常访问和获取数据。
     
     Returns:
-        TestResponse: 测试结果，包含连接状态、API密钥验证、测试查询结果等
+        TestResponse: 测试结果,包含连接状态、API密钥验证、测试查询结果等
     """
     try:
         logger.info("🧪 开始测试Seebug API连接")
@@ -132,7 +132,7 @@ async def test_seebug():
             response_time = time.time() - start_time
             
             if resp and resp.status_code == 200:
-                logger.info(f"✅ Seebug API测试成功，响应时间: {response_time:.2f}秒")
+                logger.info(f"✅ Seebug API测试成功,响应时间: {response_time:.2f}秒")
                 
                 return TestResponse(
                     code=200,
@@ -152,7 +152,7 @@ async def test_seebug():
                 raise Exception(f"Seebug API返回错误状态码: {resp.status_code}")
                 
         except ImportError:
-            raise Exception("Pocsuite3未安装，无法使用Seebug API")
+            raise Exception("Pocsuite3未安装,无法使用Seebug API")
             
     except Exception as e:
         logger.error(f"❌ Seebug API测试失败: {str(e)}")
@@ -168,7 +168,7 @@ async def test_seebug():
         )
 
 
-# ==================== Pocsuite3测试 ====================
+# ====== Pocsuite3测试 ======
 @router.post("/pocsuite3", response_model=TestResponse)
 async def test_pocsuite3():
     """
@@ -177,7 +177,7 @@ async def test_pocsuite3():
     验证Pocsuite3库是否可以正常加载和使用。
     
     Returns:
-        TestResponse: 测试结果，包含库安装状态、POC加载情况、可用POC数量等
+        TestResponse: 测试结果,包含库安装状态、POC加载情况、可用POC数量等
     """
     try:
         logger.info("🧪 开始测试Pocsuite3智能体库")
@@ -194,7 +194,7 @@ async def test_pocsuite3():
         
         response_time = time.time() - start_time
         
-        logger.info(f"✅ Pocsuite3智能体库测试成功，响应时间: {response_time:.2f}秒")
+        logger.info(f"✅ Pocsuite3智能体库测试成功,响应时间: {response_time:.2f}秒")
         
         return TestResponse(
             code=200,
@@ -216,7 +216,7 @@ async def test_pocsuite3():
             message="Pocsuite3未安装",
             data={
                 "status": "failed",
-                "error": "Pocsuite3库未安装，请使用 pip install pocsuite3 安装",
+                "error": "Pocsuite3库未安装,请使用 pip install pocsuite3 安装",
                 "installation_status": "not_installed"
             }
         )
@@ -232,7 +232,7 @@ async def test_pocsuite3():
         )
 
 
-# ==================== LangGraph测试 ====================
+# ====== LangGraph测试 ======
 @router.post("/langgraph", response_model=TestResponse)
 async def test_langgraph():
     """
@@ -241,7 +241,7 @@ async def test_langgraph():
     验证LangGraph工作流是否可以正常初始化和编译。
     
     Returns:
-        TestResponse: 测试结果，包含图结构信息、节点数量、边数量等
+        TestResponse: 测试结果,包含图结构信息、节点数量、边数量等
     """
     try:
         logger.info("🧪 开始测试LangGraph")
@@ -263,7 +263,7 @@ async def test_langgraph():
         
         response_time = time.time() - start_time
         
-        logger.info(f"✅ LangGraph测试成功，响应时间: {response_time:.2f}秒")
+        logger.info(f"✅ LangGraph测试成功,响应时间: {response_time:.2f}秒")
         
         return TestResponse(
             code=200,
@@ -289,7 +289,7 @@ async def test_langgraph():
             message="LangGraph未安装",
             data={
                 "status": "failed",
-                "error": "LangGraph库未安装，请使用 pip install langgraph 安装",
+                "error": "LangGraph库未安装,请使用 pip install langgraph 安装",
                 "installation_status": "not_installed"
             }
         )
@@ -305,7 +305,7 @@ async def test_langgraph():
         )
 
 
-# ==================== 综合测试 ====================
+# ====== 综合测试 ======
 @router.post("/all", response_model=TestResponse)
 async def test_all():
     """
@@ -360,11 +360,11 @@ async def test_all():
         success_count = sum(1 for r in results.values() if r["status"] == "success")
         total_count = len(results)
         
-        logger.info(f"✅ 综合测试完成，成功: {success_count}/{total_count}，总耗时: {total_time:.2f}秒")
+        logger.info(f"✅ 综合测试完成,成功: {success_count}/{total_count},总耗时: {total_time:.2f}秒")
         
         return TestResponse(
             code=200,
-            message=f"综合测试完成，成功: {success_count}/{total_count}",
+            message=f"综合测试完成,成功: {success_count}/{total_count}",
             data={
                 "total_time": f"{total_time:.2f}s",
                 "success_count": success_count,
@@ -385,7 +385,7 @@ async def test_all():
         )
 
 
-# ==================== 健康检查 ====================
+# ====== 健康检查 ======
 @router.get("/health", response_model=TestResponse)
 async def health_check():
     """

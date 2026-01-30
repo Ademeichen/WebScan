@@ -1,10 +1,11 @@
 """
 工具适配器
 
-适配现有插件和POC，提供统一的调用接口。
+适配现有插件和POC,提供统一的调用接口。
 """
 import logging
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from .wrappers import wrap_async
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ class PluginAdapter:
     """
     插件适配器
     
-    适配现有的扫描插件，提供统一的调用接口。
+    适配现有的扫描插件,提供统一的调用接口。
     """
     
     @staticmethod
@@ -173,7 +174,7 @@ class POCAdapter:
     """
     POC适配器
     
-    适配现有的POC脚本，提供统一的调用接口。
+    适配现有的POC脚本,提供统一的调用接口。
     """
     
     @staticmethod
@@ -184,7 +185,7 @@ class POCAdapter:
         Args:
             poc_name: POC名称
             poc_module: POC模块
-            timeout: 超时时间（秒）
+            timeout: 超时时间(秒)
             
         Returns:
             callable: 适配后的函数

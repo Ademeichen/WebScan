@@ -115,7 +115,7 @@ class TestTaskPriorityManager:
 
     def test_calculate_priority_without_context(self, priority_manager):
         """
-        测试计算优先级（无上下文）
+        测试计算优先级(无上下文)
         """
         priority = priority_manager.calculate_priority('poc_weblogic_2020_2551')
         
@@ -124,7 +124,7 @@ class TestTaskPriorityManager:
 
     def test_calculate_priority_with_waf(self, priority_manager):
         """
-        测试计算优先级（有WAF）
+        测试计算优先级(有WAF)
         """
         context = {'waf': 'Cloudflare'}
         priority = priority_manager.calculate_priority('poc_weblogic_2020_2551', context)
@@ -134,7 +134,7 @@ class TestTaskPriorityManager:
 
     def test_calculate_priority_with_cdn(self, priority_manager):
         """
-        测试计算优先级（有CDN）
+        测试计算优先级(有CDN)
         """
         context = {'cdn': True}
         priority = priority_manager.calculate_priority('portscan', context)
@@ -144,7 +144,7 @@ class TestTaskPriorityManager:
 
     def test_calculate_priority_with_cms_match(self, priority_manager):
         """
-        测试计算优先级（CMS匹配）
+        测试计算优先级(CMS匹配)
         """
         context = {'cms': 'WebLogic'}
         priority = priority_manager.calculate_priority('poc_weblogic_2020_2551', context)
@@ -154,7 +154,7 @@ class TestTaskPriorityManager:
 
     def test_calculate_priority_with_open_ports(self, priority_manager):
         """
-        测试计算优先级（开放端口）
+        测试计算优先级(开放端口)
         """
         context = {'open_ports': [7001]}
         priority = priority_manager.calculate_priority('poc_weblogic_2020_2551', context)
@@ -175,7 +175,7 @@ class TestTaskPriorityManager:
 
     def test_sort_tasks_with_context(self, priority_manager):
         """
-        测试任务排序（带上下文）
+        测试任务排序(带上下文)
         """
         tasks = ['baseinfo', 'portscan', 'poc_weblogic_2020_2551', 'cdn_detect']
         context = {'cms': 'WebLogic', 'open_ports': [7001]}
@@ -236,7 +236,7 @@ class TestTaskPriorityManager:
 
     def test_get_critical_tasks_empty(self, priority_manager):
         """
-        测试获取关键任务（空列表）
+        测试获取关键任务(空列表)
         """
         critical_tasks = priority_manager.get_critical_tasks([])
         
@@ -244,7 +244,7 @@ class TestTaskPriorityManager:
 
     def test_get_critical_tasks_no_critical(self, priority_manager):
         """
-        测试获取关键任务（无关键任务）
+        测试获取关键任务(无关键任务)
         """
         tasks = ['baseinfo', 'cdn_detect', 'subdomain_scan']
         

@@ -1,20 +1,22 @@
 """
 POC 验证节点
 
-基于 LangGraph 框架的 POC 验证节点，实现 agent 驱动的 POC 验证流程。
+基于 LangGraph 框架的 POC 验证节点,实现 agent 驱动的 POC 验证流程。
 """
 import logging
 from typing import Dict, Any, List
 from datetime import datetime
 
 
+
 from backend.ai_agents.core.state import AgentState
 from backend.ai_agents.poc_system import (
     poc_manager,
+    target_manager,
     verification_engine,
-    result_analyzer
+    result_analyzer,
+    report_generator
 )
-from backend.models import POCVerificationResult
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -24,9 +26,9 @@ class POCVerificationNode:
     """
     POC 验证节点类
     
-    基于 LangGraph 框架的专用 POC 验证节点，实现：
+    基于 LangGraph 框架的专用 POC 验证节点,实现:
     - agent 驱动的 POC 验证流程
-    - 节点状态管理（创建、执行、暂停、结果返回）
+    - 节点状态管理(创建、执行、暂停、结果返回)
     - 与代码执行节点的无缝集成
     - 标准化数据交互格式
     """
@@ -36,7 +38,7 @@ class POCVerificationNode:
         初始化 POC 验证节点
         """
         self.node_name = "poc_verification"
-        self.description = "POC 验证节点，负责执行 POC 验证任务"
+        self.description = "POC 验证节点,负责执行 POC 验证任务"
         
         logger.info("✅ POC 验证节点初始化完成")
     
@@ -44,7 +46,7 @@ class POCVerificationNode:
         """
         节点调用方法
         
-        这是 LangGraph 节点的标准接口，接收 AgentState 并返回更新后的状态。
+        这是 LangGraph 节点的标准接口,接收 AgentState 并返回更新后的状态。
         
         Args:
             state: 当前智能体状态

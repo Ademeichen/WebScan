@@ -1,8 +1,8 @@
 """
 任务管理相关的 API 路由
-已迁移至数据库存储（Tortoise-ORM）
+已迁移至数据库存储(Tortoise-ORM)
 
-本模块提供任务管理的完整 API 接口，包括：
+本模块提供任务管理的完整 API 接口,包括:
 - 任务创建、查询、更新、删除
 - 任务结果获取和聚合
 - 漏洞数据管理和统计
@@ -22,19 +22,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# ==================== 辅助函数 ====================
+# ====== 辅助函数 ======
 
 def standardize_severity(severity_val) -> str:
     """
     标准化严重程度为统一格式 (Title Case)
     
-    支持整数和字符串两种输入格式，统一转换为标准字符串格式。
+    支持整数和字符串两种输入格式,统一转换为标准字符串格式。
     
     Args:
-        severity_val: 严重程度值，可以是整数 (0-4) 或字符串
+        severity_val: 严重程度值,可以是整数 (0-4) 或字符串
         
     Returns:
-        str: 标准化后的严重程度字符串，可选值: 'Critical', 'High', 'Medium', 'Low', 'Info'
+        str: 标准化后的严重程度字符串,可选值: 'Critical', 'High', 'Medium', 'Low', 'Info'
         
     Examples:
         >>> standardize_severity(4)
@@ -62,7 +62,7 @@ def standardize_severity(severity_val) -> str:
 
 def standardize_title(title: str) -> str:
     """
-    标准化漏洞标题，添加类型前缀以便识别
+    标准化漏洞标题,添加类型前缀以便识别
     
     Args:
         title: 原始漏洞标题
@@ -91,7 +91,7 @@ def validate_vulnerability_consistency(vuln_data: dict) -> List[str]:
         vuln_data: 漏洞数据字典
         
     Returns:
-        List[str]: 错误信息列表，空列表表示数据有效
+        List[str]: 错误信息列表,空列表表示数据有效
     """
     errors = []
     if not vuln_data.get('vuln_id'):
@@ -103,7 +103,7 @@ def validate_vulnerability_consistency(vuln_data: dict) -> List[str]:
         if isinstance(severity, int) and not (0 <= severity <= 4):
             errors.append(f"Invalid severity value (int): {severity}")
         elif isinstance(severity, str) and severity.lower() not in ['critical', 'high', 'medium', 'low', 'info']:
-             # 仅记录警告，不视为严重错误
+             # 仅记录警告,不视为严重错误
              pass
     
     if not vuln_data.get('vt_name'):
@@ -115,7 +115,7 @@ def validate_vulnerability_consistency(vuln_data: dict) -> List[str]:
         
     return errors
 
-# ==================== 请求模型 ====================
+# ====== 请求模型 ======
 
 class CreateTaskRequest(BaseModel):
     """
@@ -124,8 +124,8 @@ class CreateTaskRequest(BaseModel):
     Attributes:
         task_name: 任务名称
         target: 扫描目标 (URL、IP 或目录路径)
-        task_type: 任务类型，可选值: 'awvs_scan', 'poc_scan', 'scan_dir', 'scan_webside', 'scan_port', 'scan_cms', 'scan_comprehensive'
-        config: 任务配置参数，字典格式
+        task_type: 任务类型,可选值: 'awvs_scan', 'poc_scan', 'scan_dir', 'scan_webside', 'scan_port', 'scan_cms', 'scan_comprehensive'
+        config: 任务配置参数,字典格式
     """
     task_name: str
     target: str
@@ -137,8 +137,8 @@ class TaskUpdate(BaseModel):
     更新任务的请求模型
     
     Attributes:
-        status: 任务状态，可选值: 'pending', 'running', 'completed', 'failed', 'cancelled'
-        progress: 任务进度，0-100
+        status: 任务状态,可选值: 'pending', 'running', 'completed', 'failed', 'cancelled'
+        progress: 任务进度,0-100
         result: 任务结果数据
     """
     status: Optional[str] = None
@@ -150,22 +150,22 @@ class APIResponse(BaseModel):
     统一 API 响应模型
     
     Attributes:
-        code: 响应状态码，200 表示成功
+        code: 响应状态码,200 表示成功
         message: 响应消息
-        data: 响应数据，可选
+        data: 响应数据,可选
     """
     code: int
     message: str
     data: Optional[Any] = None
 
-# ==================== 任务管理接口 ====================
+# ====== 任务管理接口 ======
 
 @router.post("/create", response_model=APIResponse)
 async def create_task(request: CreateTaskRequest):
     """
     统一任务创建接口
     
-    创建新的扫描任务并启动异步执行。支持多种任务类型，包括 AWVS 扫描、POC 扫描、目录扫描等。
+    创建新的扫描任务并启动异步执行。支持多种任务类型,包括 AWVS 扫描、POC 扫描、目录扫描等。
     
     Args:
         request: 创建任务的请求参数
@@ -200,17 +200,17 @@ async def create_task(request: CreateTaskRequest):
         valid_types = ['awvs_scan', 'poc_scan', 'scan_dir', 'scan_webside', 'scan_port', 'scan_cms', 'scan_comprehensive']
         if request.task_type not in valid_types:
             logger.warning(f"无效的任务类型: {request.task_type}")
-            # 暂时不强制验证，允许插件扩展
+            # 暂时不强制验证,允许插件扩展
             pass
 
         # 1.1 POC 任务参数校验
         if request.task_type == 'poc_scan':
             poc_types = request.config.get('poc_types', [])
             if not poc_types:
-                 logger.warning("POC扫描未指定POC类型，默认扫描所有")
+                 logger.warning("POC扫描未指定POC类型,默认扫描所有")
             
             # 简单的 POC 类型验证
-            # 这里不强制失败，只是记录日志
+            # 这里不强制失败,只是记录日志
             pass
         
         # 2. 创建 Task 记录
@@ -246,11 +246,11 @@ async def create_task(request: CreateTaskRequest):
             task.status = 'failed'
             task.error_message = f"Failed to start task: {str(exec_err)}"
             await task.save()
-            # 注意：这里我们返回成功，因为任务已创建，只是执行失败。
+            # 注意:这里我们返回成功,因为任务已创建,只是执行失败。
             # 前端可以通过查询任务状态获知失败。
-            # 或者也可以返回 500，取决于前端逻辑。
-            # 为了让用户看到任务已创建但失败，我们返回成功。
-            return APIResponse(code=200, message="任务创建成功，但启动失败", data={"task_id": task.id, "status": "failed"})
+            # 或者也可以返回 500,取决于前端逻辑。
+            # 为了让用户看到任务已创建但失败,我们返回成功。
+            return APIResponse(code=200, message="任务创建成功,但启动失败", data={"task_id": task.id, "status": "failed"})
         
         return APIResponse(code=200, message="任务创建成功", data={"task_id": task.id, "status": "pending"})
         
@@ -271,17 +271,17 @@ async def list_tasks(
     limit: int = 1000
 ):
     """
-    获取任务列表（使用数据库）
+    获取任务列表(使用数据库)
     
-    支持按状态、类型、时间范围、关键词过滤，并包含漏洞统计信息。
+    支持按状态、类型、时间范围、关键词过滤,并包含漏洞统计信息。
     
     Args:
-        status: 按任务状态过滤，可选值: 'pending', 'running', 'completed', 'failed', 'cancelled'
+        status: 按任务状态过滤,可选值: 'pending', 'running', 'completed', 'failed', 'cancelled'
         task_type: 按任务类型过滤
-        start_date: 起始日期，格式: YYYY-MM-DD
-        end_date: 结束日期，格式: YYYY-MM-DD
-        search: 搜索关键词，匹配任务名称或目标
-        skip: 跳过的记录数，用于分页
+        start_date: 起始日期,格式: YYYY-MM-DD
+        end_date: 结束日期,格式: YYYY-MM-DD
+        search: 搜索关键词,匹配任务名称或目标
+        skip: 跳过的记录数,用于分页
         limit: 返回的最大记录数
         
     Returns:
@@ -321,7 +321,7 @@ async def list_tasks(
             except ValueError:
                 pass
         
-        # 排序（最新的在前）
+        # 排序(最新的在前)
         query = query.order_by('-created_at')
         
         # 获取总数
@@ -370,14 +370,14 @@ async def list_tasks(
                         counts_map[s] = item['count']
                         total_db_count += item['count']
                 
-                # 只有当数据库有数据时才覆盖，否则保留原始 result 中的数据 (如果存在)
-                # 这样即使数据库同步失败，也能显示 AWVS 原始统计 (虽然可能没有 Critical)
+                # 只有当数据库有数据时才覆盖,否则保留原始 result 中的数据 (如果存在)
+                # 这样即使数据库同步失败,也能显示 AWVS 原始统计 (虽然可能没有 Critical)
                 if total_db_count > 0:
                     if 'vulnerabilities' not in task_dict['result']:
                          task_dict['result']['vulnerabilities'] = {}
                     task_dict['result']['vulnerabilities'] = counts_map
                 elif 'vulnerabilities' not in task_dict['result'] or not task_dict['result']['vulnerabilities']:
-                    # 如果数据库没数据且 result 也没数据，默认全 0
+                    # 如果数据库没数据且 result 也没数据,默认全 0
                     task_dict['result']['vulnerabilities'] = counts_map
             except Exception as e:
                 logger.warning(f"Failed to get vulnerability counts for task {task.id}: {e}")
@@ -402,7 +402,7 @@ async def list_tasks(
 @router.get("/{task_id}", response_model=APIResponse)
 async def get_task(task_id: int):
     """
-    获取任务详情（使用数据库）
+    获取任务详情(使用数据库)
     
     根据任务 ID 获取单个任务的详细信息。
     
@@ -534,21 +534,21 @@ async def delete_task(task_id: int):
 @router.get("/{task_id}/results", response_model=APIResponse)
 async def get_task_results(task_id: int):
     """
-    获取任务的详细结果（智能聚合）
+    获取任务的详细结果(智能聚合)
     
-    获取任务的完整扫描结果，包括：
+    获取任务的完整扫描结果,包括:
     - 任务基本信息
     - AWVS 漏洞列表
     - POC 扫描结果
     - 插件扫描结果
     
-    支持从数据库和 AWVS API 双向获取数据，并自动同步到数据库。
+    支持从数据库和 AWVS API 双向获取数据,并自动同步到数据库。
     
     Args:
         task_id: 任务 ID
         
     Returns:
-        APIResponse: 包含任务详细结果的响应，结构如下:
+        APIResponse: 包含任务详细结果的响应,结构如下:
             {
                 "task_info": {...},
                 "vulnerabilities": [...],
@@ -619,7 +619,7 @@ async def get_task_results(task_id: int):
                     "target": v.url,
                     "source": "awvs"
                 })
-        # 如果数据库没有且是 AWVS 任务，尝试从 API 获取 (并同步到数据库)
+        # 如果数据库没有且是 AWVS 任务,尝试从 API 获取 (并同步到数据库)
         elif task.task_type == 'awvs_scan':
             config = json.loads(task.config) if task.config else {}
             target_id = config.get('target_id')
@@ -680,15 +680,15 @@ async def get_task_results(task_id: int):
                 except Exception as e:
                     logger.warning(f"从 AWVS 获取漏洞失败: {e}")
             
-        # 3. 获取插件扫描结果 (非 AWVS/POC 任务，或者混合任务)
-        # 始终尝试提取 basic_info，无论任务类型如何
+        # 3. 获取插件扫描结果 (非 AWVS/POC 任务,或者混合任务)
+        # 始终尝试提取 basic_info,无论任务类型如何
         if task.result:
             try:
                 res = json.loads(task.result)
                 # 尝试提取结构化基础信息
                 if isinstance(res, dict):
-                    # 如果是 AWVS 任务，result 主要是统计信息，基础信息可能在 details 里
-                    # 但如果是插件任务，result 本身就是信息
+                    # 如果是 AWVS 任务,result 主要是统计信息,基础信息可能在 details 里
+                    # 但如果是插件任务,result 本身就是信息
                     
                     # 排除掉已知的大字段
                     ignored_keys = ['vulnerabilities', 'scan_id', 'target_id', 'scan_status', 'start_time', 'end_time', 'requests_count', 'vulnerabilities_count']
@@ -697,7 +697,7 @@ async def get_task_results(task_id: int):
                         if k not in ignored_keys:
                             # 格式化 value
                             val_str = str(v)
-                            # 如果是列表或字典，转换为 JSON 字符串
+                            # 如果是列表或字典,转换为 JSON 字符串
                             if isinstance(v, (list, dict)):
                                 try:
                                     val_str = json.dumps(v, ensure_ascii=False)
@@ -782,13 +782,13 @@ async def get_task_vulnerabilities(
     """
     获取任务的漏洞列表
     
-    获取指定任务的所有漏洞，支持按严重程度和状态过滤。
+    获取指定任务的所有漏洞,支持按严重程度和状态过滤。
     
     Args:
         task_id: 任务 ID
-        severity: 按严重程度过滤，可选值: 'critical', 'high', 'medium', 'low', 'info'
-        status: 按漏洞状态过滤，可选值: 'open', 'fixed', 'reopened'
-        skip: 跳过的记录数，用于分页
+        severity: 按严重程度过滤,可选值: 'critical', 'high', 'medium', 'low', 'info'
+        status: 按漏洞状态过滤,可选值: 'open', 'fixed', 'reopened'
+        skip: 跳过的记录数,用于分页
         limit: 返回的最大记录数
         
     Returns:
@@ -817,7 +817,7 @@ async def get_task_vulnerabilities(
         if status:
             query = query.filter(status=status.lower())
         
-        # 排序（最新的在前）
+        # 排序(最新的在前)
         query = query.order_by('-created_at')
         
         # 获取总数
@@ -863,7 +863,7 @@ async def get_statistics_overview():
     """
     获取任务统计概览
     
-    获取所有任务的统计信息，包括：
+    获取所有任务的统计信息,包括:
     - 总任务数
     - 各状态任务数
     - 各类型任务数

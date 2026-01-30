@@ -1,17 +1,19 @@
 """
 POC 验证 API 路由
 
-提供 POC 验证相关的 API 接口，包括创建验证任务、查询任务状态、暂停/继续/取消任务、获取验证结果、生成报告等。
+提供 POC 验证相关的 API 接口,包括创建验证任务、查询任务状态、暂停/继续/取消任务、获取验证结果、生成报告等。
 """
 import logging
 from typing import Dict, Any, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Query
+
+from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 
 from backend.models import POCVerificationTask, POCVerificationResult
 from backend.ai_agents.poc_system import (
     poc_manager,
+
     verification_engine,
     result_analyzer,
     report_generator
@@ -29,7 +31,7 @@ class CreateVerificationTaskRequest(BaseModel):
     """
     poc_id: str = Field(..., description="POC ID")
     target: str = Field(..., description="验证目标")
-    priority: int = Field(default=5, ge=1, le=10, description="优先级（1-10）")
+    priority: int = Field(default=5, ge=1, le=10, description="优先级(1-10)")
     task_id: Optional[str] = Field(None, description="关联的任务 ID")
 
 
@@ -46,8 +48,8 @@ class ImportTargetsRequest(BaseModel):
     """
     导入目标请求模型
     """
-    source_type: str = Field(..., description="数据源类型：csv, json, excel, manual")
-    data: Optional[str] = Field(None, description="数据内容（CSV/JSON）")
+    source_type: str = Field(..., description="数据源类型:csv, json, excel, manual")
+    data: Optional[str] = Field(None, description="数据内容(CSV/JSON)")
     file_path: Optional[str] = Field(None, description="文件路径")
     targets: Optional[List[Dict[str, Any]]] = Field(None, description="手动输入的目标列表")
 
@@ -57,7 +59,7 @@ class GenerateReportRequest(BaseModel):
     生成报告请求模型
     """
     task_id: UUID = Field(..., description="任务 ID")
-    format: str = Field(default="html", description="报告格式：html, json, pdf")
+    format: str = Field(default="html", description="报告格式:html, json, pdf")
     output_path: Optional[str] = Field(None, description="输出文件路径")
 
 
@@ -153,7 +155,7 @@ async def create_batch_verification_tasks(request: CreateBatchVerificationTaskRe
         HTTPException: 创建失败时抛出错误
     """
     try:
-        logger.info(f"📋 批量创建 POC 验证任务，数量: {len(request.poc_tasks)}")
+        logger.info(f"📋 批量创建 POC 验证任务,数量: {len(request.poc_tasks)}")
         
         # 检查 POC 验证是否启用
         if not settings.POC_VERIFICATION_ENABLED:
@@ -178,7 +180,7 @@ async def create_batch_verification_tasks(request: CreateBatchVerificationTaskRe
         # 批量分析结果
         analysis_summary = await result_analyzer.analyze_batch_results(results)
         
-        logger.info("✅ 批量 POC 验证任务创建并执行完成")
+
         
         return {
             "code": 200,
@@ -222,7 +224,7 @@ async def list_verification_tasks(
     """
     列出 POC 验证任务
     
-    获取 POC 验证任务列表，支持按状态过滤和分页查询。
+    获取 POC 验证任务列表,支持按状态过滤和分页查询。
     
     Args:
         status: 任务状态过滤
@@ -288,7 +290,7 @@ async def get_verification_task(task_id: UUID):
     """
     获取 POC 验证任务详情
     
-    获取指定 POC 验证任务的详细信息，包括所有验证结果。
+    获取指定 POC 验证任务的详细信息,包括所有验证结果。
     
     Args:
         task_id: 任务 ID
@@ -513,11 +515,11 @@ async def generate_verification_report(
     """
     生成 POC 验证报告
     
-    生成指定 POC 验证任务的报告，支持 HTML、JSON、PDF 格式。
+    生成指定 POC 验证任务的报告,支持 HTML、JSON、PDF 格式。
     
     Args:
         task_id: 任务 ID
-        format: 报告格式（html, json, pdf）
+        format: 报告格式(html, json, pdf)
         output_path: 输出文件路径
         
     Returns:

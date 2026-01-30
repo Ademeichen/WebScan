@@ -1,7 +1,7 @@
 """
 Agent 状态管理
 
-定义Agent的状态结构，用于LangGraph的状态传递。
+定义Agent的状态结构,用于LangGraph的状态传递。
 """
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
@@ -12,23 +12,23 @@ class AgentState:
     """
     Agent状态类
     
-    管理Agent执行过程中的所有状态信息，包括：
-    - 基础信息：目标、任务ID
-    - 任务规划：规划任务列表、当前任务、已完成任务
-    - 执行结果：工具结果、发现的漏洞
-    - 记忆与上下文：目标上下文、执行历史
-    - 异常处理：错误列表、重试次数
-    - 控制开关：完成标志、继续执行标志
+    管理Agent执行过程中的所有状态信息,包括:
+    - 基础信息:目标、任务ID
+    - 任务规划:规划任务列表、当前任务、已完成任务
+    - 执行结果:工具结果、发现的漏洞
+    - 记忆与上下文:目标上下文、执行历史
+    - 异常处理:错误列表、重试次数
+    - 控制开关:完成标志、继续执行标志
     
     Attributes:
-        target: 扫描目标（URL/IP）
+        target: 扫描目标(URL/IP)
         task_id: 任务ID
         planned_tasks: 规划的子任务列表
         current_task: 当前执行的子任务
         completed_tasks: 已完成子任务列表
         tool_results: 工具执行结果字典
         vulnerabilities: 发现的漏洞列表
-        target_context: 目标上下文（CMS、端口、WAF等）
+        target_context: 目标上下文(CMS、端口、WAF等)
         execution_history: 执行历史记录
         errors: 执行错误列表
         retry_count: 重试次数
@@ -36,7 +36,7 @@ class AgentState:
         should_continue: 是否继续执行
     """
     
-    # ====================== 基础信息 ======================
+    # = 基础信息 =
     target: str
     """
     扫描目标
@@ -51,12 +51,12 @@ class AgentState:
     用于标识和跟踪Agent任务。
     """
     
-    # ====================== 任务规划 ======================
+    # = 任务规划 =
     planned_tasks: List[str] = field(default_factory=list)
     """
     规划的子任务列表
     
-    包含待执行的任务名称，如["baseinfo", "portscan", "poc_weblogic_2020_2551"]。
+    包含待执行的任务名称,如["baseinfo", "portscan", "poc_weblogic_2020_2551"]。
     """
     
     current_task: Optional[str] = None
@@ -73,12 +73,12 @@ class AgentState:
     记录已成功执行的任务。
     """
     
-    # ====================== 执行结果 ======================
+    # = 执行结果 =
     tool_results: Dict[str, Any] = field(default_factory=dict)
     """
     工具执行结果字典
     
-    存储每个工具的执行结果，键为工具名称，值为结果数据。
+    存储每个工具的执行结果,键为工具名称,值为结果数据。
     """
     
     vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
@@ -88,13 +88,13 @@ class AgentState:
     每个漏洞包含CVE、严重度、详情等信息。
     """
     
-    # ====================== 记忆与上下文 ======================
+    # = 记忆与上下文 =
     target_context: Dict[str, Any] = field(default_factory=dict)
     """
     目标上下文
 
-    存储目标的关键特征，如：
-    - cms: CMS类型（WordPress、Drupal等）
+    存储目标的关键特征,如:
+    - cms: CMS类型(WordPress、Drupal等)
     - open_ports: 开放端口列表
     - waf: WAF类型
     - cdn: 是否使用CDN
@@ -141,11 +141,11 @@ class AgentState:
     """
     执行历史记录
     
-    记录Agent的执行步骤，用于追溯和调试。
-    每条记录包含：task、result、timestamp等。
+    记录Agent的执行步骤,用于追溯和调试。
+    每条记录包含:task、result、timestamp等。
     """
     
-    # ====================== 异常处理 ======================
+    # = 异常处理 =
     errors: List[str] = field(default_factory=list)
     """
     执行错误列表
@@ -160,40 +160,40 @@ class AgentState:
     记录当前任务的重试次数。
     """
     
-    # ====================== 控制开关 ======================
+    # = 控制开关 =
     is_complete: bool = False
     """
     任务是否完成
     
-    设置为True时，Agent将结束执行。
+    设置为True时,Agent将结束执行。
     """
     
     should_continue: bool = True
     """
     是否继续执行
     
-    用于条件分支控制，决定是否继续执行工具还是进入下一阶段。
+    用于条件分支控制,决定是否继续执行工具还是进入下一阶段。
     """
     
-    # ====================== POC 验证 ======================
+    # = POC 验证 =
     poc_verification_tasks: List[Dict[str, Any]] = field(default_factory=list)
     """
     待验证的 POC 任务列表
     
-    包含待执行的 POC 验证任务，每个任务包含：
+    包含待执行的 POC 验证任务,每个任务包含:
     - poc_name: POC 名称
-    - poc_id: POC ID（SSVID）
+    - poc_id: POC ID(SSVID)
     - poc_code: POC 代码
     - target: 验证目标
     - priority: 优先级
-    - status: 任务状态（pending/running/completed/failed）
+    - status: 任务状态(pending/running/completed/failed)
     """
     
     poc_verification_results: List[Dict[str, Any]] = field(default_factory=list)
     """
     POC 验证结果列表
     
-    存储 POC 验证的执行结果，每个结果包含：
+    存储 POC 验证的执行结果,每个结果包含:
     - poc_name: POC 名称
     - poc_id: POC ID
     - target: 验证目标
@@ -208,7 +208,7 @@ class AgentState:
     """
     POC 执行统计信息
     
-    包含 POC 验证执行的统计数据：
+    包含 POC 验证执行的统计数据:
     - total_pocs: 总 POC 数量
     - executed_count: 已执行数量
     - vulnerable_count: 发现漏洞数量
@@ -222,7 +222,7 @@ class AgentState:
     """
     POC 验证状态
     
-    整体验证流程的状态：
+    整体验证流程的状态:
     - pending: 待执行
     - running: 执行中
     - paused: 已暂停
@@ -238,7 +238,7 @@ class AgentState:
         Args:
             task: 任务名称
             result: 执行结果
-            status: 执行状态（success/failed）
+            status: 执行状态(success/failed)
         """
         import time
         self.execution_history.append({
@@ -300,7 +300,7 @@ class AgentState:
         获取任务进度
         
         Returns:
-            float: 进度百分比（0-100）
+            float: 进度百分比(0-100)
         """
         if not self.planned_tasks:
             return 100.0

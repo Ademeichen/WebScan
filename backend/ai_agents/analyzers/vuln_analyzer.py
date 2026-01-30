@@ -65,7 +65,7 @@ class VulnerabilityAnalyzer:
             reverse=True
         )
         
-        logger.info("漏洞按严重度排序完成")
+
         return sorted_vulns
     
     def analyze(self, vulnerabilities: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -78,7 +78,7 @@ class VulnerabilityAnalyzer:
             vulnerabilities: 漏洞列表
             
         Returns:
-            Dict: 分析结果，包含统计信息
+            Dict: 分析结果,包含统计信息
         """
         if not vulnerabilities:
             return {

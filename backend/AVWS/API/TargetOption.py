@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
 """
 AWVS Target Option API 类
 
-提供与 AWVS 目标配置 API 交互的功能，包括设置危险程度、扫描速度、登录信息、代理等
+提供与 AWVS 目标配置 API 交互的功能,包括设置危险程度、扫描速度、登录信息、代理等
 """
+
+
 
 from .Base import Base
 import requests
@@ -13,10 +16,11 @@ import json
 
 
 class TargetOption(Base):
+
     """
     AWVS 目标配置 API 类
 
-    用于配置 AWVS 扫描目标的各种选项，包括危险程度、扫描速度、登录信息、代理等
+    用于配置 AWVS 扫描目标的各种选项,包括危险程度、扫描速度、登录信息、代理等
     """
 
     def __init__(self, api_base_url, api_key):
@@ -27,6 +31,8 @@ class TargetOption(Base):
             api_base_url: AWVS API 基础 URL
             api_key: AWVS API 密钥
         """
+
+
         super().__init__(api_base_url, api_key)
 
         self.excluded_hours_dict = {
@@ -39,16 +45,16 @@ class TargetOption(Base):
         self.logger = self.get_logger
 
     def set_criticality(self, target_id, criticality, description=None):
-        """
-        设置目标危险程度和描述
+
 
         Args:
             target_id: 目标 ID
-            criticality: 危险程度，30->critical, 20->high, 10-normal, 0->low
-            description: 目标描述（可选）
+            criticality: 危险程度,30->critical, 20->high, 10-normal, 0->low
+            description: 目标描述(可选)
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+
+
         """
         set_criticality_api = f'{self.targets_api}/{target_id}'
         try:
@@ -67,15 +73,15 @@ class TargetOption(Base):
             return False
 
     def set_scan_speed(self, target_id, scan_speed):
-        """
-        设置扫描速度
+
 
         Args:
             target_id: 目标 ID
-            scan_speed: 扫描速度，可选值为 sequential/slow/moderate/fast
+            scan_speed: 扫描速度,可选值为 sequential/slow/moderate/fast
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+
+
         """
         set_scan_speed_api = f'{self.targets_api}/{target_id}/configuration'
         try:
@@ -91,15 +97,15 @@ class TargetOption(Base):
             return False
 
     def set_continuous_scan(self, target_id, enabled=False):
-        """
-        启用或关闭持续扫描
+
 
         Args:
             target_id: 目标 ID
-            enabled: 启用 True，关闭 False
+            enabled: 启用 True,关闭 False
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+
+
         """
         set_continuous_scan_api = f'{self.targets_api}/{target_id}/continuous_scan'
         try:
@@ -116,16 +122,16 @@ class TargetOption(Base):
             return False
 
     def set_site_login(self, target_id, login_kind, login_info):
-        """
-        设置目标登录信息
+
 
         Args:
             target_id: 目标 ID
-            login_kind: 登录类型，none（无登录）、automatic（用户名和密码登录）
-            login_info: 登录信息字典，格式: {'username': 'tudouya', 'password': 'password123'}
+            login_kind: 登录类型,none(无登录)、automatic(用户名和密码登录)
+            login_info: 登录信息字典,格式: {'username': 'tudouya', 'password': 'password123'}
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+
+
         """
         set_site_login_api = f'{self.targets_api}/{target_id}/configuration'
         try:
@@ -152,18 +158,18 @@ class TargetOption(Base):
             return False
 
     def set_crawler(self, target_id, user_agent, case_sensitive, excluded_paths, limit_crawler_scope):
-        """
-        设置爬虫信息
+
 
         Args:
             target_id: 目标 ID
             limit_crawler_scope: 是否仅限爬行到地址和子目录
-            case_sensitive: 大小写敏感，auto/no/yes
+            case_sensitive: 大小写敏感,auto/no/yes
             excluded_paths: 排除路径列表
             user_agent: User-Agent 头
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+
+
         """
         set_crawler_api = f'{self.targets_api}/{target_id}/configuration'
         data = {
@@ -184,17 +190,17 @@ class TargetOption(Base):
             self.logger.error('Set Crawler Failed......', exc_info=True)
 
     def set_http_auth(self, target_id, enabled, username=None, password=None):
-        """
-        设置 HTTP 认证信息
+
 
         Args:
             target_id: 目标 ID
-            enabled: 启用 True，关闭 False
-            username: 用户名（可选）
-            password: 密码（可选）
+            enabled: 启用 True,关闭 False
+            username: 用户名(可选)
+            password: 密码(可选)
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+
+
         """
         set_http_auth_api = f'{self.targets_api}/{target_id}/configuration'
         data = {
@@ -217,22 +223,27 @@ class TargetOption(Base):
             return False
 
     def set_http_cert(self, target_id):
+
         """
-        设置 HTTP 证书（未实现）
+        设置 HTTP 证书(未实现)
 
         Args:
             target_id: 目标 ID
         """
+
+
         set_http_cert_api = f'{self.targets_api}/{target_id}/client_certificate'
         pass
 
     def upload_http_cert(self, upload_url):
+
         """
-        上传 HTTP 证书（未实现）
+        上传 HTTP 证书(未实现)
 
         Args:
             upload_url: 上传 URL
         """
+
         pass
 
     def set_http_cert_password(self, target_id, client_certificate_password):
@@ -244,7 +255,8 @@ class TargetOption(Base):
             client_certificate_password: 密码
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+
+
         """
         set_http_cert_password_api = f'{self.targets_api}/{target_id}/configuration'
         data = {
@@ -263,16 +275,16 @@ class TargetOption(Base):
             return False
 
     def set_proxy(self, target_id, enabled, proxy_info=None):
-        """
-        设置代理
+
 
         Args:
             target_id: 目标 ID
-            enabled: 启用 True，关闭 False
-            proxy_info: 代理信息字典，格式: {'address': '', 'protocol': '', 'port': '', 'username': '', 'password': ''}
+            enabled: 启用 True,关闭 False
+            proxy_info: 代理信息字典,格式: {'address': '', 'protocol': '', 'port': '', 'username': '', 'password': ''}
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+
+
         """
         set_proxy_api = f'{self.targets_api}/{target_id}/configuration'
         data = {
@@ -298,8 +310,7 @@ class TargetOption(Base):
             self.logger.error('Set Proxy Failed......', exc_info=True)
 
     def set_advance(self, target_id, technologies, custom_headers, custom_cookies, excluded_hours_id, debug=False, issue_tracker_id=''):
-        """
-        高级设置
+
 
         Args:
             target_id: 目标 ID
@@ -307,11 +318,12 @@ class TargetOption(Base):
             technologies: 目标相关技术列表
             custom_headers: 自定义 HTTP 头列表
             custom_cookies: 自定义 Cookie 列表
-            debug: 启用 True，关闭 False
-            excluded_hours_id: 非扫描时段 ID，如果为空则使用默认值
+            debug: 启用 True,关闭 False
+            excluded_hours_id: 非扫描时段 ID,如果为空则使用默认值
 
         Returns:
-            bool: 成功返回 True，失败返回 False
+
+
         """
         set_advance_api = f'{self.targets_api}/{target_id}/configuration'
         data = {

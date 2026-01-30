@@ -1,15 +1,16 @@
 """
 通知 API
 
-提供通知管理功能，包括：
+提供通知管理功能,包括:
 - 获取通知列表
 - 创建通知
 - 标记通知为已读
 - 删除通知
 """
-from fastapi import APIRouter, HTTPException
+
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from typing import Optional, Any
+from typing import Optional, List, Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -104,7 +105,7 @@ async def get_notifications(skip: int = 0, limit: int = 50, unread_only: bool = 
         if unread_only:
             notifications = [n for n in notifications if not n["read"]]
         
-        # 排序（最新的在前）
+        # 排序(最新的在前)
         notifications.reverse()
         
         # 分页
@@ -114,7 +115,7 @@ async def get_notifications(skip: int = 0, limit: int = 50, unread_only: bool = 
         # 统计未读数量
         unread_count = sum(1 for n in MOCK_NOTIFICATIONS if not n["read"])
         
-        logger.info(f"获取通知列表成功: 共 {total} 条通知，{unread_count} 条未读")
+        logger.info(f"获取通知列表成功: 共 {total} 条通知,{unread_count} 条未读")
         
         return APIResponse(
             code=200,
