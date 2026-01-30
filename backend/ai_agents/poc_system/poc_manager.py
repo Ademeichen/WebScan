@@ -13,6 +13,8 @@ from datetime import datetime
 from backend.config import settings
 from backend.models import POCVerificationTask
 from backend.utils.seebug_utils import seebug_utils
+from backend.ai_agents.utils.cache import CacheManager
+from backend.utils.poc_utils import validate_poc_script_code
 
 logger = logging.getLogger(__name__)
 
@@ -86,8 +88,7 @@ class POCManager:
         初始化 POC 管理器
         """
         self.poc_registry: Dict[str, POCMetadata] = {}
-        self.poc_cache: Dict[str, Dict[str, Any]] = {}
-        self.poc_versions: Dict[str, List[str]] = {}
+        self.poc_cache = CacheManager(ttl=settings.POC_CACHE_TTL)
         
         # 使用统一的Seebug工具
         self.seebug_client = seebug_utils.get_client()
@@ -117,13 +118,10 @@ class POCManager:
             
             # 检查缓存
             cache_key = f"seebug_{keyword}_{limit}"
-            if not force_refresh and cache_key in self.poc_cache:
-                cache_time = self.poc_cache[cache_key]["timestamp"]
-                cache_age = (datetime.now() - cache_time).total_seconds()
-                
-                if cache_age < settings.POC_CACHE_TTL:
-                    logger.info(f"✅ 使用缓存数据,缓存年龄: {cache_age}秒")
-                    return self.poc_cache[cache_key]["pocs"]
+            cached_pocs = self.poc_cache.get(cache_key)
+            if cached_pocs:
+                logger.info(f"✅ 使用缓存数据,缓存年龄: {self.poc_cache.get_age(cache_key):.2f}秒")
+                return cached_pocs
             
             # 使用Seebug_Agent的客户端搜索POC
             search_result = self.seebug_client.search_poc(keyword, page=1, page_size=limit)
@@ -157,10 +155,7 @@ class POCManager:
                 self.poc_registry[metadata.poc_id] = metadata
             
             # 更新缓存
-            self.poc_cache[cache_key] = {
-                "timestamp": datetime.now(),
-                "pocs": poc_metadata_list
-            }
+            self.poc_cache.set(cache_key, poc_metadata_list)
             
             logger.info(f"✅ 从 Seebug 同步完成,获取 {len(poc_metadata_list)} 个 POC")
             return poc_metadata_list
@@ -410,75 +405,8 @@ class POCManager:
         try:
             logger.info("🔍 开始验证POC脚本格式")
             
-            # 检查是否包含必要的类和方法
-            validation_result = {
-                "is_valid": True,
-                "errors": []
-            }
-            
-            # 检查是否包含POC类
-            if "class POC" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少POC类定义")
-            
-            # 检查是否包含pocsuite3导入
-            if "from pocsuite3" not in poc_code and "import pocsuite3" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少pocsuite3导入")
-            
-            # 检查是否包含必要的方法
-            if "def _verify" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少_verify方法")
-            
-            # 检查是否包含必要的属性
-            if "app" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少app属性")
-            
-            if "vulID" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少vulID属性")
-            
-            if "version" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少version属性")
-            
-            if "author" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少author属性")
-            
-            if "references" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少references属性")
-            
-            if "name" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少name属性")
-            
-            if "severity" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少severity属性")
-            
-            if "appPowerLink" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少appPowerLink属性")
-            
-            if "vulDate" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少vulDate属性")
-            
-            if "appVersion" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少appVersion属性")
-            
-            if "desc" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少desc属性")
-            
-            if "samples" not in poc_code:
-                validation_result["is_valid"] = False
-                validation_result["errors"].append("缺少samples属性")
+            # 使用统一的验证函数
+            validation_result = validate_poc_script_code(poc_code)
             
             if validation_result["is_valid"]:
                 logger.info("✅ POC脚本格式验证通过")

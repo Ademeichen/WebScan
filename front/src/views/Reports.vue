@@ -5,7 +5,6 @@
       <p class="page-subtitle">生成和管理安全扫描报告</p>
     </div>
 
-    <!-- 报告生成表单 -->
     <div class="report-generator">
       <div class="card">
         <div class="card-header">
@@ -15,28 +14,13 @@
           <div class="form-section">
             <div class="form-group">
               <label class="form-label">选择扫描任务</label>
-<<<<<<< HEAD
               <select v-model="selectedTask" class="form-select" :disabled="loadingTasks">
-=======
-<<<<<<< HEAD
-              <select v-model="selectedTask" class="form-select" :disabled="loadingTasks">
-=======
-              <select v-model="selectedTask" class="form-select">
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
                 <option value="">请选择扫描任务</option>
                 <option v-for="task in scanTasks" :key="task.id" :value="task.id">
                   {{ task.task_name }} - {{ task.target }}
                 </option>
               </select>
-<<<<<<< HEAD
               <span v-if="loadingTasks" class="form-hint">加载中...</span>
-=======
-<<<<<<< HEAD
-              <span v-if="loadingTasks" class="form-hint">加载中...</span>
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
             </div>
             
             <div class="form-group">
@@ -71,29 +55,16 @@
             </div>
           </div>
           
-        </div>
-        
-        <div class="generator-actions">
-<<<<<<< HEAD
-          <button @click="generateReport" class="btn btn-success" :disabled="!canGenerate || generating">
-            <span v-if="generating">⏳ 生成中...</span>
-            <span v-else>📄 生成报告</span>
-=======
-<<<<<<< HEAD
-          <button @click="generateReport" class="btn btn-success" :disabled="!canGenerate || generating">
-            <span v-if="generating">⏳ 生成中...</span>
-            <span v-else>📄 生成报告</span>
-=======
-          <button @click="generateReport" class="btn btn-success" :disabled="!canGenerate">
-            📄 生成报告
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
-          </button>
+          <div class="generator-actions">
+            <button @click="generateReport" class="btn btn-success" :disabled="!canGenerate || generating">
+              <span v-if="generating">⏳ 生成中...</span>
+              <span v-else>📄 生成报告</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 历史报告 -->
     <div class="report-history">
       <div class="card">
         <div class="card-header">
@@ -108,22 +79,12 @@
           </div>
         </div>
         
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
         <div v-if="loadingReports" class="loading-state">
           <div class="loading-spinner"></div>
           <div class="loading-text">加载报告列表...</div>
         </div>
         
         <div v-else class="history-list">
-<<<<<<< HEAD
-=======
-=======
-        <div class="history-list">
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
           <div 
             v-for="report in filteredReports" 
             :key="report.id"
@@ -133,15 +94,7 @@
               <div class="report-name">{{ report.report_name }}</div>
               <div class="report-meta">
                 <span class="report-task">{{ report.task_name }}</span>
-<<<<<<< HEAD
                 <span class="report-date">{{ formatDate(report.created_at) }}</span>
-=======
-<<<<<<< HEAD
-                <span class="report-date">{{ formatDate(report.created_at) }}</span>
-=======
-                <span class="report-date">{{ report.created_at }}</span>
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
               </div>
             </div>
             
@@ -152,7 +105,6 @@
             </div>
             
             <div class="report-size">
-<<<<<<< HEAD
               {{ formatFileSize(report.file_size) }}
             </div>
             
@@ -160,479 +112,244 @@
               <button @click="downloadReport(report)" class="btn-icon" title="下载" :disabled="downloading === report.id">
                 <span v-if="downloading === report.id">⏳</span>
                 <span v-else>📥</span>
-=======
-<<<<<<< HEAD
-              {{ formatFileSize(report.file_size) }}
-            </div>
-            
-            <div class="report-actions">
-              <button @click="downloadReport(report)" class="btn-icon" title="下载" :disabled="downloading === report.id">
-                <span v-if="downloading === report.id">⏳</span>
-                <span v-else>📥</span>
-=======
-              {{ report.size }}
-            </div>
-            
-            <div class="report-actions">
-              <button @click="downloadReport(report)" class="btn-icon" title="下载">
-                📥
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
               </button>
               <button @click="viewReport(report)" class="btn-icon" title="预览">
                 👁️
               </button>
-<<<<<<< HEAD
               <button @click="deleteReport(report.id)" class="btn-icon btn-danger" title="删除" :disabled="deleting === report.id">
                 <span v-if="deleting === report.id">⏳</span>
                 <span v-else>🗑️</span>
-=======
-<<<<<<< HEAD
-              <button @click="deleteReport(report.id)" class="btn-icon btn-danger" title="删除" :disabled="deleting === report.id">
-                <span v-if="deleting === report.id">⏳</span>
-                <span v-else>🗑️</span>
-=======
-              <button @click="deleteReport(report.id)" class="btn-icon btn-danger" title="删除">
-                🗑️
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
               </button>
             </div>
           </div>
         </div>
         
-<<<<<<< HEAD
-        <div v-if="!loadingReports && filteredReports.length === 0" class="empty-state">
-=======
-<<<<<<< HEAD
-        <div v-if="!loadingReports && filteredReports.length === 0" class="empty-state">
-=======
         <div v-if="filteredReports.length === 0" class="empty-state">
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
           <div class="empty-icon">📋</div>
           <div class="empty-title">暂无报告</div>
           <div class="empty-description">生成第一个安全扫描报告</div>
         </div>
       </div>
     </div>
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
 
-    <!-- 报告预览模态框 -->
-    <div v-if="showPreviewModal" class="modal-overlay" @click="closePreviewModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3 class="modal-title">报告预览</h3>
-          <button @click="closePreviewModal" class="modal-close">×</button>
-        </div>
-        <div class="modal-body">
-          <div v-if="previewLoading" class="preview-loading">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">加载预览...</div>
-          </div>
-          <div v-else class="preview-content">
-            <div class="preview-info">
-              <div class="preview-item">
-                <span class="preview-label">报告名称:</span>
-                <span class="preview-value">{{ currentPreviewReport?.report_name }}</span>
-              </div>
-              <div class="preview-item">
-                <span class="preview-label">关联任务:</span>
-                <span class="preview-value">{{ currentPreviewReport?.task_name }}</span>
-              </div>
-              <div class="preview-item">
-                <span class="preview-label">报告格式:</span>
-                <span class="preview-value">{{ (currentPreviewReport?.report_type || '').toUpperCase() }}</span>
-              </div>
-              <div class="preview-item">
-                <span class="preview-label">创建时间:</span>
-                <span class="preview-value">{{ formatDate(currentPreviewReport?.created_at) }}</span>
-              </div>
-              <div class="preview-item">
-                <span class="preview-label">文件大小:</span>
-                <span class="preview-value">{{ formatFileSize(currentPreviewReport?.file_size) }}</span>
-              </div>
-            </div>
-            <div v-if="currentPreviewReport?.description" class="preview-description">
-              <h4>描述</h4>
-              <p>{{ currentPreviewReport.description }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button @click="downloadReport(currentPreviewReport)" class="btn btn-primary">
-            📥 下载报告
-          </button>
-          <button @click="closePreviewModal" class="btn btn-secondary">
-            关闭
-          </button>
-        </div>
-      </div>
-    </div>
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
+    <Alert
+      v-if="errorMessage"
+      type="error"
+      :message="errorMessage"
+      @close="errorMessage = ''"
+    />
+
+    <Alert
+      v-if="successMessage"
+      type="success"
+      :message="successMessage"
+      @close="successMessage = ''"
+    />
   </div>
 </template>
 
 <script>
-<<<<<<< HEAD
-import { reportsApi, tasksApi } from '../utils/api.js'
-import { formatDate } from '../utils/date.js'
-=======
-<<<<<<< HEAD
-import { reportsApi, tasksApi } from '../utils/api.js'
-import { formatDate } from '../utils/date.js'
-=======
-import { reportApi, taskApi } from '../utils/api.js'
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
+import { ref, onMounted } from 'vue'
+import { reportsApi, tasksApi } from '@/utils/api'
+import Alert from '@/components/common/Alert.vue'
+import { formatDate } from '@/utils/date'
 
 export default {
   name: 'Reports',
-  data() {
-    return {
-<<<<<<< HEAD
-      scanTasks: [],
-=======
-<<<<<<< HEAD
-      scanTasks: [],
-=======
-      scanTasks: [], // Will be populated from API
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
-      reports: [],
-      selectedTask: '',
-      selectedFormat: 'html',
-      selectedContent: ['summary', 'vulnerabilities', 'recommendations'],
-      historyFilter: '',
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
-      loadingTasks: false,
-      loadingReports: false,
-      generating: false,
-      downloading: null,
-      deleting: null,
-      showPreviewModal: false,
-      previewLoading: false,
-      currentPreviewReport: null,
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
-      reportFormats: [
-        { value: 'html', name: 'HTML', icon: '🌐' },
-        { value: 'pdf', name: 'PDF', icon: '📄' },
-        { value: 'json', name: 'JSON', icon: '📊' }
-      ],
-      contentOptions: [
-        { value: 'summary', label: '扫描摘要' },
-        { value: 'vulnerabilities', label: '漏洞详情' },
-        { value: 'recommendations', label: '修复建议' },
-        { value: 'charts', label: '统计图表' },
-        { value: 'appendix', label: '技术附录' }
-      ]
-    }
+  components: {
+    Alert
   },
-  computed: {
-    canGenerate() {
-      return this.selectedTask && this.selectedFormat && this.selectedContent.length > 0
-    },
-    filteredReports() {
-      if (!this.historyFilter) return this.reports
-      return this.reports.filter(report => report.report_type === this.historyFilter)
-    }
-  },
-  mounted() {
-    this.fetchTasks()
-    this.fetchReports()
-  },
-  methods: {
-<<<<<<< HEAD
-    formatDate,
-=======
-<<<<<<< HEAD
-    formatDate,
-    async fetchTasks() {
-      this.loadingTasks = true
+  setup() {
+    const errorMessage = ref('')
+    const successMessage = ref('')
+    const scanTasks = ref([])
+    const reports = ref([])
+    const selectedTask = ref('')
+    const selectedFormat = ref('html')
+    const selectedContent = ref(['summary', 'vulnerabilities'])
+    const historyFilter = ref('')
+    const loadingTasks = ref(false)
+    const loadingReports = ref(false)
+    const generating = ref(false)
+    const downloading = ref(null)
+    const deleting = ref(null)
+
+    const reportFormats = [
+      { value: 'html', name: 'HTML', icon: '🌐' },
+      { value: 'pdf', name: 'PDF', icon: '📄' },
+      { value: 'json', name: 'JSON', icon: '📊' }
+    ]
+
+    const contentOptions = [
+      { value: 'summary', label: '扫描摘要' },
+      { value: 'vulnerabilities', label: '漏洞详情' },
+      { value: 'recommendations', label: '修复建议' },
+      { value: 'charts', label: '统计图表' },
+      { value: 'appendix', label: '技术附录' }
+    ]
+
+    const canGenerate = computed(() => {
+      return selectedTask.value && selectedFormat.value && selectedContent.value.length > 0
+    })
+
+    const filteredReports = computed(() => {
+      if (!historyFilter.value) return reports.value
+      return reports.value.filter(report => report.report_type === historyFilter.value)
+    })
+
+    const fetchTasks = async () => {
+      loadingTasks.value = true
       try {
         const response = await tasksApi.getTasks()
         if (response.code === 200 && response.data && response.data.tasks) {
-          this.scanTasks = response.data.tasks
+          scanTasks.value = response.data.tasks
         } else if (Array.isArray(response.data)) {
-          this.scanTasks = response.data
+          scanTasks.value = response.data
         } else {
-          this.scanTasks = []
+          scanTasks.value = []
         }
       } catch (error) {
         console.error('获取任务列表失败:', error)
-        this.scanTasks = []
+        scanTasks.value = []
       } finally {
-        this.loadingTasks = false
+        loadingTasks.value = false
       }
-    },
-    async fetchReports() {
-      this.loadingReports = true
+    }
+
+    const fetchReports = async () => {
+      loadingReports.value = true
       try {
         const response = await reportsApi.getReports()
         if (response.code === 200 && response.data && response.data.reports) {
-          this.reports = response.data.reports
+          reports.value = response.data.reports
         } else {
-          this.reports = response.data || []
-=======
->>>>>>> origin/renruipeng
-    async fetchTasks() {
-      this.loadingTasks = true
-      try {
-        const response = await tasksApi.getTasks()
-        if (response.code === 200 && response.data && response.data.tasks) {
-          this.scanTasks = response.data.tasks
-        } else if (Array.isArray(response.data)) {
-          this.scanTasks = response.data
-        } else {
-          this.scanTasks = []
-        }
-      } catch (error) {
-        console.error('获取任务列表失败:', error)
-        this.scanTasks = []
-      } finally {
-        this.loadingTasks = false
-      }
-    },
-    async fetchReports() {
-      this.loadingReports = true
-      try {
-        const response = await reportsApi.getReports()
-        if (response.code === 200 && response.data && response.data.reports) {
-          this.reports = response.data.reports
-        } else {
-<<<<<<< HEAD
-          this.reports = response.data || []
-=======
-             // Try direct array if format differs
-             this.reports = response.data || []
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
+          reports.value = response.data || []
         }
       } catch (error) {
         console.error('获取报告列表失败:', error)
-        this.reports = []
-<<<<<<< HEAD
+        reports.value = []
       } finally {
-        this.loadingReports = false
-=======
-<<<<<<< HEAD
-      } finally {
-        this.loadingReports = false
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
+        loadingReports.value = false
       }
-    },
-    async generateReport() {
-      if (!this.canGenerate) return
-      
-      const task = this.scanTasks.find(t => t.id == this.selectedTask)
-      if (!task) return
+    }
 
-<<<<<<< HEAD
-      this.generating = true
-=======
-<<<<<<< HEAD
-      this.generating = true
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
+    const generateReport = async () => {
+      if (!canGenerate.value) return
+      
+      const task = scanTasks.value.find(t => t.id == selectedTask.value)
+      if (!task) return
+      
+      generating.value = true
       try {
         const reportData = {
           task_id: task.id,
-          format: this.selectedFormat,
-          content: this.selectedContent,
+          format: selectedFormat.value,
+          content: selectedContent.value,
           name: `${task.task_name}报告`
         }
         
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
         const response = await reportsApi.create(reportData)
         if (response.code === 200) {
-          alert('报告生成成功！')
-          await this.fetchReports()
+          successMessage.value = '报告生成成功！'
+          await fetchReports()
         } else {
-          alert('生成报告失败: ' + (response.message || '未知错误'))
+          errorMessage.value = '生成报告失败: ' + (response.message || '未知错误')
         }
-<<<<<<< HEAD
-=======
       } catch (error) {
         console.error('生成报告失败:', error)
-        alert('生成报告失败: ' + error.message)
+        errorMessage.value = '生成报告失败: ' + error.message
       } finally {
-        this.generating = false
+        generating.value = false
       }
-    },
-    downloadReport(report) {
+    }
+
+    const downloadReport = async (report) => {
       if (!report) return
       
-      this.downloading = report.id
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
-=======
-        await reportApi.create(reportData)
-        alert('报告生成成功！')
-        this.fetchReports()
->>>>>>> origin/renruipeng
-      } catch (error) {
-        console.error('生成报告失败:', error)
-        alert('生成报告失败: ' + error.message)
-      } finally {
-        this.generating = false
-      }
-    },
-    downloadReport(report) {
-<<<<<<< HEAD
-      if (!report) return
-      
-      this.downloading = report.id
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
-=======
-      // 实现下载功能
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
-      const url = `${baseUrl}/reports/${report.id}/export?format=${report.report_type}`
-      
-      const link = document.createElement('a')
-      link.href = url
-<<<<<<< HEAD
-      link.download = report.report_name || `report.${report.report_type}`
-      link.target = '_blank'
-=======
-<<<<<<< HEAD
-      link.download = report.report_name || `report.${report.report_type}`
-      link.target = '_blank'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      
-      setTimeout(() => {
-        this.downloading = null
-      }, 1000)
-    },
-    async viewReport(report) {
-      this.currentPreviewReport = report
-      this.showPreviewModal = true
-      this.previewLoading = true
-      
+      downloading.value = report.id
       try {
-        const response = await reportsApi.get(report.id)
-        if (response.code === 200) {
-          this.currentPreviewReport = { ...report, ...response.data }
-        }
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+        const url = `${baseUrl}/reports/${report.id}/export?format=${report.report_type}`
+        
+        const link = document.createElement('a')
+        link.href = url
+        link.download = report.report_name || `report.${report.report_type}`
+        link.target = '_blank'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        setTimeout(() => {
+          downloading.value = null
+        }, 1000)
       } catch (error) {
-        console.error('获取报告详情失败:', error)
-      } finally {
-        this.previewLoading = false
+        console.error('下载报告失败:', error)
+        errorMessage.value = '下载报告失败'
+        downloading.value = null
       }
-    },
-    closePreviewModal() {
-      this.showPreviewModal = false
-      this.currentPreviewReport = null
-      this.previewLoading = false
-    },
-    async deleteReport(reportId) {
+    }
+
+    const viewReport = async (report) => {
+      console.log('预览报告:', report)
+    }
+
+    const deleteReport = async (reportId) => {
       if (confirm('确定要删除这个报告吗？')) {
-        this.deleting = reportId
+        deleting.value = reportId
         try {
           const response = await reportsApi.delete(reportId)
           if (response.code === 200) {
-            this.reports = this.reports.filter(r => r.id !== reportId)
-            alert('删除成功')
+            reports.value = reports.value.filter(r => r.id !== reportId)
+            successMessage.value = '删除成功'
           } else {
-            alert('删除失败: ' + (response.message || '未知错误'))
+            errorMessage.value = '删除失败: ' + (response.message || '未知错误')
           }
         } catch (error) {
           console.error('删除报告失败:', error)
-          alert('删除报告失败')
+          errorMessage.value = '删除报告失败'
         } finally {
-          this.deleting = null
+          deleting.value = null
         }
       }
-    },
-    formatFileSize(bytes) {
+    }
+
+    const formatFileSize = (bytes) => {
       if (!bytes) return '0 B'
       const k = 1024
       const sizes = ['B', 'KB', 'MB', 'GB']
       const i = Math.floor(Math.log(bytes) / Math.log(k))
       return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
-=======
-      link.target = '_blank' // Open in new tab if it doesn't download immediately, though attachment header should force download
->>>>>>> origin/renruipeng
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      
-      setTimeout(() => {
-        this.downloading = null
-      }, 1000)
-    },
-    async viewReport(report) {
-      this.currentPreviewReport = report
-      this.showPreviewModal = true
-      this.previewLoading = true
-      
-      try {
-        const response = await reportsApi.get(report.id)
-        if (response.code === 200) {
-          this.currentPreviewReport = { ...report, ...response.data }
-        }
-      } catch (error) {
-        console.error('获取报告详情失败:', error)
-      } finally {
-        this.previewLoading = false
-      }
-    },
-    closePreviewModal() {
-      this.showPreviewModal = false
-      this.currentPreviewReport = null
-      this.previewLoading = false
-    },
-    async deleteReport(reportId) {
-      if (confirm('确定要删除这个报告吗？')) {
-        this.deleting = reportId
-        try {
-          const response = await reportsApi.delete(reportId)
-          if (response.code === 200) {
-            this.reports = this.reports.filter(r => r.id !== reportId)
-            alert('删除成功')
-          } else {
-            alert('删除失败: ' + (response.message || '未知错误'))
-          }
-        } catch (error) {
-          console.error('删除报告失败:', error)
-          alert('删除报告失败')
-        } finally {
-          this.deleting = null
-        }
-      }
-<<<<<<< HEAD
-    },
-    formatFileSize(bytes) {
-      if (!bytes) return '0 B'
-      const k = 1024
-      const sizes = ['B', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
+    }
+
+    onMounted(() => {
+      fetchTasks()
+      fetchReports()
+    })
+
+    return {
+      errorMessage,
+      successMessage,
+      scanTasks,
+      reports,
+      selectedTask,
+      selectedFormat,
+      selectedContent,
+      historyFilter,
+      loadingTasks,
+      loadingReports,
+      generating,
+      downloading,
+      deleting,
+      reportFormats,
+      contentOptions,
+      canGenerate,
+      filteredReports,
+      generateReport,
+      downloadReport,
+      viewReport,
+      deleteReport,
+      formatFileSize,
+      formatDate
     }
   }
 }
@@ -648,36 +365,30 @@ export default {
   margin-bottom: var(--spacing-xl);
 }
 
-.page-subtitle {
-  color: var(--text-secondary);
-  margin-top: var(--spacing-xs);
+.page-header h1 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 2rem;
+  color: var(--text-primary);
 }
 
-/* 报告生成器 */
+.page-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
 .report-generator {
   margin-bottom: var(--spacing-xl);
 }
 
 .generator-content {
-<<<<<<< HEAD
   display: block;
-=======
-<<<<<<< HEAD
-  display: block;
-=======
-  display: block; /* Removed grid to allow full width since preview is gone */
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
   max-width: 800px;
   margin: 0 auto;
 }
@@ -687,16 +398,8 @@ export default {
   font-size: 12px;
   color: var(--text-secondary);
   margin-top: var(--spacing-xs);
-<<<<<<< HEAD
-=======
-=======
-  max-width: 800px; /* Limit width for better readability */
-  margin: 0 auto; /* Center the form */
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
-/* 格式选择标签 */
 .format-tabs {
   display: flex;
   gap: var(--spacing-sm);
@@ -734,7 +437,6 @@ export default {
   font-weight: bold;
 }
 
-/* 内容选项 */
 .content-options {
   display: flex;
   flex-direction: column;
@@ -792,22 +494,17 @@ export default {
   border-top: 1px solid var(--border-color);
 }
 
-/* 历史报告 */
 .history-filters {
   display: flex;
   gap: var(--spacing-md);
 }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
 .loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--spacing-xl);
   gap: var(--spacing-md);
+  padding: var(--spacing-xl);
 }
 
 .loading-spinner {
@@ -830,15 +527,11 @@ export default {
   font-size: 14px;
 }
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 
 .report-item {
@@ -872,13 +565,21 @@ export default {
   color: var(--text-secondary);
 }
 
+.report-task {
+  flex: 1;
+}
+
+.report-date {
+  white-space: nowrap;
+}
+
 .report-format {
   margin: 0 var(--spacing-md);
 }
 
 .format-badge {
-  padding: 2px var(--spacing-xs);
-  border-radius: 3px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
   font-size: 10px;
   font-weight: bold;
 }
@@ -890,7 +591,7 @@ export default {
 
 .format-badge.format-pdf {
   background-color: rgba(231, 76, 60, 0.1);
-  color: var(--high-risk);
+  color: var(--danger-color);
 }
 
 .format-badge.format-json {
@@ -899,9 +600,9 @@ export default {
 }
 
 .report-size {
+  margin: 0 var(--spacing-md);
   color: var(--text-secondary);
   font-size: 12px;
-  margin-right: var(--spacing-md);
 }
 
 .report-actions {
@@ -919,7 +620,6 @@ export default {
   transition: background-color 0.2s ease;
 }
 
-<<<<<<< HEAD
 .btn-icon:hover:not(:disabled) {
   background-color: var(--background-color);
 }
@@ -930,30 +630,9 @@ export default {
 }
 
 .btn-icon.btn-danger:hover:not(:disabled) {
-=======
-<<<<<<< HEAD
-.btn-icon:hover:not(:disabled) {
-  background-color: var(--background-color);
-}
-
-.btn-icon:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-icon.btn-danger:hover:not(:disabled) {
-=======
-.btn-icon:hover {
-  background-color: var(--background-color);
-}
-
-.btn-icon.btn-danger:hover {
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
   background-color: rgba(231, 76, 60, 0.1);
 }
 
-/* 空状态 */
 .empty-state {
   text-align: center;
   padding: var(--spacing-xl);
@@ -969,156 +648,14 @@ export default {
   font-size: 18px;
   font-weight: bold;
   margin-bottom: var(--spacing-sm);
+  color: var(--text-primary);
 }
 
 .empty-description {
   font-size: 14px;
 }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
-/* 模态框 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: var(--spacing-md);
-}
-
-.modal-content {
-  background: white;
-  border-radius: var(--border-radius);
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.modal-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--border-radius);
-  transition: background-color 0.2s ease;
-}
-
-.modal-close:hover {
-  background-color: var(--background-color);
-}
-
-.modal-body {
-  padding: var(--spacing-lg);
-  overflow-y: auto;
-  flex: 1;
-}
-
-.preview-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-xl);
-}
-
-.preview-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-
-.preview-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.preview-item {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-.preview-label {
-  font-weight: bold;
-  color: var(--text-secondary);
-  min-width: 80px;
-}
-
-.preview-value {
-  color: var(--text-primary);
-}
-
-.preview-description {
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--border-color);
-}
-
-.preview-description h4 {
-  margin: 0 0 var(--spacing-sm) 0;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.preview-description p {
-  margin: 0;
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  border-top: 1px solid var(--border-color);
-}
-
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
-/* 响应式设计 */
 @media (max-width: 768px) {
-  .generator-content {
-    grid-template-columns: 1fr;
-  }
-  
-  .format-tabs {
-    flex-direction: column;
-  }
-  
   .report-item {
     flex-direction: column;
     align-items: flex-start;
@@ -1129,18 +666,10 @@ export default {
     flex-direction: column;
     gap: var(--spacing-xs);
   }
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
   
-  .modal-content {
-    max-height: 95vh;
+  .report-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 </style>

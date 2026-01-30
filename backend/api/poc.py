@@ -30,6 +30,7 @@ from backend.poc import (
     struts2_009_poc, struts2_032_poc, cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc,
     cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
 )
+from backend.api.common import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -69,18 +70,7 @@ class POCScanResult(BaseModel):
     timestamp: str
 
 
-class APIResponse(BaseModel):
-    """
-    统一 API 响应模型
-    
-    Attributes:
-        code: 响应状态码,200 表示成功
-        message: 响应消息
-        data: 响应数据,可选
-    """
-    code: int
-    message: str
-    data: Optional[Any] = None
+
 
 
 # POC 映射表

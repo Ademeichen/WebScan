@@ -2,14 +2,6 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
-<<<<<<< HEAD
-// Vite 配置文件
-=======
-<<<<<<< HEAD
-// Vite 配置文件
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
@@ -23,15 +15,7 @@ export default defineConfig({
     // API 代理配置
     proxy: {
       '/api': {
-<<<<<<< HEAD
-        target: 'http://127.0.0.1:8888',
-=======
-<<<<<<< HEAD
-        target: 'http://127.0.0.1:8888',
-=======
         target: 'http://127.0.0.1:3000',
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
         changeOrigin: true,
         secure: false
       }
@@ -74,10 +58,3 @@ export default defineConfig({
     open: true
   }
 })
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
-
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng

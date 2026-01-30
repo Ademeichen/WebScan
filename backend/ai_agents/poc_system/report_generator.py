@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 from backend.models import POCVerificationTask, POCVerificationResult
+from backend.ai_agents.poc_system.utils import calculate_severity_distribution
 
 
 logger = logging.getLogger(__name__)
@@ -157,13 +158,9 @@ class ReportGenerator:
         # 计算统计信息
         total_results = len(results)
         vulnerable_count = sum(1 for r in results if r.vulnerable)
-        not_vulnerable_count = total_results - vulnerable_count
         
         # 严重度分布
-        severity_distribution = {}
-        for result in results:
-            severity = result.severity or "info"
-            severity_distribution[severity] = severity_distribution.get(severity, 0) + 1
+        severity_distribution = calculate_severity_distribution(results)
         
         # 生成 HTML 报告
         html_content = f"""
@@ -404,10 +401,7 @@ class ReportGenerator:
         vulnerable_count = sum(1 for r in results if r.vulnerable)
         
         # 严重度分布
-        severity_distribution = {}
-        for result in results:
-            severity = result.severity or "info"
-            severity_distribution[severity] = severity_distribution.get(severity, 0) + 1
+        severity_distribution = calculate_severity_distribution(results)
         
         # 构建 JSON 数据
         report_data = {
@@ -505,10 +499,7 @@ class ReportGenerator:
         average_execution_time = total_execution_time / total_results if total_results > 0 else 0
         
         # 严重度分布
-        severity_distribution = {}
-        for result in results:
-            severity = result.severity or "info"
-            severity_distribution[severity] = severity_distribution.get(severity, 0) + 1
+        severity_distribution = calculate_severity_distribution(results)
         
         # 目标列表
         targets = list(set(r.target for r in results))
@@ -595,10 +586,7 @@ class ReportGenerator:
         vulnerable_count = sum(1 for r in results if r.vulnerable)
         
         # 严重度分布
-        severity_distribution = {}
-        for result in results:
-            severity = result.severity or "info"
-            severity_distribution[severity] = severity_distribution.get(severity, 0) + 1
+        severity_distribution = calculate_severity_distribution(results)
         
         # 平均值
         average_confidence = sum(r.confidence for r in results) / total

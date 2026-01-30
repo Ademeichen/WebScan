@@ -2,16 +2,6 @@
  * 全局错误处理工具
  */
 
-<<<<<<< HEAD
-import toast from './toast.js'
-
-=======
-<<<<<<< HEAD
-import toast from './toast.js'
-
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 /**
  * 错误类型枚举
  */
@@ -135,53 +125,13 @@ class ErrorHandler {
    * 默认错误处理器
    */
   defaultHandler(error) {
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
-    // 根据错误类型显示不同的提示
-    switch (error.type) {
-      case ErrorType.NETWORK_ERROR:
-        toast.error('网络错误', error.message, 5000)
-        break
-      case ErrorType.AUTH_ERROR:
-        toast.warning('认证错误', error.message, 4000)
-        // 跳转到登录页
-        if (error.statusCode === 401) {
-          setTimeout(() => {
-            window.location.href = '/login'
-          }, 2000)
-        }
-        break
-      case ErrorType.VALIDATION_ERROR:
-        toast.warning('验证错误', error.message, 3000)
-        break
-      case ErrorType.API_ERROR:
-        if (error.statusCode >= 500) {
-          toast.error('服务器错误', error.message, 5000)
-        } else {
-          toast.warning('请求错误', error.message, 3000)
-        }
-        break
-      default:
-        toast.info('提示', error.message, 3000)
-<<<<<<< HEAD
-=======
-=======
     // 显示用户友好的错误消息
     if (typeof window !== 'undefined') {
       // 在浏览器环境中显示错误
       this.showErrorToast(error.message)
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
     }
-
     return error
   }
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
 
   /**
    * 显示错误提示
@@ -193,8 +143,6 @@ class ErrorHandler {
       alert(message)
     }
   }
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 // 创建全局错误处理器实例
@@ -204,18 +152,6 @@ export const errorHandler = new ErrorHandler()
 errorHandler.setGlobalHandler((error) => {
   console.error('全局错误:', error)
   
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
-  // 记录错误到日志服务（可选）
-  // logErrorToService(error)
-  
-  // 上报错误到监控系统（可选）
-  // reportErrorToMonitoring(error)
-<<<<<<< HEAD
-=======
-=======
   // 根据错误类型进行不同处理
   switch (error.type) {
     case ErrorType.NETWORK_ERROR:
@@ -232,8 +168,6 @@ errorHandler.setGlobalHandler((error) => {
     default:
       errorHandler.showErrorToast(error.message || '操作失败，请稍后重试')
   }
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 })
 
 /**

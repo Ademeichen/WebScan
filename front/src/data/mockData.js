@@ -1,20 +1,11 @@
-<<<<<<< HEAD
 // 模拟数据，用于前端开发和测试
-=======
-// TODO: 替换为真实的后端API数据
-// 这些是模拟数据，用于前端开发和测试
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
 
 // 扫描任务数据
 export const mockScanTasks = [
   {
     id: 1,
     name: '电商网站安全扫描',
-<<<<<<< HEAD
     targetUrl: 'https://shop.www.baidu.com',
-=======
-    targetUrl: 'https://shop.example.com',
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     status: 'completed', // waiting, running, completed, failed
     priority: 'high', // low, medium, high, critical
     scanType: '深度扫描',
@@ -31,11 +22,7 @@ export const mockScanTasks = [
   {
     id: 2,
     name: '企业官网检测',
-<<<<<<< HEAD
     targetUrl: 'https://company.www.baidu.com',
-=======
-    targetUrl: 'https://company.example.com',
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     status: 'running',
     priority: 'medium',
     scanType: '快速扫描',
@@ -47,11 +34,7 @@ export const mockScanTasks = [
   {
     id: 3,
     name: 'API接口安全测试',
-<<<<<<< HEAD
     targetUrl: 'https://api.www.baidu.com/v1/users',
-=======
-    targetUrl: 'https://api.example.com/v1/users',
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     status: 'waiting',
     priority: 'critical',
     scanType: '自定义规则',
@@ -63,11 +46,7 @@ export const mockScanTasks = [
   {
     id: 4,
     name: '管理后台扫描',
-<<<<<<< HEAD
     targetUrl: 'https://admin.www.baidu.com/dashboard',
-=======
-    targetUrl: 'https://admin.example.com/dashboard',
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     status: 'failed',
     priority: 'high',
     scanType: '深度扫描',
@@ -181,11 +160,7 @@ export const mockRecentScans = [
   {
     id: 1,
     name: '电商网站安全扫描',
-<<<<<<< HEAD
     url: 'https://shop.www.baidu.com',
-=======
-    url: 'https://shop.example.com',
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     time: '2小时前',
     status: 'completed',
     vulnerabilities: { high: 2, medium: 5, low: 8 }
@@ -193,11 +168,7 @@ export const mockRecentScans = [
   {
     id: 2,
     name: '企业官网检测',
-<<<<<<< HEAD
     url: 'https://company.www.baidu.com',
-=======
-    url: 'https://company.example.com',
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     time: '4小时前',
     status: 'running',
     vulnerabilities: null
@@ -205,11 +176,7 @@ export const mockRecentScans = [
   {
     id: 3,
     name: 'API接口安全测试',
-<<<<<<< HEAD
     url: 'https://api.www.baidu.com',
-=======
-    url: 'https://api.example.com',
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     time: '6小时前',
     status: 'completed',
     vulnerabilities: { high: 0, medium: 3, low: 2 }
@@ -335,11 +302,7 @@ export const mockNotifications = [
   {
     id: 1,
     title: '高危漏洞发现',
-<<<<<<< HEAD
     message: '在 shop.www.baidu.com 发现 SQL 注入漏洞',
-=======
-    message: '在 shop.example.com 发现 SQL 注入漏洞',
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
     type: 'high-vulnerability',
     time: '5分钟前',
     read: false

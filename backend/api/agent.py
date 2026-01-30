@@ -19,6 +19,7 @@ import logging
 from backend.models import AgentTask, AgentResult
 from backend.ai_agents.core.graph import create_agent_graph, initialize_tools
 from backend.ai_agents.core.state import AgentState
+from backend.api.task_utils import handle_task_error
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -150,7 +151,7 @@ async def run_agent(request: AgentRequest):
             "data": final_output
         }
     except Exception as e:
-        logger.error(f"❌ Agent 任务执行失败: {str(e)}")
+        logger.error(handle_task_error(e, "Agent 任务执行"))
         if 'task_obj' in locals():
             await task_obj.update_from_dict({"status": "failed"})
             await task_obj.save()
@@ -203,7 +204,7 @@ async def get_agent_task(task_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"获取 Agent 任务详情失败: {str(e)}")
+        logger.error(handle_task_error(e, "获取 Agent 任务详情"))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -268,5 +269,5 @@ async def list_agent_tasks(
             "total_pages": (total + page_size - 1) // page_size
         }
     except Exception as e:
-        logger.error(f"获取 Agent 任务列表失败: {str(e)}")
+        logger.error(handle_task_error(e, "获取 Agent 任务列表"))
         raise HTTPException(status_code=500, detail=str(e))

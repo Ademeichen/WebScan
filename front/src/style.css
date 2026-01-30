@@ -2,11 +2,6 @@
 :root {
   /* 色彩系统 */
   --primary-color: #1a3a6c;
-<<<<<<< HEAD
-  --primary-light: #2d5a8f;
-  --primary-dark: #0f2a4c;
-=======
-<<<<<<< HEAD
   --primary-light: #2d5a8f;
   --primary-dark: #0f2a4c;
   --secondary-color: #4a90e2;
@@ -39,45 +34,6 @@
   /* 字体系统 */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   --font-family-mono: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-=======
->>>>>>> origin/renruipeng
-  --secondary-color: #4a90e2;
-  --secondary-light: #6ba3e8;
-  --secondary-dark: #357abd;
-  --high-risk: #e74c3c;
-  --high-risk-light: #ec7063;
-  --high-risk-dark: #c0392b;
-  --medium-risk: #f5a623;
-  --medium-risk-light: #f7b731;
-  --medium-risk-dark: #d68910;
-  --low-risk: #f1c40f;
-  --low-risk-light: #f4d03f;
-  --low-risk-dark: #d4ac0d;
-  --info-color: #3498db;
-  --success-color: #2ecc71;
-  --success-light: #58d68d;
-  --success-dark: #27ae60;
-  --warning-color: #f39c12;
-  --danger-color: #e74c3c;
-  --background-color: #f8f9fa;
-  --background-dark: #e9ecef;
-  --card-background: #ffffff;
-  --text-primary: #2c3e50;
-  --text-secondary: #7f8c8d;
-  --text-muted: #95a5a6;
-  --border-color: #e9ecef;
-  --border-dark: #dee2e6;
-  
-  /* 字体系统 */
-<<<<<<< HEAD
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-  --font-family-mono: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-=======
-  font-family: Arial, Helvetica, sans-serif;
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
-  font-size: 14px;
-  line-height: 1.5;
   
   /* 间距系统 */
   --spacing-xs: 4px;
@@ -85,24 +41,12 @@
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
-<<<<<<< HEAD
   --spacing-2xl: 48px;
-=======
-<<<<<<< HEAD
-  --spacing-2xl: 48px;
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
   
   /* 阴影系统 */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
-<<<<<<< HEAD
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
-  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
-=======
-<<<<<<< HEAD
   --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
   --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
   
@@ -126,33 +70,6 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
-=======
->>>>>>> origin/renruipeng
-  
-  /* 圆角 */
-  --border-radius: 6px;
-  --border-radius-sm: 4px;
-  --border-radius-lg: 12px;
-<<<<<<< HEAD
-  --border-radius-xl: 16px;
-  --border-radius-full: 9999px;
-  
-  /* 过渡动画 */
-  --transition-fast: 0.15s ease;
-  --transition-base: 0.2s ease;
-  --transition-slow: 0.3s ease;
-  
-  /* Z-index层级 */
-  --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-fixed: 1030;
-  --z-modal-backdrop: 1040;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-tooltip: 1070;
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 * {
@@ -168,14 +85,7 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-<<<<<<< HEAD
   overflow-x: hidden;
-=======
-<<<<<<< HEAD
-  overflow-x: hidden;
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 #app {
@@ -184,10 +94,6 @@ body {
   flex-direction: column;
 }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
 /* 滚动条样式 */
 ::-webkit-scrollbar {
   width: 8px;
@@ -225,11 +131,6 @@ a:hover {
   text-decoration: underline;
 }
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 /* 标题样式 */
 h1 {
   font-size: 24px;
@@ -259,41 +160,13 @@ h3 {
   justify-content: center;
   padding: var(--spacing-sm) var(--spacing-md);
   font-size: 14px;
-<<<<<<< HEAD
-  font-weight: 600;
-=======
-<<<<<<< HEAD
-  font-weight: 600;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  text-decoration: none;
-  gap: var(--spacing-xs);
-  white-space: nowrap;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.btn:active:not(:disabled) {
-  transform: translateY(0);
-=======
   font-weight: bold;
->>>>>>> origin/renruipeng
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
   transition: all var(--transition-base);
   text-decoration: none;
   gap: var(--spacing-xs);
-  white-space: nowrap;
-<<<<<<< HEAD
   position: relative;
   overflow: hidden;
 }
@@ -306,18 +179,11 @@ h3 {
 
 .btn:active:not(:disabled) {
   transform: translateY(0);
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .btn-primary {
   background-color: var(--primary-color);
   color: white;
-<<<<<<< HEAD
-  box-shadow: var(--shadow-sm);
-=======
-<<<<<<< HEAD
   box-shadow: var(--shadow-sm);
 }
 
@@ -329,31 +195,11 @@ h3 {
 
 .btn-primary:active:not(:disabled) {
   background-color: var(--primary-dark);
-=======
->>>>>>> origin/renruipeng
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
-<<<<<<< HEAD
-  box-shadow: var(--shadow-md);
-}
-
-.btn-primary:active:not(:disabled) {
-  background-color: var(--primary-dark);
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .btn-secondary {
   background-color: var(--secondary-color);
   color: white;
-<<<<<<< HEAD
-  box-shadow: var(--shadow-sm);
-=======
-<<<<<<< HEAD
   box-shadow: var(--shadow-sm);
 }
 
@@ -365,31 +211,11 @@ h3 {
 
 .btn-secondary:active:not(:disabled) {
   background-color: var(--secondary-dark);
-=======
->>>>>>> origin/renruipeng
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--secondary-dark);
-  transform: translateY(-1px);
-<<<<<<< HEAD
-  box-shadow: var(--shadow-md);
-}
-
-.btn-secondary:active:not(:disabled) {
-  background-color: var(--secondary-dark);
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .btn-success {
   background-color: var(--success-color);
   color: white;
-<<<<<<< HEAD
-  box-shadow: var(--shadow-sm);
-=======
-<<<<<<< HEAD
   box-shadow: var(--shadow-sm);
 }
 
@@ -429,50 +255,6 @@ h3 {
   background-color: var(--medium-risk-dark);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
-=======
->>>>>>> origin/renruipeng
-}
-
-.btn-success:hover:not(:disabled) {
-  background-color: var(--success-dark);
-  transform: translateY(-1px);
-<<<<<<< HEAD
-  box-shadow: var(--shadow-md);
-}
-
-.btn-success:active:not(:disabled) {
-  background-color: var(--success-dark);
-}
-
-.btn-danger {
-  background-color: var(--danger-color);
-  color: white;
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-danger:hover:not(:disabled) {
-  background-color: var(--high-risk-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn-danger:active:not(:disabled) {
-  background-color: var(--high-risk-dark);
-}
-
-.btn-warning {
-  background-color: var(--warning-color);
-  color: white;
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-warning:hover:not(:disabled) {
-  background-color: var(--medium-risk-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .btn-outline {
@@ -481,7 +263,6 @@ h3 {
   color: var(--text-primary);
 }
 
-<<<<<<< HEAD
 .btn-outline:hover:not(:disabled) {
   background-color: var(--background-color);
   border-color: var(--secondary-color);
@@ -531,104 +312,23 @@ h3 {
 .btn-icon:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-=======
-<<<<<<< HEAD
-.btn-outline:hover:not(:disabled) {
-  background-color: var(--background-color);
-  border-color: var(--secondary-color);
-  color: var(--secondary-color);
-}
-
-.btn-outline.btn-danger:hover:not(:disabled) {
-  background-color: rgba(231, 76, 60, 0.1);
-  border-color: var(--danger-color);
-  color: var(--danger-color);
-}
-
-.btn-sm {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 12px;
-}
-
-.btn-lg {
-  padding: var(--spacing-md) var(--spacing-lg);
-  font-size: 16px;
-}
-
-.btn-block {
-  width: 100%;
-  display: flex;
-}
-
-.btn-icon {
-  padding: var(--spacing-xs);
-  width: 32px;
-  height: 32px;
-  border-radius: var(--border-radius);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  font-size: 14px;
-}
-
-.btn-icon:hover:not(:disabled) {
-  background-color: var(--background-color);
-}
-
-.btn-icon:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-=======
-.btn-outline:hover {
-  background-color: var(--background-color);
-  border-color: var(--secondary-color);
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 /* 卡片样式 */
 .card {
   background-color: var(--card-background);
-<<<<<<< HEAD
-  border-radius: var(--border-radius-lg);
-=======
-<<<<<<< HEAD
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-md);
-  transition: all var(--transition-base);
-  border: 1px solid var(--border-color);
-=======
   border-radius: var(--border-radius);
->>>>>>> origin/renruipeng
   box-shadow: var(--shadow-sm);
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-md);
-<<<<<<< HEAD
   transition: all var(--transition-base);
   border: 1px solid var(--border-color);
-=======
-  transition: all 0.2s ease;
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
-<<<<<<< HEAD
   border-color: var(--border-dark);
-=======
-<<<<<<< HEAD
-  border-color: var(--border-dark);
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .card-header {
@@ -641,7 +341,6 @@ h3 {
 }
 
 .card-title {
-<<<<<<< HEAD
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
@@ -668,40 +367,6 @@ h3 {
 
 .card-elevated:hover {
   box-shadow: var(--shadow-xl);
-=======
-<<<<<<< HEAD
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.card-body {
-  padding: 0;
-}
-
-.card-footer {
-  margin-top: var(--spacing-md);
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-}
-
-.card-elevated {
-  box-shadow: var(--shadow-lg);
-  border: none;
-}
-
-.card-elevated:hover {
-  box-shadow: var(--shadow-xl);
-=======
-  font-size: 16px;
-  font-weight: bold;
-  color: var(--text-primary);
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 /* 表单样式 */
@@ -712,10 +377,6 @@ h3 {
 .form-label {
   display: block;
   margin-bottom: var(--spacing-xs);
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
   font-weight: 600;
   color: var(--text-primary);
   font-size: 14px;
@@ -731,8 +392,6 @@ h3 {
   font-size: 14px;
   transition: all var(--transition-base);
   background-color: white;
-<<<<<<< HEAD
-=======
   color: var(--text-primary);
 }
 
@@ -805,85 +464,6 @@ h3 {
 
 .form-inline .form-group {
   margin-bottom: 0;
-=======
-  font-weight: bold;
->>>>>>> origin/renruipeng
-  color: var(--text-primary);
-}
-
-.form-input:focus,
-.form-select:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: var(--secondary-color);
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
-}
-
-.form-input:disabled,
-.form-select:disabled,
-.form-textarea:disabled {
-  background-color: var(--background-color);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.form-input::placeholder,
-.form-textarea::placeholder {
-  color: var(--text-muted);
-}
-
-.form-select {
-  cursor: pointer;
-<<<<<<< HEAD
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237f8c8d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right var(--spacing-md) center;
-  padding-right: calc(var(--spacing-md) * 2 + 12px);
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
-  line-height: 1.5;
-}
-
-.form-hint {
-  display: block;
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: var(--spacing-xs);
-}
-
-.form-error {
-  display: block;
-  font-size: 12px;
-  color: var(--danger-color);
-  margin-top: var(--spacing-xs);
-}
-
-.form-row {
-  display: flex;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-}
-
-.form-row .form-group {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-.form-inline {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.form-inline .form-group {
-  margin-bottom: 0;
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 /* 状态样式 */
@@ -891,50 +471,23 @@ h3 {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-<<<<<<< HEAD
-  padding: 4px var(--spacing-sm);
-  border-radius: var(--border-radius-full);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-=======
-<<<<<<< HEAD
-  padding: 4px var(--spacing-sm);
-  border-radius: var(--border-radius-full);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-=======
   padding: 2px var(--spacing-sm);
   border-radius: 12px;
   font-size: 12px;
   font-weight: bold;
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status-waiting {
   background-color: rgba(74, 144, 226, 0.1);
   color: var(--secondary-color);
-<<<<<<< HEAD
   border: 1px solid rgba(74, 144, 226, 0.2);
-=======
-<<<<<<< HEAD
-  border: 1px solid rgba(74, 144, 226, 0.2);
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .status-running {
   background-color: rgba(74, 144, 226, 0.1);
   color: var(--secondary-color);
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
   border: 1px solid rgba(74, 144, 226, 0.2);
   animation: pulse 2s ease-in-out infinite;
 }
@@ -946,33 +499,17 @@ h3 {
   50% {
     opacity: 0.7;
   }
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .status-completed {
   background-color: rgba(46, 204, 113, 0.1);
   color: var(--success-color);
-<<<<<<< HEAD
   border: 1px solid rgba(46, 204, 113, 0.2);
-=======
-<<<<<<< HEAD
-  border: 1px solid rgba(46, 204, 113, 0.2);
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .status-failed {
   background-color: rgba(231, 76, 60, 0.1);
   color: var(--high-risk);
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
   border: 1px solid rgba(231, 76, 60, 0.2);
 }
 
@@ -986,11 +523,6 @@ h3 {
   background-color: rgba(149, 165, 166, 0.1);
   color: var(--text-secondary);
   border: 1px solid rgba(149, 165, 166, 0.2);
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 /* 优先级样式 */
@@ -998,14 +530,7 @@ h3 {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
-<<<<<<< HEAD
   font-weight: 600;
-=======
-<<<<<<< HEAD
-  font-weight: 600;
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .priority-high {
@@ -1022,20 +547,11 @@ h3 {
 
 .star {
   font-size: 16px;
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
   transition: transform var(--transition-fast);
 }
 
 .star:hover {
   transform: scale(1.2);
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .star.filled {
@@ -1063,20 +579,10 @@ h3 {
   right: 0;
   bottom: 0;
   background-color: rgba(255, 255, 255, 0.9);
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
   z-index: var(--z-modal-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
-<<<<<<< HEAD
-=======
-=======
-  z-index: 9999;
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 .loading-spinner {
@@ -1088,10 +594,6 @@ h3 {
   animation: spin 0.8s linear infinite;
 }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
 .loading-spinner.sm {
   width: 24px;
   height: 24px;
@@ -1104,11 +606,6 @@ h3 {
   border-width: 4px;
 }
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1118,10 +615,6 @@ h3 {
 .loading-text {
   color: var(--text-secondary);
   font-size: 14px;
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
   font-weight: 500;
 }
 
@@ -1193,11 +686,6 @@ h3 {
 
 .skeleton-block {
   height: 100px;
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 }
 
 /* 响应式设计 - 平板设备 */
@@ -1216,29 +704,6 @@ h3 {
   
   h3 {
     font-size: 15px;
-  }
-}
-
-/* 响应式设计 - 手机设备 */
-@media (max-width: 768px) {
-  :root {
-    font-size: 12px;
-    --spacing-md: 12px;
-    --spacing-lg: 20px;
-    --spacing-xl: 28px;
-  }
-  
-  h1 {
-    font-size: 20px;
-    margin-bottom: var(--spacing-sm);
-  }
-  
-  h2 {
-    font-size: 16px;
-  }
-  
-  h3 {
-    font-size: 14px;
   }
   
   .card {
@@ -1269,29 +734,35 @@ h3 {
   }
 }
 
-/* 响应式设计 - 小屏手机 */
-@media (max-width: 480px) {
+/* 响应式设计 - 手机设备 */
+@media (max-width: 768px) {
   :root {
-    font-size: 11px;
-    --spacing-md: 10px;
-    --spacing-lg: 16px;
-    --spacing-xl: 24px;
+    font-size: 12px;
+    --spacing-md: 12px;
+    --spacing-lg: 20px;
+    --spacing-xl: 28px;
   }
   
   h1 {
-    font-size: 18px;
+    font-size: 20px;
+    margin-bottom: var(--spacing-sm);
   }
   
   h2 {
-    font-size: 15px;
+    font-size: 16px;
+  }
+  
+  h3 {
+    font-size: 14px;
   }
   
   .card {
     padding: var(--spacing-xs) var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
   }
   
   .btn {
-    padding: 6px 10px;
+    padding: var(--spacing-xs) var(--spacing-sm);
     font-size: 11px;
   }
   
@@ -1304,10 +775,13 @@ h3 {
   }
 }
 
-/* 响应式设计 - 超小屏设备 */
-@media (max-width: 360px) {
+/* 响应式设计 - 小屏手机 */
+@media (max-width: 480px) {
   :root {
     font-size: 10px;
+    --spacing-md: 10px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
   }
   
   h1 {
@@ -1318,6 +792,10 @@ h3 {
     padding: 4px 8px;
     font-size: 10px;
   }
+  
+  .form-group {
+    margin-bottom: var(--spacing-sm);
+  }
 }
 
 /* 工具类 */
@@ -1325,10 +803,6 @@ h3 {
 .text-left { text-align: left; }
 .text-right { text-align: right; }
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
 .text-primary { color: var(--text-primary); }
 .text-secondary { color: var(--text-secondary); }
 .text-muted { color: var(--text-muted); }
@@ -1349,36 +823,19 @@ h3 {
 .text-xl { font-size: 18px; }
 .text-2xl { font-size: 20px; }
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 .mb-0 { margin-bottom: 0; }
 .mb-1 { margin-bottom: var(--spacing-xs); }
 .mb-2 { margin-bottom: var(--spacing-sm); }
 .mb-3 { margin-bottom: var(--spacing-md); }
 .mb-4 { margin-bottom: var(--spacing-lg); }
-<<<<<<< HEAD
 .mb-5 { margin-bottom: var(--spacing-xl); }
 .mb-6 { margin-bottom: var(--spacing-2xl); }
-=======
-<<<<<<< HEAD
-.mb-5 { margin-bottom: var(--spacing-xl); }
-.mb-6 { margin-bottom: var(--spacing-2xl); }
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 
 .mt-0 { margin-top: 0; }
 .mt-1 { margin-top: var(--spacing-xs); }
 .mt-2 { margin-top: var(--spacing-sm); }
 .mt-3 { margin-top: var(--spacing-md); }
 .mt-4 { margin-top: var(--spacing-lg); }
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> origin/renruipeng
 .mt-5 { margin-top: var(--spacing-xl); }
 .mt-6 { margin-top: var(--spacing-2xl); }
 
@@ -1417,8 +874,6 @@ h3 {
 .d-inline-block { display: inline-block !important; }
 .d-flex { display: flex !important; }
 .d-inline-flex { display: inline-flex !important; }
-<<<<<<< HEAD
-=======
 
 .align-items-center { align-items: center; }
 .align-items-start { align-items: flex-start; }
@@ -1521,114 +976,6 @@ h3 {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-=======
->>>>>>> origin/renruipeng
-
-.align-items-center { align-items: center; }
-.align-items-start { align-items: flex-start; }
-.align-items-end { align-items: flex-end; }
-.align-items-stretch { align-items: stretch; }
-
-.justify-content-between { justify-content: space-between; }
-.justify-content-center { justify-content: center; }
-.justify-content-start { justify-content: flex-start; }
-.justify-content-end { justify-content: flex-end; }
-
-.flex-column { flex-direction: column; }
-.flex-row { flex-direction: row; }
-.flex-wrap { flex-wrap: wrap; }
-.flex-nowrap { flex-wrap: nowrap; }
-
-.flex-1 { flex: 1; }
-.flex-auto { flex: auto; }
-.flex-none { flex: none; }
-.flex-grow-0 { flex-grow: 0; }
-.flex-grow-1 { flex-grow: 1; }
-.flex-shrink-0 { flex-shrink: 0; }
-.flex-shrink-1 { flex-shrink: 1; }
-
-.gap-0 { gap: 0; }
-.gap-1 { gap: var(--spacing-xs); }
-.gap-2 { gap: var(--spacing-sm); }
-.gap-3 { gap: var(--spacing-md); }
-.gap-4 { gap: var(--spacing-lg); }
-
-.w-100 { width: 100%; }
-.w-auto { width: auto; }
-.w-50 { width: 50%; }
-.w-25 { width: 25%; }
-.w-75 { width: 75%; }
-
-.h-100 { height: 100%; }
-<<<<<<< HEAD
-.h-auto { height: auto; }
-
-.min-h-screen { min-height: 100vh; }
-.min-h-0 { min-height: 0; }
-
-.overflow-hidden { overflow: hidden; }
-.overflow-auto { overflow: auto; }
-.overflow-scroll { overflow: scroll; }
-
-.position-relative { position: relative; }
-.position-absolute { position: absolute; }
-.position-fixed { position: fixed; }
-.position-sticky { position: sticky; }
-
-.rounded { border-radius: var(--border-radius); }
-.rounded-sm { border-radius: var(--border-radius-sm); }
-.rounded-lg { border-radius: var(--border-radius-lg); }
-.rounded-xl { border-radius: var(--border-radius-xl); }
-.rounded-full { border-radius: var(--border-radius-full); }
-
-.shadow-sm { box-shadow: var(--shadow-sm); }
-.shadow-md { box-shadow: var(--shadow-md); }
-.shadow-lg { box-shadow: var(--shadow-lg); }
-.shadow-none { box-shadow: none; }
-
-.cursor-pointer { cursor: pointer; }
-.cursor-not-allowed { cursor: not-allowed; }
-.cursor-default { cursor: default; }
-
-.opacity-0 { opacity: 0; }
-.opacity-50 { opacity: 0.5; }
-.opacity-100 { opacity: 1; }
-
-.transition-all { transition: all var(--transition-base); }
-.transition-opacity { transition: opacity var(--transition-base); }
-.transition-transform { transition: transform var(--transition-base); }
-
-.hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.hover-scale:hover {
-  transform: scale(1.05);
-}
-
-.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-=======
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
 
 /* 响应式工具类 */
 @media (max-width: 768px) {

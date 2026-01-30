@@ -10,6 +10,15 @@ from typing import List, Optional, Dict, Any
 
 from backend.models import POCVerificationResult, POCExecutionLog
 from backend.config import settings
+from backend.ai_agents.poc_system.utils import (
+    calculate_severity_distribution,
+    calculate_statistics,
+    get_high_risk_targets
+)
+from backend.utils.poc_utils import (
+    get_false_positive_keywords,
+    get_success_keywords
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,43 +82,8 @@ class ResultAnalyzer:
         """
         初始化结果分析器
         """
-        # 误报检测关键词
-        self.false_positive_keywords = [
-            "timeout",
-            "connection refused",
-            "connection reset",
-            "network unreachable",
-            "dns resolution failed",
-            "certificate error",
-            "ssl error",
-            "handshake failed",
-            "404 not found",
-            "403 forbidden",
-            "401 unauthorized",
-            "rate limit",
-            "too many requests",
-            "service unavailable",
-            "gateway timeout",
-            "bad gateway"
-        ]
-        
-        # 成功验证关键词
-        self.success_keywords = [
-            "success",
-            "vulnerable",
-            "exploit",
-            "vuln",
-            "shell",
-            "code execution",
-            "sql injection",
-            "xss",
-            "rce",
-            "arbitrary file",
-            "path traversal",
-            "ssrf",
-            "xxe",
-            "deserialization"
-        ]
+        self.false_positive_keywords = get_false_positive_keywords()
+        self.success_keywords = get_success_keywords()
         
         logger.info("✅ 结果分析器初始化完成")
     
@@ -207,10 +181,7 @@ class ResultAnalyzer:
         average_cvss_score = sum(a.cvss_score for a in analysis_results) / total_results if total_results > 0 else 0.0
         
         # 高风险目标
-        high_risk_targets = list(set(
-            a.target for a in analysis_results
-            if a.risk_level in ["critical", "high"]
-        ))
+        high_risk_targets = get_high_risk_targets(results)
         
         # 生成批量建议
         recommendations = self._generate_batch_recommendations(analysis_results)
@@ -506,36 +477,7 @@ class ResultAnalyzer:
         Returns:
             Dict: 统计信息字典
         """
-        if not results:
-            return {
-                "total": 0,
-                "vulnerable": 0,
-                "not_vulnerable": 0,
-                "average_confidence": 0.0,
-                "average_cvss_score": 0.0
-            }
-        
-        total = len(results)
-        vulnerable_count = sum(1 for r in results if r.vulnerable)
-        not_vulnerable_count = total - vulnerable_count
-        
-        average_confidence = sum(r.confidence for r in results) / total
-        average_cvss_score = sum(r.cvss_score or 0 for r in results) / total
-        
-        severity_counts = {}
-        for result in results:
-            severity = result.severity or "info"
-            severity_counts[severity] = severity_counts.get(severity, 0) + 1
-        
-        return {
-            "total": total,
-            "vulnerable": vulnerable_count,
-            "not_vulnerable": not_vulnerable_count,
-            "vulnerability_rate": (vulnerable_count / total * 100) if total > 0 else 0,
-            "average_confidence": average_confidence,
-            "average_cvss_score": average_cvss_score,
-            "severity_distribution": severity_counts
-        }
+        return calculate_statistics(results)
 
 
 # 全局结果分析器实例

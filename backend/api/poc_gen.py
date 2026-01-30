@@ -11,6 +11,7 @@ from backend.models import VulnerabilityKB
 from backend.config import settings
 import sys
 from pathlib import Path
+from backend.utils.poc_utils import parse_pocsuite_output
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -99,7 +100,7 @@ class POCGeneratorWrapper:
                 error = stderr.decode()
                 
                 # 解析输出
-                is_vulnerable = self._parse_pocsuite_output(output)
+                is_vulnerable = parse_pocsuite_output(output)
                 
                 msg = "Vulnerable" if is_vulnerable else "Not Vulnerable"
                 if len(output) > 200:
@@ -125,37 +126,7 @@ class POCGeneratorWrapper:
         except ImportError:
             return {"vulnerable": False, "message": "Pocsuite3 not installed", "status": "error"}
     
-    def _parse_pocsuite_output(self, output: str) -> bool:
-        """
-        解析 Pocsuite3 输出,判断是否存在漏洞
-        
-        Args:
-            output: Pocsuite3 的输出内容
-            
-        Returns:
-            bool: 是否存在漏洞
-        """
-        # Pocsuite3 的成功输出通常包含以下关键词
-        success_keywords = [
-            "success",
-            "vulnerable",
-            "vuln",
-            "exploit",
-            "exists"
-        ]
-        
-        output_lower = output.lower()
-        
-        # 检查是否包含成功关键词
-        for keyword in success_keywords:
-            if keyword in output_lower:
-                return True
-        
-        # 检查是否包含 Pocsuite3 的成功标记
-        if "[+]" in output and "success" in output_lower:
-            return True
-            
-        return False
+
 
 
 # 全局实例

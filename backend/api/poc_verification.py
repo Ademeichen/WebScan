@@ -19,6 +19,7 @@ from backend.ai_agents.poc_system import (
     report_generator
 )
 from backend.config import settings
+from backend.api.common import APIResponse
 
 logger = logging.getLogger(__name__)
 

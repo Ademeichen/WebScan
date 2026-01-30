@@ -62,6 +62,20 @@ class SettingUpdateItem(BaseModel):
     value_type: str = Field("string", description="值类型")
 
 
+class ApiKeyCreate(BaseModel):
+    """创建API密钥请求模型"""
+    name: str = Field(..., description="API密钥名称")
+
+
+class ApiKeyResponse(BaseModel):
+    """API密钥响应模型"""
+    id: int = Field(..., description="密钥ID")
+    name: str = Field(..., description="密钥名称")
+    key: str = Field(..., description="API密钥（仅创建时返回完整值）")
+    masked: str = Field(..., description="掩码显示的密钥")
+    created_at: str = Field(..., description="创建时间")
+
+
 # ====================== 辅助函数 ======================
 
 def get_default_settings() -> Dict[str, Any]:
@@ -728,4 +742,185 @@ async def reset_category_settings(category: str):
         raise
     except Exception as e:
         logger.error(f"重置分类设置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ====================== API密钥管理 ======================
+
+def generate_api_key() -> str:
+    """生成API密钥"""
+    import secrets
+    return f"wsa_{secrets.token_urlsafe(32)}"
+
+
+def mask_api_key(key: str) -> str:
+    """掩码显示API密钥"""
+    if len(key) <= 12:
+        return key[:4] + "****"
+    return key[:4] + "****************************" + key[-8:]
+
+
+@router.get("/api-keys", response_model=APIResponse)
+async def get_api_keys():
+    """
+    获取API密钥列表
+    
+    Returns:
+        APIResponse: API密钥列表
+    """
+    try:
+        settings_records = await SystemSettings.filter(category="api_keys").all()
+        
+        api_keys = []
+        for record in settings_records:
+            try:
+                key_data = json.loads(record.value)
+                api_keys.append({
+                    "id": record.id,
+                    "name": key_data.get("name", record.key),
+                    "masked": mask_api_key(key_data.get("key", "")),
+                    "created_at": record.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                })
+            except json.JSONDecodeError:
+                continue
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={"api_keys": api_keys}
+        )
+    except Exception as e:
+        logger.error(f"获取API密钥失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api-keys", response_model=APIResponse)
+async def create_api_key(request: ApiKeyCreate):
+    """
+    创建API密钥
+    
+    Args:
+        request: 创建API密钥请求
+    
+    Returns:
+        APIResponse: 创建的API密钥信息
+    """
+    try:
+        key = generate_api_key()
+        key_id = int(datetime.now().timestamp())
+        
+        key_data = {
+            "name": request.name,
+            "key": key,
+            "created_at": datetime.now().isoformat()
+        }
+        
+        await SystemSettings.create(
+            category="api_keys",
+            key=f"key_{key_id}",
+            value=json.dumps(key_data),
+            value_type="object",
+            description=f"API密钥: {request.name}",
+            is_public=False
+        )
+        
+        logger.info(f"创建API密钥成功: {request.name}")
+        
+        return APIResponse(
+            code=200,
+            message="创建成功",
+            data={
+                "id": key_id,
+                "name": request.name,
+                "key": key,
+                "masked": mask_api_key(key),
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        )
+    except Exception as e:
+        logger.error(f"创建API密钥失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/api-keys/{key_id}", response_model=APIResponse)
+async def delete_api_key(key_id: int):
+    """
+    删除API密钥
+    
+    Args:
+        key_id: API密钥ID
+    
+    Returns:
+        APIResponse: 删除结果
+    """
+    try:
+        deleted_count = await SystemSettings.filter(
+            category="api_keys",
+            key=f"key_{key_id}"
+        ).delete()
+        
+        if deleted_count == 0:
+            raise HTTPException(status_code=404, detail="API密钥不存在")
+        
+        logger.info(f"删除API密钥成功: {key_id}")
+        
+        return APIResponse(
+            code=200,
+            message="删除成功",
+            data={"key_id": key_id}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除API密钥失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/api-keys/{key_id}/regenerate", response_model=APIResponse)
+async def regenerate_api_key(key_id: int):
+    """
+    重新生成API密钥
+    
+    Args:
+        key_id: API密钥ID
+    
+    Returns:
+        APIResponse: 新的API密钥信息
+    """
+    try:
+        setting = await SystemSettings.filter(
+            category="api_keys",
+            key=f"key_{key_id}"
+        ).first()
+        
+        if not setting:
+            raise HTTPException(status_code=404, detail="API密钥不存在")
+        
+        key_data = json.loads(setting.value)
+        new_key = generate_api_key()
+        
+        key_data["key"] = new_key
+        key_data["regenerated_at"] = datetime.now().isoformat()
+        
+        setting.value = json.dumps(key_data)
+        await setting.save()
+        
+        logger.info(f"重新生成API密钥成功: {key_id}")
+        
+        return APIResponse(
+            code=200,
+            message="重新生成成功",
+            data={
+                "id": key_id,
+                "name": key_data.get("name"),
+                "key": new_key,
+                "masked": mask_api_key(new_key),
+                "created_at": key_data.get("created_at"),
+                "regenerated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"重新生成API密钥失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

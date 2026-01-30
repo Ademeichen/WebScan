@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 from backend.ai_agents.utils.file_sync import file_sync_manager
+from backend.api.common import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +44,7 @@ class POCFileList(BaseModel):
     files: List[POCFileInfo]
 
 
-class APIResponse(BaseModel):
-    """
-    统一 API 响应模型
-    """
-    code: int
-    message: str
-    data: Optional[Any] = None
+
 
 
 class FileAccessLayer:

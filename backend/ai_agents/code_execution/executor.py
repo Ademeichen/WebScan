@@ -5,6 +5,7 @@
 """
 import asyncio
 import logging
+import sys
 
 import tempfile
 from pathlib import Path
@@ -14,6 +15,7 @@ from datetime import datetime
 from .environment import EnvironmentAwareness
 from .code_generator import CodeGenerator
 from .capability_enhancer import CapabilityEnhancer
+from .process_utils import execute_process, decode_output, handle_process_error
 
 logger = logging.getLogger(__name__)
 
@@ -137,11 +139,11 @@ class UnifiedExecutor:
             
             try:
                 if language == "python":
-                    result = await self._execute_python(temp_file, target, **kwargs)
+                    result = await self._execute(temp_file, language, target, **kwargs)
                 elif language == "bash":
-                    result = await self._execute_bash(temp_file, target, **kwargs)
+                    result = await self._execute(temp_file, language, target, **kwargs)
                 elif language == "powershell":
-                    result = await self._execute_powershell(temp_file, target, **kwargs)
+                    result = await self._execute(temp_file, language, target, **kwargs)
                 else:
                     result = ExecutionResult(
                         status="failed",
@@ -171,17 +173,19 @@ class UnifiedExecutor:
                 execution_time=0.0
             )
     
-    async def _execute_python(
+    async def _execute(
         self,
         script_file: str,
+        language: str,
         target: Optional[str] = None,
         **kwargs
     ) -> ExecutionResult:
         """
-        执行Python脚本
+        执行脚本
         
         Args:
             script_file: 脚本文件路径
+            language: 代码语言
             target: 扫描目标
             **kwargs: 额外参数
             
@@ -189,185 +193,61 @@ class UnifiedExecutor:
             ExecutionResult: 执行结果
         """
         try:
-            # 读取脚本文件内容
-            with open(script_file, 'r', encoding='utf-8') as f:
-                original_code = f.read()
+            cmd = self._get_command(language, script_file, target)
             
-            # 为代码添加必要的导入语句
-            enhanced_code = self._enhance_python_code(original_code)
+            stdout, stderr, exit_code = await execute_process(
+                cmd=cmd,
+                timeout=self.timeout,
+                cwd=str(self.workspace)
+            )
             
-            # 重新写入增强后的代码
-            with open(script_file, 'w', encoding='utf-8') as f:
-                f.write(enhanced_code)
+            output = decode_output(stdout)
+            error = decode_output(stderr)
             
+            return ExecutionResult(
+                status="success" if exit_code == 0 else "failed",
+                output=output,
+                error=error,
+                exit_code=exit_code
+            )
+        except Exception as e:
+            return ExecutionResult(
+                status="failed",
+                error=handle_process_error(e, f"{language}脚本执行"),
+                output="",
+                exit_code=-1
+            )
+    
+    def _get_command(
+        self,
+        language: str,
+        script_file: str,
+        target: Optional[str] = None
+    ) -> list:
+        """
+        获取执行命令
+        
+        Args:
+            language: 代码语言
+            script_file: 脚本文件路径
+            target: 扫描目标
+            
+        Returns:
+            list: 命令列表
+        """
+        if language == "python":
             cmd = [sys.executable, script_file]
-            if target:
-                cmd.append(target)
-            
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                # cwd=str(self.workspace)  # 移除工作目录设置,使用默认路径
-            )
-            
-            try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=self.timeout
-                )
-                
-                output = stdout.decode("utf-8", errors="replace")
-                error = stderr.decode("utf-8", errors="replace")
-                exit_code = process.returncode
-                
-                return ExecutionResult(
-                    status="success" if exit_code == 0 else "failed",
-                    output=output,
-                    error=error,
-                    exit_code=exit_code,
-                    execution_time=0.0
-                )
-            except asyncio.TimeoutError:
-                process.kill()
-                return ExecutionResult(
-                    status="timeout",
-                    error=f"执行超时({self.timeout}秒)",
-                    output="",
-                    exit_code=-1
-                )
-                
-        except Exception as e:
-            return ExecutionResult(
-                status="failed",
-                error=str(e),
-                output="",
-                exit_code=-1
-            )
-    
-    async def _execute_bash(
-        self,
-        script_file: str,
-        target: Optional[str] = None,
-        **kwargs
-    ) -> ExecutionResult:
-        """
-        执行Bash脚本
-        
-        Args:
-            script_file: 脚本文件路径
-            target: 扫描目标
-            **kwargs: 额外参数
-            
-        Returns:
-            ExecutionResult: 执行结果
-        """
-        try:
+        elif language == "bash":
             cmd = ["bash", script_file]
-            if target:
-                cmd.append(target)
-            
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=str(self.workspace)
-            )
-            
-            try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=self.timeout
-                )
-                
-                output = stdout.decode("utf-8", errors="ignore")
-                error = stderr.decode("utf-8", errors="ignore")
-                exit_code = process.returncode
-                
-                return ExecutionResult(
-                    status="success" if exit_code == 0 else "failed",
-                    output=output,
-                    error=error,
-                    exit_code=exit_code
-                )
-            except asyncio.TimeoutError:
-                process.kill()
-                return ExecutionResult(
-                    status="timeout",
-                    error=f"执行超时({self.timeout}秒)",
-                    output="",
-                    exit_code=-1
-                )
-                
-        except Exception as e:
-            return ExecutionResult(
-                status="failed",
-                error=str(e),
-                output="",
-                exit_code=-1
-            )
-    
-    async def _execute_powershell(
-        self,
-        script_file: str,
-        target: Optional[str] = None,
-        **kwargs
-    ) -> ExecutionResult:
-        """
-        执行PowerShell脚本
-        
-        Args:
-            script_file: 脚本文件路径
-            target: 扫描目标
-            **kwargs: 额外参数
-            
-        Returns:
-            ExecutionResult: 执行结果
-        """
-        try:
+        elif language == "powershell":
             cmd = ["powershell", "-ExecutionPolicy", "Bypass", "-File", script_file]
-            if target:
-                cmd.append(target)
-            
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=str(self.workspace)
-            )
-            
-            try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=self.timeout
-                )
-                
-                output = stdout.decode("utf-8", errors="ignore")
-                error = stderr.decode("utf-8", errors="ignore")
-                exit_code = process.returncode
-                
-                return ExecutionResult(
-                    status="success" if exit_code == 0 else "failed",
-                    output=output,
-                    error=error,
-                    exit_code=exit_code
-                )
-            except asyncio.TimeoutError:
-                process.kill()
-                return ExecutionResult(
-                    status="timeout",
-                    error=f"执行超时({self.timeout}秒)",
-                    output="",
-                    exit_code=-1
-                )
-                
-        except Exception as e:
-            return ExecutionResult(
-                status="failed",
-                error=str(e),
-                output="",
-                exit_code=-1
-            )
+        else:
+            cmd = [language, script_file]
+        
+        if target:
+            cmd.append(target)
+        
+        return cmd
     
     async def generate_and_execute(
         self,
@@ -499,53 +379,6 @@ class UnifiedExecutor:
         """
         return self.capability_enhancer.list_capabilities()
     
-    def _enhance_python_code(self, code: str) -> str:
-        """
-        为Python代码添加必要的导入语句
-        
-        Args:
-            code: 原始代码
-            
-        Returns:
-            str: 增强后的代码
-        """
-        # 检查是否已经包含必要的导入
-        necessary_imports = [
-            "import sys",
-            "import os",
-            "import socket",
-            "import subprocess",
-            "import requests"
-        ]
-        
-        # 收集所有缺失的导入语句
-        missing_imports = []
-        for import_stmt in necessary_imports:
-            if import_stmt not in code:
-                missing_imports.append(import_stmt)
-        
-        # 在文件开头一次性添加所有缺失的导入语句
-        if missing_imports:
-            enhanced_code = "\n".join(missing_imports) + "\n\n" + code
-        else:
-            enhanced_code = code
-        
-        return enhanced_code
+
     
-    def _get_file_extension(self, language: str) -> str:
-        """
-        获取文件扩展名
-        
-        Args:
-            language: 语言名称
-            
-        Returns:
-            str: 文件扩展名
-        """
-        extensions = {
-            "python": "py",
-            "bash": "sh",
-            "powershell": "ps1",
-            "shell": "sh"
-        }
-        return extensions.get(language.lower(), "py")
+

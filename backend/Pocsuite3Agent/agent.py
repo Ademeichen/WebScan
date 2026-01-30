@@ -19,6 +19,8 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
 
+from backend.utils.poc_utils import parse_pocsuite_output
+
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +179,7 @@ class Pocsuite3Agent:
             execution_time = time.time() - start_time
             
             # 解析结果
-            vulnerable = self._parse_output(output)
+            vulnerable = parse_pocsuite_output(output)
             message = "Vulnerable" if vulnerable else "Not Vulnerable"
             
             result = POCResult(
@@ -207,33 +209,7 @@ class Pocsuite3Agent:
                 execution_time=execution_time
             )
     
-    def _parse_output(self, output: str) -> bool:
-        """
-        解析 Pocsuite3 输出,判断是否存在漏洞
-        
-        Args:
-            output: Pocsuite3 输出内容
-            
-        Returns:
-            bool: 是否存在漏洞
-        """
-        success_keywords = [
-            "success",
-            "vulnerable",
-            "vuln",
-            "exploit",
-            "exists",
-            "[+]",
-            "vulnerable"
-        ]
-        
-        output_lower = output.lower()
-        
-        for keyword in success_keywords:
-            if keyword in output_lower:
-                return True
-        
-        return False
+
     
     async def scan_target(
         self,
@@ -381,7 +357,7 @@ class Pocsuite3Agent:
             execution_time = time.time() - start_time
             
             # 解析结果
-            vulnerable = self._parse_output(output)
+            vulnerable = parse_pocsuite_output(output)
             message = "Vulnerable" if vulnerable else "Not Vulnerable"
             
             result = POCResult(

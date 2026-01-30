@@ -107,12 +107,12 @@ class SeebugUtils:
         """
         return self.generator if self.is_available() else None
     
-    def get_agent(self) -> Optional[SeebugAgent]:
+    def get_agent(self) -> Optional['SeebugAgent']:
         """
         获取Seebug Agent
         
         Returns:
-            Optional[SeebugAgent]: Seebug Agent实例
+            Optional['SeebugAgent']: Seebug Agent实例
         """
         return self.agent if self.is_available() else None
     

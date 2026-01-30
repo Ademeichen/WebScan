@@ -7,11 +7,11 @@
 import asyncio
 import logging
 import time
+
 from backend.ai_agents.utils.file_sync import file_sync_manager
 from backend.ai_agents.code_execution.environment import EnvironmentAwareness
 from backend.ai_agents.analyzers.report_gen import ReportGenerator
 
-# 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
