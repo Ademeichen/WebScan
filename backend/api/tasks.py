@@ -17,6 +17,7 @@ import logging
 from tortoise.functions import Count
 import json
 import asyncio
+from models import Task, Vulnerability, POCScanResult, Report
 
 logger = logging.getLogger(__name__)
 
@@ -186,12 +187,9 @@ async def create_task(request: CreateTaskRequest):
         ... }
     """
     try:
-        from models import Task
         from task_executor import task_executor
-        import json
-        
         logger.info(f"收到创建任务请求: {request.task_name} (Type: {request.task_type}, Target: {request.target})")
-        
+
         # 1. 验证参数
         if not request.target:
              raise HTTPException(status_code=400, detail="Target cannot be empty")
@@ -208,11 +206,11 @@ async def create_task(request: CreateTaskRequest):
             poc_types = request.config.get('poc_types', [])
             if not poc_types:
                  logger.warning("POC扫描未指定POC类型,默认扫描所有")
-            
+
             # 简单的 POC 类型验证
             # 这里不强制失败,只是记录日志
             pass
-        
+
         # 2. 创建 Task 记录
         try:
             task = await Task.create(
@@ -226,9 +224,9 @@ async def create_task(request: CreateTaskRequest):
         except Exception as db_err:
             logger.error(f"创建任务数据库记录失败: {str(db_err)}")
             raise HTTPException(status_code=500, detail=f"Database error: {str(db_err)}")
-        
+
         logger.info(f"任务记录创建成功: {task.id}")
-        
+
         # 3. 启动异步任务执行
         try:
             # 确保 task_executor 已初始化
@@ -292,7 +290,6 @@ async def list_tasks(
         >>> GET /tasks/?status=running
     """
     try:
-        from models import Task, Vulnerability
         from tortoise.expressions import Q
         
         # 构建查询条件
@@ -420,8 +417,6 @@ async def get_task(task_id: int):
         >>> GET /tasks/1
     """
     try:
-        from models import Task
-        
         task = await Task.get_or_none(id=task_id)
         
         if not task:
@@ -475,8 +470,6 @@ async def update_task(task_id: int, task_update: TaskUpdate):
         ... }
     """
     try:
-        from models import Task
-        
         task = await Task.get_or_none(id=task_id)
         if not task:
             raise HTTPException(status_code=404, detail="任务不存在")
@@ -564,14 +557,10 @@ async def get_task_results(task_id: int):
         >>> GET /tasks/1/results
     """
     try:
-        from models import Task, POCScanResult, Vulnerability
-        from AVWS.API.Vuln import Vuln
-        from config import settings
-        
         task = await Task.get_or_none(id=task_id)
         if not task:
             raise HTTPException(status_code=404, detail="任务不存在")
-            
+
         response_data = {
             "task_info": {
                 "id": task.id,
@@ -586,7 +575,7 @@ async def get_task_results(task_id: int):
             "basic_info": [],
             "poc_results": []
         }
-        
+
         # 1. 获取 POC 结果
         poc_results = await POCScanResult.filter(task=task).all()
         for poc in poc_results:
@@ -601,7 +590,7 @@ async def get_task_results(task_id: int):
                 "created_at": poc.created_at,
                 "source": "poc"
             })
-            
+
         # 2. 获取 AWVS 漏洞
         # 优先从数据库获取
         db_vulns = await Vulnerability.filter(task=task).all()
@@ -742,9 +731,8 @@ async def cancel_task(task_id: int):
         >>> POST /tasks/1/cancel
     """
     try:
-        from models import Task
         from task_executor import task_executor
-        
+
         task = await Task.get_or_none(id=task_id)
         if not task:
             raise HTTPException(status_code=404, detail="任务不存在")
@@ -802,13 +790,10 @@ async def get_task_vulnerabilities(
         >>> GET /tasks/1/vulnerabilities?severity=high
     """
     try:
-        from models import Task, Vulnerability
-        
         task = await Task.get_or_none(id=task_id)
         if not task:
             raise HTTPException(status_code=404, detail="任务不存在")
-        
-        # 构建查询
+
         query = Vulnerability.filter(task=task)
         
         # 过滤条件

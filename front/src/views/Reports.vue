@@ -105,7 +105,7 @@
             </div>
             
             <div class="report-size">
-              {{ formatFileSize(report.file_size) }}
+              {{ formatFileSize(report.size) }}
             </div>
             
             <div class="report-actions">
@@ -149,13 +149,13 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { reportsApi, tasksApi } from '@/utils/api'
 import Alert from '@/components/common/Alert.vue'
 import { formatDate } from '@/utils/date'
 
 export default {
-  name: 'Reports',
+  name: 'ReportsPage',
   components: {
     Alert
   },
@@ -268,7 +268,7 @@ export default {
       
       downloading.value = report.id
       try {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+        const baseUrl = import.meta.env.VITE_API_BASE_URL
         const url = `${baseUrl}/reports/${report.id}/export?format=${report.report_type}`
         
         const link = document.createElement('a')

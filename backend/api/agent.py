@@ -16,7 +16,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import logging
 
-from backend.models import AgentTask, AgentResult
+from models import AgentTask, AgentResult
 from backend.ai_agents.core.graph import create_agent_graph, initialize_tools
 from backend.ai_agents.core.state import AgentState
 from backend.api.task_utils import handle_task_error

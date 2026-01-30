@@ -13,7 +13,7 @@ import psutil
 import platform
 import json
 from tortoise.functions import Count
-from backend.models import Task, Vulnerability, SystemSettings, Report, SystemLog, AIChatInstance
+from models import Task, Vulnerability, SystemSettings, Report, SystemLog, AIChatInstance
 
 logger = logging.getLogger(__name__)
 

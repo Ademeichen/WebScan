@@ -7,9 +7,9 @@ import os
 import sys
 from pathlib import Path
 from typing import Optional, Dict, Any
-from client import SeebugClient
-from generator import POCGenerator
-from config import Config
+from .client import SeebugClient
+from .generator import POCGenerator
+from .config import Config
 
 
 class SeebugAgent:

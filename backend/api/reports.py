@@ -10,6 +10,7 @@ from datetime import datetime
 import logging
 import json
 from urllib.parse import quote
+from models import Report, Task, Vulnerability
 
 logger = logging.getLogger(__name__)
 
@@ -141,9 +142,6 @@ async def list_reports(
     获取报告列表(使用数据库)
     """
     try:
-        from models import Report
-        
-        # 构建查询条件
         query = Report.all()
         
         # 过滤条件
@@ -205,10 +203,6 @@ async def create_report(report: ReportCreate):
     创建新报告(使用数据库)
     """
     try:
-        from models import Report
-        
-        # 验证任务是否存在
-        from models import Task, Vulnerability
         task = await Task.get_or_none(id=report.task_id)
         if not task:
             raise HTTPException(status_code=400, detail="任务不存在")
@@ -275,8 +269,6 @@ async def get_report(report_id: int):
     获取报告详情(使用数据库)
     """
     try:
-        from models import Report
-        
         report = await Report.get_or_none(id=report_id)
         
         if not report:
@@ -307,26 +299,24 @@ async def update_report(report_id: int, report_update: ReportUpdate):
     更新报告(使用数据库)
     """
     try:
-        from models import Report
-        
         report = await Report.get_or_none(id=report_id)
-        
+
         if not report:
             raise HTTPException(status_code=404, detail="报告不存在")
-        
+
         # 构建更新数据
         update_data = {}
         if report_update.report_name:
             update_data['report_name'] = report_update.report_name
         if report_update.content is not None:
             update_data['content'] = json.dumps(report_update.content)
-        
+
         # 更新报告
         if update_data:
             for key, value in update_data.items():
                 setattr(report, key, value)
             await report.save()
-        
+
         # 重新获取更新后的报告
         report = await Report.get(id=report_id)
         
@@ -357,18 +347,16 @@ async def delete_report(report_id: int):
     删除报告(使用数据库)
     """
     try:
-        from models import Report
-        
         report = await Report.get_or_none(id=report_id)
-        
+
         if not report:
             raise HTTPException(status_code=404, detail="报告不存在")
-        
+
         report_name = report.report_name
-        
+
         # 删除报告
         await report.delete()
-        
+
         logger.info(f"删除报告: {report_name} (ID: {report_id})")
         return APIResponse(code=200, message="删除成功", data=None)
     except HTTPException:
@@ -377,15 +365,12 @@ async def delete_report(report_id: int):
         logger.error(f"删除报告失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/{report_id}/export")
 async def export_report(report_id: int, format: str = "json"):
     """
     导出报告(使用数据库)
     """
     try:
-        from models import Report
-        
         report = await Report.get_or_none(id=report_id)
         
         if not report:

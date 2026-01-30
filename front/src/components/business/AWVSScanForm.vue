@@ -16,20 +16,8 @@
       </div>
 
       <div class="form-group">
-        <label for="taskName">任务名称 *</label>
-        <input
-          id="taskName"
-          v-model="formData.taskName"
-          type="text"
-          placeholder="请输入任务名称"
-          required
-        />
-      </div>
-
-      <div class="form-group">
         <label for="profileId">扫描配置 *</label>
         <select id="profileId" v-model="formData.profileId" required>
-          <option value="">请选择扫描配置</option>
           <option
             v-for="profile in scanProfiles"
             :key="profile.value"
@@ -38,91 +26,6 @@
             {{ profile.label }}
           </option>
         </select>
-      </div>
-
-      <div class="form-group">
-        <label for="scanSpeed">扫描速度</label>
-        <select id="scanSpeed" v-model="formData.scanSpeed">
-          <option value="slow">慢速（更准确，耗时更长）</option>
-          <option value="sequential">顺序</option>
-          <option value="fast">快速（可能遗漏，耗时更短）</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="schedule">扫描计划</label>
-        <select id="schedule" v-model="formData.schedule">
-          <option value="immediate">立即扫描</option>
-          <option value="daily">每天</option>
-          <option value="weekly">每周</option>
-          <option value="monthly">每月</option>
-        </select>
-      </div>
-
-      <div v-if="formData.schedule !== 'immediate'" class="form-group">
-        <label for="scheduleTime">扫描时间</label>
-        <input
-          id="scheduleTime"
-          v-model="formData.scheduleTime"
-          type="time"
-        />
-      </div>
-
-      <div class="form-group">
-        <label>
-          <input v-model="formData.enableCrawler" type="checkbox" />
-          <span>启用爬虫</span>
-        </label>
-      </div>
-
-      <div v-if="formData.enableCrawler" class="form-group crawler-config">
-        <label for="crawlerDepth">爬虫深度</label>
-        <input
-          id="crawlerDepth"
-          v-model.number="formData.crawlerDepth"
-          type="number"
-          min="1"
-          max="10"
-          placeholder="3"
-        />
-        <small class="help-text">爬虫深度越大，扫描时间越长</small>
-      </div>
-
-      <div class="form-group">
-        <label>
-          <input v-model="formData.enableLogin" type="checkbox" />
-          <span>启用登录</span>
-        </label>
-      </div>
-
-      <div v-if="formData.enableLogin" class="form-group login-config">
-        <div class="form-group">
-          <label for="loginUrl">登录URL</label>
-          <input
-            id="loginUrl"
-            v-model="formData.loginUrl"
-            type="text"
-            placeholder="https://www.baidu.com/login"
-          />
-        </div>
-        <div class="form-group">
-          <label for="username">用户名</label>
-          <input
-            id="username"
-            v-model="formData.username"
-            type="text"
-            placeholder="请输入用户名"
-          />
-        </div>
-        <div class="form-group">
-          <label for="password">密码</label>
-          <input
-            id="password"
-            v-model="formData.password"
-            type="password"
-            placeholder="请输入密码"
-          />
-        </div>
       </div>
 
       <div class="form-actions">
@@ -158,39 +61,20 @@ export default {
   setup(props, { emit }) {
     const formData = ref({
       target: '',
-      taskName: '',
-      profileId: '',
-      scanSpeed: 'sequential',
-      schedule: 'immediate',
-      scheduleTime: '00:00',
-      enableCrawler: false,
-      crawlerDepth: 3,
-      enableLogin: false,
-      loginUrl: '',
-      username: '',
-      password: ''
+      profileId: 'full_scan'
     })
 
     const scanProfiles = ref([
-      { value: '11111111-1111-1111-1111-111111111111', label: 'Full Scan' },
-      { value: '11111111-1111-1111-1111-111111111112', label: 'High Risk Vulnerabilities' },
-      { value: '11111111-1111-1111-1111-111111111113', label: 'Cross-site Scripting (XSS)' },
-      { value: '11111111-1111-1111-1111-111111111114', label: 'SQL Injection' },
-      { value: '11111111-1111-1111-1111-111111111115', label: 'Crawl Only' },
-      { value: '11111111-1111-1111-1111-111111111116', label: 'Malware Scan' }
+      { value: 'full_scan', label: 'Full Scan' },
+      { value: 'high_risk_vuln', label: 'High Risk Vulnerabilities' },
+      { value: 'xss_vuln', label: 'Cross-site Scripting (XSS)' },
+      { value: 'sqli_vuln', label: 'SQL Injection' },
+      { value: 'crawl_only', label: 'Crawl Only' },
+      { value: 'weak_passwords', label: 'Weak Passwords' }
     ])
 
     const isSubmitting = ref(false)
     const errorMessage = ref('')
-
-    const loadTargets = async () => {
-      try {
-        const response = await awvsApi.getTargets()
-        console.log('AWVS Targets:', response)
-      } catch (error) {
-        console.error('加载AWVS目标失败:', error)
-      }
-    }
 
     const handleSubmit = async () => {
       if (isSubmitting.value) return
@@ -201,25 +85,12 @@ export default {
       try {
         emit('submit', formData.value)
 
-        const taskData = {
-          task_name: formData.value.taskName,
-          target: formData.value.target,
-          task_type: 'awvs_scan',
-          config: {
-            profile_id: formData.value.profileId,
-            scan_speed: formData.value.scanSpeed,
-            schedule: formData.value.schedule,
-            schedule_time: formData.value.scheduleTime,
-            enable_crawler: formData.value.enableCrawler,
-            crawler_depth: formData.value.crawlerDepth,
-            enable_login: formData.value.enableLogin,
-            login_url: formData.value.loginUrl,
-            username: formData.value.username,
-            password: formData.value.password
-          }
+        const scanData = {
+          url: formData.value.target,
+          scan_type: formData.value.profileId || 'full_scan'
         }
 
-        const response = await awvsApi.startScan(taskData)
+        const response = await awvsApi.startScan(scanData)
 
         if (response.code === 200) {
           emit('success', response.data)
@@ -239,23 +110,12 @@ export default {
     const handleReset = () => {
       formData.value = {
         target: '',
-        taskName: '',
-        profileId: '',
-        scanSpeed: 'sequential',
-        schedule: 'immediate',
-        scheduleTime: '00:00',
-        enableCrawler: false,
-        crawlerDepth: 3,
-        enableLogin: false,
-        loginUrl: '',
-        username: '',
-        password: ''
+        profileId: 'full_scan'
       }
       errorMessage.value = ''
     }
 
     onMounted(() => {
-      loadTargets()
     })
 
     return {

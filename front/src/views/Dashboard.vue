@@ -139,6 +139,7 @@ import StatCard from '@/components/common/StatCard.vue'
 import TaskCard from '@/components/business/TaskCard.vue'
 import Loading from '@/components/common/Loading.vue'
 import Alert from '@/components/common/Alert.vue'
+import Chart from 'chart.js/auto'
 
 export default {
   name: 'Dashboard',
@@ -293,7 +294,7 @@ export default {
       try {
         await tasksApi.cancelTask(taskId)
         await loadRecentTasks()
-      } catch (error) {
+      } catch {
         errorMessage.value = '取消任务失败'
       }
     }
@@ -311,7 +312,7 @@ export default {
         try {
           await tasksApi.deleteTask(taskId)
           await loadRecentTasks()
-        } catch (error) {
+        } catch {
           errorMessage.value = '删除任务失败'
         }
       }
@@ -327,7 +328,7 @@ export default {
         ])
         await nextTick()
         initCharts()
-      } catch (error) {
+      } catch {
         errorMessage.value = '加载数据失败'
       } finally {
         loading.value = false

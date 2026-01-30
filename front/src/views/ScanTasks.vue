@@ -249,7 +249,7 @@ export default {
         try {
           await tasksApi.cancelTask(taskId)
           await loadTasks()
-        } catch (error) {
+        } catch {
           errorMessage.value = '取消任务失败'
         }
       }
@@ -268,7 +268,7 @@ export default {
         try {
           await tasksApi.deleteTask(taskId)
           await loadTasks()
-        } catch (error) {
+        } catch {
           errorMessage.value = '删除任务失败'
         }
       }

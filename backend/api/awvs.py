@@ -3,7 +3,7 @@ AWVS 漏洞扫描相关的 API 路由
 整合 AVWS 工具包的功能
 """
 
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, HttpUrl
 from typing import Optional, List, Dict, Any
 
@@ -16,11 +16,27 @@ from functools import partial
 from tortoise.functions import Count
 from urllib.parse import urlparse
 from backend.config import settings
-from backend.models import Task, Vulnerability
+from models import Task, Vulnerability
 
 # 导入 AWVS API 类
+from backend.AVWS.API.Target import Target
+from backend.AVWS.API.Scan import Scan
+from backend.AVWS.API.Base import Base as AWVSBase
+from backend.AVWS.API.Vuln import Vuln
+from backend.AVWS.API.Dashboard import Dashboard
 
-
+# 导入 POC 函数
+from backend.poc.weblogic.cve_2020_2551_poc import poc as cve_2020_2551_poc
+from backend.poc.weblogic.cve_2018_2628_poc import poc as cve_2018_2628_poc
+from backend.poc.weblogic.cve_2018_2894_poc import poc as cve_2018_2894_poc
+from backend.poc.weblogic import cve_2020_14756_poc, cve_2023_21839_poc
+from backend.poc.struts2.struts2_009_poc import poc as struts2_009_poc
+from backend.poc.struts2.struts2_032_poc import poc as struts2_032_poc
+from backend.poc.tomcat.cve_2017_12615_poc import poc as cve_2017_12615_poc
+from backend.poc.tomcat import cve_2022_22965_poc, cve_2022_47986_poc
+from backend.poc.jboss.cve_2017_12149_poc import poc as cve_2017_12149_poc
+from backend.poc.nexus.cve_2020_10199_poc import poc as cve_2020_10199_poc
+from backend.poc.Drupal.cve_2018_7600_poc import poc as cve_2018_7600_poc
 
 logger = logging.getLogger(__name__)
 

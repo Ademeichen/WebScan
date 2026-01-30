@@ -86,7 +86,6 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
 import { userApi, notificationsApi } from '@/utils/api'
 
 export default {

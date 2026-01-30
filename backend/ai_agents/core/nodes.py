@@ -477,12 +477,19 @@ class EnvironmentAwarenessNode:
     环境感知节点
     
     负责收集和分析环境信息,为后续决策提供依据。
+    使用单例模式避免重复初始化。
     """
     
+    _instance = None
+    _env_awareness = None
+    
     def __init__(self):
-        from ..code_execution.environment import EnvironmentAwareness
-        self.env_awareness = EnvironmentAwareness()
-        logger.info("🔍 环境感知节点初始化完成")
+        if EnvironmentAwarenessNode._env_awareness is None:
+            from ..code_execution.environment import EnvironmentAwareness
+            EnvironmentAwarenessNode._env_awareness = EnvironmentAwareness()
+            logger.info("🔍 环境感知节点初始化完成")
+        else:
+            logger.info("🔍 环境感知节点使用已初始化的实例")
     
     async def __call__(self, state: AgentState) -> AgentState:
         """
@@ -497,7 +504,7 @@ class EnvironmentAwarenessNode:
         logger.info(f"[{state.task_id}] 🔍 开始环境感知")
         
         try:
-            env_report = self.env_awareness.get_environment_report()
+            env_report = self._env_awareness.get_environment_report()
             
             state.update_context("environment_info", env_report)
             state.update_context("os_system", env_report["os_info"]["system"])
@@ -687,11 +694,14 @@ class IntelligentDecisionNode:
     智能决策节点
     
     基于环境信息和扫描结果,智能决定下一步操作。
+    使用共享的环境感知实例避免重复初始化。
     """
     
     def __init__(self):
-        from ..code_execution.environment import EnvironmentAwareness
-        self.env_awareness = EnvironmentAwareness()
+        if EnvironmentAwarenessNode._env_awareness is None:
+            from ..code_execution.environment import EnvironmentAwareness
+            EnvironmentAwarenessNode._env_awareness = EnvironmentAwareness()
+        self.env_awareness = EnvironmentAwarenessNode._env_awareness
         logger.info("🧠 智能决策节点初始化完成")
     
     async def __call__(self, state: AgentState) -> AgentState:

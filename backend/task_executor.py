@@ -27,9 +27,15 @@ except ImportError:
     DirScanner = None
 
 # Import POCs
-
-
-)
+from backend.poc.weblogic.cve_2020_2551_poc import poc as cve_2020_2551_poc
+from backend.poc.weblogic.cve_2018_2628_poc import poc as cve_2018_2628_poc
+from backend.poc.weblogic.cve_2018_2894_poc import poc as cve_2018_2894_poc
+from backend.poc.struts2.struts2_009_poc import poc as struts2_009_poc
+from backend.poc.struts2.struts2_032_poc import poc as struts2_032_poc
+from backend.poc.tomcat.cve_2017_12615_poc import poc as cve_2017_12615_poc
+from backend.poc.jboss.cve_2017_12149_poc import poc as cve_2017_12149_poc
+from backend.poc.nexus.cve_2020_10199_poc import poc as cve_2020_10199_poc
+from backend.poc.Drupal.cve_2018_7600_poc import poc as cve_2018_7600_poc
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +43,9 @@ POC_FUNCTIONS = {
     "weblogic_cve_2020_2551": cve_2020_2551_poc,
     "weblogic_cve_2018_2628": cve_2018_2628_poc,
     "weblogic_cve_2018_2894": cve_2018_2894_poc,
-
-    "weblogic_cve_2020_14756": cve_2020_14756_poc,
-    "weblogic_cve_2023_21839": cve_2023_21839_poc,
     "struts2_009": struts2_009_poc,
     "struts2_032": struts2_032_poc,
     "tomcat_cve_2017_12615": cve_2017_12615_poc,
-    "tomcat_cve_2022_22965": cve_2022_22965_poc,
-    "tomcat_cve_2022_47986": cve_2022_47986_poc,
-
-
     "jboss_cve_2017_12149": cve_2017_12149_poc,
     "nexus_cve_2020_10199": cve_2020_10199_poc,
     "drupal_cve_2018_7600": cve_2018_7600_poc,

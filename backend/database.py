@@ -4,6 +4,7 @@
 提供数据库初始化、连接管理、健康检查等功能。
 支持异步操作,与 FastAPI 集成使用。
 """
+
 import os
 from tortoise import Tortoise, connections
 from backend.config import settings
@@ -40,7 +41,7 @@ async def init_db():
         
         await Tortoise.init(
             db_url=db_url,
-            modules={"models": ["backend.models"]},
+            modules={"models": ["models"]},
             _create_db=True
         )
         await Tortoise.generate_schemas()
@@ -92,5 +93,5 @@ async def health_check():
         await conn.execute_query("SELECT 1")
         return True
     except Exception as e:
-        logger.error(f"❌ 数据库健康检查失败: {str(e)}")
+        logger.error(f"数据库健康检查失败: {str(e)}")
         return False

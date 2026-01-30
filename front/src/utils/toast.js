@@ -1,7 +1,6 @@
-import { createApp, ref } from 'vue'
+import { createApp } from 'vue'
 import Toast from '@/components/common/Toast.vue'
 
-let toastInstance = null
 let toastContainer = null
 
 const createToastContainer = () => {
@@ -32,7 +31,7 @@ const showToast = (options) => {
   const toastElement = document.createElement('div')
   container.appendChild(toastElement)
   
-  const toastVM = toastApp.mount(toastElement)
+  toastApp.mount(toastElement)
 
   toastApp.unmount()
   container.removeChild(toastElement)

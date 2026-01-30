@@ -1,0 +1,119 @@
+{
+  "summary": {
+    "total_tests": 12,
+    "success_count": 0,
+    "failed_count": 12,
+    "success_rate": "0.00%",
+    "average_response_time": "2.047s"
+  },
+  "results": [
+    {
+      "timestamp": "2026-01-30T23:11:50.067739",
+      "method": "GET",
+      "endpoint": "/ai_agents/tasks",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.0479695796966553,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/ai_agents/tasks (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D6E6E50>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:11:52.117305",
+      "method": "GET",
+      "endpoint": "/agent/config",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.048049211502075,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/config (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D6F4550>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:11:54.135998",
+      "method": "GET",
+      "endpoint": "/agent/tools",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.018693208694458,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D6F4D50>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:11:56.179980",
+      "method": "GET",
+      "endpoint": "/agent/environment/info",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.042973756790161,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/environment/info (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D6F6490>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:11:58.229594",
+      "method": "GET",
+      "endpoint": "/agent/environment/tools",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.049614191055298,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/environment/tools (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D6F78D0>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:12:00.280530",
+      "method": "GET",
+      "endpoint": "/agent/capabilities/list",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.0509352684020996,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/capabilities/list (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D700D90>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:12:02.312354",
+      "method": "POST",
+      "endpoint": "/agent/run",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.0318238735198975,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/run (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D7024D0>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:12:04.360856",
+      "method": "POST",
+      "endpoint": "/agent/code/generate",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.047487258911133,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/code/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D703A50>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:12:06.435207",
+      "method": "POST",
+      "endpoint": "/agent/code/execute",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.0733375549316406,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/code/execute (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D70D010>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:12:08.485069",
+      "method": "POST",
+      "endpoint": "/agent/code/generate-and-execute",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.0498619079589844,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/code/generate-and-execute (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D70E550>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:12:10.531395",
+      "method": "POST",
+      "endpoint": "/agent/capabilities/enhance",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.0454812049865723,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/capabilities/enhance (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D703E10>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    },
+    {
+      "timestamp": "2026-01-30T23:12:12.589841",
+      "method": "GET",
+      "endpoint": "/agent/capabilities/test_capability",
+      "status_code": 0,
+      "success": false,
+      "response_time": 2.0579264163970947,
+      "error": "HTTPConnectionPool(host='127.0.0.1', port=3000): Max retries exceeded with url: /api/agent/capabilities/test_capability (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002385D702650>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))"
+    }
+  ]
+}

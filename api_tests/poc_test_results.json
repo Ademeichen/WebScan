@@ -1,0 +1,65 @@
+{
+  "summary": {
+    "total_tests": 6,
+    "success_count": 1,
+    "failed_count": 5,
+    "success_rate": "16.67%",
+    "average_response_time": "0.006s"
+  },
+  "results": [
+    {
+      "timestamp": "2026-01-30T23:49:56.391724",
+      "method": "GET",
+      "endpoint": "/poc/types",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.009335041046142578,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:49:56.396425",
+      "method": "GET",
+      "endpoint": "/poc/info/weblogic",
+      "status_code": 404,
+      "success": false,
+      "response_time": 0.004701375961303711,
+      "error": "Expected 200, got 404"
+    },
+    {
+      "timestamp": "2026-01-30T23:49:56.400518",
+      "method": "GET",
+      "endpoint": "/poc/info/struts2",
+      "status_code": 404,
+      "success": false,
+      "response_time": 0.0040929317474365234,
+      "error": "Expected 200, got 404"
+    },
+    {
+      "timestamp": "2026-01-30T23:49:56.405243",
+      "method": "GET",
+      "endpoint": "/poc/info/tomcat",
+      "status_code": 404,
+      "success": false,
+      "response_time": 0.0047245025634765625,
+      "error": "Expected 200, got 404"
+    },
+    {
+      "timestamp": "2026-01-30T23:49:56.413053",
+      "method": "POST",
+      "endpoint": "/poc/scan",
+      "status_code": 500,
+      "success": false,
+      "response_time": 0.0078105926513671875,
+      "error": "Expected 200/201, got 500"
+    },
+    {
+      "timestamp": "2026-01-30T23:49:56.419796",
+      "method": "POST",
+      "endpoint": "/poc/scan",
+      "status_code": 500,
+      "success": false,
+      "response_time": 0.006742238998413086,
+      "error": "Expected 200/201, got 500"
+    }
+  ]
+}

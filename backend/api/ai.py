@@ -21,11 +21,10 @@ import logging
 
 from backend.models import AIChatInstance, AIChatMessage
 from backend.config import settings
-
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
 from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.messages import HumanMessage, AIMessage
 
 logger = logging.getLogger(__name__)
 

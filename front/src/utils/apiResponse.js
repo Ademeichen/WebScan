@@ -73,7 +73,7 @@ export function handleResponse(response) {
     return ApiResponse.error('响应数据为空')
   }
 
-  const { code, data, message, success } = response
+  const { code, data, message } = response
 
   if (code === 200 || code === 201) {
     return ApiResponse.success(data, message || '操作成功')

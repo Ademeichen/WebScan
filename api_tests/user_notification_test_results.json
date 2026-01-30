@@ -1,0 +1,101 @@
+{
+  "summary": {
+    "total_tests": 10,
+    "success_count": 10,
+    "failed_count": 0,
+    "success_rate": "100.00%",
+    "average_response_time": "0.006s"
+  },
+  "results": [
+    {
+      "timestamp": "2026-01-30T23:50:19.083208",
+      "method": "GET",
+      "endpoint": "/user/profile",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.01778101921081543,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:50:19.094184",
+      "method": "PUT",
+      "endpoint": "/user/profile",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.01097559928894043,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:50:19.098485",
+      "method": "GET",
+      "endpoint": "/user/permissions",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.003278493881225586,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:50:19.103108",
+      "method": "GET",
+      "endpoint": "/user/list",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.003087759017944336,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:50:19.107760",
+      "method": "GET",
+      "endpoint": "/notifications/",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.004652261734008789,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:50:19.112577",
+      "method": "GET",
+      "endpoint": "/notifications/count/unread",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.004816532135009766,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:50:19.118796",
+      "method": "POST",
+      "endpoint": "/notifications/",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.0046482086181640625,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:50:19.121973",
+      "method": "GET",
+      "endpoint": "/notifications/1",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.0031766891479492188,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:50:19.126644",
+      "method": "PUT",
+      "endpoint": "/notifications/1/read",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.0046710968017578125,
+      "error": null
+    },
+    {
+      "timestamp": "2026-01-30T23:50:19.130585",
+      "method": "PUT",
+      "endpoint": "/notifications/read-all",
+      "status_code": 200,
+      "success": true,
+      "response_time": 0.002926349639892578,
+      "error": null
+    }
+  ]
+}

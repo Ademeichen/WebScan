@@ -1,0 +1,119 @@
+{
+  "summary": {
+    "total_tests": 12,
+    "success_count": 0,
+    "failed_count": 12,
+    "success_rate": "0.00%",
+    "average_response_time": "0.005s"
+  },
+  "results": [
+    {
+      "timestamp": "2026-01-30T23:50:17.298666",
+      "method": "POST",
+      "endpoint": "/scan/port-scan",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.01032257080078125,
+      "error": "Expected 200/201, got 422"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.303734",
+      "method": "POST",
+      "endpoint": "/scan/info-leak",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.004558563232421875,
+      "error": "Expected 200/201, got 422"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.310346",
+      "method": "POST",
+      "endpoint": "/scan/web-side",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.006611824035644531,
+      "error": "Expected 200/201, got 422"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.314423",
+      "method": "POST",
+      "endpoint": "/scan/baseinfo",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.004077911376953125,
+      "error": "Expected 200/201, got 422"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.318863",
+      "method": "POST",
+      "endpoint": "/scan/web-weight",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.003933429718017578,
+      "error": "Expected 200/201, got 422"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.323581",
+      "method": "POST",
+      "endpoint": "/scan/ip-locating",
+      "status_code": 500,
+      "success": false,
+      "response_time": 0.0041925907135009766,
+      "error": "Expected 200/201, got 500"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.328137",
+      "method": "POST",
+      "endpoint": "/scan/cdn-check",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.003545999526977539,
+      "error": "Expected 200/201, got 422"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.331219",
+      "method": "POST",
+      "endpoint": "/scan/waf-check",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.0030820369720458984,
+      "error": "Expected 200/201, got 422"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.334787",
+      "method": "POST",
+      "endpoint": "/scan/what-cms",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.002557039260864258,
+      "error": "Expected 200/201, got 422"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.343920",
+      "method": "POST",
+      "endpoint": "/scan/subdomain",
+      "status_code": 500,
+      "success": false,
+      "response_time": 0.008628368377685547,
+      "error": "Expected 200/201, got 500"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.347458",
+      "method": "POST",
+      "endpoint": "/scan/dir-scan",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.0030317306518554688,
+      "error": "Expected 200/201, got 422"
+    },
+    {
+      "timestamp": "2026-01-30T23:50:17.350490",
+      "method": "POST",
+      "endpoint": "/scan/comprehensive",
+      "status_code": 422,
+      "success": false,
+      "response_time": 0.0030312538146972656,
+      "error": "Expected 200/201, got 422"
+    }
+  ]
+}

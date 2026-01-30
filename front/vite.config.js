@@ -5,14 +5,11 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  
+
   // 开发服务器配置
   server: {
     port: 5173,
-    host: true,
     open: true,
-    
-    // API 代理配置
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:3000',

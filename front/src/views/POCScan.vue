@@ -99,11 +99,11 @@ export default {
       }
     }
 
-    const handleSubmit = (formData) => {
-      console.log('提交POC扫描:', formData)
+    const handleSubmit = () => {
+      console.log('提交POC扫描')
     }
 
-    const handleSuccess = (data) => {
+    const handleSuccess = () => {
       successMessage.value = 'POC扫描任务创建成功'
       loadRecentScans()
     }

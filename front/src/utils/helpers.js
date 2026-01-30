@@ -250,7 +250,7 @@ export const arrayUtils = {
 
   flatten(arr) {
     return arr.reduce((acc, val) => 
-      Array.isArray(val) ? acc.concat(flatten(val)) : acc.concat(val), 
+      Array.isArray(val) ? acc.concat(arrayUtils.flatten(val)) : acc.concat(val), 
       []
     )
   },
@@ -290,7 +290,7 @@ export const objectUtils = {
     
     const cloned = {}
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         cloned[key] = this.deepClone(obj[key])
       }
     }

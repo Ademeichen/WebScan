@@ -1,13 +1,13 @@
 import axios from 'axios'
 import { errorHandler } from './errorHandler'
-import { loadingManager } from './loading'
 import { handleResponse, handleApiError } from './apiResponse'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
+const REQUEST_TIMEOUT = parseInt(import.meta.env.VITE_REQUEST_TIMEOUT) || 30000
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: REQUEST_TIMEOUT,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -340,7 +340,7 @@ export const awvsApi = {
 
   createTarget: async (data) => {
     return request({
-      url: '/awvs/targets',
+      url: '/awvs/target',
       method: 'post',
       data
     })
@@ -348,7 +348,7 @@ export const awvsApi = {
 
   deleteTarget: async (targetId) => {
     return request({
-      url: `/awvs/targets/${targetId}`,
+      url: `/awvs/target/${targetId}`,
       method: 'delete'
     })
   },
@@ -363,7 +363,7 @@ export const awvsApi = {
 
   startScan: async (data) => {
     return request({
-      url: '/awvs/scans',
+      url: '/awvs/scan',
       method: 'post',
       data
     })
@@ -386,7 +386,7 @@ export const awvsApi = {
 
   getVulnerabilityDetail: async (vulnId) => {
     return request({
-      url: `/awvs/vulnerabilities/${vulnId}`,
+      url: `/awvs/vulnerability/${vulnId}`,
       method: 'get'
     })
   }

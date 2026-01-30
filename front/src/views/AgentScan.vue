@@ -118,7 +118,6 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { aiAgentsApi } from '@/utils/aiAgents'
 import AgentScanForm from '@/components/business/AgentScanForm.vue'
 import Alert from '@/components/common/Alert.vue'
@@ -131,7 +130,6 @@ export default {
     Alert
   },
   setup() {
-    const router = useRouter()
     const errorMessage = ref('')
     const successMessage = ref('')
     const recentTasks = ref([])
@@ -149,11 +147,11 @@ export default {
       }
     }
 
-    const handleSubmit = (formData) => {
-      console.log('提交Agent扫描:', formData)
+    const handleSubmit = () => {
+      console.log('提交Agent扫描')
     }
 
-    const handleSuccess = (data) => {
+    const handleSuccess = () => {
       successMessage.value = 'AI Agent扫描任务创建成功'
       loadRecentTasks()
     }

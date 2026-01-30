@@ -123,11 +123,13 @@ export default {
   },
   emits: ['submit', 'success', 'error'],
   setup(props, { emit }) {
+    const DEFAULT_TIMEOUT = parseInt(import.meta.env.VITE_REQUEST_TIMEOUT) / 1000 || 30
+
     const formData = ref({
       target: '',
       taskName: '',
       pocTypes: [],
-      timeout: 30,
+      timeout: DEFAULT_TIMEOUT,
       maxThreads: 10,
       enableProxy: false,
       proxyUrl: ''
@@ -241,7 +243,7 @@ export default {
         target: '',
         taskName: '',
         pocTypes: [],
-        timeout: 30,
+        timeout: DEFAULT_TIMEOUT,
         maxThreads: 10,
         enableProxy: false,
         proxyUrl: ''
@@ -266,7 +268,8 @@ export default {
       validationErrors,
       isFormValid,
       handleSubmit,
-      handleReset
+      handleReset,
+      debouncedValidate
     }
   }
 }

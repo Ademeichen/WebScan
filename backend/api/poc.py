@@ -293,23 +293,20 @@ async def get_poc_info(poc_type: str):
     获取 POC 详细信息
     
     获取指定 POC 类型的详细信息,包括名称、描述、严重程度和 CVE 编号。
+    支持按类别查询（如 weblogic）或按具体POC类型查询（如 weblogic_cve_2020_2551）。
     
     Args:
-        poc_type: POC 类型
+        poc_type: POC 类型或类别
         
     Returns:
-        Dict: POC 详细信息,结构如下:
-            {
-                "name": "POC名称",
-                "description": "POC描述",
-                "severity": "严重程度",
-                "cve": "CVE编号"
-            }
+        Dict: POC 详细信息或该类别下的所有POC信息
         
     Raises:
         HTTPException: POC 类型不存在时抛出 404 错误
         
     Examples:
+        >>> 获取 WebLogic 类别的所有POC信息
+        >>> GET /poc/info/weblogic
         >>> 获取 WebLogic CVE-2020-2551 信息
         >>> GET /poc/info/weblogic_cve_2020_2551
     """
@@ -318,83 +315,102 @@ async def get_poc_info(poc_type: str):
             "name": "WebLogic CVE-2020-2551",
             "description": "WebLogic Server 反序列化漏洞",
             "severity": "高危",
-            "cve": "CVE-2020-2551"
+            "cve": "CVE-2020-2551",
+            "category": "weblogic"
         },
         "weblogic_cve_2018_2628": {
             "name": "WebLogic CVE-2018-2628",
             "description": "WebLogic Server 反序列化漏洞",
             "severity": "高危",
-            "cve": "CVE-2018-2628"
+            "cve": "CVE-2018-2628",
+            "category": "weblogic"
         },
         "weblogic_cve_2018_2894": {
             "name": "WebLogic CVE-2018-2894",
             "description": "WebLogic Server 任意文件上传漏洞",
             "severity": "高危",
-            "cve": "CVE-2018-2894"
+            "cve": "CVE-2018-2894",
+            "category": "weblogic"
         },
         "weblogic_cve_2020_14756": {
             "name": "WebLogic CVE-2020-14756",
             "description": "WebLogic Server 远程代码执行漏洞",
             "severity": "高危",
-            "cve": "CVE-2020-14756"
+            "cve": "CVE-2020-14756",
+            "category": "weblogic"
         },
         "weblogic_cve_2023_21839": {
             "name": "WebLogic CVE-2023-21839",
             "description": "WebLogic Server 远程代码执行漏洞",
             "severity": "高危",
-            "cve": "CVE-2023-21839"
+            "cve": "CVE-2023-21839",
+            "category": "weblogic"
         },
         "struts2_009": {
             "name": "Struts2 S2-009",
             "description": "Struts2 远程代码执行漏洞",
             "severity": "高危",
-            "cve": "CVE-2011-3923"
+            "cve": "CVE-2011-3923",
+            "category": "struts2"
         },
         "struts2_032": {
             "name": "Struts2 S2-032",
             "description": "Struts2 远程代码执行漏洞",
             "severity": "高危",
-            "cve": "CVE-2016-3081"
+            "cve": "CVE-2016-3081",
+            "category": "struts2"
         },
         "tomcat_cve_2017_12615": {
             "name": "Tomcat CVE-2017-12615",
             "description": "Tomcat 任意文件写入漏洞",
             "severity": "高危",
-            "cve": "CVE-2017-12615"
+            "cve": "CVE-2017-12615",
+            "category": "tomcat"
         },
         "tomcat_cve_2022_22965": {
             "name": "Tomcat CVE-2022-22965",
             "description": "Spring Framework 远程代码执行漏洞 (Spring4Shell)",
             "severity": "高危",
-            "cve": "CVE-2022-22965"
+            "cve": "CVE-2022-22965",
+            "category": "tomcat"
         },
         "tomcat_cve_2022_47986": {
             "name": "Tomcat CVE-2022-47986",
             "description": "Aspera Faspex 远程代码执行漏洞",
             "severity": "高危",
-            "cve": "CVE-2022-47986"
+            "cve": "CVE-2022-47986",
+            "category": "tomcat"
         },
         "jboss_cve_2017_12149": {
             "name": "JBoss CVE-2017-12149",
             "description": "JBoss 反序列化漏洞",
             "severity": "高危",
-            "cve": "CVE-2017-12149"
+            "cve": "CVE-2017-12149",
+            "category": "jboss"
         },
         "nexus_cve_2020_10199": {
             "name": "Nexus CVE-2020-10199",
             "description": "Nexus Repository Manager 远程代码执行漏洞",
             "severity": "高危",
-            "cve": "CVE-2020-10199"
+            "cve": "CVE-2020-10199",
+            "category": "nexus"
         },
         "drupal_cve_2018_7600": {
             "name": "Drupal CVE-2018-7600",
             "description": "Drupal 远程代码执行漏洞",
             "severity": "高危",
-            "cve": "CVE-2018-7600"
+            "cve": "CVE-2018-7600",
+            "category": "drupal"
         }
     }
     
-    if poc_type not in poc_info:
-        raise HTTPException(status_code=404, detail=f"未知的 POC 类型: {poc_type}")
+    if poc_type in poc_info:
+        return poc_info[poc_type]
     
-    return poc_info[poc_type]
+    categories = ["weblogic", "struts2", "tomcat", "jboss", "nexus", "drupal"]
+    if poc_type in categories:
+        category_pocs = {k: v for k, v in poc_info.items() if v.get("category") == poc_type}
+        if category_pocs:
+            return category_pocs
+    
+    raise HTTPException(status_code=404, detail=f"未知的 POC 类型: {poc_type}")

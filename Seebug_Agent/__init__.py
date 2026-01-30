@@ -7,6 +7,7 @@ Seebug Agent - 独立POC生成模块
 from .client import SeebugClient
 from .generator import POCGenerator
 from .config import Config
+from .main import SeebugAgent
 
 __version__ = "1.0.0"
-__all__ = ["SeebugClient", "POCGenerator", "Config"]
+__all__ = ["SeebugClient", "POCGenerator", "Config", "SeebugAgent"]
