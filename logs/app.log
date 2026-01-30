@@ -958,3 +958,202 @@
 2026-01-30 00:37:45,868 - backend.ai_agents.core.graph - INFO - [2026-01-30 00:37:45] [NODE_ENTRY] �ڵ�: _build_graph, ����ID: GRAPH_BUILD, ����: {'total_nodes': 11}
 2026-01-30 00:37:45,878 - backend.ai_agents.core.graph - INFO - [2026-01-30 00:37:45] [NODE_EXIT] �ڵ�: _build_graph, ����ID: GRAPH_BUILD, ״̬: success, ����: {'nodes_count': 11, 'edges_count': 16}
 2026-01-30 00:37:45,925 - WAFDetector - INFO - �ɹ����� 90 ��WAF������
+2026-01-30 15:07:35,449 - backend.api.seebug_client - INFO - ✅ Seebug API客户端初始化完成: https://www.seebug.org/api
+2026-01-30 15:07:38,291 - backend.ai_agents.poc_system.poc_manager - INFO - ✅ POC 管理器初始化完成
+2026-01-30 15:07:38,293 - backend.ai_agents.poc_system.target_manager - INFO - ✅ 目标管理器初始化完成
+2026-01-30 15:07:38,297 - backend.Pocsuite3Agent.agent - INFO - Pocsuite3 已安装
+2026-01-30 15:07:38,322 - backend.Pocsuite3Agent.agent - INFO - 加载了 114 个 POC 脚本
+2026-01-30 15:07:38,324 - backend.ai_agents.poc_system.verification_engine - INFO - ✅ POC 验证执行引擎初始化完成
+2026-01-30 15:07:38,327 - backend.ai_agents.poc_system.result_analyzer - INFO - ✅ 结果分析器初始化完成
+2026-01-30 15:07:38,329 - backend.ai_agents.poc_system.report_generator - INFO - ✅ 报告生成器初始化完成
+2026-01-30 15:07:38,461 - backend.ai_agents.tools.registry - INFO - 工具注册表初始化完成
+2026-01-30 15:07:38,467 - backend.ai_agents.core.poc_verification_node - INFO - ✅ POC 验证节点初始化完成
+2026-01-30 15:07:38,469 - backend.ai_agents.core.graph - INFO - 🔧 初始化扫描Agent图
+2026-01-30 15:07:38,476 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-30 15:07:38,493 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 sqlmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,494 - backend.ai_agents.code_execution.environment - WARNING - 工具 sqlmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,495 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,496 - backend.ai_agents.code_execution.environment - WARNING - 工具 nmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,504 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 burpsuite 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,504 - backend.ai_agents.code_execution.environment - WARNING - 工具 burpsuite 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,520 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nikto 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,521 - backend.ai_agents.code_execution.environment - WARNING - 工具 nikto 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,528 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 metasploit 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,529 - backend.ai_agents.code_execution.environment - WARNING - 工具 metasploit 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,533 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 dirb 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,533 - backend.ai_agents.code_execution.environment - WARNING - 工具 dirb 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,538 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 gobuster 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,538 - backend.ai_agents.code_execution.environment - WARNING - 工具 gobuster 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:38,611 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 0.13秒
+2026-01-30 15:07:38,612 - backend.ai_agents.core.nodes - INFO - 🔍 环境感知节点初始化完成
+2026-01-30 15:07:38,612 - backend.ai_agents.utils.priority - INFO - 🎯 任务优先级管理器初始化完成
+2026-01-30 15:07:40,518 - backend.ai_agents.core.nodes - INFO - 🤖 启用LLM增强任务规划
+2026-01-30 15:07:40,518 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-30 15:07:40,544 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,544 - backend.ai_agents.code_execution.environment - WARNING - 工具 nmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,551 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 sqlmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,552 - backend.ai_agents.code_execution.environment - WARNING - 工具 sqlmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,552 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 burpsuite 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,554 - backend.ai_agents.code_execution.environment - WARNING - 工具 burpsuite 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,562 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 metasploit 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,562 - backend.ai_agents.code_execution.environment - WARNING - 工具 metasploit 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,570 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nikto 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,570 - backend.ai_agents.code_execution.environment - WARNING - 工具 nikto 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,576 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 dirb 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,578 - backend.ai_agents.code_execution.environment - WARNING - 工具 dirb 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,585 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 gobuster 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,586 - backend.ai_agents.code_execution.environment - WARNING - 工具 gobuster 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,635 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 0.12秒
+2026-01-30 15:07:40,635 - backend.ai_agents.core.nodes - INFO - 🧠 智能决策节点初始化完成
+2026-01-30 15:07:40,636 - backend.ai_agents.core.nodes - INFO - 🔧 工具执行节点初始化,最大并发: 5
+2026-01-30 15:07:40,636 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-30 15:07:40,652 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,653 - backend.ai_agents.code_execution.environment - WARNING - 工具 nmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,661 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 sqlmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,663 - backend.ai_agents.code_execution.environment - WARNING - 工具 sqlmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,671 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 burpsuite 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,673 - backend.ai_agents.code_execution.environment - WARNING - 工具 burpsuite 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,680 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 metasploit 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,681 - backend.ai_agents.code_execution.environment - WARNING - 工具 metasploit 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,685 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nikto 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,686 - backend.ai_agents.code_execution.environment - WARNING - 工具 nikto 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,691 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 dirb 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,691 - backend.ai_agents.code_execution.environment - WARNING - 工具 dirb 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,699 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 gobuster 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,699 - backend.ai_agents.code_execution.environment - WARNING - 工具 gobuster 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:40,747 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 0.11秒
+2026-01-30 15:07:42,679 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-01-30 15:07:42,679 - backend.ai_agents.core.nodes - INFO - 🔧 代码生成节点初始化完成
+2026-01-30 15:07:42,679 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-30 15:07:42,698 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,699 - backend.ai_agents.code_execution.environment - WARNING - 工具 nmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,706 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 sqlmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,706 - backend.ai_agents.code_execution.environment - WARNING - 工具 sqlmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,711 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 burpsuite 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,712 - backend.ai_agents.code_execution.environment - WARNING - 工具 burpsuite 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,718 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 metasploit 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,718 - backend.ai_agents.code_execution.environment - WARNING - 工具 metasploit 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,725 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nikto 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,726 - backend.ai_agents.code_execution.environment - WARNING - 工具 nikto 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,733 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 dirb 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,734 - backend.ai_agents.code_execution.environment - WARNING - 工具 dirb 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,739 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 gobuster 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,739 - backend.ai_agents.code_execution.environment - WARNING - 工具 gobuster 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,789 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 0.11秒
+2026-01-30 15:07:42,789 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-30 15:07:42,805 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,805 - backend.ai_agents.code_execution.environment - WARNING - 工具 nmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,815 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 sqlmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,816 - backend.ai_agents.code_execution.environment - WARNING - 工具 sqlmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,821 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 burpsuite 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,823 - backend.ai_agents.code_execution.environment - WARNING - 工具 burpsuite 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,827 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nikto 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,827 - backend.ai_agents.code_execution.environment - WARNING - 工具 nikto 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,835 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 metasploit 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,835 - backend.ai_agents.code_execution.environment - WARNING - 工具 metasploit 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,839 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 dirb 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,841 - backend.ai_agents.code_execution.environment - WARNING - 工具 dirb 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,846 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 gobuster 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,846 - backend.ai_agents.code_execution.environment - WARNING - 工具 gobuster 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:42,897 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 0.11秒
+2026-01-30 15:07:44,844 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-01-30 15:07:44,845 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-30 15:07:44,865 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,867 - backend.ai_agents.code_execution.environment - WARNING - 工具 nmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,874 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 sqlmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,875 - backend.ai_agents.code_execution.environment - WARNING - 工具 sqlmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,884 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 burpsuite 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,885 - backend.ai_agents.code_execution.environment - WARNING - 工具 burpsuite 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,890 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 metasploit 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,891 - backend.ai_agents.code_execution.environment - WARNING - 工具 metasploit 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,898 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nikto 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,899 - backend.ai_agents.code_execution.environment - WARNING - 工具 nikto 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,903 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 dirb 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,905 - backend.ai_agents.code_execution.environment - WARNING - 工具 dirb 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,912 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 gobuster 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,913 - backend.ai_agents.code_execution.environment - WARNING - 工具 gobuster 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,974 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 0.13秒
+2026-01-30 15:07:44,974 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-30 15:07:44,995 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:44,996 - backend.ai_agents.code_execution.environment - WARNING - 工具 nmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,004 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 sqlmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,006 - backend.ai_agents.code_execution.environment - WARNING - 工具 sqlmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,014 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 burpsuite 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,014 - backend.ai_agents.code_execution.environment - WARNING - 工具 burpsuite 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,022 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nikto 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,023 - backend.ai_agents.code_execution.environment - WARNING - 工具 nikto 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,029 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 metasploit 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,029 - backend.ai_agents.code_execution.environment - WARNING - 工具 metasploit 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,037 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 dirb 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,039 - backend.ai_agents.code_execution.environment - WARNING - 工具 dirb 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,047 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 gobuster 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,049 - backend.ai_agents.code_execution.environment - WARNING - 工具 gobuster 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:45,107 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 0.13秒
+2026-01-30 15:07:47,115 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-01-30 15:07:47,117 - backend.ai_agents.code_execution.capability_enhancer - INFO - ✅ 功能补充器初始化完成
+2026-01-30 15:07:47,117 - backend.ai_agents.code_execution.executor - INFO - ✅ 统一执行器初始化完成: timeout=60s, sandbox=True
+2026-01-30 15:07:47,118 - backend.ai_agents.core.nodes - INFO - ⚡ 代码执行节点初始化完成
+2026-01-30 15:07:47,118 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-30 15:07:47,137 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 sqlmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,139 - backend.ai_agents.code_execution.environment - WARNING - 工具 sqlmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,147 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,148 - backend.ai_agents.code_execution.environment - WARNING - 工具 nmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,153 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 metasploit 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,153 - backend.ai_agents.code_execution.environment - WARNING - 工具 metasploit 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,161 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nikto 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,161 - backend.ai_agents.code_execution.environment - WARNING - 工具 nikto 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,168 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 burpsuite 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,169 - backend.ai_agents.code_execution.environment - WARNING - 工具 burpsuite 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,176 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 dirb 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,178 - backend.ai_agents.code_execution.environment - WARNING - 工具 dirb 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,182 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 gobuster 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,183 - backend.ai_agents.code_execution.environment - WARNING - 工具 gobuster 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,235 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 0.12秒
+2026-01-30 15:07:47,235 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-30 15:07:47,252 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,254 - backend.ai_agents.code_execution.environment - WARNING - 工具 nmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,254 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 sqlmap 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,255 - backend.ai_agents.code_execution.environment - WARNING - 工具 sqlmap 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,263 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 metasploit 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,263 - backend.ai_agents.code_execution.environment - WARNING - 工具 metasploit 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,278 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 nikto 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,278 - backend.ai_agents.code_execution.environment - WARNING - 工具 nikto 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,284 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 burpsuite 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,285 - backend.ai_agents.code_execution.environment - WARNING - 工具 burpsuite 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,290 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 dirb 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,290 - backend.ai_agents.code_execution.environment - WARNING - 工具 dirb 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,295 - backend.ai_agents.code_execution.environment - WARNING - 检测工具 gobuster 失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,296 - backend.ai_agents.code_execution.environment - WARNING - 工具 gobuster 检测失败: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 15:07:47,360 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 0.13秒
+2026-01-30 15:07:49,307 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-01-30 15:07:49,308 - backend.ai_agents.code_execution.capability_enhancer - INFO - ✅ 功能补充器初始化完成
+2026-01-30 15:07:49,308 - backend.ai_agents.core.nodes - INFO - 🚀 功能补充节点初始化完成
+2026-01-30 15:07:49,313 - backend.ai_agents.analyzers.vuln_analyzer - INFO - 🔍 漏洞分析器初始化完成
+2026-01-30 15:07:49,313 - backend.ai_agents.core.nodes - INFO - 🔍 漏洞分析节点初始化
+2026-01-30 15:07:49,314 - backend.ai_agents.analyzers.report_gen - INFO - 📄 报告生成器初始化完成
+2026-01-30 15:07:49,314 - backend.ai_agents.core.nodes - INFO - 📄 报告生成节点初始化
+2026-01-30 15:07:49,314 - backend.ai_agents.core.graph - INFO - [2026-01-30 15:07:49] [NODE_ENTRY] 节点: _build_graph, 任务ID: GRAPH_BUILD, 详情: {'total_nodes': 11}
+2026-01-30 15:07:49,322 - backend.ai_agents.core.graph - INFO - 📊 增强版LangGraph图边定义完成
+2026-01-30 15:07:49,322 - backend.ai_agents.core.graph - INFO - [2026-01-30 15:07:49] [NODE_EXIT] 节点: _build_graph, 任务ID: GRAPH_BUILD, 状态: success, 详情: {'nodes_count': 11, 'edges_count': 16}
+2026-01-30 15:07:49,322 - backend.ai_agents.core.graph - INFO - ✅ 扫描Agent图构建完成
+2026-01-30 15:07:49,324 - backend.ai_agents.core.graph - INFO - 🔧 开始初始化工具...
+2026-01-30 15:07:49,345 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: baseinfo (分类: plugin, 优先级: 3)
+2026-01-30 15:07:49,348 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: portscan (分类: plugin, 优先级: 5)
+2026-01-30 15:07:49,356 - WAFDetector - INFO - 成功编译 90 条WAF检测规则
+2026-01-30 15:07:49,358 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: waf_detect (分类: plugin, 优先级: 4)
+2026-01-30 15:07:49,378 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cdn_detect (分类: plugin, 优先级: 4)
+2026-01-30 15:07:49,487 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cms_identify (分类: plugin, 优先级: 4)
+2026-01-30 15:07:49,490 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: infoleak_scan (分类: plugin, 优先级: 3)
+2026-01-30 15:07:49,493 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: subdomain_scan (分类: plugin, 优先级: 3)
+2026-01-30 15:07:49,495 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webside_scan (分类: plugin, 优先级: 3)
+2026-01-30 15:07:49,498 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webweight_scan (分类: plugin, 优先级: 2)
+2026-01-30 15:07:49,498 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2020_2551 (分类: poc, 优先级: 8)
+2026-01-30 15:07:49,498 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2628 (分类: poc, 优先级: 8)
+2026-01-30 15:07:49,498 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2894 (分类: poc, 优先级: 8)
+2026-01-30 15:07:49,498 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_009 (分类: poc, 优先级: 8)
+2026-01-30 15:07:49,498 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_032 (分类: poc, 优先级: 8)
+2026-01-30 15:07:49,498 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_tomcat_2017_12615 (分类: poc, 优先级: 8)
+2026-01-30 15:07:49,500 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_jboss_2017_12149 (分类: poc, 优先级: 8)
+2026-01-30 15:07:49,500 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_nexus_2020_10199 (分类: poc, 优先级: 8)
+2026-01-30 15:07:49,500 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_drupal_2018_7600 (分类: poc, 优先级: 8)
+2026-01-30 15:07:49,500 - backend.ai_agents.core.graph - INFO - ✅ 工具初始化完成,共注册 18 个工具

@@ -82,7 +82,17 @@ class Vuln(Base):
         """
         搜索漏洞
 
+        Args:
+            severity: 严重程度
+            criticality: 关键性
+            status: 状态
+            cvss_score: CVSS 评分
+            target_id: 目标 ID
+            group_id: 组 ID
 
+        Returns:
+            str: 搜索结果文本,失败返回 None
+        """
         vuln_search_api = f'{self.vuln_api}?q=status:{status};target_id:{target_id}'
         print(vuln_search_api)
         try:

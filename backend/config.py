@@ -256,7 +256,7 @@ class Settings(BaseSettings):
     可以通过环境变量 AWVS_API_URL 覆盖。
     """
     
-    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c986f9835bbf243cb9b33aee376ee7da9"
+    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c533a96f18b19416da99a2e732075e570"
     """
     AWVS API 密钥
     

@@ -65,13 +65,12 @@ class Base(object):
 
     def check_connection(self):
         """
-
         检查 API 连接是否正常
 
         Returns:
             tuple: (是否成功, 错误信息)
-
-
+        """
+        try:
             response = requests.get(
                 self.targets_api,
                 headers=self.auth_headers,

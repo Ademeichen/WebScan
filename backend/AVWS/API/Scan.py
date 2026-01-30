@@ -47,7 +47,8 @@ class Scan(Base):
         self.logger = self.get_logger
 
     def add(self, target_id, profile_key, report_template_id='', schedule=None, ui_session_id=''):
-
+        """
+        添加扫描任务
 
         Args:
             target_id: 目标 ID
@@ -55,9 +56,6 @@ class Scan(Base):
             report_template_id: 扫描报告模板 ID(可选)
             schedule: 扫描时间,默认为即时扫描(可选)
             ui_session_id: UI 会话 ID(可选)
-
-
-
         """
         data = {
             'target_id': target_id,

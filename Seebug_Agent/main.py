@@ -6,9 +6,10 @@ Seebug Agent - 独立POC生成模块
 import os
 import sys
 from pathlib import Path
-from .client import SeebugClient
-from .generator import POCGenerator
-from .config import Config
+from typing import Optional, Dict, Any
+from client import SeebugClient
+from generator import POCGenerator
+from config import Config
 
 
 class SeebugAgent:

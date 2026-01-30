@@ -4,9 +4,9 @@ POC生成器
 使用AI模型生成Pocsuite3兼容的POC脚本。
 """
 import time
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from openai import OpenAI
-from .config import Config
+from config import Config
 
 
 class POCGenerator:

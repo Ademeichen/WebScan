@@ -13,21 +13,21 @@ from dataclasses import dataclass
 class Config:
     """Seebug Agent配置类"""
 
-    Seebug API配置
+    # Seebug API配置
     SEEBUG_API_KEY: str = "a1c22e6365df93275fa82397dbbdbbb7d9c6a75b"
     SEEBUG_BASE_URL: str = "https://www.seebug.org/api"
     SEEBUG_TIMEOUT: int = 30
 
-    AI模型配置
+    # AI模型配置
     AI_BASE_URL: str = "https://api-inference.modelscope.cn/v1"
     AI_API_KEY: str = "ms-5c9c1aaf-f843-4648-8e24-8e0a9e4f2118"
     AI_MODEL_ID: str = "ZhipuAI/GLM-4.7-Flash"
 
-    POC生成配置
+    # POC生成配置
     MAX_RETRIES: int = 5
     BASE_DELAY: int = 2
 
-    输出配置
+    # 输出配置
     OUTPUT_DIR: str = str(Path.cwd() / "generated_pocs")
 
     def __post_init__(self):

@@ -13,8 +13,14 @@ AI Agents 模块
 - utils: 工具函数(优先级、重试策略)
 """
 
-from .core import ScanAgentGraph
-from .tools import ToolRegistry
-
 __version__ = "1.0.0"
 __all__ = ["ScanAgentGraph", "ToolRegistry"]
+
+def __getattr__(name):
+    if name == "ScanAgentGraph":
+        from .core import ScanAgentGraph
+        return ScanAgentGraph
+    elif name == "ToolRegistry":
+        from .tools import ToolRegistry
+        return ToolRegistry
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

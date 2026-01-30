@@ -57,8 +57,18 @@ class Target(Base):
             self.logger.error('Get Targets Failed......', exc_info=True)
             return None
 
+    def search(self, threat=None, criticality=None, group_id=None, keyword=None):
+        """
+        搜索目标
 
+        Args:
+            threat: 威胁等级
+            criticality: 严重程度
+            group_id: 组 ID
+            keyword: 搜索关键词
 
+        Returns:
+            list: 包含匹配目标的列表,失败返回 None
         """
         search_targets_api = f'{self.targets_api}?q=threat:{threat};criticality:{criticality};group_id:{group_id};text_search:{keyword}'
         try:
