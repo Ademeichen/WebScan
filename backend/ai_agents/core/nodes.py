@@ -756,3 +756,477 @@ class IntelligentDecisionNode:
             state.add_error(f"智能决策失败: {str(e)}")
         
         return state
+
+
+class SeebugAgentNode:
+    """
+    Seebug Agent 节点
+    
+    负责集成Seebug_Agent功能,包括:
+    - 搜索Seebug POC
+    - 生成POC代码
+    - 下载POC
+    """
+    
+    def __init__(self):
+        """
+        初始化Seebug Agent节点
+        """
+        from backend.utils.seebug_utils import seebug_utils
+        self.seebug_agent = seebug_utils.get_agent()
+        logger.info("✅ Seebug Agent节点初始化完成")
+    
+    async def __call__(self, state: AgentState) -> AgentState:
+        """
+        执行Seebug Agent节点
+        
+        Args:
+            state: Agent当前状态
+            
+        Returns:
+            AgentState: 更新后的状态
+        """
+        logger.info(f"[{state.task_id}] 🔍 开始执行Seebug Agent节点,目标: {state.target}")
+        
+        try:
+            # 检查Seebug Agent是否可用
+            if not self.seebug_agent:
+                logger.warning(f"[{state.task_id}] ⚠️ Seebug Agent不可用")
+                state.add_error("Seebug Agent不可用")
+                state.add_execution_step("seebug_agent", {}, "failed")
+                return state
+            
+            # 从目标中提取关键词用于搜索
+            keyword = self._extract_keyword_from_target(state.target)
+            
+            # 如果没有提取到关键词，使用默认关键词
+            if not keyword:
+                keyword = "web vulnerability"
+                logger.info(f"[{state.task_id}] ℹ️ 未提取到关键词，使用默认关键词: {keyword}")
+            
+            # 搜索Seebug POC
+            logger.info(f"[{state.task_id}] 🔍 搜索Seebug POC,关键词: {keyword}")
+            search_result = self.seebug_agent.search_vulnerabilities(
+                keyword=keyword,
+                page=1,
+                page_size=10
+            )
+            
+            if search_result.get("status") == "success":
+                poc_list = search_result.get("data", {}).get("list", [])
+                logger.info(f"[{state.task_id}] ✅ Seebug搜索成功,找到 {len(poc_list)} 个POC")
+                
+                # 将搜索结果添加到状态
+                state.seebug_pocs = poc_list
+                
+                # 如果找到POC,处理前几个进行详细分析
+                if poc_list:
+                    # 处理前3个POC以提高覆盖率
+                    for i, selected_poc in enumerate(poc_list[:3]):
+                        ssvid = selected_poc.get("ssvid")
+                        poc_name = selected_poc.get("name")
+                        
+                        if ssvid:
+                            logger.info(f"[{state.task_id}] 🔍 处理第 {i+1} 个POC: {poc_name} (SSVID: {ssvid})")
+                            
+                            # 获取POC详情
+                            detail_result = self.seebug_agent.get_vulnerability_detail(ssvid)
+                            
+                            if detail_result.get("status") == "success":
+                                vul_data = detail_result.get("data", {})
+                                logger.info(f"[{state.task_id}] ✅ 获取POC详情成功: {poc_name}")
+                                
+                                # 生成POC代码
+                                poc_code = self.seebug_agent.generate_poc(vul_data)
+                                
+                                if poc_code:
+                                    logger.info(f"[{state.task_id}] ✅ POC生成成功,代码长度: {len(poc_code)}")
+                                    
+                                    # 将生成的POC添加到状态
+                                    state.generated_pocs = state.generated_pocs or []
+                                    state.generated_pocs.append({
+                                        "ssvid": ssvid,
+                                        "name": poc_name,
+                                        "code": poc_code,
+                                        "source": "seebug_agent",
+                                        "priority": 1 if i == 0 else 2
+                                    })
+                                    
+                                    # 添加到POC验证任务列表
+                                    state.poc_verification_tasks = state.poc_verification_tasks or []
+                                    state.poc_verification_tasks.append({
+                                        "poc_id": f"seebug_{ssvid}",
+                                        "poc_name": poc_name,
+                                        "poc_code": poc_code,
+                                        "target": state.target,
+                                        "priority": 1 if i == 0 else 2
+                                    })
+                                else:
+                                    logger.warning(f"[{state.task_id}] ⚠️ POC生成失败: {poc_name}")
+                            else:
+                                logger.warning(f"[{state.task_id}] ⚠️ 获取POC详情失败: {poc_name}")
+                else:
+                    logger.warning(f"[{state.task_id}] ⚠️ 未找到相关POC")
+            else:
+                error_msg = search_result.get('msg', '未知错误')
+                logger.warning(f"[{state.task_id}] ⚠️ Seebug搜索失败: {error_msg}")
+                state.add_error(f"Seebug搜索失败: {error_msg}")
+            
+            # 统计信息
+            poc_count = len(state.seebug_pocs) if state.seebug_pocs else 0
+            generated_count = len(state.generated_pocs) if state.generated_pocs else 0
+            
+            state.add_execution_step("seebug_agent", {
+                "keyword": keyword,
+                "poc_count": poc_count,
+                "generated_count": generated_count
+            }, "success" if generated_count > 0 else "partial")
+            
+        except Exception as e:
+            logger.error(f"[{state.task_id}] ❌ Seebug Agent节点执行失败: {str(e)}")
+            state.add_error(f"Seebug Agent节点执行失败: {str(e)}")
+            state.add_execution_step("seebug_agent", {}, "failed")
+        
+        return state
+    
+    def _extract_keyword_from_target(self, target: str) -> str:
+        """
+        从目标中提取搜索关键词
+        
+        Args:
+            target: 目标URL或域名
+            
+        Returns:
+            str: 搜索关键词
+        """
+        # 简单实现:从URL中提取域名作为关键词
+        # 实际应用中可以使用更复杂的逻辑
+        if "://" in target:
+            target = target.split("://")[1]
+        
+        # 移除端口号和路径
+        if "/" in target:
+            target = target.split("/")[0]
+        if ":" in target:
+            target = target.split(":")[0]
+        
+        # 如果是IP地址,返回空字符串
+        if target.replace(".", "").isdigit():
+            return ""
+        
+        # 提取主域名
+        parts = target.split(".")
+        if len(parts) >= 2:
+            return parts[-2]
+        
+        return target
+
+
+class POCVerificationNode:
+    """
+    POC 验证节点
+    
+    基于 LangGraph 框架的 POC 验证节点,实现 agent 驱动的 POC 验证流程。
+    """
+    
+    def __init__(self):
+        """
+        初始化 POC 验证节点
+        """
+        self.node_name = "poc_verification"
+        self.description = "POC 验证节点,负责执行 POC 验证任务"
+        
+        logger.info("✅ POC 验证节点初始化完成")
+    
+    async def __call__(self, state: AgentState) -> AgentState:
+        """
+        节点调用方法
+        
+        这是 LangGraph 节点的标准接口,接收 AgentState 并返回更新后的状态。
+        
+        Args:
+            state: 当前智能体状态
+            
+        Returns:
+            AgentState: 更新后的状态
+        """
+        logger.info(f"[{self.node_name}] 🚀 开始执行 POC 验证节点")
+        
+        try:
+            # 检查 POC 验证是否启用
+            from backend.config import settings
+            if not settings.POC_VERIFICATION_ENABLED:
+                logger.warning(f"[{self.node_name}] ⚠️ POC 验证功能已禁用")
+                state.add_execution_step("poc_verification", {}, "disabled")
+                return state
+            
+            # 从状态中获取待验证的 POC 任务
+            poc_tasks = state.poc_verification_tasks
+            
+            if not poc_tasks:
+                logger.info(f"[{self.node_name}] ℹ️ 没有待验证的 POC 任务")
+                state.add_execution_step("poc_verification", {}, "completed")
+                return state
+            
+            # 更新验证状态为运行中
+            logger.info(f"[{self.node_name}] 📋 待验证 POC 任务数: {len(poc_tasks)}")
+            
+            # 执行 POC 验证
+            verification_results = await self._execute_poc_verification(
+                poc_tasks,
+                state
+            )
+            
+            # 分析验证结果
+            analysis_results = await self._analyze_verification_results(
+                verification_results
+            )
+            
+            # 更新漏洞列表
+            state.vulnerabilities = self._update_vulnerabilities(
+                state.vulnerabilities,
+                verification_results
+            )
+            
+            # 计算执行统计信息
+            execution_stats = self._calculate_execution_stats(verification_results)
+            
+            # 添加执行步骤
+            state.add_execution_step("poc_verification", {
+                "verification_results": verification_results,
+                "analysis_results": analysis_results,
+                "execution_stats": execution_stats
+            }, "success")
+            
+            logger.info(f"[{self.node_name}] ✅ POC 验证节点执行完成")
+            
+        except Exception as e:
+            logger.error(f"[{self.node_name}] ❌ POC 验证节点执行失败: {str(e)}")
+            state.add_error(f"POC 验证节点执行失败: {str(e)}")
+            state.add_execution_step("poc_verification", {}, "failed")
+        
+        return state
+    
+    async def _execute_poc_verification(
+        self,
+        poc_tasks: List[Dict[str, Any]],
+        state: AgentState
+    ) -> List[Dict[str, Any]]:
+        """
+        执行 POC 验证
+        
+        Args:
+            poc_tasks: POC 任务列表
+            state: 当前智能体状态
+            
+        Returns:
+            List[Dict]: 验证结果列表
+        """
+        logger.info(f"[{self.node_name}] 🔄 开始执行 POC 验证")
+        
+        verification_results = []
+        
+        # 从智能体状态获取目标信息
+        target = state.target
+        
+        # 导入必要的模块
+        from backend.ai_agents.poc_system import poc_manager, verification_engine
+        from datetime import datetime
+        
+        # 为每个 POC 任务创建验证任务并执行
+        for poc_task in poc_tasks:
+            try:
+                # 验证POC脚本格式
+                poc_code = poc_task.get("poc_code")
+                if poc_code:
+                    validation_result = poc_manager.validate_poc_script(poc_code)
+                    if not validation_result["is_valid"]:
+                        logger.warning(f"[{self.node_name}] ⚠️ POC脚本格式验证失败: {validation_result['errors']}")
+                        # 跳过格式不正确的POC
+                        continue
+                
+                # 创建 POC 验证任务
+                verification_task = await poc_manager.create_verification_task(
+                    poc_id=poc_task.get("poc_id"),
+                    target=target,
+                    priority=poc_task.get("priority", 5),
+                    task_id=state.task_id
+                )
+                
+                # 执行验证
+                result = await verification_engine.execute_verification_task(
+                    verification_task
+                )
+                
+                # 转换为字典格式
+                result_dict = {
+                    "poc_name": result.poc_name,
+                    "poc_id": result.poc_id,
+                    "target": result.target,
+                    "vulnerable": result.vulnerable,
+                    "message": result.message,
+                    "output": result.output,
+                    "error": result.error,
+                    "execution_time": result.execution_time,
+                    "confidence": result.confidence,
+                    "severity": result.severity,
+                    "cvss_score": result.cvss_score,
+                    "created_at": result.created_at.isoformat()
+                }
+                
+                verification_results.append(result_dict)
+                
+                logger.info(
+                    f"[{self.node_name}] ✅ POC 验证完成: "
+                    f"{result.poc_name} -> {result.vulnerable}"
+                )
+                
+            except Exception as e:
+                logger.error(
+                    f"[{self.node_name}] ❌ POC 验证失败: "
+                    f"{poc_task.get('poc_name', 'unknown')} - {str(e)}"
+                )
+                
+                # 添加失败结果
+                verification_results.append({
+                    "poc_name": poc_task.get("poc_name", "unknown"),
+                    "poc_id": poc_task.get("poc_id", ""),
+                    "target": target,
+                    "vulnerable": False,
+                    "message": f"验证失败: {str(e)}",
+                    "output": "",
+                    "error": str(e),
+                    "execution_time": 0.0,
+                    "confidence": 0.0,
+                    "severity": "info",
+                    "cvss_score": 0.0,
+                    "created_at": datetime.now().isoformat()
+                })
+        
+        return verification_results
+    
+    async def _analyze_verification_results(
+        self,
+        verification_results: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        分析验证结果
+        
+        Args:
+            verification_results: 验证结果列表
+            
+        Returns:
+            Dict: 分析结果
+        """
+        logger.info(f"[{self.node_name}] 🔍 开始分析验证结果")
+        
+        # 导入必要的模块
+        from backend.ai_agents.poc_system import result_analyzer
+        from datetime import datetime
+        
+        # 转换为 POCVerificationResult 对象
+        result_objects = []
+        for result_dict in verification_results:
+            # 这里简化处理，直接使用字典进行分析
+            result_objects.append(result_dict)
+        
+        # 批量分析
+        # 由于 result_analyzer.analyze_batch_results 可能需要特定的对象格式
+        # 这里我们使用简化的分析方法
+        total_results = len(verification_results)
+        vulnerable_count = sum(1 for r in verification_results if r.get("vulnerable"))
+        not_vulnerable_count = total_results - vulnerable_count
+        
+        analysis_summary = {
+            "total_results": total_results,
+            "vulnerable_count": vulnerable_count,
+            "not_vulnerable_count": not_vulnerable_count,
+            "average_confidence": sum(r.get("confidence", 0.0) for r in verification_results) / total_results if total_results > 0 else 0.0,
+            "average_cvss_score": sum(r.get("cvss_score", 0.0) for r in verification_results) / total_results if total_results > 0 else 0.0
+        }
+        
+        logger.info(
+            f"[{self.node_name}] ✅ 验证结果分析完成: "
+            f"漏洞 {analysis_summary['vulnerable_count']}/{analysis_summary['total_results']}"
+        )
+        
+        return analysis_summary
+    
+    def _calculate_execution_stats(
+        self,
+        verification_results: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        计算执行统计信息
+        
+        Args:
+            verification_results: 验证结果列表
+            
+        Returns:
+            Dict: 执行统计信息
+        """
+        total_pocs = len(verification_results)
+        executed_count = total_pocs
+        vulnerable_count = sum(
+            1 for r in verification_results if r.get("vulnerable")
+        )
+        failed_count = sum(
+            1 for r in verification_results if r.get("error")
+        )
+        
+        total_execution_time = sum(
+            r.get("execution_time", 0.0) for r in verification_results
+        )
+        average_execution_time = (
+            total_execution_time / executed_count if executed_count > 0 else 0.0
+        )
+        success_rate = (
+            (executed_count - failed_count) / executed_count * 100
+            if executed_count > 0 else 0.0
+        )
+        
+        return {
+            "total_pocs": total_pocs,
+            "executed_count": executed_count,
+            "vulnerable_count": vulnerable_count,
+            "failed_count": failed_count,
+            "success_rate": success_rate,
+            "total_execution_time": total_execution_time,
+            "average_execution_time": average_execution_time
+        }
+    
+    def _update_vulnerabilities(
+        self,
+        existing_vulnerabilities: List[Dict[str, Any]],
+        verification_results: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        更新漏洞列表
+        
+        Args:
+            existing_vulnerabilities: 现有漏洞列表
+            verification_results: 验证结果列表
+            
+        Returns:
+            List[Dict]: 更新后的漏洞列表
+        """
+        updated_vulnerabilities = list(existing_vulnerabilities)
+        
+        # 添加新发现的漏洞
+        from datetime import datetime
+        for result in verification_results:
+            if result.get("vulnerable"):
+                vulnerability = {
+                    "name": result.get("poc_name", ""),
+                    "poc_id": result.get("poc_id", ""),
+                    "target": result.get("target", ""),
+                    "severity": result.get("severity", "medium"),
+                    "cvss_score": result.get("cvss_score", 0.0),
+                    "confidence": result.get("confidence", 0.0),
+                    "message": result.get("message", ""),
+                    "source": "poc_verification",
+                    "discovered_at": result.get("created_at", datetime.now().isoformat())
+                }
+                updated_vulnerabilities.append(vulnerability)
+        
+        return updated_vulnerabilities

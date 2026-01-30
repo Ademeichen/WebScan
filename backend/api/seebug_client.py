@@ -1,21 +1,21 @@
 """
 Seebug API 客户端
 
-提供统一的Seebug API调用接口,包括:
-- 指数退避重试机制(最多3次)
-- 统一超时处理(5秒)
-- 分级错误日志记录(INFO/WARN/ERROR)
-- 连接池管理
-- API响应缓存
+提供统一的Seebug API调用接口,使用Seebug_Agent的SeebugClient实现。
+支持:
+- Seebug POC搜索
+- Seebug POC详情获取
+- Seebug POC下载
+- API Key验证
+- 网页爬取模式降级
 """
 import logging
-import asyncio
-import time
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from backend.config import settings
+from backend.utils.seebug_utils import seebug_utils
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +38,7 @@ class SeebugAPIClient:
     """
     Seebug API客户端类
 
-    提供统一的Seebug API调用接口,支持:
-    - 指数退避重试机制
-    - 统一超时处理
-    - 分级错误日志记录
-    - 连接池管理
-    - 响应缓存
+    基于Seebug_Agent的SeebugClient实现,提供统一的Seebug API调用接口。
     """
 
     def __init__(
@@ -75,6 +70,9 @@ class SeebugAPIClient:
         self.success_count = 0
         self.error_count = 0
 
+        # 使用统一的Seebug工具
+        self.seebug_client = seebug_utils.get_client()
+
         logger.info(f"✅ Seebug API客户端初始化完成: {base_url}")
 
     async def validate_api_key(self) -> APIResponse:
@@ -91,27 +89,32 @@ class SeebugAPIClient:
 
         if self.enable_cache and cache_key in self.cache:
             cached_data, timestamp = self.cache[cache_key]
-            if datetime.now() - timestamp < timedelta(hours=1):
+            if (datetime.now() - timestamp).total_seconds() < 3600:
                 logger.info("✅ 使用缓存的API Key验证结果")
                 return cached_data
 
         logger.info("🔍 开始验证Seebug API Key")
 
         try:
-            response = await self._make_request(
-                method="GET",
-                endpoint="/token/validate",
-                params={"key": self.api_key}
+            result = self.seebug_client.validate_key()
+            success = result.get("status") == "success"
+            message = result.get("msg", "")
+
+            response = APIResponse(
+                success=success,
+                message=message,
+                status_code=200 if success else 401,
+                execution_time=0.0
             )
 
-            if response.success:
+            if success:
                 logger.info("✅ Seebug API Key验证成功")
                 if self.enable_cache:
                     self.cache[cache_key] = (response, datetime.now())
-                return response
             else:
-                logger.warning(f"⚠️ Seebug API Key验证失败: {response.message}")
-                return response
+                logger.warning(f"⚠️ Seebug API Key验证失败: {message}")
+
+            return response
 
         except Exception as e:
             logger.error(f"❌ 验证Seebug API Key异常: {str(e)}")
@@ -142,32 +145,32 @@ class SeebugAPIClient:
 
         if self.enable_cache and cache_key in self.cache:
             cached_data, timestamp = self.cache[cache_key]
-            if datetime.now() - timestamp < timedelta(minutes=30):
+            if (datetime.now() - timestamp).total_seconds() < 1800:
                 logger.info("✅ 使用缓存的POC搜索结果")
                 return cached_data
 
         logger.info(f"🔍 开始搜索POC: 关键词={keyword}, 页码={page}")
 
         try:
-            params = {
-                "key": self.api_key,
-                "keyword": keyword,
-                "page": page,
-                "page_size": page_size
-            }
+            result = self.seebug_client.search_poc(keyword, page, page_size)
+            success = result.get("status") == "success"
+            data = result.get("data", {})
+            message = result.get("msg", "")
 
-            response = await self._make_request(
-                method="GET",
-                endpoint="/poc/search",
-                params=params
+            response = APIResponse(
+                success=success,
+                data=data,
+                message=message,
+                status_code=200 if success else 404,
+                execution_time=0.0
             )
 
-            if response.success:
-                logger.info(f"✅ POC搜索成功: 找到{len(response.data.get('data', []))}个结果")
+            if success:
+                logger.info(f"✅ POC搜索成功: 找到{data.get('total', 0)}个结果")
                 if self.enable_cache:
                     self.cache[cache_key] = (response, datetime.now())
             else:
-                logger.warning(f"⚠️ POC搜索失败: {response.message}")
+                logger.warning(f"⚠️ POC搜索失败: {message}")
 
             return response
 
@@ -193,30 +196,32 @@ class SeebugAPIClient:
 
         if self.enable_cache and cache_key in self.cache:
             cached_data, timestamp = self.cache[cache_key]
-            if datetime.now() - timestamp < timedelta(hours=6):
+            if (datetime.now() - timestamp).total_seconds() < 21600:
                 logger.info(f"✅ 使用缓存的POC代码: SSVID={ssvid}")
                 return cached_data
 
         logger.info(f"📥 开始下载POC: SSVID={ssvid}")
 
         try:
-            params = {
-                "key": self.api_key,
-                "ssvid": ssvid
-            }
+            result = self.seebug_client.download_poc(ssvid)
+            success = result.get("status") == "success"
+            data = result.get("data", {})
+            message = result.get("msg", "")
 
-            response = await self._make_request(
-                method="GET",
-                endpoint="/poc/download",
-                params=params
+            response = APIResponse(
+                success=success,
+                data=data,
+                message=message,
+                status_code=200 if success else 404,
+                execution_time=0.0
             )
 
-            if response.success:
+            if success:
                 logger.info(f"✅ POC下载成功: SSVID={ssvid}")
                 if self.enable_cache:
                     self.cache[cache_key] = (response, datetime.now())
             else:
-                logger.warning(f"⚠️ POC下载失败: {response.message}")
+                logger.warning(f"⚠️ POC下载失败: {message}")
 
             return response
 
@@ -242,30 +247,32 @@ class SeebugAPIClient:
 
         if self.enable_cache and cache_key in self.cache:
             cached_data, timestamp = self.cache[cache_key]
-            if datetime.now() - timestamp < timedelta(hours=6):
+            if (datetime.now() - timestamp).total_seconds() < 21600:
                 logger.info(f"✅ 使用缓存的POC详情: SSVID={ssvid}")
                 return cached_data
 
         logger.info(f"🔍 开始获取POC详情: SSVID={ssvid}")
 
         try:
-            params = {
-                "key": self.api_key,
-                "ssvid": ssvid
-            }
+            result = self.seebug_client.get_poc_detail(ssvid)
+            success = result.get("status") == "success"
+            data = result.get("data", {})
+            message = result.get("msg", "")
 
-            response = await self._make_request(
-                method="GET",
-                endpoint="/poc/get",
-                params=params
+            response = APIResponse(
+                success=success,
+                data=data,
+                message=message,
+                status_code=200 if success else 404,
+                execution_time=0.0
             )
 
-            if response.success:
+            if success:
                 logger.info(f"✅ POC详情获取成功: SSVID={ssvid}")
                 if self.enable_cache:
                     self.cache[cache_key] = (response, datetime.now())
             else:
-                logger.warning(f"⚠️ POC详情获取失败: {response.message}")
+                logger.warning(f"⚠️ POC详情获取失败: {message}")
 
             return response
 
@@ -276,133 +283,6 @@ class SeebugAPIClient:
                 message=f"获取详情异常: {str(e)}",
                 status_code=500
             )
-
-    async def _make_request(
-        self,
-        method: str,
-        endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None
-    ) -> APIResponse:
-        """
-        发送HTTP请求(带重试机制)
-
-        Args:
-            method: HTTP方法(GET/POST)
-            endpoint: API端点
-            params: 查询参数
-            data: 请求体数据
-
-        Returns:
-            APIResponse: API响应
-        """
-        url = f"{self.base_url}{endpoint}"
-        self.request_count += 1
-
-        for attempt in range(self.max_retries):
-            try:
-                start_time = time.time()
-
-                if method == "GET":
-                    from pocsuite3.lib.request import requests
-                    resp = requests.get(
-                        url,
-                        params=params,
-                        timeout=self.timeout
-                    )
-                else:
-                    from pocsuite3.lib.request import requests
-                    resp = requests.post(
-                        url,
-                        params=params,
-                        data=data,
-                        timeout=self.timeout
-                    )
-
-                execution_time = time.time() - start_time
-
-                if resp and resp.status_code == 200:
-                    self.success_count += 1
-                    logger.debug(f"✅ 请求成功: {endpoint}, 耗时: {execution_time:.2f}秒")
-
-                    try:
-                        json_data = resp.json()
-
-                        if json_data.get("status") == "success":
-                            return APIResponse(
-                                success=True,
-                                data=json_data.get("data"),
-                                message=json_data.get("msg", ""),
-                                status_code=resp.status_code,
-                                execution_time=execution_time
-                            )
-                        else:
-                            return APIResponse(
-                                success=False,
-                                message=json_data.get("msg", "请求失败"),
-                                status_code=resp.status_code,
-                                execution_time=execution_time
-                            )
-                    except Exception as e:
-                        logger.warning(f"⚠️ JSON解析失败: {str(e)}")
-                        return APIResponse(
-                            success=False,
-                            message=f"响应解析失败: {str(e)}",
-                            status_code=resp.status_code,
-                            execution_time=execution_time
-                        )
-
-                elif resp and resp.status_code == 401:
-                    logger.warning(f"⚠️ API认证失败: {endpoint}")
-                    return APIResponse(
-                        success=False,
-                        message="API Key无效或已过期",
-                        status_code=resp.status_code,
-                        execution_time=execution_time
-                    )
-
-                elif resp and resp.status_code == 429:
-                    logger.warning(f"⚠️ 请求过于频繁: {endpoint}")
-                    delay = 2 ** attempt
-                    logger.info(f"⏰ 指数退避等待: {delay}秒")
-                    await asyncio.sleep(delay)
-                    continue
-
-                else:
-                    logger.warning(f"⚠️ 请求失败: {endpoint}, 状态码: {resp.status_code}")
-                    return APIResponse(
-                        success=False,
-                        message=f"HTTP错误: {resp.status_code}",
-                        status_code=resp.status_code,
-                        execution_time=execution_time
-                    )
-
-            except Exception as e:
-                self.error_count += 1
-                error_type = type(e).__name__
-
-                if attempt < self.max_retries - 1:
-                    delay = 2 ** attempt
-                    logger.warning(
-                        f"⚠️ 请求异常 (第{attempt + 1}次): {error_type}: {str(e)}, "
-                        f"等待{delay}秒后重试..."
-                    )
-                    await asyncio.sleep(delay)
-                else:
-                    logger.error(f"❌ 请求失败,已达最大重试次数: {error_type}: {str(e)}")
-                    return APIResponse(
-                        success=False,
-                        message=f"请求异常: {str(e)}",
-                        status_code=500,
-                        execution_time=0.0
-                    )
-
-        return APIResponse(
-            success=False,
-            message="超过最大重试次数",
-            status_code=500,
-            execution_time=0.0
-        )
 
     def clear_cache(self):
         """
@@ -443,8 +323,148 @@ class SeebugAPIClient:
             "timeout": self.timeout,
             "max_retries": self.max_retries,
             "cache_enabled": self.enable_cache,
-            "cache_stats": self.get_cache_stats()
+            "cache_stats": self.get_cache_stats(),
+            "seebug_agent_available": bool(self.seebug_client)
         }
+    
+    async def generate_poc_from_seebug(
+        self,
+        ssvid: str
+    ) -> APIResponse:
+        """
+        从Seebug生成POC代码
 
+        Args:
+            ssvid: 漏洞的SSVID
+
+        Returns:
+            APIResponse: 生成结果
+        """
+        logger.info(f"🤖 开始从Seebug生成POC,SSVID: {ssvid}")
+
+        try:
+            # 检查Seebug Agent是否可用
+            if not self.seebug_client:
+                return APIResponse(
+                    success=False,
+                    message="Seebug Agent不可用",
+                    status_code=503
+                )
+            
+            # 获取漏洞详情
+            detail_result = self.seebug_client.get_poc_detail(ssvid)
+            
+            if detail_result.get("status") != "success":
+                return APIResponse(
+                    success=False,
+                    message=detail_result.get("msg", "获取漏洞详情失败"),
+                    status_code=404
+                )
+            
+            vul_data = detail_result.get("data", {})
+            
+            # 生成POC代码
+            from backend.utils.seebug_utils import seebug_utils
+            generator = seebug_utils.get_generator()
+            
+            if not generator:
+                return APIResponse(
+                    success=False,
+                    message="POC生成器不可用",
+                    status_code=503
+                )
+            
+            poc_code = generator.generate_poc(vul_data)
+            
+            if not poc_code:
+                return APIResponse(
+                    success=False,
+                    message="POC生成失败",
+                    status_code=500
+                )
+            
+            logger.info(f"✅ POC生成成功,代码长度: {len(poc_code)}")
+            
+            return APIResponse(
+                success=True,
+                data={
+                    "poc_code": poc_code,
+                    "vulnerability": vul_data
+                },
+                message="POC生成成功"
+            )
+
+        except Exception as e:
+            logger.error(f"❌ 从Seebug生成POC异常: {str(e)}")
+            return APIResponse(
+                success=False,
+                message=f"生成POC异常: {str(e)}",
+                status_code=500
+            )
+    
+    async def search_and_generate(
+        self,
+        keyword: str,
+        selection: int = 0
+    ) -> APIResponse:
+        """
+        搜索漏洞并生成POC
+
+        Args:
+            keyword: 搜索关键词
+            selection: 选择的结果索引
+
+        Returns:
+            APIResponse: 生成结果
+        """
+        logger.info(f"🔍 开始搜索并生成POC,关键词: {keyword}, 选择: {selection}")
+
+        try:
+            # 检查Seebug Agent是否可用
+            if not self.seebug_client:
+                return APIResponse(
+                    success=False,
+                    message="Seebug Agent不可用",
+                    status_code=503
+                )
+            
+            # 使用Seebug Agent搜索并生成
+            from backend.utils.seebug_utils import seebug_utils
+            agent = seebug_utils.get_agent()
+            
+            if not agent:
+                return APIResponse(
+                    success=False,
+                    message="Seebug Agent不可用",
+                    status_code=503
+                )
+            
+            result = agent.search_and_generate(keyword, selection)
+            
+            success = result.get("success", False)
+            
+            if success:
+                logger.info(f"✅ 搜索并生成POC成功,路径: {result.get('poc_path')}")
+                return APIResponse(
+                    success=True,
+                    data=result,
+                    message="搜索并生成POC成功"
+                )
+            else:
+                message = result.get("message", "操作失败")
+                logger.warning(f"⚠️ 搜索并生成POC失败: {message}")
+                return APIResponse(
+                    success=False,
+                    message=message,
+                    status_code=404
+                )
+
+        except Exception as e:
+            logger.error(f"❌ 搜索并生成POC异常: {str(e)}")
+            return APIResponse(
+                success=False,
+                message=f"操作异常: {str(e)}",
+                status_code=500
+            )
 
 global_seebug_client = SeebugAPIClient()

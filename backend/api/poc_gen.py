@@ -8,31 +8,25 @@ import tempfile
 import sys
 
 from backend.models import VulnerabilityKB
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 from backend.config import settings
+import sys
+from pathlib import Path
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# 初始化 LLM
-llm = ChatOpenAI(
-    model=settings.MODEL_ID,
-    temperature=0.7,
-    openai_api_key=settings.OPENAI_API_KEY,
-    base_url=settings.OPENAI_BASE_URL
-)
+# 添加Seebug_Agent到Python路径
+seebug_agent_path = Path(__file__).parent.parent.parent / "Seebug_Agent"
+if str(seebug_agent_path) not in sys.path:
+    sys.path.insert(0, str(seebug_agent_path))
 
-
-
-# 尝试导入 pocsuite3
 try:
-    from pocsuite3.api import init_pocsuite
-    from pocsuite3.lib.core.data import conf
-    HAS_POCSUITE = True
-except ImportError:
-    HAS_POCSUITE = False
-
+    from Seebug_Agent import POCGenerator, Config as SeebugConfig
+except ImportError as e:
+    logger.error(f"Failed to import Seebug_Agent modules: {e}")
+    # 使用备用方案
+    POCGenerator = None
+    SeebugConfig = None
 
 
 class POCGenRequest(BaseModel):
@@ -45,101 +39,91 @@ class POCGenResponse(BaseModel):
     poc_code: Optional[str] = None
     status: str
 
-# 模拟的 POC 生成提示模板
-POC_PROMPT_TEMPLATE = """
-You are a security researcher. Write a Pocsuite3 POC script for the following vulnerability:
-Name/Description: {description}
 
-The POC should inherit from `PocTestCase` and implement `_verify` and `_attack` methods.
-
-
-"""
-
-class POCGenerator:
-    """POC 生成与执行引擎"""
+class POCGeneratorWrapper:
+    """POC 生成与执行引擎包装类"""
     
     def __init__(self):
-        self.llm = None
+        self.seebug_config = SeebugConfig()
+        self.poc_generator = POCGenerator(self.seebug_config)
         
     async def generate_from_kb(self, kb_item: VulnerabilityKB) -> str:
         """从知识库条目生成 POC"""
-        description = f"{kb_item.name}\n{kb_item.description}"
-        return await self.generate_from_description(description)
+        vul_info = {
+            "name": kb_item.name,
+            "description": kb_item.description,
+            "type": kb_item.severity or "Unknown",
+            "component": kb_item.affected_product or "Unknown",
+            "solution": kb_item.solution or "Unknown"
+        }
+        return self.poc_generator.generate_poc(vul_info)
 
     async def generate_from_description(self, description: str) -> str:
         """基于描述生成 POC 代码"""
-        try:
-
-            
-            # 构建提示模板
-            prompt = ChatPromptTemplate.from_template(POC_PROMPT_TEMPLATE)
-            
-            # 使用 LangChain 0.3.x 的 LCEL 语法
-            chain = prompt | self.llm
-            
-            # 调用 LLM 生成 POC 代码
-            response = await chain.ainvoke({"description": description})
-            poc_code = response.content
-            
-            logger.info(f"POC 生成成功,代码长度: {len(poc_code)}")
-            return poc_code
-
-
-        except Exception as e:
-            logger.error(f"AI POC Generation failed: {e}")
-            raise e
+        vul_info = {
+            "name": "Unknown Vulnerability",
+            "description": description,
+            "type": "Unknown",
+            "component": "Unknown",
+            "solution": "Unknown"
+        }
+        return self.poc_generator.generate_poc(vul_info)
 
     async def execute_poc(self, poc_code: str, target: str) -> Dict[str, Any]:
         """执行 POC 代码"""
-        if not HAS_POCSUITE:
-            return {"vulnerable": False, "message": "Pocsuite3 not installed", "status": "error"}
-
-        tmp_path = None
         try:
-            # 写入临时文件
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as tmp:
-                tmp.write(poc_code)
-                tmp_path = tmp.name
+            # 尝试导入 pocsuite3
+            from pocsuite3.api import init_pocsuite
+            from pocsuite3.lib.core.data import conf
+            
+            tmp_path = None
+            try:
+                # 写入临时文件
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as tmp:
+                    tmp.write(poc_code)
+                    tmp_path = tmp.name
+                    
+                logger.info(f"Executing POC for target: {target}")
                 
-            logger.info(f"Executing POC for target: {target}")
-            
-            # 使用 subprocess 调用 pocsuite3
-            cmd = [sys.executable, "-m", "pocsuite3.cli", "-r", tmp_path, "-u", target, "--verify"]
-            
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout, stderr = await process.communicate()
-            
-            output = stdout.decode()
-            error = stderr.decode()
-            
-
-
-            
-            msg = "Vulnerable" if is_vulnerable else "Not Vulnerable"
-            if len(output) > 200:
-                msg += f" (Output truncated: {output[:200]}...)"
-            else:
-                msg += f" ({output.strip()})"
+                # 使用 subprocess 调用 pocsuite3
+                cmd = [sys.executable, "-m", "pocsuite3.cli", "-r", tmp_path, "-u", target, "--verify"]
                 
-            return {
-                "status": "completed",
-                "vulnerable": is_vulnerable,
-                "message": msg,
-
-
-            }
-            
-        except Exception as e:
-            logger.error(f"POC execution failed: {e}")
-            return {"vulnerable": False, "message": str(e), "status": "error"}
-        finally:
-            if tmp_path and os.path.exists(tmp_path):
-                os.unlink(tmp_path)
-
+                process = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await process.communicate()
+                
+                output = stdout.decode()
+                error = stderr.decode()
+                
+                # 解析输出
+                is_vulnerable = self._parse_pocsuite_output(output)
+                
+                msg = "Vulnerable" if is_vulnerable else "Not Vulnerable"
+                if len(output) > 200:
+                    msg += f" (Output truncated: {output[:200]}...)"
+                else:
+                    msg += f" ({output.strip()})"
+                    
+                return {
+                    "status": "completed",
+                    "vulnerable": is_vulnerable,
+                    "message": msg,
+                    "output": output,
+                    "error": error
+                }
+                
+            except Exception as e:
+                logger.error(f"POC execution failed: {e}")
+                return {"vulnerable": False, "message": str(e), "status": "error"}
+            finally:
+                if tmp_path and os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+                    
+        except ImportError:
+            return {"vulnerable": False, "message": "Pocsuite3 not installed", "status": "error"}
     
     def _parse_pocsuite_output(self, output: str) -> bool:
         """
@@ -174,9 +158,8 @@ class POCGenerator:
         return False
 
 
-
 # 全局实例
-poc_generator = POCGenerator()
+poc_generator_wrapper = POCGeneratorWrapper()
 
 @router.post("/generate", response_model=POCGenResponse)
 async def generate_poc(request: POCGenRequest):
@@ -195,7 +178,7 @@ async def generate_poc(request: POCGenRequest):
         raise HTTPException(status_code=400, detail="Description or valid KB ID required")
 
     try:
-        poc_code = await poc_generator.generate_from_description(description)
+        poc_code = await poc_generator_wrapper.generate_from_description(description)
         return {"message": "POC generated successfully", "poc_code": poc_code, "status": "success"}
 
     except Exception as e:
@@ -208,7 +191,7 @@ async def execute_generated_poc(poc_code: str, target: str):
     执行生成的 POC API
     """
     try:
-        result = await poc_generator.execute_poc(poc_code, target)
+        result = await poc_generator_wrapper.execute_poc(poc_code, target)
         return result
     except Exception as e:
         logger.error(f"POC execution failed: {e}")

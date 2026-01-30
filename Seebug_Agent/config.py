@@ -28,7 +28,7 @@ class Config:
     BASE_DELAY: int = 2
 
     # 输出配置
-    OUTPUT_DIR: str = str(Path.cwd() / "generated_pocs")
+    OUTPUT_DIR: str = str(Path(__file__).parent.parent / "backend" / "poc")
 
     def __post_init__(self):
         """初始化后处理，确保输出目录存在"""

@@ -4,6 +4,8 @@
 测试所有10个节点(原有5个 + 新增5个)的功能和异常处理。
 """
 import unittest
+import sys
+from unittest.mock import patch, Mock
 
 from pathlib import Path
 

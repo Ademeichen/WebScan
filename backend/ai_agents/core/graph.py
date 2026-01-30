@@ -25,9 +25,14 @@ from .nodes import (
     CodeGenerationNode,
     CapabilityEnhancementNode,
     CodeExecutionNode,
-    IntelligentDecisionNode
+    IntelligentDecisionNode,
+    SeebugAgentNode,
+    POCVerificationNode
 )
-from .poc_verification_node import poc_verification_node
+
+# 创建节点实例
+seebug_agent_node = SeebugAgentNode()
+poc_verification_node = POCVerificationNode()
 from ..agent_config import agent_config
 
 logger = logging.getLogger(__name__)
@@ -137,6 +142,7 @@ class ScanAgentGraph:
         self.capability_enhancement_node = CapabilityEnhancementNode()  # 功能补充
         self.verification_node = ResultVerificationNode()  # 结果验证
         self.poc_verification_node = poc_verification_node  # POC 验证(新增)
+        self.seebug_agent_node = seebug_agent_node  # Seebug Agent(新增)
         self.analysis_node = VulnerabilityAnalysisNode()  # 漏洞分析
         self.report_node = ReportGenerationNode()  # 报告生成
         
@@ -165,7 +171,7 @@ class ScanAgentGraph:
         # 创建状态图
         workflow = StateGraph(AgentState)
         
-        # 添加所有节点(原有5个 + 新增6个 = 11个)
+        # 添加所有节点(原有5个 + 新增7个 = 12个)
         workflow.add_node("environment_awareness", self.env_awareness_node)  # 新增:环境感知
         workflow.add_node("task_planning", self.planning_node)
         workflow.add_node("intelligent_decision", self.intelligent_decision_node)  # 新增:智能决策
@@ -175,6 +181,7 @@ class ScanAgentGraph:
         workflow.add_node("capability_enhancement", self.capability_enhancement_node)  # 新增:功能补充
         workflow.add_node("result_verification", self.verification_node)
         workflow.add_node("poc_verification", self.poc_verification_node)  # 新增:POC 验证
+        workflow.add_node("seebug_agent", self.seebug_agent_node)  # 新增:Seebug Agent
         workflow.add_node("vulnerability_analysis", self.analysis_node)
         workflow.add_node("report_generation", self.report_node)
         
@@ -185,7 +192,7 @@ class ScanAgentGraph:
         workflow.add_edge("environment_awareness", "task_planning")
         workflow.add_edge("task_planning", "intelligent_decision")
         
-        # 核心条件分支1:智能决策后选择"固定工具"或"代码生成"或"功能增强"或"POC 验证"
+        # 核心条件分支1:智能决策后选择"固定工具"或"代码生成"或"功能增强"或"POC 验证"或"Seebug Agent"
         workflow.add_conditional_edges(
             "intelligent_decision",  # 起始节点:智能决策
             self._decide_scan_type,  # 分支判断函数
@@ -193,7 +200,8 @@ class ScanAgentGraph:
                 "fixed_tool": "tool_execution",  # 用现有工具扫描
                 "custom_code": "code_generation",  # 生成代码扫描
                 "enhance_first": "capability_enhancement",  # 先增强功能再扫描
-                "poc_verification": "poc_verification"  # POC 验证(新增)
+                "poc_verification": "poc_verification",  # POC 验证
+                "seebug_agent": "seebug_agent"  # Seebug Agent(新增)
             }
         )
         
@@ -226,6 +234,9 @@ class ScanAgentGraph:
         
         # POC 验证流程:POC 验证 → 漏洞分析
         workflow.add_edge("poc_verification", "vulnerability_analysis")
+        
+        # Seebug Agent流程:Seebug Agent → POC 验证
+        workflow.add_edge("seebug_agent", "poc_verification")
         
         # 后续流程:分析→报告→结束
         workflow.add_edge("vulnerability_analysis", "report_generation")
@@ -275,18 +286,18 @@ class ScanAgentGraph:
             logger.info(f"[{state.task_id}] 🔄 继续执行工具: {state.current_task}")
             return "continue"
     
-    def _decide_scan_type(self, state: AgentState) -> Literal["fixed_tool", "custom_code", "enhance_first", "poc_verification"]:
+    def _decide_scan_type(self, state: AgentState) -> Literal["fixed_tool", "custom_code", "enhance_first", "poc_verification", "seebug_agent"]:
         """
         智能决策:选择扫描类型(核心分支逻辑)
         
         根据环境信息和目标特征,智能决定使用固定工具扫描、
-        生成自定义代码扫描,还是先增强功能再扫描,或者进行 POC 验证。
+        生成自定义代码扫描,还是先增强功能再扫描,或者进行 POC 验证,或者使用 Seebug Agent。
         
         Args:
             state: Agent当前状态
             
         Returns:
-            Literal["fixed_tool", "custom_code", "enhance_first", "poc_verification"]: 扫描类型
+            Literal["fixed_tool", "custom_code", "enhance_first", "poc_verification", "seebug_agent"]: 扫描类型
         """
         target_context = state.target_context
         
@@ -323,7 +334,18 @@ class ScanAgentGraph:
             )
             return "custom_code"
         
-        # 4. 其他情况→使用现有工具
+        # 4. 需要使用Seebug Agent→搜索和生成POC
+        elif target_context.get("need_seebug_agent"):
+            logger.info(f"[{state.task_id}] 🔍 使用Seebug Agent搜索和生成POC")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="SCAN_TYPE",
+                decision="seebug_agent",
+                reason="使用Seebug Agent"
+            )
+            return "seebug_agent"
+        
+        # 5. 其他情况→使用现有工具
         else:
             logger.info(f"[{state.task_id}] 🛠️ 使用现有工具执行扫描")
             _log_decision(
@@ -396,11 +418,17 @@ class ScanAgentGraph:
             compiled_graph = self.compile()
             final_state = await compiled_graph.ainvoke(initial_state)
             
-            logger.info(f"✅ 增强版Agent工作流执行完成: {final_state.task_id}")
+            # 处理返回的状态对象，可能是字典形式
+            task_id = getattr(final_state, 'task_id', initial_state.task_id)
+            completed_tasks = getattr(final_state, 'completed_tasks', [])
+            vulnerabilities = getattr(final_state, 'vulnerabilities', [])
+            errors = getattr(final_state, 'errors', [])
+            
+            logger.info(f"✅ 增强版Agent工作流执行完成: {task_id}")
             _log_node_exit("invoke", initial_state.task_id, "success", {
-                "completed_tasks": len(final_state.completed_tasks),
-                "vulnerabilities_found": len(final_state.vulnerabilities),
-                "errors_count": len(final_state.errors)
+                "completed_tasks": len(completed_tasks),
+                "vulnerabilities_found": len(vulnerabilities),
+                "errors_count": len(errors)
             })
             
             return final_state
@@ -411,7 +439,7 @@ class ScanAgentGraph:
     
     def get_graph_info(self) -> Dict[str, Any]:
         """
-        获取图信息(包含所有11个节点)
+        获取图信息(包含所有12个节点)
         
         Returns:
             Dict: 图结构信息
@@ -427,6 +455,7 @@ class ScanAgentGraph:
                 "capability_enhancement",  # 新增
                 "result_verification",
                 "poc_verification",  # 新增
+                "seebug_agent",  # 新增
                 "vulnerability_analysis",
                 "report_generation"
             ],
@@ -437,6 +466,7 @@ class ScanAgentGraph:
                 ("intelligent_decision", "code_generation"),  # 新增
                 ("intelligent_decision", "capability_enhancement"),  # 新增
                 ("intelligent_decision", "poc_verification"),  # 新增
+                ("intelligent_decision", "seebug_agent"),  # 新增
                 ("code_generation", "code_execution"),  # 新增
                 ("code_execution", "result_verification"),
                 ("code_execution", "capability_enhancement"),  # 新增
@@ -446,19 +476,20 @@ class ScanAgentGraph:
                 ("result_verification", "vulnerability_analysis"),
                 ("result_verification", "poc_verification"),  # 新增
                 ("poc_verification", "vulnerability_analysis"),  # 新增
+                ("seebug_agent", "poc_verification"),  # 新增
                 ("vulnerability_analysis", "report_generation"),
                 ("report_generation", "END")
             ],
             "entry_point": "environment_awareness",  # 更新为环境感知
             "exit_points": ["report_generation"],
-            "total_nodes": 11,  # 更新为11个节点
+            "total_nodes": 12,  # 更新为12个节点
             "original_nodes": 5,  # 原有节点数
-            "new_nodes": 6  # 新增节点数
+            "new_nodes": 7  # 新增节点数
         }
     
     def visualize(self) -> str:
         """
-        生成图的可视化文本(增强版,包含所有11个节点)
+        生成图的可视化文本(增强版,包含所有12个节点)
         
         Returns:
             str: Mermaid格式的图描述
@@ -471,6 +502,7 @@ graph TD
     C -->|自定义代码| E[代码生成]
     C -->|需要增强| F[功能补充]
     C -->|POC验证| K[POC验证]
+    C -->|Seebug Agent| L[Seebug Agent]
     E --> G[代码执行]
     G -->|成功| H[结果验证]
     G -->|失败| F
@@ -480,8 +512,9 @@ graph TD
     H -->|无任务| I[漏洞分析]
     H -->|POC验证| K
     K --> I
+    L --> K
     I --> J[报告生成]
-    J --> L[结束]
+    J --> M[结束]
     
     style A fill:#e1f5ff
     style B fill:#fff3cd
@@ -492,9 +525,10 @@ graph TD
     style G fill:#f8d7da
     style H fill:#d4edda
     style K fill:#ff6b6b
+    style L fill:#9b59b6
     style I fill:#f8d7da
     style J fill:#fce4ec
-    style L fill:#c3e6cb
+    style M fill:#c3e6cb
         """
 
 

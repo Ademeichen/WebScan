@@ -76,8 +76,8 @@ async def test_code_generation_workflow():
         # 验证代码生成节点被执行
         code_gen_found = any(h["task"] == "code_generation" for h in final_state.execution_history)
         if code_gen_found:
+            print("✅ 代码生成节点被执行")
 
-        
         return True
     except Exception as e:
         print(f"❌ 测试失败: {str(e)}")

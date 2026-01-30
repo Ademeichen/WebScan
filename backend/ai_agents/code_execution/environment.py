@@ -51,6 +51,7 @@ class EnvironmentAwareness:
     # 全局配置
     MAX_WORKERS = 5  # 最大并发工作线程数
 
+    TOOL_TIMEOUT = 10  # 工具检测超时时间(秒)
     NETWORK_TIMEOUT = 3  # 网络检测超时时间(秒)
     GLOBAL_TIMEOUT = 30  # 全局初始化超时时间(秒)
     

@@ -4,6 +4,7 @@
 生成标准化的扫描报告。
 """
 import logging
+from datetime import datetime
 from typing import Any, Dict, List
 
 

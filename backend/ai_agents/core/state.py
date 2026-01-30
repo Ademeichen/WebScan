@@ -231,6 +231,29 @@ class AgentState:
     - cancelled: 已取消
     """
     
+    # = Seebug Agent =
+    seebug_pocs: List[Dict[str, Any]] = field(default_factory=list)
+    """
+    Seebug POC 搜索结果列表
+    
+    存储从Seebug搜索到的POC列表,每个POC包含:
+    - ssvid: POC ID
+    - name: POC 名称
+    - type: POC 类型
+    - description: POC 描述
+    """
+    
+    generated_pocs: List[Dict[str, Any]] = field(default_factory=list)
+    """
+    生成的 POC 列表
+    
+    存储由Seebug Agent生成的POC代码,每个POC包含:
+    - ssvid: POC ID
+    - name: POC 名称
+    - code: POC 代码
+    - source: 来源(seebug_agent)
+    """
+    
     def add_execution_step(self, task: str, result: Any, status: str = "success"):
         """
         添加执行步骤到历史记录
