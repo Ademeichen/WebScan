@@ -1,12 +1,24 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    AutoImport({
+      resolvers: [ElementPlusResolver()],
+      imports: ['vue', 'vue-router', 'pinia'],
+      dts: 'src/auto-imports.d.ts'
+    }),
+    Components({
+      resolvers: [ElementPlusResolver()],
+      dts: 'src/components.d.ts'
+    })
+  ],
 
-  // 开发服务器配置
   server: {
     port: 5173,
     open: true,
@@ -18,15 +30,13 @@ export default defineConfig({
       }
     }
   },
-  
-  // 路径别名配置
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
     }
   },
-  
-  // 构建配置
+
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -41,14 +51,20 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vue: ['vue', 'vue-router', 'pinia'],
-          axios: ['axios']
-        }
-      }
-    }
+          'vue-vendor': ['vue', 'vue-router', 'pinia'],
+          'element-plus': ['element-plus'],
+          'chart-js': ['chart.js'],
+          'axios': ['axios']
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+      },
+      chunkSizeWarningLimit: 500
+    },
+    chunkSizeWarningLimit: 500
   },
-  
-  // 预览服务器配置
+
   preview: {
     port: 4173,
     host: true,

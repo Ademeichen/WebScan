@@ -350,6 +350,8 @@ async def list_agent_tasks(
         >>> GET /ai_agents/tasks?status=running
     """
     try:
+        from backend.api.common import APIResponse
+        
         query = AgentTask.all()
         
         if status:
@@ -374,13 +376,17 @@ async def list_agent_tasks(
                 "updated_at": task.updated_at
             })
         
-        return {
-            "tasks": task_list,
-            "total": total,
-            "page": page,
-            "page_size": page_size,
-            "total_pages": (total + page_size - 1) // page_size
-        }
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "tasks": task_list,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total + page_size - 1) // page_size
+            }
+        ).dict()
         
     except Exception as e:
         logger.error(f"❌ 获取Agent任务列表失败: {str(e)}")
@@ -455,13 +461,18 @@ async def list_tools(category: Optional[str] = None) -> Dict[str, Any]:
     """
     try:
         from ..tools.registry import registry
+        from backend.api.common import APIResponse
         
         tools = registry.list_tools(category=category)
         
-        return {
-            "total": len(tools),
-            "tools": tools
-        }
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "total": len(tools),
+                "tools": tools
+            }
+        ).dict()
         
     except Exception as e:
         logger.error(f"❌ 获取工具列表失败: {str(e)}")

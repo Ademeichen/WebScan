@@ -1,40 +1,111 @@
 /* WebScan AI - 全局样式 */
 :root {
-  /* 色彩系统 */
-  --primary-color: #1a3a6c;
-  --primary-light: #2d5a8f;
-  --primary-dark: #0f2a4c;
-  --secondary-color: #4a90e2;
-  --secondary-light: #6ba3e8;
-  --secondary-dark: #357abd;
+  /* Element Plus 色彩系统 */
+  --el-color-primary: #409EFF;
+  --el-color-primary-light-3: #79bbff;
+  --el-color-primary-light-5: #a0cfff;
+  --el-color-primary-light-7: #c6e2ff;
+  --el-color-primary-light-8: #d9ecff;
+  --el-color-primary-light-9: #ecf5ff;
+  --el-color-primary-dark-2: #337ecc;
+  --el-color-success: #67C23A;
+  --el-color-success-light-3: #95d475;
+  --el-color-success-light-5: #b3e19d;
+  --el-color-success-light-7: #d1edc4;
+  --el-color-success-light-8: #e1f3d8;
+  --el-color-success-light-9: #f0f9eb;
+  --el-color-success-dark-2: #529b2e;
+  --el-color-warning: #E6A23C;
+  --el-color-warning-light-3: #ebb563;
+  --el-color-warning-light-5: #f0c78a;
+  --el-color-warning-light-7: #f3d19e;
+  --el-color-warning-light-8: #f5dab1;
+  --el-color-warning-light-9: #fdf6ec;
+  --el-color-warning-dark-2: #b88230;
+  --el-color-danger: #F56C6C;
+  --el-color-danger-light-3: #f89898;
+  --el-color-danger-light-5: #fab6b6;
+  --el-color-danger-light-7: #fde2e2;
+  --el-color-danger-light-8: #fef0f0;
+  --el-color-danger-light-9: #fef0f0;
+  --el-color-danger-dark-2: #c45656;
+  --el-color-error: #F56C6C;
+  --el-color-info: #909399;
+  --el-color-info-light-3: #b1b3b8;
+  --el-color-info-light-5: #c8c9cc;
+  --el-color-info-light-7: #dedfe0;
+  --el-color-info-light-8: #e9e9eb;
+  --el-color-info-light-9: #f4f4f5;
+  --el-color-info-dark-2: #73767a;
+
+  /* 自定义风险等级颜色 */
+  --critical-risk: #c0392b;
+  --critical-risk-light: #e74c3c;
   --high-risk: #e74c3c;
   --high-risk-light: #ec7063;
   --high-risk-dark: #c0392b;
-  --medium-risk: #f5a623;
+  --medium-risk: #f39c12;
   --medium-risk-light: #f7b731;
   --medium-risk-dark: #d68910;
-  --low-risk: #f1c40f;
-  --low-risk-light: #f4d03f;
-  --low-risk-dark: #d4ac0d;
-  --info-color: #3498db;
-  --success-color: #2ecc71;
-  --success-light: #58d68d;
-  --success-dark: #27ae60;
-  --warning-color: #f39c12;
-  --danger-color: #e74c3c;
-  --background-color: #f8f9fa;
-  --background-dark: #e9ecef;
-  --card-background: #ffffff;
-  --text-primary: #2c3e50;
-  --text-secondary: #7f8c8d;
-  --text-muted: #95a5a6;
-  --border-color: #e9ecef;
-  --border-dark: #dee2e6;
-  
+  --low-risk: #3498db;
+  --low-risk-light: #5dade2;
+  --low-risk-dark: #2980b9;
+  --info-risk: #95a5a6;
+
+  /* Element Plus 中性色系统 */
+  --el-text-color-primary: #303133;
+  --el-text-color-regular: #606266;
+  --el-text-color-secondary: #909399;
+  --el-text-color-placeholder: #a8abb2;
+  --el-border-color: #dcdfe6;
+  --el-border-color-light: #e4e7ed;
+  --el-border-color-lighter: #ebeef5;
+  --el-border-color-extra-light: #f2f6fc;
+  --el-border-color-dark: #d4d7de;
+  --el-border-color-darker: #cdd3d9;
+  --el-fill-color: #f0f2f5;
+  --el-fill-color-light: #f5f7fa;
+  --el-fill-color-lighter: #fafafa;
+  --el-fill-color-extra-light: #fafcff;
+  --el-fill-color-dark: #ebedf0;
+  --el-fill-color-darker: #e6e8eb;
+  --el-fill-color-blank: #ffffff;
+  --el-box-shadow: 0px 12px 32px 4px rgba(0, 0, 0, .04), 0px 8px 20px rgba(0, 0, 0, .08);
+  --el-box-shadow-light: 0px 0px 12px rgba(0, 0, 0, .12);
+  --el-box-shadow-lighter: 0px 0px 6px rgba(0, 0, 0, .12);
+  --el-box-shadow-dark: 0px 16px 48px 16px rgba(0, 0, 0, .08);
+
+  /* 兼容旧变量名 */
+  --primary-color: var(--el-color-primary);
+  --primary-light: var(--el-color-primary-light-5);
+  --primary-dark: var(--el-color-primary-dark-2);
+  --secondary-color: var(--el-color-primary);
+  --secondary-light: var(--el-color-primary-light-3);
+  --secondary-dark: var(--el-color-primary-dark-2);
+  --success-color: var(--el-color-success);
+  --success-light: var(--el-color-success-light-5);
+  --success-dark: var(--el-color-success-dark-2);
+  --warning-color: var(--el-color-warning);
+  --danger-color: var(--el-color-danger);
+  --background-color: var(--el-fill-color-light);
+  --background-dark: var(--el-fill-color);
+  --card-background: var(--el-fill-color-blank);
+  --text-primary: var(--el-text-color-primary);
+  --text-secondary: var(--el-text-color-regular);
+  --text-muted: var(--el-text-color-secondary);
+  --border-color: var(--el-border-color);
+  --border-dark: var(--el-border-color-dark);
+
   /* 字体系统 */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   --font-family-mono: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-  
+  --font-size-extra-small: 12px;
+  --font-size-small: 13px;
+  --font-size-base: 14px;
+  --font-size-medium: 16px;
+  --font-size-large: 18px;
+  --font-size-extra-large: 20px;
+
   /* 间距系统 */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -42,26 +113,26 @@
   --spacing-lg: 24px;
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
-  
+
   /* 阴影系统 */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+  --shadow-sm: var(--el-box-shadow-lighter);
+  --shadow-md: var(--el-box-shadow-light);
+  --shadow-lg: var(--el-box-shadow);
+  --shadow-xl: var(--el-box-shadow-dark);
   --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
-  
+
   /* 圆角 */
-  --border-radius: 6px;
-  --border-radius-sm: 4px;
-  --border-radius-lg: 12px;
-  --border-radius-xl: 16px;
+  --border-radius: 4px;
+  --border-radius-sm: 2px;
+  --border-radius-lg: 8px;
+  --border-radius-xl: 12px;
   --border-radius-full: 9999px;
-  
+
   /* 过渡动画 */
-  --transition-fast: 0.15s ease;
-  --transition-base: 0.2s ease;
-  --transition-slow: 0.3s ease;
-  
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
   /* Z-index层级 */
   --z-dropdown: 1000;
   --z-sticky: 1020;
@@ -70,6 +141,11 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
+
+  /* Element Plus 组件尺寸 */
+  --el-component-size-large: 40px;
+  --el-component-size: 32px;
+  --el-component-size-small: 24px;
 }
 
 * {
@@ -158,9 +234,9 @@ h3 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: 14px;
-  font-weight: bold;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -169,6 +245,7 @@ h3 {
   gap: var(--spacing-xs);
   position: relative;
   overflow: hidden;
+  letter-spacing: 0.3px;
 }
 
 .btn:disabled {
@@ -183,84 +260,99 @@ h3 {
 
 .btn-primary {
   background-color: var(--primary-color);
-  color: white;
-  box-shadow: var(--shadow-sm);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(26, 58, 108, 0.3);
+  border: 1px solid var(--primary-dark);
 }
 
 .btn-primary:hover:not(:disabled) {
   background-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(26, 58, 108, 0.4);
 }
 
 .btn-primary:active:not(:disabled) {
   background-color: var(--primary-dark);
+  transform: translateY(0);
 }
 
 .btn-secondary {
   background-color: var(--secondary-color);
-  color: white;
-  box-shadow: var(--shadow-sm);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3);
+  border: 1px solid var(--secondary-dark);
 }
 
 .btn-secondary:hover:not(:disabled) {
   background-color: var(--secondary-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
 }
 
 .btn-secondary:active:not(:disabled) {
   background-color: var(--secondary-dark);
+  transform: translateY(0);
 }
 
 .btn-success {
   background-color: var(--success-color);
-  color: white;
-  box-shadow: var(--shadow-sm);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(46, 204, 113, 0.3);
+  border: 1px solid var(--success-dark);
 }
 
 .btn-success:hover:not(:disabled) {
   background-color: var(--success-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(46, 204, 113, 0.4);
 }
 
 .btn-success:active:not(:disabled) {
   background-color: var(--success-dark);
+  transform: translateY(0);
 }
 
 .btn-danger {
   background-color: var(--danger-color);
-  color: white;
-  box-shadow: var(--shadow-sm);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+  border: 1px solid var(--high-risk-dark);
 }
 
 .btn-danger:hover:not(:disabled) {
   background-color: var(--high-risk-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
 }
 
 .btn-danger:active:not(:disabled) {
   background-color: var(--high-risk-dark);
+  transform: translateY(0);
 }
 
 .btn-warning {
   background-color: var(--warning-color);
-  color: white;
-  box-shadow: var(--shadow-sm);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(243, 156, 18, 0.3);
+  border: 1px solid var(--medium-risk-dark);
 }
 
 .btn-warning:hover:not(:disabled) {
   background-color: var(--medium-risk-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(243, 156, 18, 0.4);
+}
+
+.btn-warning:active:not(:disabled) {
+  background-color: var(--medium-risk-dark);
+  transform: translateY(0);
 }
 
 .btn-outline {
   background-color: transparent;
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--border-color);
   color: var(--text-primary);
+  font-weight: 600;
 }
 
 .btn-outline:hover:not(:disabled) {
@@ -376,23 +468,25 @@ h3 {
 
 .form-label {
   display: block;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 8px;
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 15px;
+  letter-spacing: 0.2px;
 }
 
 .form-input,
 .form-select,
 .form-textarea {
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-color);
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
-  font-size: 14px;
+  font-size: 15px;
   transition: all var(--transition-base);
-  background-color: white;
+  background-color: #ffffff;
   color: var(--text-primary);
+  font-weight: 500;
 }
 
 .form-input:focus,
@@ -965,6 +1059,7 @@ h3 {
 
 .line-clamp-2 {
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -972,6 +1067,7 @@ h3 {
 
 .line-clamp-3 {
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;

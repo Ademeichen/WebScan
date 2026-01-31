@@ -232,13 +232,21 @@ export default {
         }
 
         const response = await tasksApi.getTasks(params)
-        if (response.code === 200) {
+        
+        if (response && response.code === 200) {
           tasks.value = response.data.tasks || []
           total.value = response.data.total || 0
+        } else if (response && response.data) {
+          tasks.value = response.data.tasks || []
+          total.value = response.data.total || 0
+        } else {
+          throw new Error('Invalid response format')
         }
       } catch (error) {
-        errorMessage.value = '加载任务列表失败'
         console.error('加载任务失败:', error)
+        errorMessage.value = error.message || '加载任务列表失败'
+        tasks.value = []
+        total.value = 0
       } finally {
         loading.value = false
       }
@@ -353,8 +361,10 @@ export default {
 
 .page-header h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 2.2rem;
   color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .header-actions {
@@ -362,15 +372,36 @@ export default {
   gap: var(--spacing-md);
 }
 
+.header-actions .btn-primary,
+.header-actions .btn-secondary {
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s;
+}
+
+.header-actions .btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header-actions .btn-secondary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 .filters-section {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-md);
   padding: var(--spacing-lg);
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background-color: #ffffff;
+  border: 2px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   margin-bottom: var(--spacing-lg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .filter-group {
@@ -380,24 +411,37 @@ export default {
 }
 
 .filter-group label {
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
   white-space: nowrap;
+  font-size: 14px;
+  letter-spacing: 0.2px;
 }
 
 .filter-group input,
 .filter-group select {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-color);
+  padding: 10px 14px;
+  border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  transition: border-color 0.3s;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+  background-color: #ffffff;
+  color: var(--text-primary);
+  min-width: 160px;
 }
 
 .filter-group input:focus,
 .filter-group select:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+}
+
+.filter-group span {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 14px;
 }
 
 .loading-container {
@@ -448,7 +492,7 @@ export default {
 .btn-page {
   padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--color-primary);
-  color: white;
+  color: #1a1a1a;
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -484,13 +528,14 @@ export default {
 }
 
 .modal-content {
-  background-color: var(--card-bg);
+  background-color: #ffffff;
   border-radius: var(--border-radius-lg);
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
 }
 
 .modal-header {
@@ -498,28 +543,38 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+  background-color: #fafbfc;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
 
 .btn-close {
   background: none;
   border: none;
-  font-size: 2rem;
+  font-size: 1.8rem;
   color: var(--text-secondary);
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  transition: color 0.3s;
+  transition: all 0.3s;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .btn-close:hover {
   color: var(--text-primary);
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .modal-body {
@@ -541,19 +596,23 @@ export default {
   padding: var(--spacing-md);
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
-  background-color: var(--bg-secondary);
+  background-color: #ffffff;
   cursor: pointer;
   transition: all 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .task-type-btn:hover {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary-bg);
+  border-color: var(--primary-color);
+  background-color: rgba(74, 144, 226, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .task-type-btn.active {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary-bg);
+  border-color: var(--primary-color);
+  background-color: rgba(74, 144, 226, 0.12);
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
 }
 
 .task-type-icon {
@@ -561,9 +620,10 @@ export default {
 }
 
 .task-type-label {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: 0.3px;
 }
 
 .form-group {
@@ -572,23 +632,34 @@ export default {
 
 .form-group label {
   display: block;
-  margin-bottom: var(--spacing-sm);
-  font-weight: 500;
+  margin-bottom: 10px;
+  font-weight: 600;
   color: var(--text-primary);
+  font-size: 15px;
+  letter-spacing: 0.2px;
 }
 
 .form-group input {
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-color);
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
-  font-size: 1rem;
-  transition: border-color 0.3s;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.3s;
+  background-color: #ffffff;
+  color: var(--text-primary);
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+}
+
+.form-group input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 .form-actions {
@@ -611,7 +682,7 @@ export default {
 
 .btn-primary {
   background-color: var(--color-primary);
-  color: white;
+  color: rgb(30, 7, 7);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -625,7 +696,7 @@ export default {
 
 .btn-secondary {
   background-color: var(--color-secondary);
-  color: white;
+  color: #1a1a1a;
 }
 
 .btn-secondary:hover {

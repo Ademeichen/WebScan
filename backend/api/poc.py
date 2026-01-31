@@ -91,7 +91,7 @@ POC_FUNCTIONS = {
 }
 
 
-@router.get("/types", response_model=List[str])
+@router.get("/types", response_model=APIResponse)
 async def get_available_poc_types():
     """
     获取所有可用的 POC 类型
@@ -99,14 +99,35 @@ async def get_available_poc_types():
     返回系统支持的所有 POC 类型列表。
     
     Returns:
-        List[str]: POC 类型列表
+        APIResponse: POC 类型列表,包含value和label字段
         
     Examples:
         >>> 获取 POC 类型
         >>> GET /poc/types
-        >>> ["weblogic_cve_2020_2551", "struts2_009", ...]
+        >>> {
+        ...     "code": 200,
+        ...     "message": "获取成功",
+        ...     "data": [
+        ...         {"value": "weblogic_cve_2020_2551", "label": "WebLogic CVE-2020-2551"},
+        ...         {"value": "struts2_009", "label": "Struts2 S2-009"}
+        ...     ]
+        ... }
     """
-    return list(POC_FUNCTIONS.keys())
+    from backend.api.common import APIResponse
+    
+    poc_types = []
+    for poc_key in POC_FUNCTIONS.keys():
+        label = poc_key.replace('_', ' ').title()
+        poc_types.append({
+            "value": poc_key,
+            "label": label
+        })
+    
+    return APIResponse(
+        code=200,
+        message="获取成功",
+        data=poc_types
+    ).dict()
 
 
 @router.post("/scan", response_model=APIResponse)

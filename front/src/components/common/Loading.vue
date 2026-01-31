@@ -1,6 +1,5 @@
 <template>
-  <div class="loading-container">
-    <div class="spinner"></div>
+  <div v-loading="true" class="loading-container">
     <p v-if="text" class="loading-text">{{ text }}</p>
   </div>
 </template>
@@ -24,25 +23,12 @@ export default {
   align-items: center;
   justify-content: center;
   padding: var(--spacing-xl);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--border-color);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  min-height: 200px;
 }
 
 .loading-text {
   margin-top: var(--spacing-md);
   color: var(--text-secondary);
+  font-size: var(--font-size-base);
 }
 </style>

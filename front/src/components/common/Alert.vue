@@ -1,12 +1,17 @@
 <template>
-  <div v-if="show" class="alert" :class="`alert-${type}`">
-    <span class="alert-icon">{{ icon }}</span>
-    <span class="alert-message">{{ message }}</span>
-    <button v-if="dismissible" @click="close" class="alert-close">×</button>
-  </div>
+  <el-alert
+    v-if="show"
+    :title="message"
+    :type="type"
+    :closable="dismissible"
+    :show-icon="true"
+    @close="close"
+  />
 </template>
 
 <script>
+import { ref, onMounted } from 'vue'
+
 export default {
   name: 'Alert',
   props: {
@@ -28,103 +33,27 @@ export default {
       default: 3000
     }
   },
-  data() {
-    return {
-      show: true
+  emits: ['close'],
+  setup(props, { emit }) {
+    const show = ref(true)
+
+    const close = () => {
+      show.value = false
+      emit('close')
     }
-  },
-  computed: {
-    icon() {
-      const icons = {
-        success: '✅',
-        error: '❌',
-        warning: '⚠️',
-        info: 'ℹ️'
+
+    onMounted(() => {
+      if (props.duration > 0) {
+        setTimeout(() => {
+          close()
+        }, props.duration)
       }
-      return icons[this.type]
-    }
-  },
-  mounted() {
-    if (this.duration > 0) {
-      setTimeout(() => {
-        this.close()
-      }, this.duration)
-    }
-  },
-  methods: {
-    close() {
-      this.show = false
-      this.$emit('close')
+    })
+
+    return {
+      show,
+      close
     }
   }
 }
 </script>
-
-<style scoped>
-.alert {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-radius: var(--border-radius);
-  margin-bottom: var(--spacing-md);
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.alert-icon {
-  font-size: 1.25rem;
-}
-
-.alert-message {
-  flex: 1;
-}
-
-.alert-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--text-secondary);
-  padding: 0;
-  line-height: 1;
-}
-
-.alert-close:hover {
-  color: var(--text-primary);
-}
-
-.alert-success {
-  background-color: var(--color-success-bg);
-  color: var(--color-success);
-  border-left: 4px solid var(--color-success);
-}
-
-.alert-error {
-  background-color: var(--color-error-bg);
-  color: var(--color-error);
-  border-left: 4px solid var(--color-error);
-}
-
-.alert-warning {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning);
-  border-left: 4px solid var(--color-warning);
-}
-
-.alert-info {
-  background-color: var(--color-info-bg);
-  color: var(--color-info);
-  border-left: 4px solid var(--color-info);
-}
-</style>

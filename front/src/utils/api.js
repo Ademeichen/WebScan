@@ -170,6 +170,13 @@ export const reportsApi = {
     })
   },
 
+  getReportDetail: async (reportId) => {
+    return request({
+      url: `/reports/${reportId}`,
+      method: 'get'
+    })
+  },
+
   updateReport: async (reportId, data) => {
     return request({
       url: `/reports/${reportId}`,
@@ -316,7 +323,7 @@ export const pocApi = {
 
   runPOC: async (data) => {
     return request({
-      url: '/poc/run',
+      url: '/poc/scan',
       method: 'post',
       data
     })

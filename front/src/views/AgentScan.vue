@@ -138,12 +138,20 @@ export default {
 
     const loadRecentTasks = async () => {
       try {
-        const response = await aiAgentsApi.getTasks({ limit: 10 })
-        if (response && response.tasks) {
+        const response = await aiAgentsApi.getTasks({ page: 1, page_size: 10 })
+        if (response && response.data && response.data.tasks) {
+          recentTasks.value = response.data.tasks
+        } else if (response && response.tasks) {
           recentTasks.value = response.tasks
+        } else if (response && Array.isArray(response)) {
+          recentTasks.value = response
         }
       } catch (error) {
         console.error('加载最近任务失败:', error)
+        if (error.response && error.response.status === 500) {
+          console.warn('后端服务暂时不可用，使用空任务列表')
+          recentTasks.value = []
+        }
       }
     }
 

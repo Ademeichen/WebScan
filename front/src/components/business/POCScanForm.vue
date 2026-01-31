@@ -186,14 +186,22 @@ export default {
     const loadPOCTypes = async () => {
       try {
         const response = await pocApi.getPOCTypes()
-        if (response.code === 200 && response.data) {
+        if (response && response.code === 200 && response.data) {
           availablePOCTypes.value = response.data.map(type => ({
+            value: type.value,
+            label: type.label
+          }))
+        } else if (response && Array.isArray(response)) {
+          availablePOCTypes.value = response.map(type => ({
             value: type.value,
             label: type.label
           }))
         }
       } catch (error) {
         console.error('加载POC类型失败:', error)
+        if (error.response && error.response.status === 500) {
+          console.warn('后端服务暂时不可用，使用默认POC类型')
+        }
       }
     }
 
@@ -391,7 +399,7 @@ export default {
 
 .btn-primary {
   background-color: var(--color-primary);
-  color: white;
+  color: #1a1a1a;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -405,7 +413,7 @@ export default {
 
 .btn-secondary {
   background-color: var(--color-secondary);
-  color: white;
+  color: #1a1a1a;
 }
 
 .btn-secondary:hover {

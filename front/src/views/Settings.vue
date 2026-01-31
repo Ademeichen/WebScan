@@ -601,7 +601,7 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: white;
+  color: #1a1a1a;
   font-size: 10px;
   font-weight: bold;
 }
@@ -689,7 +689,7 @@ export default {
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
+  background-color: #f0f0f0;
   transition: 0.2s;
   border-radius: 50%;
 }

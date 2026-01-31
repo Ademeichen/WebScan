@@ -1,19 +1,29 @@
 <template>
-  <form @submit.prevent="handleSubmit" :class="['form', { 'form-inline': inline }]">
+  <el-form
+    ref="formRef"
+    :model="formData"
+    :rules="rules"
+    :label-position="inline ? 'top' : 'right'"
+    :inline="inline"
+    @submit.prevent="handleSubmit"
+  >
     <slot></slot>
-    
-    <div v-if="showActions" class="form-actions">
+
+    <el-form-item v-if="showActions" class="form-actions">
       <slot name="actions">
-        <button type="button" class="btn btn-secondary" @click="handleReset">
+        <el-button @click="handleReset">
           {{ resetText }}
-        </button>
-        <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-          <span v-if="isSubmitting" class="btn-loading"></span>
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="isSubmitting"
+          @click="handleSubmit"
+        >
           {{ submitText }}
-        </button>
+        </el-button>
       </slot>
-    </div>
-  </form>
+    </el-form-item>
+  </el-form>
 </template>
 
 <script>
@@ -53,6 +63,7 @@ export default {
   },
   emits: ['submit', 'reset', 'update:modelValue', 'validate'],
   setup(props, { emit }) {
+    const formRef = ref(null)
     const formData = ref({ ...props.modelValue })
     const errors = ref({})
     const isSubmitting = ref(false)
@@ -93,7 +104,7 @@ export default {
     const handleFieldChange = (fieldName, value) => {
       formData.value[fieldName] = value
       emit('update:modelValue', formData.value)
-      
+
       if (touched.value.has(fieldName)) {
         const error = validateField(fieldName, value)
         if (error) {
@@ -143,6 +154,7 @@ export default {
     provide('handleFieldBlur', handleFieldBlur)
 
     return {
+      formRef,
       formData,
       errors,
       isSubmitting,
@@ -155,84 +167,13 @@ export default {
 </script>
 
 <style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.form-inline {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
 .form-actions {
-  display: flex;
-  gap: var(--spacing-md);
-  justify-content: flex-end;
   margin-top: var(--spacing-lg);
 }
 
-.btn {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.btn-primary {
-  background-color: var(--secondary-color);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--secondary-dark);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background-color: var(--background-color);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.btn-secondary:hover {
-  background-color: var(--background-dark);
-}
-
-.btn-loading {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 768px) {
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .btn {
-    width: 100%;
-  }
+.form-actions :deep(.el-form-item__content) {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
 }
 </style>

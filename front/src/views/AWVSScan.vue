@@ -92,7 +92,27 @@ export default {
       try {
         const response = await awvsApi.getScans()
         if (response && response.data) {
-          recentScans.value = response.data.slice(0, 5)
+          recentScans.value = response.data.slice(0, 5).map(scan => {
+            const currentSession = scan.current_session || {}
+            const severityCounts = currentSession.severity_counts || {}
+            const target = scan.target || {}
+            
+            return {
+              id: scan.scan_id,
+              task_name: target.description || target.address || 'AWVS Scan',
+              target: target.address || '',
+              status: currentSession.status || 'unknown',
+              created_at: currentSession.start_date || scan.next_run || new Date().toISOString(),
+              result: {
+                vulnerabilities: {
+                  critical: severityCounts.critical || 0,
+                  high: severityCounts.high || 0,
+                  medium: severityCounts.medium || 0,
+                  low: severityCounts.low || 0
+                }
+              }
+            }
+          })
         }
       } catch (error) {
         console.error('加载最近扫描失败:', error)

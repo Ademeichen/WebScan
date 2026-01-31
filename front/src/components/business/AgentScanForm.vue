@@ -172,11 +172,17 @@ export default {
     const loadTools = async () => {
       try {
         const response = await aiAgentsApi.getTools()
-        if (response && response.tools) {
+        if (response && response.data) {
+          availableTools.value = response.data.tools || []
+        } else if (response && response.tools) {
           availableTools.value = response.tools
+        } else {
+          console.warn('工具列表响应格式异常:', response)
+          availableTools.value = []
         }
       } catch (error) {
         console.error('加载工具列表失败:', error)
+        availableTools.value = []
       }
     }
 
@@ -377,7 +383,7 @@ export default {
 
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-  color: white;
+  color: #1a1a1a;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -392,7 +398,7 @@ export default {
 
 .btn-secondary {
   background-color: var(--color-secondary);
-  color: white;
+  color: #1a1a1a;
 }
 
 .btn-secondary:hover {

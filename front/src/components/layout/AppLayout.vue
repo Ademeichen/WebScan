@@ -1,203 +1,295 @@
 <template>
   <div class="app-layout">
-    <!-- 顶部导航栏 -->
-    <header class="header">
-      <div class="header-content">
-        <div class="logo-section">
-          <!-- 移动端菜单按钮 -->
-          <button class="mobile-menu-btn d-md-none" @click="toggleMobileMenu">
-            <span class="menu-icon">☰</span>
-          </button>
-          <div class="logo">
-            <span class="logo-icon">🛡️</span>
-            <span class="logo-text">WebScan AI</span>
-          </div>
-        </div>
-        <div class="header-actions">
-          <button class="notification-btn" @click="showNotifications = !showNotifications">
-            <span class="notification-icon">🔔</span>
-            <span v-if="notificationCount > 0" class="notification-badge">{{ notificationCount }}</span>
-          </button>
-          <div class="user-menu">
-            <div class="user-avatar" @click="showUserMenu = !showUserMenu">
-              <span>👤</span>
-            </div>
-            <div v-if="showUserMenu" class="user-dropdown">
-              <div class="user-info">
-                <div class="user-name">{{ userInfo?.username || '管理员' }}</div>
-                <div class="user-email">{{ userInfo?.email || 'admin@webscan.ai' }}</div>
-              </div>
-              <hr>
-              <a href="#" class="dropdown-item">个人设置</a>
-              <a href="#" class="dropdown-item">退出登录</a>
+    <el-container class="layout-container">
+      <el-header class="header">
+        <div class="header-content">
+          <div class="logo-section">
+            <el-button
+              v-if="isMobile"
+              :icon="Menu"
+              circle
+              @click="toggleMobileMenu"
+              class="mobile-menu-btn"
+            />
+            <div class="logo">
+              <el-icon :size="24" color="#409EFF">
+                <Lock />
+              </el-icon>
+              <span class="logo-text">WebScan AI</span>
             </div>
           </div>
+          <div class="header-actions">
+            <el-badge :value="notificationCount" :hidden="notificationCount === 0" class="notification-badge">
+              <el-button :icon="Bell" circle @click="showNotifications = !showNotifications" />
+            </el-badge>
+            <el-dropdown @command="handleUserCommand" trigger="click">
+              <el-avatar :size="36" class="user-avatar">
+                <el-icon><User /></el-icon>
+              </el-avatar>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <div class="user-info">
+                    <div class="user-name">{{ userInfo?.username || '管理员' }}</div>
+                    <div class="user-email">{{ userInfo?.email || 'admin@webscan.ai' }}</div>
+                  </div>
+                  <el-dropdown-item divided command="settings">
+                    <el-icon><Setting /></el-icon>
+                    个人设置
+                  </el-dropdown-item>
+                  <el-dropdown-item divided command="logout">
+                    <el-icon><SwitchButton /></el-icon>
+                    退出登录
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
-      </div>
-    </header>
+      </el-header>
 
-    <div class="main-container">
-      <!-- 侧边栏导航 -->
-      <aside class="sidebar" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'sidebar-mobile': isMobileMenuOpen }">
-        <div class="sidebar-toggle d-md-flex d-sm-none" @click="toggleSidebar">
-          <span>{{ sidebarCollapsed ? '→' : '←' }}</span>
-        </div>
-        <nav class="sidebar-nav">
-          <router-link 
-            v-for="item in menuItems" 
-            :key="item.name"
-            :to="item.path" 
-            class="nav-item"
-            :class="{ 'active': $route.name === item.name }"
-            @click="closeMobileMenu"
+      <el-container class="main-container">
+        <el-aside
+          :width="sidebarWidth"
+          :collapse="sidebarCollapsed && !isMobile"
+          class="sidebar"
+        >
+          <el-menu
+            :default-active="activeMenu"
+            :collapse="sidebarCollapsed && !isMobile"
+            :unique-opened="true"
+            router
+            class="sidebar-menu"
           >
-            <span class="nav-icon">{{ item.icon }}</span>
-            <span v-if="!sidebarCollapsed" class="nav-text">{{ item.label }}</span>
-          </router-link>
-        </nav>
-      </aside>
+            <el-menu-item
+              v-for="item in menuItems"
+              :key="item.name"
+              :index="item.path"
+              @click="closeMobileMenu"
+            >
+              <el-icon>
+                <component :is="item.icon" />
+              </el-icon>
+              <template #title>
+                {{ item.label }}
+              </template>
+            </el-menu-item>
+          </el-menu>
+        </el-aside>
 
-      <!-- 移动端遮罩层 -->
-      <div v-if="isMobileMenuOpen" class="sidebar-overlay" @click="closeMobileMenu"></div>
+        <el-drawer
+          v-model="isMobileMenuOpen"
+          direction="ltr"
+          :with-header="false"
+          class="mobile-drawer"
+          @close="closeMobileMenu"
+        >
+          <el-menu
+            :default-active="activeMenu"
+            router
+            class="mobile-menu"
+          >
+            <el-menu-item
+              v-for="item in menuItems"
+              :key="item.name"
+              :index="item.path"
+              @click="closeMobileMenu"
+            >
+              <el-icon>
+                <component :is="item.icon" />
+              </el-icon>
+              <template #title>
+                {{ item.label }}
+              </template>
+            </el-menu-item>
+          </el-menu>
+        </el-drawer>
 
-      <!-- 主内容区域 -->
-      <main class="main-content">
-        <router-view />
-      </main>
-    </div>
+        <el-main class="main-content">
+          <router-view v-slot="{ Component }">
+            <transition name="page-fade" mode="out-in">
+              <component :is="Component" />
+            </transition>
+          </router-view>
+        </el-main>
+      </el-container>
+    </el-container>
 
-    <!-- 通知面板 -->
-    <div v-if="showNotifications" class="notification-panel">
-      <div class="notification-header">
-        <h3>通知</h3>
-        <button @click="showNotifications = false" class="close-btn">×</button>
-      </div>
-      <div class="notification-list">
-        <div v-for="notification in notifications" :key="notification.id" class="notification-item">
-          <div class="notification-content">
-            <div class="notification-title">{{ notification.title }}</div>
-            <div class="notification-message">{{ notification.message }}</div>
-            <div class="notification-time">{{ notification.time }}</div>
+    <el-popover
+      v-model:visible="showNotifications"
+      placement="bottom-end"
+      :width="320"
+      trigger="click"
+    >
+      <template #reference>
+        <div></div>
+      </template>
+      <div class="notification-panel">
+        <div class="notification-header">
+          <h3>通知</h3>
+        </div>
+        <div class="notification-list">
+          <div v-for="notification in notifications" :key="notification.id" class="notification-item">
+            <div class="notification-content">
+              <div class="notification-title">{{ notification.title }}</div>
+              <div class="notification-message">{{ notification.message }}</div>
+              <div class="notification-time">{{ notification.time }}</div>
+            </div>
           </div>
+          <el-empty v-if="notifications.length === 0" description="暂无通知" />
         </div>
       </div>
-    </div>
+    </el-popover>
   </div>
 </template>
 
 <script>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
+import {
+  Menu, Lock, Bell, User, Setting, SwitchButton,
+  DataAnalysis, Search, Aim, Monitor, Document, Setting as SettingIcon
+} from '@element-plus/icons-vue'
 import { userApi, notificationsApi } from '@/utils/api'
 
 export default {
   name: 'AppLayout',
-  data() {
-    return {
-      sidebarCollapsed: false,
-      showNotifications: false,
-      showUserMenu: false,
-      isMobileMenuOpen: false,
-      isMobile: false,
-      
-      menuItems: [
-        { name: 'Dashboard', path: '/', label: '仪表盘', icon: '📊' },
-        { name: 'ScanTasks', path: '/scan-tasks', label: '扫描任务', icon: '🔍' },
-        { name: 'POCScan', path: '/poc-scan', label: 'POC扫描', icon: '🎯' },
-        { name: 'AWVSScan', path: '/awvs-scan', label: 'AWVS扫描', icon: '🛡️' },
-        { name: 'AgentScan', path: '/agent-scan', label: 'AI Agent', icon: '🤖' },
-        { name: 'Reports', path: '/reports', label: '报告', icon: '📋' },
-        { name: 'Settings', path: '/settings', label: '设置', icon: '⚙️' }
-      ],
-      
-      notifications: [],
-      userInfo: null
-    }
+  components: {
+    Menu, Lock, Bell, User, Setting, SwitchButton,
+    DataAnalysis, Search, Aim, Monitor, Document, SettingIcon
   },
-  computed: {
-    notificationCount() {
-      return this.notifications.filter(n => !n.read).length
+  setup() {
+    const route = useRoute()
+    const sidebarCollapsed = ref(false)
+    const showNotifications = ref(false)
+    const isMobileMenuOpen = ref(false)
+    const isMobile = ref(false)
+
+    const menuItems = ref([
+      { name: 'Dashboard', path: '/', label: '仪表盘', icon: 'DataAnalysis' },
+      { name: 'ScanTasks', path: '/scan-tasks', label: '扫描任务', icon: 'Search' },
+      { name: 'POCScan', path: '/poc-scan', label: 'POC扫描', icon: 'Aim' },
+      { name: 'AWVSScan', path: '/awvs-scan', label: 'AWVS扫描', icon: 'Lock' },
+      { name: 'AgentScan', path: '/agent-scan', label: 'AI Agent', icon: 'Monitor' },
+      { name: 'Reports', path: '/reports', label: '报告', icon: 'Document' },
+      { name: 'Settings', path: '/settings', label: '设置', icon: 'SettingIcon' }
+    ])
+
+    const notifications = ref([])
+    const userInfo = ref(null)
+
+    const activeMenu = computed(() => route.path)
+
+    const notificationCount = computed(() => {
+      return notifications.value.filter(n => !n.read).length
+    })
+
+    const sidebarWidth = computed(() => {
+      if (isMobile.value) return '0px'
+      return sidebarCollapsed.value ? '64px' : '240px'
+    })
+
+    const toggleSidebar = () => {
+      sidebarCollapsed.value = !sidebarCollapsed.value
     }
-  },
-  methods: {
-    toggleSidebar() {
-      this.sidebarCollapsed = !this.sidebarCollapsed
-    },
-    toggleMobileMenu() {
-      this.isMobileMenuOpen = !this.isMobileMenuOpen
-    },
-    closeMobileMenu() {
-      this.isMobileMenuOpen = false
-    },
-    checkMobile() {
-      this.isMobile = window.innerWidth <= 768
-      if (this.isMobile) {
-        this.sidebarCollapsed = false
+
+    const toggleMobileMenu = () => {
+      isMobileMenuOpen.value = !isMobileMenuOpen.value
+    }
+
+    const closeMobileMenu = () => {
+      isMobileMenuOpen.value = false
+    }
+
+    const checkMobile = () => {
+      isMobile.value = window.innerWidth <= 768
+      if (isMobile.value) {
+        sidebarCollapsed.value = false
       }
-    },
-    async loadUserInfo() {
+    }
+
+    const handleUserCommand = (command) => {
+      if (command === 'settings') {
+        console.log('跳转到设置页面')
+      } else if (command === 'logout') {
+        console.log('退出登录')
+      }
+    }
+
+    const loadUserInfo = async () => {
       try {
         const response = await userApi.getProfile()
         if (response.code === 200) {
-          this.userInfo = response.data
+          userInfo.value = response.data
         }
       } catch (error) {
         console.error('加载用户信息失败:', error)
       }
-    },
-    async loadNotifications() {
+    }
+
+    const loadNotifications = async () => {
       try {
         const response = await notificationsApi.getNotifications({ limit: 10 })
         if (response.code === 200) {
-          this.notifications = response.data.notifications || []
+          notifications.value = response.data.notifications || []
         }
       } catch (error) {
         console.error('加载通知失败:', error)
       }
     }
-  },
-  mounted() {
-    this.loadUserInfo()
-    this.loadNotifications()
-    
-    this.checkMobile()
-    
-    window.addEventListener('resize', this.checkMobile)
-    
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.user-menu')) {
-        this.showUserMenu = false
-      }
-      if (!e.target.closest('.notification-panel') && !e.target.closest('.notification-btn')) {
-        this.showNotifications = false
-      }
+
+    onMounted(() => {
+      loadUserInfo()
+      loadNotifications()
+      checkMobile()
+      window.addEventListener('resize', checkMobile)
     })
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.checkMobile)
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('resize', checkMobile)
+    })
+
+    return {
+      sidebarCollapsed,
+      showNotifications,
+      isMobileMenuOpen,
+      isMobile,
+      menuItems,
+      notifications,
+      userInfo,
+      activeMenu,
+      notificationCount,
+      sidebarWidth,
+      toggleSidebar,
+      toggleMobileMenu,
+      closeMobileMenu,
+      handleUserCommand
+    }
   }
 }
 </script>
 
 <style scoped>
 .app-layout {
-  display: flex;
-  flex-direction: column;
   height: 100vh;
 }
 
-/* 顶部导航栏 */
+.layout-container {
+  height: 100vh;
+}
+
 .header {
-  background-color: var(--card-background);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-  z-index: 1000;
+  background-color: var(--el-fill-color-blank);
+  border-bottom: 1px solid var(--el-border-color-light);
+  box-shadow: var(--el-box-shadow-lighter);
+  padding: 0;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 var(--spacing-md);
   height: 60px;
+  padding: 0 var(--spacing-md);
 }
 
 .logo-section {
@@ -206,23 +298,8 @@ export default {
   gap: var(--spacing-md);
 }
 
-/* 移动端菜单按钮 */
 .mobile-menu-btn {
   display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: var(--border-radius);
-  transition: background-color 0.2s ease;
-}
-
-.mobile-menu-btn:hover {
-  background-color: var(--background-color);
-}
-
-.menu-icon {
-  font-size: 20px;
 }
 
 .logo {
@@ -231,14 +308,10 @@ export default {
   gap: var(--spacing-sm);
 }
 
-.logo-icon {
-  font-size: 24px;
-}
-
 .logo-text {
   font-size: 20px;
   font-weight: bold;
-  color: var(--primary-color);
+  color: var(--el-color-primary);
 }
 
 .header-actions {
@@ -247,65 +320,14 @@ export default {
   gap: var(--spacing-md);
 }
 
-.notification-btn {
-  position: relative;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: var(--border-radius);
-  transition: background-color 0.2s ease;
-}
-
-.notification-btn:hover {
-  background-color: var(--background-color);
-}
-
-.notification-icon {
-  font-size: 20px;
-}
-
 .notification-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background-color: var(--high-risk);
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  min-width: 16px;
-  text-align: center;
-}
-
-.user-menu {
-  position: relative;
+  margin-right: var(--spacing-md);
 }
 
 .user-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: var(--secondary-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   cursor: pointer;
-  color: white;
-  font-size: 16px;
-}
-
-.user-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background-color: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-md);
-  min-width: 200px;
-  z-index: 1001;
-  margin-top: var(--spacing-xs);
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
 }
 
 .user-info {
@@ -314,162 +336,70 @@ export default {
 
 .user-name {
   font-weight: bold;
-  color: var(--text-primary);
+  color: var(--el-text-color-primary);
+  margin-bottom: var(--spacing-xs);
 }
 
 .user-email {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--el-text-color-secondary);
 }
 
-.dropdown-item {
-  display: block;
-  padding: var(--spacing-sm) var(--spacing-md);
-  color: var(--text-primary);
-  text-decoration: none;
-  transition: background-color 0.2s ease;
-}
-
-.dropdown-item:hover {
-  background-color: var(--background-color);
-}
-
-/* 主容器 */
 .main-container {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  position: relative;
+  height: calc(100vh - 60px);
 }
 
-/* 侧边栏 */
 .sidebar {
-  width: 240px;
-  background-color: var(--card-background);
-  border-right: 1px solid var(--border-color);
-  transition: width 0.3s ease, transform 0.3s ease;
-  position: relative;
-  z-index: 100;
+  background-color: var(--el-fill-color-blank);
+  border-right: 1px solid var(--el-border-color-light);
+  transition: width var(--transition-base);
+  overflow-x: hidden;
 }
 
-.sidebar-collapsed {
-  width: 60px;
+.sidebar-menu {
+  border-right: none;
 }
 
-.sidebar-toggle {
-  position: absolute;
-  top: var(--spacing-md);
-  right: -12px;
-  width: 24px;
-  height: 24px;
-  background-color: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  z-index: 10;
+.sidebar-menu :deep(.el-menu-item) {
+  height: 50px;
+  line-height: 50px;
 }
 
-.sidebar-nav {
-  padding: var(--spacing-md) 0;
+.sidebar-menu :deep(.el-menu-item.is-active) {
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+  border-right: 3px solid var(--el-color-primary);
 }
 
-.nav-item {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-md);
-  color: var(--text-primary);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  gap: var(--spacing-md);
-}
-
-.nav-item:hover {
-  background-color: var(--background-color);
-}
-
-.nav-item.active {
-  background-color: rgba(26, 58, 108, 0.1);
-  color: var(--primary-color);
-  border-right: 3px solid var(--primary-color);
-}
-
-.nav-icon {
-  font-size: 18px;
-  min-width: 18px;
-}
-
-.nav-text {
-  font-weight: 500;
-}
-
-/* 移动端遮罩层 */
-.sidebar-overlay {
-  position: fixed;
-  top: 60px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 99;
-}
-
-/* 主内容区域 */
 .main-content {
-  flex: 1;
+  background-color: var(--el-fill-color-light);
   padding: var(--spacing-lg);
   overflow-y: auto;
-  background-color: var(--background-color);
 }
 
-/* 通知面板 */
 .notification-panel {
-  position: fixed;
-  top: 60px;
-  right: var(--spacing-md);
-  width: 320px;
-  background-color: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-lg);
-  z-index: 1001;
   max-height: 400px;
   overflow-y: auto;
 }
 
 .notification-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--el-border-color-light);
 }
 
 .notification-header h3 {
   margin: 0;
   font-size: 16px;
-  color: var(--text-primary);
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: var(--text-secondary);
+  color: var(--el-text-color-primary);
 }
 
 .notification-list {
-  max-height: 300px;
-  overflow-y: auto;
+  padding: var(--spacing-md);
 }
 
 .notification-item {
   padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .notification-item:last-child {
@@ -478,125 +408,74 @@ export default {
 
 .notification-title {
   font-weight: bold;
-  color: var(--text-primary);
+  color: var(--el-text-color-primary);
   margin-bottom: var(--spacing-xs);
 }
 
 .notification-message {
-  color: var(--text-secondary);
+  color: var(--el-text-color-regular);
   font-size: 13px;
   margin-bottom: var(--spacing-xs);
 }
 
 .notification-time {
-  color: var(--text-secondary);
+  color: var(--el-text-color-secondary);
   font-size: 11px;
 }
 
-/* 响应式设计 - 平板设备 */
-@media (max-width: 1024px) {
-  .sidebar {
-    width: 200px;
-  }
-  
-  .sidebar-collapsed {
-    width: 60px;
-  }
+.mobile-drawer :deep(.el-drawer__body) {
+  padding: 0;
 }
 
-/* 响应式设计 - 手机设备 */
+.mobile-menu {
+  border-right: none;
+}
+
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity var(--transition-base);
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
+
 @media (max-width: 768px) {
   .mobile-menu-btn {
     display: flex;
   }
-  
+
   .logo-text {
     font-size: 16px;
   }
-  
+
   .sidebar {
-    position: fixed;
-    left: -240px;
-    top: 60px;
-    height: calc(100vh - 60px);
-    width: 240px;
-    z-index: 100;
-    transition: left 0.3s ease;
+    width: 0 !important;
   }
-  
-  .sidebar.sidebar-mobile {
-    left: 0;
-  }
-  
-  .sidebar-toggle {
-    display: none;
-  }
-  
+
   .main-content {
     padding: var(--spacing-md);
   }
-  
+
   .notification-panel {
     width: calc(100vw - 32px);
-    right: var(--spacing-md);
-    left: var(--spacing-md);
-  }
-  
-  .user-avatar {
-    width: 32px;
-    height: 32px;
+    max-width: none;
   }
 }
 
-/* 响应式设计 - 小屏手机 */
 @media (max-width: 480px) {
   .header-content {
     padding: 0 var(--spacing-sm);
     height: 50px;
   }
-  
-  .logo-icon {
-    font-size: 20px;
-  }
-  
+
   .logo-text {
     font-size: 14px;
   }
-  
-  .notification-icon {
-    font-size: 18px;
-  }
-  
-  .sidebar {
-    top: 50px;
-    height: calc(100vh - 50px);
-  }
-  
-  .sidebar-overlay {
-    top: 50px;
-  }
-  
-  .notification-panel {
-    top: 50px;
-  }
-  
+
   .main-content {
     padding: var(--spacing-sm);
   }
 }
-
-/* 响应式设计 - 超小屏设备 */
-@media (max-width: 360px) {
-  .logo-text {
-    display: none;
-  }
-  
-  .notification-badge {
-    min-width: 14px;
-    font-size: 9px;
-    padding: 1px 4px;
-  }
-}
 </style>
-
-

@@ -45,7 +45,7 @@ class TaskPlanningNode:
             self.llm = ChatOpenAI(
                 model=agent_config.MODEL_ID,
                 temperature=0,
-                openai_api_key=agent_config.OPENAI_API_KEY,
+                api_key=agent_config.OPENAI_API_KEY,
                 base_url=agent_config.OPENAI_BASE_URL
             )
             self.use_llm = True

@@ -150,6 +150,7 @@
 
 <script>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { reportsApi, tasksApi } from '@/utils/api'
 import Alert from '@/components/common/Alert.vue'
 import { formatDate } from '@/utils/date'
@@ -160,6 +161,7 @@ export default {
     Alert
   },
   setup() {
+    const router = useRouter()
     const errorMessage = ref('')
     const successMessage = ref('')
     const scanTasks = ref([])
@@ -248,7 +250,7 @@ export default {
           name: `${task.task_name}报告`
         }
         
-        const response = await reportsApi.create(reportData)
+        const response = await reportsApi.createReport(reportData)
         if (response.code === 200) {
           successMessage.value = '报告生成成功！'
           await fetchReports()
@@ -290,7 +292,7 @@ export default {
     }
 
     const viewReport = async (report) => {
-      console.log('预览报告:', report)
+      router.push(`/report-detail?report=${report.id}`)
     }
 
     const deleteReport = async (reportId) => {

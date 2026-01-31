@@ -5,6 +5,7 @@ import POCScan from '../views/POCScan.vue'
 import VulnerabilityResults from '../views/VulnerabilityResults.vue'
 import VulnerabilityDetail from '../views/VulnerabilityDetail.vue'
 import Reports from '../views/Reports.vue'
+import ReportDetail from '../views/ReportDetail.vue'
 import Settings from '../views/Settings.vue'
 import AWVSScan from '../views/AWVSScan.vue'
 import AgentScan from '../views/AgentScan.vue'
@@ -64,6 +65,15 @@ const routes = [
     component: Reports,
     meta: {
       title: '报告',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/report-detail',
+    name: 'ReportDetail',
+    component: ReportDetail,
+    meta: {
+      title: '报告详情',
       requiresAuth: false
     }
   },

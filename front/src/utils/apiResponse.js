@@ -97,12 +97,20 @@ export function handleApiError(error) {
     return ApiResponse.networkError('未知错误')
   }
 
-  if (error.code === 'ECONNABORTED') {
+  if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
     return ApiResponse.timeout()
   }
 
   if (error.response) {
     const { status, data } = error.response
+    
+    if (data && typeof data === 'object') {
+      const { code, message } = data
+      if (code) {
+        return handleResponse({ code, data, message: message || error.message })
+      }
+    }
+    
     return handleResponse({
       code: status,
       data: data?.data || data,

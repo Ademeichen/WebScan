@@ -71,7 +71,7 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { pocApi } from '@/utils/api'
+import { tasksApi } from '@/utils/api'
 import POCScanForm from '@/components/business/POCScanForm.vue'
 import Alert from '@/components/common/Alert.vue'
 import { formatDate } from '@/utils/date'
@@ -90,9 +90,9 @@ export default {
 
     const loadRecentScans = async () => {
       try {
-        const response = await pocApi.getPOCTypes()
-        if (response && response.data) {
-          recentScans.value = response.data.slice(0, 5)
+        const response = await tasksApi.getTasks({ task_type: 'poc_scan', limit: 5 })
+        if (response && response.data && response.data.tasks) {
+          recentScans.value = response.data.tasks
         }
       } catch (error) {
         console.error('加载最近扫描失败:', error)

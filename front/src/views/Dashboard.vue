@@ -1,78 +1,105 @@
 <template>
   <div class="dashboard">
-    <div class="dashboard-header">
-      <h1>仪表盘</h1>
-      <p class="subtitle">实时监控安全扫描状态</p>
-    </div>
+    <el-page-header class="dashboard-header">
+      <template #content>
+        <div class="header-content">
+          <h1>仪表盘</h1>
+          <p class="subtitle">实时监控安全扫描状态</p>
+        </div>
+      </template>
+    </el-page-header>
 
-    <div v-if="loading" class="loading-container">
-      <Loading text="加载数据中..." />
-    </div>
+    <el-skeleton v-if="loading" :rows="10" animated />
 
     <div v-else class="dashboard-content">
-      <div class="stats-grid">
-        <StatCard
-          title="今日扫描"
-          :value="statistics.today_scans || 0"
-          icon="🔍"
-          color="primary"
-        />
-        <StatCard
-          title="高危漏洞"
-          :value="statistics.high_risk_vulns || 0"
-          icon="⚠️"
-          color="error"
-        />
-        <StatCard
-          title="已完成扫描"
-          :value="statistics.completed_scans || 0"
-          icon="✅"
-          color="success"
-        />
-        <StatCard
-          title="失败扫描"
-          :value="statistics.failed_scans || 0"
-          icon="❌"
-          color="warning"
-        />
-        <StatCard
-          title="总漏洞数"
-          :value="statistics.total_vulns || 0"
-          icon="🐛"
-          color="info"
-        />
-        <StatCard
-          title="总报告数"
-          :value="statistics.total_reports || 0"
-          icon="📊"
-          color="secondary"
-        />
-      </div>
+      <el-row :gutter="20" class="stats-grid">
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <StatCard
+            icon="Search"
+            :value="statistics.today_scans || 0"
+            label="今日扫描"
+            type="primary"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <StatCard
+            icon="Warning"
+            :value="statistics.high_risk_vulns || 0"
+            label="高危漏洞"
+            type="danger"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <StatCard
+            icon="CircleCheck"
+            :value="statistics.completed_scans || 0"
+            label="已完成扫描"
+            type="success"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <StatCard
+            icon="CircleClose"
+            :value="statistics.failed_scans || 0"
+            label="失败扫描"
+            type="warning"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <StatCard
+            icon="Warning"
+            :value="statistics.total_vulns || 0"
+            label="总漏洞数"
+            type="info"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <StatCard
+            icon="DataAnalysis"
+            :value="statistics.total_reports || 0"
+            label="总报告数"
+            type="secondary"
+          />
+        </el-col>
+      </el-row>
 
-      <div class="charts-section">
-        <div class="chart-card">
-          <h3>漏洞趋势</h3>
-          <div class="chart-container">
-            <canvas ref="trendChart"></canvas>
+      <el-row :gutter="20" class="charts-section">
+        <el-col :xs="24" :md="12">
+          <el-card shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <h3>漏洞趋势</h3>
+              </div>
+            </template>
+            <div class="chart-container">
+              <canvas ref="trendChart"></canvas>
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :md="12">
+          <el-card shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <h3>漏洞分布</h3>
+              </div>
+            </template>
+            <div class="chart-container">
+              <canvas ref="distributionChart"></canvas>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <el-card shadow="hover" class="recent-tasks-section">
+        <template #header>
+          <div class="section-header">
+            <h3>最近任务</h3>
+            <router-link to="/scan-tasks" class="view-all">
+              查看全部 <el-icon><ArrowRight /></el-icon>
+            </router-link>
           </div>
-        </div>
-
-        <div class="chart-card">
-          <h3>漏洞分布</h3>
-          <div class="chart-container">
-            <canvas ref="distributionChart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div class="recent-tasks-section">
-        <div class="section-header">
-          <h3>最近任务</h3>
-          <router-link to="/scan-tasks" class="view-all">查看全部</router-link>
-        </div>
-        <div v-if="recentTasks.length === 0" class="empty-state">
-          <p>暂无任务数据</p>
-        </div>
+        </template>
+        <el-empty v-if="recentTasks.length === 0" description="暂无任务数据" />
         <div v-else class="tasks-list">
           <TaskCard
             v-for="task in recentTasks"
@@ -84,48 +111,50 @@
             @delete="handleDeleteTask"
           />
         </div>
-      </div>
+      </el-card>
 
-      <div class="system-info-section">
-        <div class="section-header">
-          <h3>系统信息</h3>
-          <button class="btn-refresh" @click="loadSystemInfo">
-            🔄 刷新
-          </button>
-        </div>
-        <div v-if="systemInfo" class="system-info-grid">
-          <div class="info-card">
-            <h4>系统版本</h4>
-            <p>{{ systemInfo.version }}</p>
+      <el-card shadow="hover" class="system-info-section">
+        <template #header>
+          <div class="section-header">
+            <h3>系统信息</h3>
+            <el-button
+              type="primary"
+              :icon="Refresh"
+              @click="loadSystemInfo"
+              size="small"
+            >
+              刷新
+            </el-button>
           </div>
-          <div class="info-card">
-            <h4>运行时间</h4>
-            <p>{{ systemInfo.uptime }}</p>
-          </div>
-          <div class="info-card">
-            <h4>CPU使用率</h4>
-            <p>{{ systemInfo.resources?.cpu?.usage || 'N/A' }}</p>
-          </div>
-          <div class="info-card">
-            <h4>内存使用率</h4>
-            <p>{{ systemInfo.resources?.memory?.usage || 'N/A' }}</p>
-          </div>
-          <div class="info-card">
-            <h4>磁盘使用率</h4>
-            <p>{{ systemInfo.resources?.disk?.usage || 'N/A' }}</p>
-          </div>
-          <div class="info-card">
-            <h4>进程数</h4>
-            <p>{{ systemInfo.processes?.count || 'N/A' }}</p>
-          </div>
-        </div>
-      </div>
+        </template>
+        <el-descriptions v-if="systemInfo" :column="3" border>
+          <el-descriptions-item label="系统版本">
+            {{ systemInfo.version }}
+          </el-descriptions-item>
+          <el-descriptions-item label="运行时间">
+            {{ systemInfo.uptime }}
+          </el-descriptions-item>
+          <el-descriptions-item label="CPU使用率">
+            {{ systemInfo.resources?.cpu?.usage || 'N/A' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="内存使用率">
+            {{ systemInfo.resources?.memory?.usage || 'N/A' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="磁盘使用率">
+            {{ systemInfo.resources?.disk?.usage || 'N/A' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="进程数">
+            {{ systemInfo.processes?.count || 'N/A' }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-card>
     </div>
 
-    <Alert
+    <el-alert
       v-if="errorMessage"
       type="error"
-      :message="errorMessage"
+      :title="errorMessage"
+      :closable="true"
       @close="errorMessage = ''"
     />
   </div>
@@ -134,11 +163,10 @@
 <script>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { Search, Warning, CircleCheck, CircleClose, DataAnalysis, ArrowRight, Refresh } from '@element-plus/icons-vue'
 import { tasksApi, settingsApi } from '@/utils/api'
 import StatCard from '@/components/common/StatCard.vue'
 import TaskCard from '@/components/business/TaskCard.vue'
-import Loading from '@/components/common/Loading.vue'
-import Alert from '@/components/common/Alert.vue'
 import Chart from 'chart.js/auto'
 
 export default {
@@ -146,8 +174,7 @@ export default {
   components: {
     StatCard,
     TaskCard,
-    Loading,
-    Alert
+    Search, Warning, CircleCheck, CircleClose, DataAnalysis, ArrowRight, Refresh
   },
   setup() {
     const router = useRouter()
@@ -308,13 +335,16 @@ export default {
     }
 
     const handleDeleteTask = async (taskId) => {
-      if (confirm('确定要删除此任务吗？')) {
-        try {
-          await tasksApi.deleteTask(taskId)
-          await loadRecentTasks()
-        } catch {
-          errorMessage.value = '删除任务失败'
-        }
+      try {
+        await ElMessageBox.confirm('确定要删除此任务吗？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await tasksApi.deleteTask(taskId)
+        await loadRecentTasks()
+        ElMessage.success('删除成功')
+      } catch {
       }
     }
 
@@ -370,61 +400,45 @@ export default {
 
 <style scoped>
 .dashboard {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-lg);
 }
 
 .dashboard-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
 }
 
-.dashboard-header h1 {
-  margin: 0 0 var(--spacing-sm) 0;
-  font-size: 2rem;
-  color: var(--text-primary);
+.header-content h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--el-text-color-primary);
+  font-weight: 700;
 }
 
 .subtitle {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 1rem;
-}
-
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
+  margin: var(--spacing-xs) 0 0 0;
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
 }
 
 .dashboard-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-lg);
 }
 
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
 }
 
 .charts-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
 }
 
-.chart-card {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-}
-
-.chart-card h3 {
-  margin: 0 0 var(--spacing-md) 0;
-  font-size: 1.125rem;
-  color: var(--text-primary);
+.card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--el-text-color-primary);
+  font-weight: 600;
 }
 
 .chart-container {
@@ -433,40 +447,34 @@ export default {
 
 .recent-tasks-section,
 .system-info-section {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
 }
 
 .section-header h3 {
   margin: 0;
-  font-size: 1.25rem;
-  color: var(--text-primary);
+  font-size: 16px;
+  color: var(--el-text-color-primary);
+  font-weight: 600;
 }
 
 .view-all {
-  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--el-color-primary);
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.3s;
+  transition: all var(--transition-base);
 }
 
 .view-all:hover {
-  color: var(--color-primary-dark);
-}
-
-.empty-state {
-  text-align: center;
-  padding: var(--spacing-xl);
-  color: var(--text-secondary);
+  color: var(--el-color-primary-dark-2);
 }
 
 .tasks-list {
@@ -475,43 +483,35 @@ export default {
   gap: var(--spacing-md);
 }
 
-.system-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
+@media (max-width: 768px) {
+  .dashboard {
+    padding: var(--spacing-md);
+  }
+
+  .header-content h1 {
+    font-size: 20px;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
 }
 
-.info-card {
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: var(--spacing-md);
-}
+@media (max-width: 480px) {
+  .dashboard {
+    padding: var(--spacing-sm);
+  }
 
-.info-card h4 {
-  margin: 0 0 var(--spacing-sm) 0;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
+  .header-content h1 {
+    font-size: 18px;
+  }
 
-.info-card p {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
+  .subtitle {
+    font-size: 12px;
+  }
 
-.btn-refresh {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-refresh:hover {
-  background-color: var(--color-primary-dark);
+  .chart-container {
+    height: 200px;
+  }
 }
 </style>

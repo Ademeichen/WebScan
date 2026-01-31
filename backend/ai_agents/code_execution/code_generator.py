@@ -66,7 +66,7 @@ class CodeGenerator:
                 self.llm = ChatOpenAI(
                     model=agent_config.MODEL_ID,
                     temperature=0.3,
-                    openai_api_key=agent_config.OPENAI_API_KEY,
+                    api_key=agent_config.OPENAI_API_KEY,
                     base_url=agent_config.OPENAI_BASE_URL
                 )
                 logger.info("✅ LLM代码生成器初始化完成")
