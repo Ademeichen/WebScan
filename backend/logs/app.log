@@ -1,149 +1,149 @@
-2026-01-30 00:03:05,070 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:03:28,048 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:03:53,575 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:04:30,000 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:05:32,907 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:06:38,841 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:07:00,852 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:07:42,434 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:09:14,987 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:10:19,689 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:12:37,253 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:13:24,913 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:14:18,724 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 00:14:40,202 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 13:11:49,840 - backend.ai_agents.tools.registry - INFO - ¹¤¾ß×¢²á±í³õÊ¼»¯Íê³É
-2026-01-30 13:11:49,877 - backend.Pocsuite3Agent.agent - INFO - Pocsuite3 ÒÑ°²×°
-2026-01-30 13:11:49,896 - backend.Pocsuite3Agent.agent - INFO - ¼ÓÔØÁË 114 ¸ö POC ½Å±¾
-2026-01-30 13:11:49,998 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:49,999 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:49,999 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß sqlmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,001 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß sqlmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,007 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß burpsuite Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,009 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß burpsuite ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,023 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß metasploit Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,023 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß metasploit ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,027 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nikto Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,029 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nikto ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,043 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß dirb Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,044 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß dirb ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,046 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß gobuster Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:50,047 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß gobuster ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,592 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß burpsuite Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,592 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß burpsuite ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,599 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß metasploit Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,599 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß metasploit ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,608 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,608 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,624 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß sqlmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,625 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß sqlmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,626 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nikto Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,626 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nikto ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,634 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß dirb Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,635 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß dirb ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,640 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß gobuster Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,641 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß gobuster ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,748 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß sqlmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,749 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß sqlmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,755 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,755 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,760 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß burpsuite Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,762 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß burpsuite ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,774 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß metasploit Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,775 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß metasploit ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,776 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nikto Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,776 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nikto ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,784 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß dirb Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,784 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß dirb ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,790 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß gobuster Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:52,791 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß gobuster ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,769 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,770 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,773 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß sqlmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,774 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß sqlmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,781 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß burpsuite Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,782 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß burpsuite ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,793 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nikto Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,795 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nikto ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,797 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß metasploit Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,798 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß metasploit ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,804 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß dirb Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,805 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß dirb ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,811 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß gobuster Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,811 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß gobuster ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,921 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß sqlmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,923 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß sqlmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,927 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,929 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,932 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß burpsuite Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,933 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß burpsuite ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,946 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß metasploit Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,947 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nikto Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,947 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß metasploit ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,947 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nikto ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,954 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß dirb Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,956 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß dirb ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,964 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß gobuster Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:54,965 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß gobuster ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,960 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,960 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß sqlmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,961 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,961 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß sqlmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,969 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß burpsuite Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,971 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß burpsuite ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,977 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß metasploit Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,978 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß metasploit ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,990 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nikto Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,990 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nikto ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,995 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß dirb Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:56,995 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß dirb ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,007 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß gobuster Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,008 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß gobuster ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,127 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß sqlmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,127 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß sqlmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,135 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,135 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,140 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß burpsuite Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,142 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß burpsuite ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,148 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß metasploit Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,148 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß metasploit ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,153 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nikto Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,155 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nikto ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,162 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß dirb Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,162 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß dirb ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,168 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß gobuster Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:57,168 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß gobuster ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,108 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,109 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,109 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß burpsuite Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,109 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß burpsuite ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,119 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß sqlmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,120 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß sqlmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,125 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nikto Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,127 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nikto ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,141 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß metasploit Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,141 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß metasploit ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,147 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß dirb Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,149 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß dirb ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,158 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß gobuster Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,159 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß gobuster ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,249 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß sqlmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,250 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß sqlmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,250 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nmap Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,252 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nmap ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,258 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß burpsuite Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,260 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß burpsuite ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,266 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß metasploit Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,266 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß metasploit ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,274 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß nikto Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,276 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß nikto ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,294 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß dirb Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,294 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß dirb ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,298 - backend.ai_agents.code_execution.environment - WARNING - ¼ì²â¹¤¾ß gobuster Ê§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:11:59,298 - backend.ai_agents.code_execution.environment - WARNING - ¹¤¾ß gobuster ¼ì²âÊ§°Ü: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
-2026-01-30 13:12:01,320 - backend.ai_agents.core.graph - INFO - [2026-01-30 13:12:01] [NODE_ENTRY] ½Úµã: _build_graph, ÈÎÎñID: GRAPH_BUILD, ÏêÇé: {'total_nodes': 11}
-2026-01-30 13:12:01,334 - backend.ai_agents.core.graph - INFO - [2026-01-30 13:12:01] [NODE_EXIT] ½Úµã: _build_graph, ÈÎÎñID: GRAPH_BUILD, ×´Ì¬: success, ÏêÇé: {'nodes_count': 11, 'edges_count': 16}
-2026-01-30 13:12:01,387 - WAFDetector - INFO - ³É¹¦±àÒë 90 ÌõWAF¼ì²â¹æÔò
+2026-01-30 00:03:05,070 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:03:28,048 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:03:53,575 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:04:30,000 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:05:32,907 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:06:38,841 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:07:00,852 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:07:42,434 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:09:14,987 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:10:19,689 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:12:37,253 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:13:24,913 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:14:18,724 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 00:14:40,202 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 13:11:49,840 - backend.ai_agents.tools.registry - INFO - ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½
+2026-01-30 13:11:49,877 - backend.Pocsuite3Agent.agent - INFO - Pocsuite3 ï¿½Ñ°ï¿½×°
+2026-01-30 13:11:49,896 - backend.Pocsuite3Agent.agent - INFO - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 114 ï¿½ï¿½ POC ï¿½Å±ï¿½
+2026-01-30 13:11:49,998 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:49,999 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:49,999 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ sqlmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,001 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ sqlmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,007 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ burpsuite Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,009 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ burpsuite ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,023 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ metasploit Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,023 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ metasploit ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,027 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nikto Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,029 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nikto ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,043 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ dirb Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,044 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ dirb ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,046 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ gobuster Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:50,047 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ gobuster ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,592 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ burpsuite Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,592 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ burpsuite ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,599 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ metasploit Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,599 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ metasploit ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,608 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,608 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,624 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ sqlmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,625 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ sqlmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,626 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nikto Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,626 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nikto ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,634 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ dirb Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,635 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ dirb ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,640 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ gobuster Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,641 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ gobuster ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,748 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ sqlmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,749 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ sqlmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,755 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,755 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,760 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ burpsuite Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,762 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ burpsuite ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,774 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ metasploit Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,775 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ metasploit ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,776 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nikto Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,776 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nikto ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,784 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ dirb Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,784 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ dirb ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,790 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ gobuster Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:52,791 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ gobuster ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,769 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,770 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,773 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ sqlmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,774 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ sqlmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,781 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ burpsuite Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,782 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ burpsuite ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,793 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nikto Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,795 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nikto ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,797 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ metasploit Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,798 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ metasploit ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,804 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ dirb Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,805 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ dirb ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,811 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ gobuster Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,811 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ gobuster ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,921 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ sqlmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,923 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ sqlmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,927 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,929 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,932 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ burpsuite Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,933 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ burpsuite ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,946 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ metasploit Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,947 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nikto Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,947 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ metasploit ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,947 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nikto ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,954 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ dirb Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,956 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ dirb ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,964 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ gobuster Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:54,965 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ gobuster ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,960 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,960 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ sqlmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,961 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,961 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ sqlmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,969 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ burpsuite Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,971 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ burpsuite ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,977 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ metasploit Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,978 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ metasploit ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,990 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nikto Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,990 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nikto ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,995 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ dirb Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:56,995 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ dirb ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,007 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ gobuster Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,008 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ gobuster ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,127 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ sqlmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,127 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ sqlmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,135 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,135 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,140 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ burpsuite Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,142 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ burpsuite ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,148 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ metasploit Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,148 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ metasploit ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,153 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nikto Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,155 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nikto ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,162 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ dirb Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,162 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ dirb ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,168 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ gobuster Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:57,168 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ gobuster ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,108 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,109 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,109 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ burpsuite Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,109 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ burpsuite ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,119 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ sqlmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,120 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ sqlmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,125 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nikto Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,127 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nikto ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,141 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ metasploit Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,141 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ metasploit ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,147 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ dirb Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,149 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ dirb ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,158 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ gobuster Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,159 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ gobuster ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,249 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ sqlmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,250 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ sqlmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,250 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nmap Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,252 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nmap ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,258 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ burpsuite Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,260 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ burpsuite ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,266 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ metasploit Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,266 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ metasploit ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,274 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ nikto Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,276 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ nikto ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,294 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ dirb Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,294 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ dirb ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,298 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½â¹¤ï¿½ï¿½ gobuster Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:11:59,298 - backend.ai_agents.code_execution.environment - WARNING - ï¿½ï¿½ï¿½ï¿½ gobuster ï¿½ï¿½ï¿½Ê§ï¿½ï¿½: 'EnvironmentAwareness' object has no attribute 'TOOL_TIMEOUT'
+2026-01-30 13:12:01,320 - backend.ai_agents.core.graph - INFO - [2026-01-30 13:12:01] [NODE_ENTRY] ï¿½Úµï¿½: _build_graph, ï¿½ï¿½ï¿½ï¿½ID: GRAPH_BUILD, ï¿½ï¿½ï¿½ï¿½: {'total_nodes': 11}
+2026-01-30 13:12:01,334 - backend.ai_agents.core.graph - INFO - [2026-01-30 13:12:01] [NODE_EXIT] ï¿½Úµï¿½: _build_graph, ï¿½ï¿½ï¿½ï¿½ID: GRAPH_BUILD, ×´Ì¬: success, ï¿½ï¿½ï¿½ï¿½: {'nodes_count': 11, 'edges_count': 16}
+2026-01-30 13:12:01,387 - WAFDetector - INFO - ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½ 90 ï¿½ï¿½WAFï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 2026-01-30 15:08:06,187 - backend.api.seebug_client - INFO - âœ… Seebug APIå®¢æˆ·ç«¯åˆå§‹åŒ–å®Œæˆ: https://www.seebug.org/api
 2026-01-30 15:08:08,795 - backend.ai_agents.poc_system.poc_manager - INFO - âœ… POC ç®¡ç†å™¨åˆå§‹åŒ–å®Œæˆ
 2026-01-30 15:08:08,796 - backend.ai_agents.poc_system.target_manager - INFO - âœ… ç›®æ ‡ç®¡ç†å™¨åˆå§‹åŒ–å®Œæˆ
@@ -4115,3 +4115,67 @@ TypeError: 'coroutine' object is not callable
 2026-01-31 23:17:00,918 - backend.main - INFO - å¯åŠ¨ WebScan AI Security Platform v1.0.0
 2026-01-31 23:17:00,992 - backend.database - INFO - âœ… æ•°æ®åº“åˆå§‹åŒ–æˆåŠŸ - sqlite:///D:/AI_WebSecurity/backend/data/webscan.db
 2026-01-31 23:17:01,759 - backend.main - INFO - AWVS API è¿æ¥æµ‹è¯•æˆåŠŸ
+2026-01-31 23:29:35,271 - backend.api.seebug_client - INFO - âœ… Seebug APIå®¢æˆ·ç«¯åˆå§‹åŒ–å®Œæˆ: https://www.seebug.org/api
+2026-01-31 23:29:36,769 - backend.ai_agents.utils.cache - INFO - âœ… ç¼“å­˜ç®¡ç†å™¨åˆå§‹åŒ–å®Œæˆ, TTL: 3600ç§’
+2026-01-31 23:29:36,769 - backend.ai_agents.poc_system.poc_manager - INFO - âœ… POC ç®¡ç†å™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:36,779 - backend.ai_agents.poc_system.target_manager - INFO - âœ… ç›®æ ‡ç®¡ç†å™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:37,475 - backend.Pocsuite3Agent.agent - INFO - Pocsuite3 å·²å®‰è£…
+2026-01-31 23:29:37,496 - backend.Pocsuite3Agent.agent - INFO - åŠ è½½äº† 114 ä¸ª POC è„šæœ¬
+2026-01-31 23:29:37,498 - backend.ai_agents.poc_system.verification_engine - INFO - âœ… POC éªŒè¯æ‰§è¡Œå¼•æ“åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:37,515 - backend.ai_agents.poc_system.result_analyzer - INFO - âœ… ç»“æœåˆ†æå™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:37,524 - backend.ai_agents.poc_system.report_generator - INFO - âœ… æŠ¥å‘Šç”Ÿæˆå™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:37,572 - backend.ai_agents.utils.file_sync - INFO - âœ… æ–‡ä»¶åŒæ­¥ç®¡ç†å™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:37,572 - backend.ai_agents.utils.file_sync - INFO -   åŸºç¡€POCç›®å½•: D:\AI_WebSecurity\backend\poc
+2026-01-31 23:29:37,572 - backend.ai_agents.utils.file_sync - INFO -   Seebugç”Ÿæˆç›®å½•: D:\AI_WebSecurity\Seebug_Agent\generated_pocs
+2026-01-31 23:29:37,773 - backend.ai_agents.tools.registry - INFO - å·¥å…·æ³¨å†Œè¡¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:37,780 - backend.ai_agents.core.nodes - INFO - âœ… Seebug AgentèŠ‚ç‚¹åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:37,780 - backend.ai_agents.core.nodes - INFO - âœ… POC éªŒè¯èŠ‚ç‚¹åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:37,782 - backend.ai_agents.core.graph - INFO - ğŸ”§ åˆå§‹åŒ–æ‰«æAgentå›¾
+2026-01-31 23:29:37,826 - backend.ai_agents.code_execution.environment - INFO - ğŸš€ å¼€å§‹åˆå§‹åŒ–ç¯å¢ƒæ„ŸçŸ¥æ¨¡å—...
+2026-01-31 23:29:47,916 - backend.ai_agents.code_execution.environment - INFO - âœ… ç¯å¢ƒæ„ŸçŸ¥æ¨¡å—åˆå§‹åŒ–å®Œæˆ,è€—æ—¶: 10.09ç§’
+2026-01-31 23:29:47,916 - backend.ai_agents.core.nodes - INFO - ğŸ” ç¯å¢ƒæ„ŸçŸ¥èŠ‚ç‚¹åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:47,917 - backend.ai_agents.utils.priority - INFO - ğŸ¯ ä»»åŠ¡ä¼˜å…ˆçº§ç®¡ç†å™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:49,957 - backend.ai_agents.core.nodes - INFO - ğŸ¤– å¯ç”¨LLMå¢å¼ºä»»åŠ¡è§„åˆ’
+2026-01-31 23:29:49,959 - backend.ai_agents.core.nodes - INFO - ğŸ§  æ™ºèƒ½å†³ç­–èŠ‚ç‚¹åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:49,959 - backend.ai_agents.core.nodes - INFO - ğŸ”§ å·¥å…·æ‰§è¡ŒèŠ‚ç‚¹åˆå§‹åŒ–,æœ€å¤§å¹¶å‘: 5
+2026-01-31 23:29:52,081 - backend.ai_agents.code_execution.code_generator - INFO - âœ… LLMä»£ç ç”Ÿæˆå™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:52,081 - backend.ai_agents.core.nodes - INFO - ğŸ”§ ä»£ç ç”ŸæˆèŠ‚ç‚¹åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:54,867 - backend.ai_agents.code_execution.code_generator - INFO - âœ… LLMä»£ç ç”Ÿæˆå™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:57,041 - backend.ai_agents.code_execution.code_generator - INFO - âœ… LLMä»£ç ç”Ÿæˆå™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:57,042 - backend.ai_agents.code_execution.capability_enhancer - INFO - âœ… åŠŸèƒ½è¡¥å……å™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:57,042 - backend.ai_agents.code_execution.executor - INFO - âœ… ç»Ÿä¸€æ‰§è¡Œå™¨åˆå§‹åŒ–å®Œæˆ: timeout=60s, sandbox=True
+2026-01-31 23:29:57,042 - backend.ai_agents.core.nodes - INFO - âš¡ ä»£ç æ‰§è¡ŒèŠ‚ç‚¹åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:59,220 - backend.ai_agents.code_execution.code_generator - INFO - âœ… LLMä»£ç ç”Ÿæˆå™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:59,221 - backend.ai_agents.code_execution.capability_enhancer - INFO - âœ… åŠŸèƒ½è¡¥å……å™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:59,221 - backend.ai_agents.core.nodes - INFO - ğŸš€ åŠŸèƒ½è¡¥å……èŠ‚ç‚¹åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:59,240 - backend.ai_agents.analyzers.vuln_analyzer - INFO - ğŸ” æ¼æ´åˆ†æå™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:59,240 - backend.ai_agents.core.nodes - INFO - ğŸ” æ¼æ´åˆ†æèŠ‚ç‚¹åˆå§‹åŒ–
+2026-01-31 23:29:59,240 - backend.ai_agents.analyzers.report_gen - INFO - ğŸ“„ æŠ¥å‘Šç”Ÿæˆå™¨åˆå§‹åŒ–å®Œæˆ
+2026-01-31 23:29:59,240 - backend.ai_agents.core.nodes - INFO - ğŸ“„ æŠ¥å‘Šç”ŸæˆèŠ‚ç‚¹åˆå§‹åŒ–
+2026-01-31 23:29:59,240 - backend.ai_agents.core.graph - INFO - [2026-01-31 23:29:59] [NODE_ENTRY] èŠ‚ç‚¹: _build_graph, ä»»åŠ¡ID: GRAPH_BUILD, è¯¦æƒ…: {'total_nodes': 11}
+2026-01-31 23:29:59,254 - backend.ai_agents.core.graph - INFO - ğŸ“Š å¢å¼ºç‰ˆLangGraphå›¾è¾¹å®šä¹‰å®Œæˆ
+2026-01-31 23:29:59,254 - backend.ai_agents.core.graph - INFO - [2026-01-31 23:29:59] [NODE_EXIT] èŠ‚ç‚¹: _build_graph, ä»»åŠ¡ID: GRAPH_BUILD, çŠ¶æ€: success, è¯¦æƒ…: {'nodes_count': 11, 'edges_count': 16}
+2026-01-31 23:29:59,254 - backend.ai_agents.core.graph - INFO - âœ… æ‰«æAgentå›¾æ„å»ºå®Œæˆ
+2026-01-31 23:29:59,255 - backend.ai_agents.core.graph - INFO - ğŸ”§ å¼€å§‹åˆå§‹åŒ–å·¥å…·...
+2026-01-31 23:29:59,296 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: baseinfo (åˆ†ç±»: plugin, ä¼˜å…ˆçº§: 3)
+2026-01-31 23:29:59,306 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: portscan (åˆ†ç±»: plugin, ä¼˜å…ˆçº§: 5)
+2026-01-31 23:29:59,317 - WAFDetector - INFO - æˆåŠŸç¼–è¯‘ 90 æ¡WAFæ£€æµ‹è§„åˆ™
+2026-01-31 23:29:59,318 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: waf_detect (åˆ†ç±»: plugin, ä¼˜å…ˆçº§: 4)
+2026-01-31 23:29:59,353 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: cdn_detect (åˆ†ç±»: plugin, ä¼˜å…ˆçº§: 4)
+2026-01-31 23:29:59,513 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: cms_identify (åˆ†ç±»: plugin, ä¼˜å…ˆçº§: 4)
+2026-01-31 23:29:59,522 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: infoleak_scan (åˆ†ç±»: plugin, ä¼˜å…ˆçº§: 3)
+2026-01-31 23:29:59,528 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: subdomain_scan (åˆ†ç±»: plugin, ä¼˜å…ˆçº§: 3)
+2026-01-31 23:29:59,535 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: webside_scan (åˆ†ç±»: plugin, ä¼˜å…ˆçº§: 3)
+2026-01-31 23:29:59,541 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: webweight_scan (åˆ†ç±»: plugin, ä¼˜å…ˆçº§: 2)
+2026-01-31 23:29:59,542 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: poc_weblogic_2020_2551 (åˆ†ç±»: poc, ä¼˜å…ˆçº§: 8)
+2026-01-31 23:29:59,542 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: poc_weblogic_2018_2628 (åˆ†ç±»: poc, ä¼˜å…ˆçº§: 8)
+2026-01-31 23:29:59,542 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: poc_weblogic_2018_2894 (åˆ†ç±»: poc, ä¼˜å…ˆçº§: 8)
+2026-01-31 23:29:59,542 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: poc_struts2_009 (åˆ†ç±»: poc, ä¼˜å…ˆçº§: 8)
+2026-01-31 23:29:59,542 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: poc_struts2_032 (åˆ†ç±»: poc, ä¼˜å…ˆçº§: 8)
+2026-01-31 23:29:59,542 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: poc_tomcat_2017_12615 (åˆ†ç±»: poc, ä¼˜å…ˆçº§: 8)
+2026-01-31 23:29:59,542 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: poc_jboss_2017_12149 (åˆ†ç±»: poc, ä¼˜å…ˆçº§: 8)
+2026-01-31 23:29:59,544 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: poc_nexus_2020_10199 (åˆ†ç±»: poc, ä¼˜å…ˆçº§: 8)
+2026-01-31 23:29:59,544 - backend.ai_agents.tools.registry - INFO - âœ… æ³¨å†Œå·¥å…·: poc_drupal_2018_7600 (åˆ†ç±»: poc, ä¼˜å…ˆçº§: 8)
+2026-01-31 23:29:59,544 - backend.ai_agents.core.graph - INFO - âœ… å·¥å…·åˆå§‹åŒ–å®Œæˆ,å…±æ³¨å†Œ 18 ä¸ªå·¥å…·
+2026-01-31 23:30:00,330 - backend.main - INFO - å¯åŠ¨ WebScan AI Security Platform v1.0.0
+2026-01-31 23:30:00,404 - backend.database - INFO - âœ… æ•°æ®åº“åˆå§‹åŒ–æˆåŠŸ - sqlite:///D:/AI_WebSecurity/backend/data/webscan.db
