@@ -12,7 +12,11 @@ FastAPI 主应用入口文件
 - 启动后台任务
 """
 import sys
+import warnings
 from pathlib import Path
+
+# 抑制paramiko的Blowfish弃用警告
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="paramiko")
 
 # 添加项目根目录到 Python 路径
 current_dir = Path(__file__).parent

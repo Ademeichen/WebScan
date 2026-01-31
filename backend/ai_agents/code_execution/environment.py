@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class EnvironmentAwareness:
     """
-    环境感知类(优化版)
+    环境感知类(优化版+单例模式)
     
     负责收集和分析执行环境信息,包括:
     - 操作系统检测
@@ -46,7 +46,15 @@ class EnvironmentAwareness:
     - 使用ThreadPoolExecutor并发执行检测任务
     - 设置合理的超时时间,避免无限等待
     - 实现资源自动清理,避免内存泄漏
+    
+    单例模式:
+    - 使用类变量确保全局只有一个实例
+    - 避免重复初始化,提升启动速度
     """
+    
+    # 单例实例
+    _instance = None
+    _instance_lock = threading.Lock()
     
     # 全局配置
     MAX_WORKERS = 5  # 最大并发工作线程数
@@ -55,12 +63,28 @@ class EnvironmentAwareness:
     NETWORK_TIMEOUT = 3  # 网络检测超时时间(秒)
     GLOBAL_TIMEOUT = 30  # 全局初始化超时时间(秒)
     
+    def __new__(cls, *args, **kwargs):
+        """
+        实现单例模式
+        
+        确保全局只有一个EnvironmentAwareness实例
+        """
+        if cls._instance is None:
+            with cls._instance_lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+    
     def __init__(self):
         """
         初始化环境感知模块
         
         使用并发机制加速检测,并设置全局超时
+        使用单例模式避免重复初始化
         """
+        if hasattr(self, '_initialized') and self._initialized:
+            return
+            
         self._init_lock = threading.Lock()
         self._initialized = False
         self._init_error = None

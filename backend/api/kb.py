@@ -511,10 +511,10 @@ async def fetch_exploit_db_data():
 
         headers = {
             "User-Agent": "WebScan-AI-Security-Platform/1.0",
-            "Accept": "application/json"
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             response = await client.get(api_url, params=params, headers=headers)
             response.raise_for_status()
 
@@ -564,8 +564,12 @@ async def fetch_exploit_db_data():
             except Exception as json_error:
                 logger.warning(f"⚠️ Exploit-DB 返回的不是 JSON 格式: {json_error}")
                 logger.info(f"Exploit-DB 响应内容类型: {response.headers.get('content-type', 'unknown')}")
+                logger.info(f"Exploit-DB API 可能已更改或需要认证，跳过此数据源")
                 return []
 
+    except httpx.HTTPStatusError as e:
+        logger.warning(f"⚠️ Exploit-DB HTTP 错误: {e.response.status_code}")
+        return []
     except Exception as e:
         logger.error(f"❌ 从 Exploit-DB 获取数据失败: {e}")
         return []
