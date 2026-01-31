@@ -4045,3 +4045,73 @@ TypeError: 'coroutine' object is not callable
 2026-01-31 22:16:42,115 - backend.main - INFO - 启动 WebScan AI Security Platform v1.0.0
 2026-01-31 22:16:42,164 - backend.database - INFO - ✅ 数据库初始化成功 - sqlite:///D:/AI_WebSecurity/backend/data/webscan.db
 2026-01-31 22:16:42,881 - backend.main - INFO - AWVS API 连接测试成功
+2026-01-31 22:18:43,949 - backend.api.user - INFO - 获取用户信息成功: admin
+2026-01-31 22:18:43,961 - backend.api.notifications - INFO - 获取通知列表成功: 共 3 条通知,2 条未读
+2026-01-31 22:19:48,595 - backend.api.user - INFO - 获取用户信息成功: admin
+2026-01-31 22:19:48,598 - backend.api.notifications - INFO - 获取通知列表成功: 共 3 条通知,2 条未读
+2026-01-31 22:20:06,515 - backend.api.awvs - INFO - 获取扫描任务列表成功,共 2 个任务
+2026-01-31 23:16:36,127 - backend.api.seebug_client - INFO - ✅ Seebug API客户端初始化完成: https://www.seebug.org/api
+2026-01-31 23:16:37,143 - backend.ai_agents.utils.cache - INFO - ✅ 缓存管理器初始化完成, TTL: 3600秒
+2026-01-31 23:16:37,144 - backend.ai_agents.poc_system.poc_manager - INFO - ✅ POC 管理器初始化完成
+2026-01-31 23:16:37,152 - backend.ai_agents.poc_system.target_manager - INFO - ✅ 目标管理器初始化完成
+2026-01-31 23:16:38,647 - backend.Pocsuite3Agent.agent - INFO - Pocsuite3 已安装
+2026-01-31 23:16:38,663 - backend.Pocsuite3Agent.agent - INFO - 加载了 114 个 POC 脚本
+2026-01-31 23:16:38,663 - backend.ai_agents.poc_system.verification_engine - INFO - ✅ POC 验证执行引擎初始化完成
+2026-01-31 23:16:38,674 - backend.ai_agents.poc_system.result_analyzer - INFO - ✅ 结果分析器初始化完成
+2026-01-31 23:16:38,678 - backend.ai_agents.poc_system.report_generator - INFO - ✅ 报告生成器初始化完成
+2026-01-31 23:16:38,713 - backend.ai_agents.utils.file_sync - INFO - ✅ 文件同步管理器初始化完成
+2026-01-31 23:16:38,713 - backend.ai_agents.utils.file_sync - INFO -   基础POC目录: D:\AI_WebSecurity\backend\poc
+2026-01-31 23:16:38,713 - backend.ai_agents.utils.file_sync - INFO -   Seebug生成目录: D:\AI_WebSecurity\Seebug_Agent\generated_pocs
+2026-01-31 23:16:39,128 - backend.ai_agents.tools.registry - INFO - 工具注册表初始化完成
+2026-01-31 23:16:39,134 - backend.ai_agents.core.nodes - INFO - ✅ Seebug Agent节点初始化完成
+2026-01-31 23:16:39,134 - backend.ai_agents.core.nodes - INFO - ✅ POC 验证节点初始化完成
+2026-01-31 23:16:39,135 - backend.ai_agents.core.graph - INFO - 🔧 初始化扫描Agent图
+2026-01-31 23:16:39,177 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-01-31 23:16:49,285 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 10.11秒
+2026-01-31 23:16:49,285 - backend.ai_agents.core.nodes - INFO - 🔍 环境感知节点初始化完成
+2026-01-31 23:16:49,285 - backend.ai_agents.utils.priority - INFO - 🎯 任务优先级管理器初始化完成
+2026-01-31 23:16:51,230 - backend.ai_agents.core.nodes - INFO - 🤖 启用LLM增强任务规划
+2026-01-31 23:16:51,231 - backend.ai_agents.core.nodes - INFO - 🧠 智能决策节点初始化完成
+2026-01-31 23:16:51,231 - backend.ai_agents.core.nodes - INFO - 🔧 工具执行节点初始化,最大并发: 5
+2026-01-31 23:16:53,108 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-01-31 23:16:53,108 - backend.ai_agents.core.nodes - INFO - 🔧 代码生成节点初始化完成
+2026-01-31 23:16:55,091 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-01-31 23:16:57,163 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-01-31 23:16:57,165 - backend.ai_agents.code_execution.capability_enhancer - INFO - ✅ 功能补充器初始化完成
+2026-01-31 23:16:57,166 - backend.ai_agents.code_execution.executor - INFO - ✅ 统一执行器初始化完成: timeout=60s, sandbox=True
+2026-01-31 23:16:57,166 - backend.ai_agents.core.nodes - INFO - ⚡ 代码执行节点初始化完成
+2026-01-31 23:16:59,301 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-01-31 23:16:59,303 - backend.ai_agents.code_execution.capability_enhancer - INFO - ✅ 功能补充器初始化完成
+2026-01-31 23:16:59,303 - backend.ai_agents.core.nodes - INFO - 🚀 功能补充节点初始化完成
+2026-01-31 23:16:59,316 - backend.ai_agents.analyzers.vuln_analyzer - INFO - 🔍 漏洞分析器初始化完成
+2026-01-31 23:16:59,316 - backend.ai_agents.core.nodes - INFO - 🔍 漏洞分析节点初始化
+2026-01-31 23:16:59,316 - backend.ai_agents.analyzers.report_gen - INFO - 📄 报告生成器初始化完成
+2026-01-31 23:16:59,316 - backend.ai_agents.core.nodes - INFO - 📄 报告生成节点初始化
+2026-01-31 23:16:59,318 - backend.ai_agents.core.graph - INFO - [2026-01-31 23:16:59] [NODE_ENTRY] 节点: _build_graph, 任务ID: GRAPH_BUILD, 详情: {'total_nodes': 11}
+2026-01-31 23:16:59,326 - backend.ai_agents.core.graph - INFO - 📊 增强版LangGraph图边定义完成
+2026-01-31 23:16:59,326 - backend.ai_agents.core.graph - INFO - [2026-01-31 23:16:59] [NODE_EXIT] 节点: _build_graph, 任务ID: GRAPH_BUILD, 状态: success, 详情: {'nodes_count': 11, 'edges_count': 16}
+2026-01-31 23:16:59,327 - backend.ai_agents.core.graph - INFO - ✅ 扫描Agent图构建完成
+2026-01-31 23:16:59,327 - backend.ai_agents.core.graph - INFO - 🔧 开始初始化工具...
+2026-01-31 23:16:59,387 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: baseinfo (分类: plugin, 优先级: 3)
+2026-01-31 23:16:59,396 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: portscan (分类: plugin, 优先级: 5)
+2026-01-31 23:16:59,410 - WAFDetector - INFO - 成功编译 90 条WAF检测规则
+2026-01-31 23:16:59,411 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: waf_detect (分类: plugin, 优先级: 4)
+2026-01-31 23:16:59,484 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cdn_detect (分类: plugin, 优先级: 4)
+2026-01-31 23:16:59,903 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cms_identify (分类: plugin, 优先级: 4)
+2026-01-31 23:16:59,913 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: infoleak_scan (分类: plugin, 优先级: 3)
+2026-01-31 23:16:59,923 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: subdomain_scan (分类: plugin, 优先级: 3)
+2026-01-31 23:16:59,938 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webside_scan (分类: plugin, 优先级: 3)
+2026-01-31 23:16:59,946 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webweight_scan (分类: plugin, 优先级: 2)
+2026-01-31 23:16:59,946 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2020_2551 (分类: poc, 优先级: 8)
+2026-01-31 23:16:59,947 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2628 (分类: poc, 优先级: 8)
+2026-01-31 23:16:59,947 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2894 (分类: poc, 优先级: 8)
+2026-01-31 23:16:59,947 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_009 (分类: poc, 优先级: 8)
+2026-01-31 23:16:59,947 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_032 (分类: poc, 优先级: 8)
+2026-01-31 23:16:59,948 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_tomcat_2017_12615 (分类: poc, 优先级: 8)
+2026-01-31 23:16:59,948 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_jboss_2017_12149 (分类: poc, 优先级: 8)
+2026-01-31 23:16:59,949 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_nexus_2020_10199 (分类: poc, 优先级: 8)
+2026-01-31 23:16:59,949 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_drupal_2018_7600 (分类: poc, 优先级: 8)
+2026-01-31 23:16:59,949 - backend.ai_agents.core.graph - INFO - ✅ 工具初始化完成,共注册 18 个工具
+2026-01-31 23:17:00,918 - backend.main - INFO - 启动 WebScan AI Security Platform v1.0.0
+2026-01-31 23:17:00,992 - backend.database - INFO - ✅ 数据库初始化成功 - sqlite:///D:/AI_WebSecurity/backend/data/webscan.db
+2026-01-31 23:17:01,759 - backend.main - INFO - AWVS API 连接测试成功
