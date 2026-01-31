@@ -234,6 +234,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { kbApi } from '@/utils/api'
 import Alert from '@/components/common/Alert.vue'
+import { formatDate } from '@/utils/date'
 
 export default {
   name: 'KnowledgeBase',

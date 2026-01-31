@@ -3,7 +3,7 @@
  * 测试前端 API 工具函数与后端 API 的集成
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { scanApi, tasksApi, reportsApi, settingsApi, pocApi, awvsApi, agentApi, kbApi, userApi, notificationsApi } from '@/utils/api'
 
 describe('API Tests', () => {

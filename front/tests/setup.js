@@ -3,6 +3,8 @@
  * 全局测试配置和模拟
  */
 
+/* eslint-disable no-undef */
+
 import { vi } from 'vitest'
 import { config } from '@vue/test-utils'
 
@@ -195,7 +197,7 @@ global.window.confirm = vi.fn(() => true)
 global.window.alert = vi.fn()
 
 // 模拟 setTimeout 和 clearTimeout
-global.setTimeout = vi.fn((callback, delay) => {
+global.setTimeout = vi.fn((callback) => {
   const id = Math.random().toString(36).substring(7)
   if (typeof callback === 'function') {
     callback()
@@ -205,7 +207,7 @@ global.setTimeout = vi.fn((callback, delay) => {
 global.clearTimeout = vi.fn()
 
 // 模拟 setInterval 和 clearInterval
-global.setInterval = vi.fn((callback, delay) => {
+global.setInterval = vi.fn((callback) => {
   const id = Math.random().toString(36).substring(7)
   if (typeof callback === 'function') {
     callback()

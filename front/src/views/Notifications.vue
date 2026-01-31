@@ -147,11 +147,11 @@ export default {
     const totalPages = computed(() => Math.ceil(total.value / limit.value))
 
     const unreadCount = computed(() => {
-      return notifications.value.filter(n => !n.read).length
+      return (notifications.value || []).filter(n => !n.read).length
     })
 
     const readCount = computed(() => {
-      return notifications.value.filter(n => n.read).length
+      return (notifications.value || []).filter(n => n.read).length
     })
 
     const loadNotifications = async () => {
@@ -236,7 +236,7 @@ export default {
         try {
           const response = await notificationsApi.deleteNotification(notification.id)
           if (response.code === 200) {
-            notifications.value = notifications.value.filter(n => n.id !== notification.id)
+            notifications.value = (notifications.value || []).filter(n => n.id !== notification.id)
             total.value -= 1
             successMessage.value = '删除成功'
           }
@@ -252,7 +252,7 @@ export default {
         try {
           const response = await notificationsApi.deleteReadNotifications()
           if (response.code === 200) {
-            notifications.value = notifications.value.filter(n => !n.read)
+            notifications.value = (notifications.value || []).filter(n => !n.read)
             total.value = notifications.value.length
             successMessage.value = '已删除所有已读通知'
           }

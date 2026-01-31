@@ -161,7 +161,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { reportsApi } from '@/utils/api'
 import { formatDate } from '@/utils/date'

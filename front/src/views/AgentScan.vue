@@ -14,7 +14,7 @@
         />
       </div>
 
-      <div v-if="recentTasks.length > 0" class="recent-section">
+      <div v-if="recentTasks && recentTasks.length > 0" class="recent-section">
         <h3>最近任务</h3>
         <div class="tasks-list">
           <div
@@ -191,7 +191,7 @@ export default {
     }
 
     const refreshRunningTasks = async () => {
-      const runningTasks = recentTasks.value.filter(t => t.status === 'running')
+      const runningTasks = (recentTasks.value || []).filter(t => t.status === 'running')
       if (runningTasks.length > 0) {
         for (const task of runningTasks) {
           try {

@@ -14,7 +14,7 @@
         />
       </div>
 
-      <div v-if="recentScans.length > 0" class="recent-section">
+      <div v-if="recentScans && recentScans.length > 0" class="recent-section">
         <h3>最近扫描</h3>
         <div class="recent-list">
           <div
