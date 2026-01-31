@@ -109,6 +109,16 @@ class ErrorHandler {
       return error
     }
 
+    if (error instanceof Error) {
+      const errorMessage = error.message || '发生未知错误'
+      if (errorMessage.includes('Network Error') || errorMessage.includes('ERR_FAILED')) {
+        return new AppError(
+          '网络连接失败，请检查网络设置',
+          ErrorType.NETWORK_ERROR
+        )
+      }
+    }
+
     return new AppError(
       error.message || '发生未知错误',
       ErrorType.UNKNOWN_ERROR,

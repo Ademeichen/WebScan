@@ -458,10 +458,11 @@ async def fetch_seebug_data():
 
         if response.success and response.data:
             vulnerabilities = []
-            for poc in response.data:
+            pocs = response.data if isinstance(response.data, list) else response.data.get('list', [])
+            for poc in pocs:
                 vulnerabilities.append({
                     "cve_id": poc.get("cve_id", ""),
-                    "name": poc.get("name", poc.get("title", "Unknown")),
+                    "name": poc.get("name", poc.get("title", poc.get("vul_name", "Unknown"))),
                     "description": poc.get("description", poc.get("summary", "")),
                     "severity": poc.get("level", "Unknown"),
                     "cvss_score": poc.get("cvss_score", 0.0),
@@ -470,17 +471,19 @@ async def fetch_seebug_data():
                     "has_poc": True,
                     "source": "seebug",
                     "poc_code": "",
-                    "ssvid": poc.get("ssvid")
+                    "ssvid": poc.get("ssvid", poc.get("id"))
                 })
 
             logger.info(f"✅ 从 Seebug 获取到 {len(vulnerabilities)} 条漏洞数据")
             return vulnerabilities
         else:
             logger.warning(f"⚠️ 从 Seebug 获取数据失败: {response.message}")
+            logger.info(f"Seebug 响应数据类型: {type(response.data)}")
             return []
 
     except Exception as e:
         logger.error(f"❌ 从 Seebug 获取数据失败: {e}")
+        logger.info(f"Seebug 响应数据: {response.data if 'response' in locals() else 'N/A'}")
         return []
 
 async def fetch_exploit_db_data():
@@ -515,48 +518,53 @@ async def fetch_exploit_db_data():
             response = await client.get(api_url, params=params, headers=headers)
             response.raise_for_status()
 
-            data = response.json()
+            try:
+                data = response.json()
 
-            vulnerabilities = []
-            if isinstance(data, dict) and "data" in data:
-                for item in data["data"]:
-                    cve_id = ""
-                    if "cve" in item and item["cve"]:
-                        cve_id = item["cve"][0] if isinstance(item["cve"], list) else item["cve"]
+                vulnerabilities = []
+                if isinstance(data, dict) and "data" in data:
+                    for item in data["data"]:
+                        cve_id = ""
+                        if "cve" in item and item["cve"]:
+                            cve_id = item["cve"][0] if isinstance(item["cve"], list) else item["cve"]
 
-                    vulnerabilities.append({
-                        "cve_id": cve_id,
-                        "name": item.get("name", item.get("title", "Unknown")),
-                        "description": item.get("description", item.get("summary", "")),
-                        "severity": item.get("severity", "Unknown"),
-                        "cvss_score": item.get("cvss_score", 0.0),
-                        "affected_product": item.get("product", item.get("affected", "")),
-                        "solution": item.get("solution", item.get("patch", "")),
-                        "has_poc": True,
-                        "source": "exploit-db",
-                        "poc_code": item.get("exploit", "")
-                    })
-            elif isinstance(data, list):
-                for item in data:
-                    cve_id = ""
-                    if "cve" in item and item["cve"]:
-                        cve_id = item["cve"][0] if isinstance(item["cve"], list) else item["cve"]
+                        vulnerabilities.append({
+                            "cve_id": cve_id,
+                            "name": item.get("name", item.get("title", "Unknown")),
+                            "description": item.get("description", item.get("summary", "")),
+                            "severity": item.get("severity", "Unknown"),
+                            "cvss_score": item.get("cvss_score", 0.0),
+                            "affected_product": item.get("product", item.get("affected", "")),
+                            "solution": item.get("solution", item.get("patch", "")),
+                            "has_poc": True,
+                            "source": "exploit-db",
+                            "poc_code": item.get("exploit", "")
+                        })
+                elif isinstance(data, list):
+                    for item in data:
+                        cve_id = ""
+                        if "cve" in item and item["cve"]:
+                            cve_id = item["cve"][0] if isinstance(item["cve"], list) else item["cve"]
 
-                    vulnerabilities.append({
-                        "cve_id": cve_id,
-                        "name": item.get("name", item.get("title", "Unknown")),
-                        "description": item.get("description", item.get("summary", "")),
-                        "severity": item.get("severity", "Unknown"),
-                        "cvss_score": item.get("cvss_score", 0.0),
-                        "affected_product": item.get("product", item.get("affected", "")),
-                        "solution": item.get("solution", item.get("patch", "")),
-                        "has_poc": True,
-                        "source": "exploit-db",
-                        "poc_code": item.get("exploit", "")
-                    })
+                        vulnerabilities.append({
+                            "cve_id": cve_id,
+                            "name": item.get("name", item.get("title", "Unknown")),
+                            "description": item.get("description", item.get("summary", "")),
+                            "severity": item.get("severity", "Unknown"),
+                            "cvss_score": item.get("cvss_score", 0.0),
+                            "affected_product": item.get("product", item.get("affected", "")),
+                            "solution": item.get("solution", item.get("patch", "")),
+                            "has_poc": True,
+                            "source": "exploit-db",
+                            "poc_code": item.get("exploit", "")
+                        })
 
-            logger.info(f"✅ 从 Exploit-DB 获取到 {len(vulnerabilities)} 条漏洞数据")
-            return vulnerabilities
+                logger.info(f"✅ 从 Exploit-DB 获取到 {len(vulnerabilities)} 条漏洞数据")
+                return vulnerabilities
+            except Exception as json_error:
+                logger.warning(f"⚠️ Exploit-DB 返回的不是 JSON 格式: {json_error}")
+                logger.info(f"Exploit-DB 响应内容类型: {response.headers.get('content-type', 'unknown')}")
+                return []
 
     except Exception as e:
         logger.error(f"❌ 从 Exploit-DB 获取数据失败: {e}")
@@ -576,27 +584,27 @@ async def sync_vulnerabilities_task():
     try:
         # 1. 从 Seebug 同步
         seebug_data = await fetch_seebug_data()
-        # DEBUG: 打印原始 Seebug 数据
-        print(f"原始 Seebug 数据: {seebug_data}")
+        logger.info(f"从 Seebug 获取到 {len(seebug_data)} 条数据")
         for data in seebug_data:
-            exists = await VulnerabilityKB.get_or_none(cve_id=data['cve_id'])
-            if not exists:
-                await VulnerabilityKB.create(**data)
-                count += 1
-            else:
-                # 更新现有记录（可选）
-                # exists.update_from_dict(data)
-                # await exists.save()
-                pass
+            try:
+                exists = await VulnerabilityKB.get_or_none(cve_id=data['cve_id'])
+                if not exists:
+                    await VulnerabilityKB.create(**data)
+                    count += 1
+            except Exception as e:
+                logger.error(f"保存 Seebug 数据失败: {e}, 数据: {data}")
 
         # 2. 从 Exploit-DB 同步
         edb_data = await fetch_exploit_db_data()
+        logger.info(f"从 Exploit-DB 获取到 {len(edb_data)} 条数据")
         for data in edb_data:
-            # 通过 CVE 或名称检查
-            exists = await VulnerabilityKB.get_or_none(cve_id=data['cve_id'])
-            if not exists:
-                await VulnerabilityKB.create(**data)
-                count += 1
+            try:
+                exists = await VulnerabilityKB.get_or_none(cve_id=data['cve_id'])
+                if not exists:
+                    await VulnerabilityKB.create(**data)
+                    count += 1
+            except Exception as e:
+                logger.error(f"保存 Exploit-DB 数据失败: {e}, 数据: {data}")
                 
     except Exception as e:
         logger.error(f"同步漏洞知识库失败: {e}")

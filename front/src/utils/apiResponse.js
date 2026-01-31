@@ -73,7 +73,7 @@ export function handleResponse(response) {
     return ApiResponse.error('响应数据为空')
   }
 
-  const { code, data, message } = response
+  const { code, data, message, status } = response
 
   if (code === 200 || code === 201) {
     return ApiResponse.success(data, message || '操作成功')
@@ -87,9 +87,19 @@ export function handleResponse(response) {
     return ApiResponse.validationError(message, data)
   } else if (code >= 500) {
     return ApiResponse.serverError(message)
+  } else if (!code || code === undefined) {
+    return ApiResponse.success(data || response, message || '操作成功')
   } else {
     return ApiResponse.error(message || '操作失败', code, data)
   }
+}
+
+export function handleDirectResponse(response) {
+  if (!response) {
+    return ApiResponse.error('响应数据为空')
+  }
+
+  return ApiResponse.success(response, '操作成功')
 }
 
 export function handleApiError(error) {

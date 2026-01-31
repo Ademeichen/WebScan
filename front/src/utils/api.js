@@ -36,6 +36,9 @@ instance.interceptors.response.use(
     return handled
   },
   (error) => {
+    if (error.response && error.response.status === 404) {
+      return Promise.reject(new Error('资源不存在'))
+    }
     const handled = handleApiError(error)
     errorHandler.handle(handled)
     return Promise.reject(new Error(handled.message || '请求失败'))
@@ -582,10 +585,11 @@ export const kbApi = {
   },
 
   getKnowledge: async (knowledgeId) => {
-    return request({
+    const response = await request({
       url: `/kb/vulnerabilities/${knowledgeId}`,
       method: 'get'
     })
+    return { success: true, data: response, message: '获取成功' }
   },
 
   updateKnowledge: async (knowledgeId, data) => {

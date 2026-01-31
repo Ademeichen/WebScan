@@ -231,9 +231,9 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { kbApi } from '@/utils/api'
 import Alert from '@/components/common/Alert.vue'
-import { formatDate } from '@/utils/date'
 
 export default {
   name: 'KnowledgeBase',
@@ -241,6 +241,7 @@ export default {
     Alert
   },
   setup() {
+    const router = useRouter()
     const loading = ref(false)
     const searching = ref(false)
     const syncing = ref(false)
@@ -338,7 +339,7 @@ export default {
     }
 
     const handleViewDetail = (vuln) => {
-      selectedVuln.value = vuln
+      router.push(`/vulnerability/${vuln.id}`)
     }
 
     const getSeverityClass = (severity) => {

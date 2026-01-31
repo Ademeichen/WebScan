@@ -168,7 +168,8 @@ class SeebugAPIClient:
             if success:
                 logger.info(f"✅ POC搜索成功: 找到{data.get('total', 0)}个结果")
                 if self.enable_cache:
-                    self.cache[cache_key] = (response, datetime.now())
+                    import copy
+                    self.cache[cache_key] = (copy.deepcopy(response), datetime.now())
             else:
                 logger.warning(f"⚠️ POC搜索失败: {message}")
 
