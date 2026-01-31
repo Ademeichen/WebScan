@@ -4179,3 +4179,7 @@ TypeError: 'coroutine' object is not callable
 2026-01-31 23:29:59,544 - backend.ai_agents.core.graph - INFO - ✅ 工具初始化完成,共注册 18 个工具
 2026-01-31 23:30:00,330 - backend.main - INFO - 启动 WebScan AI Security Platform v1.0.0
 2026-01-31 23:30:00,404 - backend.database - INFO - ✅ 数据库初始化成功 - sqlite:///D:/AI_WebSecurity/backend/data/webscan.db
+2026-01-31 23:58:37,667 - backend.api.user - INFO - 获取用户信息成功: admin
+2026-01-31 23:58:37,673 - backend.api.notifications - INFO - 获取通知列表成功: 共 3 条通知,2 条未读
+2026-01-31 23:58:46,053 - backend.api.awvs - INFO - 获取扫描任务列表成功,共 2 个任务
+2026-01-31 23:58:50,232 - backend.api.awvs - INFO - 获取扫描任务列表成功,共 2 个任务
