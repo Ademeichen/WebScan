@@ -9,6 +9,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AgentScanForm: typeof import('./components/business/AgentScanForm.vue')['default']
     Alert: typeof import('./components/common/Alert.vue')['default']
+    AppIcon: typeof import('./components/common/AppIcon.vue')['default']
     AppLayout: typeof import('./components/layout/AppLayout.vue')['default']
     AWVSScanForm: typeof import('./components/business/AWVSScanForm.vue')['default']
     BaseForm: typeof import('./components/common/BaseForm.vue')['default']

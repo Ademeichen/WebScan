@@ -16,7 +16,7 @@ from functools import partial
 from tortoise.functions import Count
 from urllib.parse import urlparse
 from backend.config import settings
-from models import Task, Vulnerability
+from backend.models import Task, Vulnerability
 
 # 导入 AWVS API 类
 from backend.AVWS.API.Target import Target

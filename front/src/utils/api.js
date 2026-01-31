@@ -2,7 +2,7 @@ import axios from 'axios'
 import { errorHandler } from './errorHandler'
 import { handleResponse, handleApiError } from './apiResponse'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3000/api'
 const REQUEST_TIMEOUT = parseInt(import.meta.env.VITE_REQUEST_TIMEOUT) || 30000
 
 const instance = axios.create({
@@ -31,14 +31,14 @@ instance.interceptors.response.use(
     const handled = handleResponse(response.data)
     if (!handled.success) {
       errorHandler.handle(handled)
-      return Promise.reject(handled)
+      return Promise.reject(new Error(handled.message || '操作失败'))
     }
     return handled
   },
   (error) => {
     const handled = handleApiError(error)
     errorHandler.handle(handled)
-    return Promise.reject(handled)
+    return Promise.reject(new Error(handled.message || '请求失败'))
   }
 )
 
@@ -73,6 +73,62 @@ export const scanApi = {
     return request({
       url: `/scan/stop/${scanId}`,
       method: 'post'
+    })
+  },
+
+  portScan: async (data) => {
+    return request({
+      url: '/scan/port-scan',
+      method: 'post',
+      data
+    })
+  },
+
+  infoLeak: async (data) => {
+    return request({
+      url: '/scan/info-leak',
+      method: 'post',
+      data
+    })
+  },
+
+  dirScan: async (data) => {
+    return request({
+      url: '/scan/dir-scan',
+      method: 'post',
+      data
+    })
+  },
+
+  webSideScan: async (data) => {
+    return request({
+      url: '/scan/web-side',
+      method: 'post',
+      data
+    })
+  },
+
+  baseInfo: async (data) => {
+    return request({
+      url: '/scan/baseinfo',
+      method: 'post',
+      data
+    })
+  },
+
+  subdomainScan: async (data) => {
+    return request({
+      url: '/scan/subdomain',
+      method: 'post',
+      data
+    })
+  },
+
+  comprehensiveScan: async (data) => {
+    return request({
+      url: '/scan/comprehensive',
+      method: 'post',
+      data
     })
   }
 }
@@ -185,7 +241,7 @@ export const reportsApi = {
     })
   },
 
-  deleteReport: async (reportId) => {
+  delete: async (reportId) => {
     return request({
       url: `/reports/${reportId}`,
       method: 'delete'
@@ -331,8 +387,23 @@ export const pocApi = {
 
   getPOCResults: async (taskId) => {
     return request({
-      url: `/poc/results/${taskId}`,
+      url: `/tasks/${taskId}/results`,
       method: 'get'
+    })
+  },
+
+  getPOCInfo: async (pocType) => {
+    return request({
+      url: `/poc/info/${pocType}`,
+      method: 'get'
+    })
+  },
+
+  scanSinglePOC: async (pocType, target, timeout = 10) => {
+    return request({
+      url: `/poc/scan/${pocType}`,
+      method: 'post',
+      params: { target, timeout }
     })
   }
 }
@@ -380,6 +451,13 @@ export const awvsApi = {
     return request({
       url: `/awvs/scans/${scanId}`,
       method: 'get'
+    })
+  },
+
+  stopScan: async (scanId) => {
+    return request({
+      url: `/awvs/scans/${scanId}/stop`,
+      method: 'post'
     })
   },
 
@@ -446,13 +524,50 @@ export const agentApi = {
       method: 'post',
       data
     })
+  },
+
+  getAgentTypes: async () => {
+    return request({
+      url: '/agent/types',
+      method: 'get'
+    })
+  },
+
+  getAgentDetail: async (agentId) => {
+    return request({
+      url: `/agent/${agentId}`,
+      method: 'get'
+    })
+  },
+
+  createAgent: async (data) => {
+    return request({
+      url: '/agent/create',
+      method: 'post',
+      data
+    })
+  },
+
+  updateAgent: async (agentId, data) => {
+    return request({
+      url: `/agent/${agentId}`,
+      method: 'put',
+      data
+    })
+  },
+
+  deleteAgent: async (agentId) => {
+    return request({
+      url: `/agent/${agentId}`,
+      method: 'delete'
+    })
   }
 }
 
 export const kbApi = {
   search: async (params) => {
     return request({
-      url: '/kb/search',
+      url: '/kb/vulnerabilities',
       method: 'get',
       params
     })
@@ -460,7 +575,7 @@ export const kbApi = {
 
   addKnowledge: async (data) => {
     return request({
-      url: '/kb/add',
+      url: '/kb/vulnerabilities',
       method: 'post',
       data
     })
@@ -468,14 +583,14 @@ export const kbApi = {
 
   getKnowledge: async (knowledgeId) => {
     return request({
-      url: `/kb/${knowledgeId}`,
+      url: `/kb/vulnerabilities/${knowledgeId}`,
       method: 'get'
     })
   },
 
   updateKnowledge: async (knowledgeId, data) => {
     return request({
-      url: `/kb/${knowledgeId}`,
+      url: `/kb/vulnerabilities/${knowledgeId}`,
       method: 'put',
       data
     })
@@ -483,8 +598,38 @@ export const kbApi = {
 
   deleteKnowledge: async (knowledgeId) => {
     return request({
-      url: `/kb/${knowledgeId}`,
+      url: `/kb/vulnerabilities/${knowledgeId}`,
       method: 'delete'
+    })
+  },
+
+  sync: async () => {
+    return request({
+      url: '/kb/sync',
+      method: 'post'
+    })
+  },
+
+  searchPOC: async (data) => {
+    return request({
+      url: '/kb/seebug/poc/search',
+      method: 'post',
+      data
+    })
+  },
+
+  downloadPOC: async (ssvid) => {
+    return request({
+      url: '/kb/seebug/poc/download',
+      method: 'post',
+      data: { ssvid }
+    })
+  },
+
+  getPOCDetail: async (ssvid) => {
+    return request({
+      url: `/kb/seebug/poc/${ssvid}/detail`,
+      method: 'get'
     })
   }
 }
@@ -602,6 +747,46 @@ export const notificationsApi = {
   }
 }
 
+export const vulnerabilitiesApi = {
+  getVulnerabilities: async (params = {}) => {
+    return request({
+      url: '/vulnerabilities/',
+      method: 'get',
+      params
+    })
+  },
+
+  getVulnerability: async (vulnId) => {
+    return request({
+      url: `/vulnerabilities/${vulnId}`,
+      method: 'get'
+    })
+  },
+
+  updateVulnerability: async (vulnId, data) => {
+    return request({
+      url: `/vulnerabilities/${vulnId}`,
+      method: 'put',
+      data
+    })
+  },
+
+  deleteVulnerability: async (vulnId) => {
+    return request({
+      url: `/vulnerabilities/${vulnId}`,
+      method: 'delete'
+    })
+  },
+
+  getStatistics: async (params = {}) => {
+    return request({
+      url: '/vulnerabilities/statistics',
+      method: 'get',
+      params
+    })
+  }
+}
+
 export default {
   request,
   scan: scanApi,
@@ -615,5 +800,6 @@ export default {
   kb: kbApi,
   pocGen: pocGenApi,
   user: userApi,
-  notifications: notificationsApi
+  notifications: notificationsApi,
+  vulnerabilities: vulnerabilitiesApi
 }

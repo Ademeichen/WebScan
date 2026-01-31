@@ -81,33 +81,33 @@
       <el-button
         v-if="task.status === 'running' || task.status === 'pending'"
         type="warning"
-        :icon="Close"
         @click="$emit('cancel', task.id)"
       >
-        取消
+        <AppIcon name="Close" :size="16" />
+        <span>取消</span>
       </el-button>
       <el-button
         v-if="task.status === 'completed' || task.status === 'failed'"
         type="info"
-        :icon="View"
         @click="$emit('view', task.id)"
       >
-        查看详情
+        <AppIcon name="View" :size="16" />
+        <span>查看详情</span>
       </el-button>
       <el-button
         v-if="task.status === 'completed'"
         type="success"
-        :icon="Document"
         @click="$emit('report', task.id)"
       >
-        生成报告
+        <AppIcon name="Document" :size="16" />
+        <span>生成报告</span>
       </el-button>
       <el-button
         type="danger"
-        :icon="Delete"
         @click="$emit('delete', task.id)"
       >
-        删除
+        <AppIcon name="Delete" :size="16" />
+        <span>删除</span>
       </el-button>
     </div>
   </el-card>
@@ -116,12 +116,12 @@
 <script>
 import { computed } from 'vue'
 import { formatDate } from '@/utils/date'
-import { Close, View, Document, Delete } from '@element-plus/icons-vue'
+import AppIcon from '@/components/common/AppIcon.vue'
 
 export default {
   name: 'TaskCard',
   components: {
-    Close, View, Document, Delete
+    AppIcon
   },
   props: {
     task: {

@@ -8,10 +8,11 @@ import asyncio
 import logging
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, BackgroundTasks
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import uuid4
 
 from backend.models import AgentTask, AgentResult
+from backend.api.common import APIResponse
 from ..core.state import AgentState
 from ..core.graph import create_agent_graph
 from ..code_execution.executor import UnifiedExecutor
@@ -350,8 +351,6 @@ async def list_agent_tasks(
         >>> GET /ai_agents/tasks?status=running
     """
     try:
-        from backend.api.common import APIResponse
-        
         query = AgentTask.all()
         
         if status:
@@ -386,7 +385,7 @@ async def list_agent_tasks(
                 "page_size": page_size,
                 "total_pages": (total + page_size - 1) // page_size
             }
-        ).dict()
+        )
         
     except Exception as e:
         logger.error(f"❌ 获取Agent任务列表失败: {str(e)}")
@@ -442,8 +441,8 @@ async def cancel_agent_task(task_id: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/tools")
-async def list_tools(category: Optional[str] = None) -> Dict[str, Any]:
+@router.get("/tools", response_model=APIResponse)
+async def list_tools(category: Optional[str] = None) -> APIResponse:
     """
     获取可用工具列表
     
@@ -453,7 +452,7 @@ async def list_tools(category: Optional[str] = None) -> Dict[str, Any]:
         category: 按分类过滤(plugin/poc/general)
         
     Returns:
-        Dict: 工具列表
+        APIResponse: 工具列表
         
     Examples:
         >>> 获取所有插件
@@ -461,7 +460,6 @@ async def list_tools(category: Optional[str] = None) -> Dict[str, Any]:
     """
     try:
         from ..tools.registry import registry
-        from backend.api.common import APIResponse
         
         tools = registry.list_tools(category=category)
         
@@ -472,36 +470,40 @@ async def list_tools(category: Optional[str] = None) -> Dict[str, Any]:
                 "total": len(tools),
                 "tools": tools
             }
-        ).dict()
+        )
         
     except Exception as e:
         logger.error(f"❌ 获取工具列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/config")
-async def get_config() -> Dict[str, Any]:
+@router.get("/config", response_model=APIResponse)
+async def get_config() -> APIResponse:
     """
     获取Agent配置
     
     返回当前的Agent配置参数。
     
     Returns:
-        Dict: 配置信息
+        APIResponse: 配置信息
     """
-    return {
-        "max_execution_time": agent_config.MAX_EXECUTION_TIME,
-        "max_retries": agent_config.MAX_RETRIES,
-        "max_concurrent_tools": agent_config.MAX_CONCURRENT_TOOLS,
-        "tool_timeout": agent_config.TOOL_TIMEOUT,
-        "enable_llm_planning": agent_config.ENABLE_LLM_PLANNING,
-        "default_scan_tasks": agent_config.DEFAULT_SCAN_TASKS,
-        "enable_memory": agent_config.ENABLE_MEMORY,
-        "enable_kb_integration": agent_config.ENABLE_KB_INTEGRATION
-    }
+    return APIResponse(
+        code=200,
+        message="获取成功",
+        data={
+            "max_execution_time": agent_config.MAX_EXECUTION_TIME,
+            "max_retries": agent_config.MAX_RETRIES,
+            "max_concurrent_tools": agent_config.MAX_CONCURRENT_TOOLS,
+            "tool_timeout": agent_config.TOOL_TIMEOUT,
+            "enable_llm_planning": agent_config.ENABLE_LLM_PLANNING,
+            "default_scan_tasks": agent_config.DEFAULT_SCAN_TASKS,
+            "enable_memory": agent_config.ENABLE_MEMORY,
+            "enable_kb_integration": agent_config.ENABLE_KB_INTEGRATION
+        }
+    )
 
 
-@router.post("/config")
+@router.post("/config", response_model=APIResponse)
 async def update_config(
     max_execution_time: Optional[int] = None,
     max_retries: Optional[int] = None,
@@ -510,14 +512,14 @@ async def update_config(
     enable_llm_planning: Optional[bool] = None,
     enable_memory: Optional[bool] = None,
     enable_kb_integration: Optional[bool] = None
-) -> Dict[str, Any]:
+) -> APIResponse:
     """
     更新Agent配置
     
     动态更新Agent的配置参数。
     
     Returns:
-        Dict: 更新后的配置
+        APIResponse: 更新后的配置
     """
     if max_execution_time is not None:
         agent_config.MAX_EXECUTION_TIME = max_execution_time
@@ -536,7 +538,20 @@ async def update_config(
     
     logger.info("✅ Agent配置已更新")
     
-    return await get_config()
+    return APIResponse(
+        code=200,
+        message="配置更新成功",
+        data={
+            "max_execution_time": agent_config.MAX_EXECUTION_TIME,
+            "max_retries": agent_config.MAX_RETRIES,
+            "max_concurrent_tools": agent_config.MAX_CONCURRENT_TOOLS,
+            "tool_timeout": agent_config.TOOL_TIMEOUT,
+            "enable_llm_planning": agent_config.ENABLE_LLM_PLANNING,
+            "default_scan_tasks": agent_config.DEFAULT_SCAN_TASKS,
+            "enable_memory": agent_config.ENABLE_MEMORY,
+            "enable_kb_integration": agent_config.ENABLE_KB_INTEGRATION
+        }
+    )
 
 
 @router.post("/code/generate")

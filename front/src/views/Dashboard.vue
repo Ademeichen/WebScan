@@ -119,11 +119,11 @@
             <h3>系统信息</h3>
             <el-button
               type="primary"
-              :icon="Refresh"
               @click="loadSystemInfo"
               size="small"
             >
-              刷新
+              <AppIcon name="Refresh" :size="14" />
+              <span>刷新</span>
             </el-button>
           </div>
         </template>
@@ -163,10 +163,10 @@
 <script>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, Warning, CircleCheck, CircleClose, DataAnalysis, ArrowRight, Refresh } from '@element-plus/icons-vue'
 import { tasksApi, settingsApi } from '@/utils/api'
 import StatCard from '@/components/common/StatCard.vue'
 import TaskCard from '@/components/business/TaskCard.vue'
+import AppIcon from '@/components/common/AppIcon.vue'
 import Chart from 'chart.js/auto'
 
 export default {
@@ -174,7 +174,7 @@ export default {
   components: {
     StatCard,
     TaskCard,
-    Search, Warning, CircleCheck, CircleClose, DataAnalysis, ArrowRight, Refresh
+    AppIcon
   },
   setup() {
     const router = useRouter()

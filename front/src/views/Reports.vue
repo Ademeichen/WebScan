@@ -299,7 +299,7 @@ export default {
       if (confirm('确定要删除这个报告吗？')) {
         deleting.value = reportId
         try {
-          const response = await reportsApi.delete(reportId)
+          const response = await reportsApi.deleteReport(reportId)
           if (response.code === 200) {
             reports.value = reports.value.filter(r => r.id !== reportId)
             successMessage.value = '删除成功'

@@ -77,15 +77,6 @@ class ErrorHandler {
    * 标准化错误
    */
   normalizeError(error) {
-    // 网络错误
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      return new AppError(
-        '网络连接失败，请检查网络设置',
-        ErrorType.NETWORK_ERROR
-      )
-    }
-
-    // API错误
     if (error.response) {
       const statusCode = error.response.status
       let message = error.response.data?.message || '请求失败'
@@ -107,12 +98,17 @@ class ErrorHandler {
       return new AppError(message, type, statusCode, error.response.data)
     }
 
-    // 已经是AppError
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      return new AppError(
+        '网络连接失败，请检查网络设置',
+        ErrorType.NETWORK_ERROR
+      )
+    }
+
     if (error instanceof AppError) {
       return error
     }
 
-    // 其他错误
     return new AppError(
       error.message || '发生未知错误',
       ErrorType.UNKNOWN_ERROR,

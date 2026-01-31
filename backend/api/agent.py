@@ -13,10 +13,10 @@ AI Agent API 路由
 import json
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import logging
 
-from models import AgentTask, AgentResult
+from backend.models import AgentTask, AgentResult
 from backend.ai_agents.core.graph import create_agent_graph, initialize_tools
 from backend.ai_agents.core.state import AgentState
 from backend.api.task_utils import handle_task_error
@@ -24,11 +24,18 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/agent", tags=["AI Agent"])
+router = APIRouter(tags=["AI Agent"])
 
 # 初始化 Agent 图和工具
 agent_graph = create_agent_graph()
 initialize_tools()
+
+
+class APIResponse(BaseModel):
+    """统一API响应模型"""
+    code: int = Field(..., description="状态码", ge=100, le=599)
+    message: str = Field(..., description="响应消息")
+    data: Optional[Any] = Field(None, description="响应数据")
 
 class ToolDef(BaseModel):
     """
@@ -58,7 +65,7 @@ class AgentRequest(BaseModel):
     user_requirement: str
 
 
-@router.post("/run")
+@router.post("/run", response_model=APIResponse)
 async def run_agent(request: AgentRequest):
     """
     执行 AI Agent 任务
@@ -77,12 +84,16 @@ async def run_agent(request: AgentRequest):
         request: Agent 请求,包含工具列表和用户需求
         
     Returns:
-        Dict: 包含任务ID和执行结果的响应,结构如下:
+        APIResponse: 包含任务ID和执行结果的响应,结构如下:
             {
-                "task_id": "任务ID",
+                "code": 200,
+                "message": "任务创建成功",
                 "data": {
-                    "plan": "执行计划",
-                    "results": ["执行结果列表"]
+                    "task_id": "任务ID",
+                    "data": {
+                        "plan": "执行计划",
+                        "results": ["执行结果列表"]
+                    }
                 }
             }
         
@@ -146,10 +157,14 @@ async def run_agent(request: AgentRequest):
         
         logger.info(f"✅ Agent 任务执行完成: {task_obj.task_id}")
         
-        return {
-            "task_id": str(task_obj.task_id),
-            "data": final_output
-        }
+        return APIResponse(
+            code=200,
+            message="Agent 任务执行完成",
+            data={
+                "task_id": str(task_obj.task_id),
+                "data": final_output
+            }
+        )
     except Exception as e:
         logger.error(handle_task_error(e, "Agent 任务执行"))
         if 'task_obj' in locals():
@@ -158,7 +173,7 @@ async def run_agent(request: AgentRequest):
         raise HTTPException(status_code=500, detail=f"Agent 执行失败: {str(e)}")
 
 
-@router.get("/tasks/{task_id}", response_model=Dict[str, Any])
+@router.get("/tasks/{task_id}", response_model=APIResponse)
 async def get_agent_task(task_id: str):
     """
     获取 Agent 任务详情
@@ -169,15 +184,19 @@ async def get_agent_task(task_id: str):
         task_id: 任务 ID
         
     Returns:
-        Dict: 包含任务详细信息的响应,结构如下:
+        APIResponse: 包含任务详细信息的响应,结构如下:
             {
-                "task_id": "任务ID",
-                "input_json": "输入JSON",
-                "task_type": "任务类型",
-                "status": "任务状态",
-                "final_output": "执行结果",
-                "created_at": "创建时间",
-                "updated_at": "更新时间"
+                "code": 200,
+                "message": "获取成功",
+                "data": {
+                    "task_id": "任务ID",
+                    "input_json": "输入JSON",
+                    "task_type": "任务类型",
+                    "status": "任务状态",
+                    "final_output": "执行结果",
+                    "created_at": "创建时间",
+                    "updated_at": "更新时间"
+                }
             }
         
     Raises:
@@ -192,15 +211,46 @@ async def get_agent_task(task_id: str):
         if not task:
             raise HTTPException(status_code=404, detail="任务不存在")
         
-        return {
-            "task_id": task.task_id,
-            "input_json": task.input_json,
-            "task_type": task.task_type,
-            "status": task.status,
-            "final_output": task.final_output,
-            "created_at": task.created_at,
-            "updated_at": task.updated_at
-        }
+        input_data = json.loads(task.input_json) if task.input_json else {}
+        target = None
+        progress = 0
+        
+        if isinstance(input_data, dict):
+            if 'tools' in input_data and len(input_data['tools']) > 0:
+                tool_args = input_data['tools'][0].get('args', {})
+                target = tool_args.get('target')
+            elif 'target' in input_data:
+                target = input_data.get('target')
+        
+        if task.status == 'completed':
+            progress = 100
+        elif task.status == 'running':
+            progress = 50
+        
+        result_data = None
+        try:
+            agent_result = await task.result.first()
+            if agent_result and agent_result.final_output:
+                result_data = json.loads(agent_result.final_output)
+        except Exception as e:
+            logger.warning(f"获取任务 {task_id} 的结果失败: {str(e)}")
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "task_id": str(task.task_id),
+                "input_json": task.input_json,
+                "task_type": task.task_type,
+                "status": task.status,
+                "target": target or "未知目标",
+                "progress": progress,
+                "result": result_data,
+                "final_output": result_data,
+                "created_at": task.created_at,
+                "updated_at": task.updated_at
+            }
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -208,7 +258,7 @@ async def get_agent_task(task_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/tasks", response_model=Dict[str, Any])
+@router.get("/tasks", response_model=APIResponse)
 async def list_agent_tasks(
     status: Optional[str] = None,
     page: int = 1,
@@ -225,13 +275,17 @@ async def list_agent_tasks(
         page_size: 每页数量
         
     Returns:
-        Dict: 包含任务列表和分页信息的响应,结构如下:
+        APIResponse: 包含任务列表和分页信息的响应,结构如下:
             {
-                "tasks": [...],
-                "total": 总数,
-                "page": 当前页,
-                "page_size": 每页数量,
-                "total_pages": 总页数
+                "code": 200,
+                "message": "获取成功",
+                "data": {
+                    "tasks": [...],
+                    "total": 总数,
+                    "page": 当前页,
+                    "page_size": 每页数量,
+                    "total_pages": 总页数
+                }
             }
         
     Examples:
@@ -253,21 +307,55 @@ async def list_agent_tasks(
         
         task_list = []
         for task in tasks:
-            task_list.append({
-                "task_id": task.task_id,
-                "task_type": task.task_type,
-                "status": task.status,
-                "created_at": task.created_at,
-                "updated_at": task.updated_at
-            })
+            try:
+                input_data = json.loads(task.input_json) if task.input_json else {}
+                target = None
+                progress = 0
+                
+                if isinstance(input_data, dict):
+                    if 'tools' in input_data and len(input_data['tools']) > 0:
+                        tool_args = input_data['tools'][0].get('args', {})
+                        target = tool_args.get('target')
+                    elif 'target' in input_data:
+                        target = input_data.get('target')
+                
+                if task.status == 'completed':
+                    progress = 100
+                elif task.status == 'running':
+                    progress = 50
+                
+                task_list.append({
+                    "task_id": str(task.task_id),
+                    "task_type": task.task_type,
+                    "status": task.status,
+                    "target": target or "未知目标",
+                    "progress": progress,
+                    "created_at": task.created_at,
+                    "updated_at": task.updated_at
+                })
+            except Exception as e:
+                logger.warning(f"解析任务 {task.task_id} 的输入数据失败: {str(e)}")
+                task_list.append({
+                    "task_id": str(task.task_id),
+                    "task_type": task.task_type,
+                    "status": task.status,
+                    "target": "未知目标",
+                    "progress": 0,
+                    "created_at": task.created_at,
+                    "updated_at": task.updated_at
+                })
         
-        return {
-            "tasks": task_list,
-            "total": total,
-            "page": page,
-            "page_size": page_size,
-            "total_pages": (total + page_size - 1) // page_size
-        }
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "tasks": task_list,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total + page_size - 1) // page_size
+            }
+        )
     except Exception as e:
         logger.error(handle_task_error(e, "获取 Agent 任务列表"))
         raise HTTPException(status_code=500, detail=str(e))

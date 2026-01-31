@@ -35,6 +35,18 @@
 
   .el-button {
     width: 100%;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .el-button.is-circle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .el-button--large {
+    padding: 10px 16px;
+    font-size: 14px;
   }
 
   .el-table {
@@ -49,11 +61,22 @@
   .task-actions,
   .vuln-actions {
     flex-direction: column;
+    gap: 8px;
   }
 
   .task-actions .el-button,
   .vuln-actions .el-button {
     width: 100%;
+  }
+
+  .el-icon,
+  .app-icon {
+    transform: none;
+  }
+
+  .el-icon:hover,
+  .app-icon:hover {
+    transform: none;
   }
 }
 

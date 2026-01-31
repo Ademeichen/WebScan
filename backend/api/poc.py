@@ -167,7 +167,7 @@ async def scan_poc(request: POCScanRequest):
         ... }
     """
     try:
-        from models import Task
+        from backend.models import Task
         from task_executor import task_executor
         
         # 1. 创建任务记录
@@ -249,7 +249,7 @@ async def scan_single_poc(poc_type: str, target: str, timeout: int = 10):
         raise HTTPException(status_code=400, detail=f"未知的 POC 类型: {poc_type}")
     
     try:
-        from models import Task, POCScanResult as DBPOCResult
+        from backend.models import Task, POCScanResult as DBPOCResult
         
         # 1. 创建任务记录
         task = await Task.create(

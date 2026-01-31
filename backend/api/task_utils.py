@@ -31,7 +31,7 @@ async def create_scan_task(
     Returns:
         Task: 创建的任务对象
     """
-    from models import Task
+    from backend.models import Task
     
     if config is None:
         config = {}

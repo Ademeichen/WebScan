@@ -10,6 +10,10 @@ import Settings from '../views/Settings.vue'
 import AWVSScan from '../views/AWVSScan.vue'
 import AgentScan from '../views/AgentScan.vue'
 import NotFound from '../views/NotFound.vue'
+import Notifications from '../views/Notifications.vue'
+import NotificationDetail from '../views/NotificationDetail.vue'
+import Profile from '../views/Profile.vue'
+import KnowledgeBase from '../views/KnowledgeBase.vue'
 
 const routes = [
   {
@@ -40,10 +44,9 @@ const routes = [
     }
   },
   {
-    path: '/vulnerabilities/:taskId',
+    path: '/vulnerability-results',
     name: 'VulnerabilityResults',
     component: VulnerabilityResults,
-    props: true,
     meta: {
       title: '漏洞结果',
       requiresAuth: false
@@ -101,6 +104,42 @@ const routes = [
     component: AgentScan,
     meta: {
       title: 'AI Agent扫描',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/notifications',
+    name: 'Notifications',
+    component: Notifications,
+    meta: {
+      title: '通知',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/notification/:id',
+    name: 'NotificationDetail',
+    component: NotificationDetail,
+    meta: {
+      title: '通知详情',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
+    meta: {
+      title: '个人资料',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/knowledge-base',
+    name: 'KnowledgeBase',
+    component: KnowledgeBase,
+    meta: {
+      title: '漏洞知识库',
       requiresAuth: false
     }
   },

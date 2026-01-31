@@ -145,11 +145,15 @@ export default {
           recentTasks.value = response.tasks
         } else if (response && Array.isArray(response)) {
           recentTasks.value = response
+        } else {
+          recentTasks.value = []
         }
       } catch (error) {
         console.error('加载最近任务失败:', error)
         if (error.response && error.response.status === 500) {
           console.warn('后端服务暂时不可用，使用空任务列表')
+          recentTasks.value = []
+        } else {
           recentTasks.value = []
         }
       }
@@ -192,12 +196,19 @@ export default {
         for (const task of runningTasks) {
           try {
             const response = await aiAgentsApi.getTask(task.task_id)
-            if (response && response.status) {
+            let taskData = null
+            if (response && response.data) {
+              taskData = response.data
+            } else if (response && response.task_id) {
+              taskData = response
+            }
+            
+            if (taskData && taskData.status) {
               const index = recentTasks.value.findIndex(t => t.task_id === task.task_id)
               if (index !== -1) {
                 recentTasks.value[index] = {
                   ...recentTasks.value[index],
-                  ...response
+                  ...taskData
                 }
               }
             }

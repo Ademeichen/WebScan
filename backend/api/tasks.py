@@ -17,7 +17,8 @@ import logging
 from tortoise.functions import Count
 import json
 import asyncio
-from models import Task, Vulnerability, POCScanResult, Report
+from backend.models import Task, Vulnerability, POCScanResult, Report
+from backend.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -510,7 +511,7 @@ async def delete_task(task_id: int):
         >>> DELETE /tasks/1
     """
     try:
-        from models import Task
+        from backend.models import Task
         
         task = await Task.get_or_none(id=task_id)
         if not task:
@@ -763,6 +764,8 @@ async def cancel_task(task_id: int):
 async def get_task_vulnerabilities(
     task_id: int,
     severity: Optional[str] = None,
+    type: Optional[str] = None,
+    source: Optional[str] = None,
     status: Optional[str] = None,
     skip: int = 0,
     limit: int = 100
@@ -770,11 +773,13 @@ async def get_task_vulnerabilities(
     """
     获取任务的漏洞列表
     
-    获取指定任务的所有漏洞,支持按严重程度和状态过滤。
+    获取指定任务的所有漏洞,支持按严重程度、类型、来源和状态过滤。
     
     Args:
         task_id: 任务 ID
         severity: 按严重程度过滤,可选值: 'critical', 'high', 'medium', 'low', 'info'
+        type: 按漏洞类型过滤,可选值: 'SQL注入', 'XSS', 'CSRF', '文件包含', '命令注入', 'SSRF'
+        source: 按漏洞来源过滤,可选值: 'awvs', 'poc'
         status: 按漏洞状态过滤,可选值: 'open', 'fixed', 'reopened'
         skip: 跳过的记录数,用于分页
         limit: 返回的最大记录数
@@ -788,6 +793,8 @@ async def get_task_vulnerabilities(
     Examples:
         >>> 获取任务 1 的所有高危漏洞
         >>> GET /tasks/1/vulnerabilities?severity=high
+        >>> 获取任务 1 的所有AWVS漏洞
+        >>> GET /tasks/1/vulnerabilities?source=awvs
     """
     try:
         task = await Task.get_or_none(id=task_id)
@@ -799,6 +806,10 @@ async def get_task_vulnerabilities(
         # 过滤条件
         if severity:
             query = query.filter(severity=severity.lower())
+        if type:
+            query = query.filter(vuln_type=type)
+        if source:
+            query = query.filter(source=source.lower())
         if status:
             query = query.filter(status=status.lower())
         
@@ -823,7 +834,8 @@ async def get_task_vulnerabilities(
                 "url": vuln.url,
                 "description": vuln.description,
                 "created_at": vuln.created_at,
-                "updated_at": vuln.updated_at
+                "updated_at": vuln.updated_at,
+                "source": vuln.source
             })
         
         return APIResponse(
@@ -863,7 +875,7 @@ async def get_statistics_overview():
         >>> GET /tasks/statistics/overview
     """
     try:
-        from models import Task, Vulnerability
+        from backend.models import Task, Vulnerability
         from tortoise.functions import Count
         
         # 任务统计

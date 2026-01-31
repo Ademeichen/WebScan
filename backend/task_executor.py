@@ -83,10 +83,10 @@ class TaskExecutor:
         执行AWVS扫描任务并实时更新进度
         """
         try:
-            from models import Task
+            from backend.models import Task
             from AVWS.API.Target import Target
             from AVWS.API.Scan import Scan
-            from config import settings
+            from backend.config import settings
             
             # 获取任务
             task = await Task.get(id=task_id)
@@ -263,8 +263,8 @@ class TaskExecutor:
 
     async def _save_scan_results(self, task_id: int, scan_id: str, scan_client):
         try:
-            from models import Task, Vulnerability
-            from api.tasks import standardize_severity
+            from backend.models import Task, Vulnerability
+            from backend.api.tasks import standardize_severity
 
             scan_info = scan_client.get(scan_id)
             if not scan_info:
@@ -677,7 +677,7 @@ class TaskExecutor:
             return
             
         try:
-            from models import Task
+            from backend.models import Task
             task = await Task.get(id=task_id)
             task_type = task.task_type
             

@@ -124,44 +124,60 @@ async def list_kb_vulnerabilities(
     Returns:
         Dict: 包含漏洞列表和分页信息的响应，结构如下:
             {
-                "total": 总数,
-                "page": 当前页,
-                "page_size": 每页数量,
-                "items": [...]
+                "code": 200,
+                "message": "获取成功",
+                "data": {
+                    "total": 总数,
+                    "page": 当前页,
+                    "page_size": 每页数量,
+                    "items": [...]
+                }
             }
         
     Examples:
         >>> 搜索 SQL 注入相关漏洞
         >>> GET /kb/vulnerabilities?keyword=SQL%20Injection
     """
-    query = VulnerabilityKB.all()
-    
-    if keyword:
-        query = query.filter(Q(name__icontains=keyword) | Q(cve_id__icontains=keyword) | Q(description__icontains=keyword))
-    
-    if source:
-        query = query.filter(source=source)
+    try:
+        query = VulnerabilityKB.all()
         
-    if has_poc is not None:
-        query = query.filter(has_poc=has_poc)
+        if keyword:
+            query = query.filter(Q(name__icontains=keyword) | Q(cve_id__icontains=keyword) | Q(description__icontains=keyword))
         
-    total = await query.count()
-    items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-updated_at")
-    
-    # 格式化日期
-    formatted_items = []
-    for item in items:
-        item_dict = dict(item)
-        item_dict['created_at'] = item.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        item_dict['updated_at'] = item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-        formatted_items.append(item_dict)
+        if source:
+            query = query.filter(source=source)
+            
+        if has_poc is not None:
+            query = query.filter(has_poc=has_poc)
+            
+        total = await query.count()
+        items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-updated_at")
         
-    return {
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "items": formatted_items
-    }
+        # 格式化日期
+        formatted_items = []
+        for item in items:
+            item_dict = dict(item)
+            item_dict['created_at'] = item.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            item_dict['updated_at'] = item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+            formatted_items.append(item_dict)
+            
+        return {
+            "code": 200,
+            "message": "获取成功",
+            "data": {
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "items": formatted_items
+            }
+        }
+    except Exception as e:
+        logger.error(f"获取漏洞列表失败: {e}")
+        return {
+            "code": 500,
+            "message": f"获取失败: {str(e)}",
+            "data": None
+        }
 
 @router.get("/vulnerabilities/{kb_id}", response_model=Dict[str, Any])
 async def get_kb_vulnerability(kb_id: int):

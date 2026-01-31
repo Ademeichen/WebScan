@@ -6,35 +6,44 @@
           <div class="logo-section">
             <el-button
               v-if="isMobile"
-              :icon="Menu"
               circle
               @click="toggleMobileMenu"
               class="mobile-menu-btn"
-            />
+            >
+              <AppIcon name="Menu" :size="18" />
+            </el-button>
             <div class="logo">
-              <el-icon :size="24" color="#409EFF">
-                <Lock />
-              </el-icon>
+              <AppIcon name="Lock" :size="24" color="#409EFF" />
               <span class="logo-text">WebScan AI</span>
             </div>
           </div>
           <div class="header-actions">
             <el-badge :value="notificationCount" :hidden="notificationCount === 0" class="notification-badge">
-              <el-button :icon="Bell" circle @click="showNotifications = !showNotifications" />
+              <el-button circle @click="toggleNotifications">
+                <AppIcon name="Bell" :size="18" />
+              </el-button>
             </el-badge>
             <el-dropdown @command="handleUserCommand" trigger="click">
               <el-avatar :size="36" class="user-avatar">
-                <el-icon><User /></el-icon>
+                <AppIcon name="User" :size="20" />
               </el-avatar>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item @click="handleViewNotifications">
+                    <el-icon><Bell /></el-icon>
+                    我的通知
+                  </el-dropdown-item>
                   <div class="user-info">
                     <div class="user-name">{{ userInfo?.username || '管理员' }}</div>
                     <div class="user-email">{{ userInfo?.email || 'admin@webscan.ai' }}</div>
                   </div>
+                  <el-dropdown-item divided command="profile">
+                    <el-icon><User /></el-icon>
+                    个人资料
+                  </el-dropdown-item>
                   <el-dropdown-item divided command="settings">
                     <el-icon><Setting /></el-icon>
-                    个人设置
+                    系统设置
                   </el-dropdown-item>
                   <el-dropdown-item divided command="logout">
                     <el-icon><SwitchButton /></el-icon>
@@ -66,9 +75,7 @@
               :index="item.path"
               @click="closeMobileMenu"
             >
-              <el-icon>
-                <component :is="item.icon" />
-              </el-icon>
+              <AppIcon :name="item.icon" :size="18" />
               <template #title>
                 {{ item.label }}
               </template>
@@ -128,14 +135,34 @@
           <h3>通知</h3>
         </div>
         <div class="notification-list">
-          <div v-for="notification in notifications" :key="notification.id" class="notification-item">
+          <div v-for="notification in notifications" :key="notification.id" class="notification-item" @click="handleNotificationClick(notification)">
             <div class="notification-content">
-              <div class="notification-title">{{ notification.title }}</div>
+              <div class="notification-header">
+                <div class="notification-title">{{ notification.title }}</div>
+                <div class="notification-time">{{ notification.time || formatDate(notification.created_at) }}</div>
+              </div>
               <div class="notification-message">{{ notification.message }}</div>
-              <div class="notification-time">{{ notification.time }}</div>
+            </div>
+            <div class="notification-actions">
+              <button v-if="!notification.read" @click.stop="handleMarkNotificationAsRead(notification)" class="btn-icon" title="标记已读">
+                ✓
+              </button>
+              <button @click.stop="handleDeleteNotification(notification)" class="btn-icon btn-danger" title="删除">
+                🗑
+              </button>
             </div>
           </div>
-          <el-empty v-if="notifications.length === 0" description="暂无通知" />
+          <div v-if="notifications.length === 0" class="empty-notifications">
+            <el-empty description="暂无通知" />
+          </div>
+          <div class="notification-footer">
+            <button @click="handleViewNotifications" class="btn-view-all">
+              查看全部通知 →
+            </button>
+            <button @click="handleMarkAllAsRead" class="btn-mark-all" :disabled="unreadCount === 0">
+              全部标记已读
+            </button>
+          </div>
         </div>
       </div>
     </el-popover>
@@ -144,21 +171,19 @@
 
 <script>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
-import {
-  Menu, Lock, Bell, User, Setting, SwitchButton,
-  DataAnalysis, Search, Aim, Monitor, Document, Setting as SettingIcon
-} from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
+import AppIcon from '@/components/common/AppIcon.vue'
 import { userApi, notificationsApi } from '@/utils/api'
+import { formatDate } from '@/utils/date'
 
 export default {
   name: 'AppLayout',
   components: {
-    Menu, Lock, Bell, User, Setting, SwitchButton,
-    DataAnalysis, Search, Aim, Monitor, Document, SettingIcon
+    AppIcon
   },
   setup() {
     const route = useRoute()
+    const router = useRouter()
     const sidebarCollapsed = ref(false)
     const showNotifications = ref(false)
     const isMobileMenuOpen = ref(false)
@@ -170,6 +195,7 @@ export default {
       { name: 'POCScan', path: '/poc-scan', label: 'POC扫描', icon: 'Aim' },
       { name: 'AWVSScan', path: '/awvs-scan', label: 'AWVS扫描', icon: 'Lock' },
       { name: 'AgentScan', path: '/agent-scan', label: 'AI Agent', icon: 'Monitor' },
+      { name: 'KnowledgeBase', path: '/knowledge-base', label: '漏洞知识库', icon: 'Reading' },
       { name: 'Reports', path: '/reports', label: '报告', icon: 'Document' },
       { name: 'Settings', path: '/settings', label: '设置', icon: 'SettingIcon' }
     ])
@@ -180,6 +206,10 @@ export default {
     const activeMenu = computed(() => route.path)
 
     const notificationCount = computed(() => {
+      return notifications.value.filter(n => !n.read).length
+    })
+
+    const unreadCount = computed(() => {
       return notifications.value.filter(n => !n.read).length
     })
 
@@ -208,10 +238,70 @@ export default {
     }
 
     const handleUserCommand = (command) => {
-      if (command === 'settings') {
-        console.log('跳转到设置页面')
+      if (command === 'profile') {
+        router.push('/profile')
+      } else if (command === 'settings') {
+        router.push('/settings')
       } else if (command === 'logout') {
-        console.log('退出登录')
+        localStorage.removeItem('isAuthenticated')
+        localStorage.removeItem('token')
+        router.push('/')
+      }
+    }
+
+    const handleViewNotifications = () => {
+      router.push('/notifications')
+    }
+
+    const toggleNotifications = () => {
+      showNotifications.value = !showNotifications.value
+    }
+
+    const handleNotificationClick = async (notification) => {
+      if (!notification.read) {
+        try {
+          await notificationsApi.markAsRead(notification.id)
+          notification.read = true
+        } catch (error) {
+          console.error('标记已读失败:', error)
+        }
+      }
+      showNotifications.value = false
+      router.push(`/notification/${notification.id}`)
+    }
+
+    const handleMarkNotificationAsRead = async (notification) => {
+      try {
+        const response = await notificationsApi.markAsRead(notification.id)
+        if (response.code === 200) {
+          notification.read = true
+        }
+      } catch (error) {
+        console.error('标记已读失败:', error)
+      }
+    }
+
+    const handleDeleteNotification = async (notification) => {
+      if (confirm('确定要删除此通知吗？')) {
+        try {
+          const response = await notificationsApi.deleteNotification(notification.id)
+          if (response.code === 200) {
+            notifications.value = notifications.value.filter(n => n.id !== notification.id)
+          }
+        } catch (error) {
+          console.error('删除通知失败:', error)
+        }
+      }
+    }
+
+    const handleMarkAllAsRead = async () => {
+      try {
+        const response = await notificationsApi.markAllAsRead()
+        if (response.code === 200) {
+          notifications.value.forEach(n => n.read = true)
+        }
+      } catch (error) {
+        console.error('全部标记已读失败:', error)
       }
     }
 
@@ -258,11 +348,19 @@ export default {
       userInfo,
       activeMenu,
       notificationCount,
+      unreadCount,
       sidebarWidth,
       toggleSidebar,
       toggleMobileMenu,
       closeMobileMenu,
-      handleUserCommand
+      handleUserCommand,
+      handleViewNotifications,
+      toggleNotifications,
+      handleNotificationClick,
+      handleMarkNotificationAsRead,
+      handleDeleteNotification,
+      handleMarkAllAsRead,
+      formatDate
     }
   }
 }
@@ -391,6 +489,141 @@ export default {
   margin: 0;
   font-size: 16px;
   color: var(--el-text-color-primary);
+}
+
+.notification-item {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.notification-item:hover {
+  background-color: var(--el-fill-color-light);
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.notification-title {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  font-size: 14px;
+}
+
+.notification-time {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.notification-message {
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notification-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.notification-item .btn-icon {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--el-fill-color-blank);
+  color: var(--el-text-color-secondary);
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-item .btn-icon:hover {
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+}
+
+.notification-item .btn-icon.btn-danger {
+  background-color: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
+}
+
+.notification-item .btn-icon.btn-danger:hover {
+  background-color: var(--el-color-danger);
+  color: #ffffff;
+}
+
+.empty-notifications {
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.notification-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--el-border-color-lighter);
+  margin-top: var(--spacing-md);
+}
+
+.btn-view-all {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--el-color-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-view-all:hover {
+  background-color: var(--el-color-primary-dark-2);
+}
+
+.btn-mark-all {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--el-fill-color-blank);
+  color: var(--el-text-color-primary);
+  border: 1px solid var(--el-border-color);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-mark-all:hover:not(:disabled) {
+  background-color: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary);
+  color: var(--el-color-primary);
+}
+
+.btn-mark-all:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .notification-list {

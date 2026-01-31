@@ -16,7 +16,7 @@ from ai_agents.poc_system.poc_manager import POCManager, POCMetadata
 from ai_agents.poc_system.target_manager import TargetManager, TargetInfo
 from ai_agents.poc_system.result_analyzer import ResultAnalyzer
 from ai_agents.poc_system.report_generator import ReportGenerator
-from models import POCVerificationTask, POCVerificationResult
+from backend.models import POCVerificationTask, POCVerificationResult
 
 
 class TestPOCMetadata:

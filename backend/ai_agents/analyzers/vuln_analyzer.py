@@ -160,7 +160,7 @@ class VulnerabilityAnalyzer:
             Dict: 知识库信息
         """
         try:
-            from models import VulnerabilityKB
+            from backend.models import VulnerabilityKB
             kb_entry = await VulnerabilityKB.get_or_none(cve_id=cve)
             if kb_entry:
                 return {

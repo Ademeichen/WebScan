@@ -41,7 +41,7 @@ async def init_db():
         
         await Tortoise.init(
             db_url=db_url,
-            modules={"models": ["models"]},
+            modules={"models": ["backend.models"]},
             _create_db=True
         )
         await Tortoise.generate_schemas()

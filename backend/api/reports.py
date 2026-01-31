@@ -10,7 +10,7 @@ from datetime import datetime
 import logging
 import json
 from urllib.parse import quote
-from models import Report, Task, Vulnerability
+from backend.models import Report, Task, Vulnerability
 
 logger = logging.getLogger(__name__)
 

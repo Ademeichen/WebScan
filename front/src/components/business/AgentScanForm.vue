@@ -174,8 +174,8 @@ export default {
         const response = await aiAgentsApi.getTools()
         if (response && response.data) {
           availableTools.value = response.data.tools || []
-        } else if (response && response.tools) {
-          availableTools.value = response.tools
+        } else if (response && response.code === 200 && response.data) {
+          availableTools.value = response.data.tools || []
         } else {
           console.warn('工具列表响应格式异常:', response)
           availableTools.value = []
@@ -207,17 +207,20 @@ export default {
           capability_requirement: formData.value.capabilityRequirement
         }
 
-        const response = await aiAgentsApi.scan(scanData)
+        const response = await aiAgentsApi.startScan(scanData)
 
-        if (response && response.task_id) {
+        if (response && response.data && response.data.task_id) {
+          emit('success', response.data)
+          handleReset()
+        } else if (response && response.task_id) {
           emit('success', response)
           handleReset()
         } else {
-          errorMessage.value = '启动AI Agent失败'
+          errorMessage.value = response?.message || '启动AI Agent失败'
           emit('error', response)
         }
       } catch (error) {
-        errorMessage.value = error.message || '网络错误，请稍后重试'
+        errorMessage.value = error.message || error.response?.data?.message || '网络错误，请稍后重试'
         emit('error', error)
       } finally {
         isSubmitting.value = false

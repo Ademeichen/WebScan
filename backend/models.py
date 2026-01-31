@@ -145,6 +145,7 @@ class Vulnerability(Model):
     remediation = fields.TextField(null=True, description="修复建议")
     status = fields.CharField(max_length=50, default="open", description="状态：open, fixed, ignored, false_positive")
     source_id = fields.CharField(max_length=100, null=True, description="来源ID (如AWVS vuln_id)")
+    source = fields.CharField(max_length=20, default="awvs", description="来源：awvs, poc")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
     
