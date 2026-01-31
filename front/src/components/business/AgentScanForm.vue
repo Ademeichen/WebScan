@@ -172,10 +172,8 @@ export default {
     const loadTools = async () => {
       try {
         const response = await aiAgentsApi.getTools()
-        if (response && response.data) {
-          availableTools.value = response.data.tools || []
-        } else if (response && response.code === 200 && response.data) {
-          availableTools.value = response.data.tools || []
+        if (response && response.data && response.data.tools) {
+          availableTools.value = response.data.tools
         } else {
           console.warn('工具列表响应格式异常:', response)
           availableTools.value = []

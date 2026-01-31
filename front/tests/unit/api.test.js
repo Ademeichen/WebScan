@@ -3,7 +3,7 @@
  * 测试所有API方法的正确性
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 import * as api from '@/utils/api'
 

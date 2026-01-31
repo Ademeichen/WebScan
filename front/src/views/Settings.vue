@@ -458,7 +458,7 @@ export default {
         try {
           const response = await settingsApi.deleteApiKey(keyId)
           if (response.code === 200) {
-            this.apiKeys = this.apiKeys.filter(k => k.id !== keyId)
+            this.apiKeys = (this.apiKeys || []).filter(k => k.id !== keyId)
             alert('API密钥已删除')
           } else {
             alert('删除失败: ' + (response.message || '未知错误'))

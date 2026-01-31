@@ -111,7 +111,7 @@
             <h3>登录历史</h3>
           </div>
           <div class="card-body">
-            <div v-if="loginHistory.length === 0" class="empty-state">
+            <div v-if="!loginHistory || loginHistory.length === 0" class="empty-state">
               <p>暂无登录历史记录</p>
             </div>
             <div v-else class="login-history-list">
@@ -370,7 +370,7 @@ export default {
         return
       }
 
-      if (passwordForm.value.newPassword.length < 6) {
+      if (!passwordForm.value.newPassword || passwordForm.value.newPassword.length < 6) {
         errorMessage.value = '新密码长度不能少于6位'
         return
       }

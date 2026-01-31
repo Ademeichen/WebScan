@@ -75,12 +75,13 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { awvsApi } from '@/utils/api'
-import { Link, Setting, RefreshLeft, Position } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { Setting } from '@element-plus/icons-vue'
 
 export default {
   name: 'AWVSScanForm',
   components: {
-    Link, Setting, RefreshLeft, Position
+    Setting
   },
   emits: ['submit', 'success', 'error'],
   setup(props, { emit }) {

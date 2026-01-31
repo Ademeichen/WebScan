@@ -206,11 +206,11 @@ export default {
     const activeMenu = computed(() => route.path)
 
     const notificationCount = computed(() => {
-      return notifications.value.filter(n => !n.read).length
+      return (notifications.value || []).filter(n => !n.read).length
     })
 
     const unreadCount = computed(() => {
-      return notifications.value.filter(n => !n.read).length
+      return (notifications.value || []).filter(n => !n.read).length
     })
 
     const sidebarWidth = computed(() => {

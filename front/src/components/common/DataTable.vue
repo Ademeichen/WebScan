@@ -102,7 +102,7 @@ export default {
     const pageSize = ref(10)
 
     const tableHeight = computed(() => {
-      return props.data.length > 10 ? '600px' : null
+      return props.data && props.data.length > 10 ? '600px' : null
     })
 
     const getCellValue = (row, column) => {

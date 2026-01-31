@@ -124,7 +124,7 @@
           </div>
         </div>
         
-        <div v-if="filteredReports.length === 0" class="empty-state">
+        <div v-if="!filteredReports || filteredReports.length === 0" class="empty-state">
           <div class="empty-icon">📋</div>
           <div class="empty-title">暂无报告</div>
           <div class="empty-description">生成第一个安全扫描报告</div>
@@ -191,12 +191,12 @@ export default {
     ]
 
     const canGenerate = computed(() => {
-      return selectedTask.value && selectedFormat.value && selectedContent.value.length > 0
+      return selectedTask.value && selectedFormat.value && selectedContent.value && selectedContent.value.length > 0
     })
 
     const filteredReports = computed(() => {
-      if (!historyFilter.value) return reports.value
-      return reports.value.filter(report => report.report_type === historyFilter.value)
+      if (!historyFilter.value) return reports.value || []
+      return (reports.value || []).filter(report => report.report_type === historyFilter.value)
     })
 
     const fetchTasks = async () => {
@@ -301,7 +301,7 @@ export default {
         try {
           const response = await reportsApi.deleteReport(reportId)
           if (response.code === 200) {
-            reports.value = reports.value.filter(r => r.id !== reportId)
+            reports.value = (reports.value || []).filter(r => r.id !== reportId)
             successMessage.value = '删除成功'
           } else {
             errorMessage.value = '删除失败: ' + (response.message || '未知错误')

@@ -164,6 +164,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { tasksApi, settingsApi } from '@/utils/api'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import StatCard from '@/components/common/StatCard.vue'
 import TaskCard from '@/components/business/TaskCard.vue'
 import AppIcon from '@/components/common/AppIcon.vue'
@@ -344,7 +345,8 @@ export default {
         await tasksApi.deleteTask(taskId)
         await loadRecentTasks()
         ElMessage.success('删除成功')
-      } catch {
+      } catch (error) {
+        console.error('删除任务失败:', error)
       }
     }
 

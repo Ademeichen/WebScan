@@ -69,7 +69,7 @@
       <Loading text="加载任务列表中..." />
     </div>
 
-    <div v-else-if="tasks.length === 0" class="empty-state">
+    <div v-else-if="!tasks || tasks.length === 0" class="empty-state">
       <div class="empty-icon">📋</div>
       <h3>暂无任务</h3>
       <p>点击"新建任务"按钮创建您的第一个扫描任务</p>
