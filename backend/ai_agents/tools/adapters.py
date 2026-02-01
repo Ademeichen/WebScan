@@ -26,8 +26,8 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.baseinfo.baseinfo import getbaseinfo
-        return wrap_async(getbaseinfo, timeout=10)
+        from plugins.baseinfo.baseinfo import getbaseinfo
+        return getbaseinfo
     
     @staticmethod
     def adapt_portscan() -> callable:
@@ -37,9 +37,9 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.portscan.portscan import ScanPort
+        from plugins.portscan.portscan import ScanPort
         
-        async def portscan_wrapper(target: str) -> Dict[str, Any]:
+        def portscan_wrapper(target: str) -> Dict[str, Any]:
             try:
                 scanner = ScanPort(target)
                 if scanner.run_scan():
@@ -62,7 +62,7 @@ class PluginAdapter:
                     "open_ports": []
                 }
         
-        return wrap_async(portscan_wrapper, timeout=120)
+        return portscan_wrapper
     
     @staticmethod
     def adapt_waf_detect() -> callable:
@@ -72,8 +72,8 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.waf.waf import getwaf
-        return wrap_async(getwaf, timeout=10)
+        from plugins.waf.waf import getwaf
+        return getwaf
     
     @staticmethod
     def adapt_cdn_detect() -> callable:
@@ -83,9 +83,9 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.cdnexist.cdnexist import iscdn
+        from plugins.cdnexist.cdnexist import iscdn
         
-        async def cdn_wrapper(target: str) -> Dict[str, Any]:
+        def cdn_wrapper(target: str) -> Dict[str, Any]:
             try:
                 result = iscdn(target)
                 return {
@@ -101,7 +101,7 @@ class PluginAdapter:
                     "has_cdn": False
                 }
         
-        return wrap_async(cdn_wrapper, timeout=10)
+        return cdn_wrapper
     
     @staticmethod
     def adapt_cms_identify() -> callable:
@@ -111,8 +111,8 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.whatcms.whatcms import getwhatcms
-        return wrap_async(getwhatcms, timeout=15)
+        from plugins.whatcms.whatcms import getwhatcms
+        return getwhatcms
     
     @staticmethod
     def adapt_infoleak_scan() -> callable:
@@ -122,8 +122,8 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.infoleak.infoleak import get_infoleak
-        return wrap_async(get_infoleak, timeout=30)
+        from plugins.infoleak.infoleak import get_infoleak
+        return get_infoleak
     
     @staticmethod
     def adapt_subdomain_scan() -> callable:
@@ -133,8 +133,8 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.subdomain.subdomain import get_subdomain
-        return wrap_async(get_subdomain, timeout=60)
+        from plugins.subdomain.subdomain import get_subdomain
+        return get_subdomain
     
     @staticmethod
     def adapt_webside_scan() -> callable:
@@ -144,8 +144,8 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.webside.webside import get_side_info
-        return wrap_async(get_side_info, timeout=30)
+        from plugins.webside.webside import get_side_info
+        return get_side_info
     
     @staticmethod
     def adapt_webweight_scan() -> callable:
@@ -155,8 +155,8 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.webweight.webweight import get_web_weight
-        return wrap_async(get_web_weight, timeout=30)
+        from plugins.webweight.webweight import get_web_weight
+        return get_web_weight
     
     @staticmethod
     def adapt_iplocating() -> callable:
@@ -166,8 +166,8 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from backend.plugins.iplocating.iplocating import get_locating
-        return wrap_async(get_locating, timeout=10)
+        from plugins.iplocating.iplocating import get_locating
+        return get_locating
 
 
 class POCAdapter:
@@ -226,7 +226,7 @@ class POCAdapter:
         Returns:
             Dict[str, Any]: POC名称到模块的映射
         """
-        from backend.poc import (
+        from poc import (
             cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
             struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
             cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc

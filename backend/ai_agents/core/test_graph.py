@@ -3,7 +3,10 @@
 
 测试完整的工作流执行,包括所有10个节点的协同工作。
 """
+import sys
+import asyncio
 import unittest
+from unittest.mock import patch, Mock
 
 from pathlib import Path
 
@@ -11,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from backend.ai_agents.core.state import AgentState
+from backend.ai_agents.core.graph import create_agent_graph
 
 
 
@@ -38,12 +42,12 @@ class TestGraphBuilding(unittest.TestCase):
         graph = create_agent_graph()
         info = graph.get_graph_info()
         
-        self.assertEqual(info["total_nodes"], 10)
+        self.assertEqual(info["total_nodes"], 12)
         self.assertEqual(info["original_nodes"], 5)
-        self.assertEqual(info["new_nodes"], 5)
+        self.assertEqual(info["new_nodes"], 7)
         self.assertEqual(info["entry_point"], "environment_awareness")
-        self.assertEqual(len(info["nodes"]), 10)
-        self.assertEqual(len(info["edges"]), 14)
+        self.assertEqual(len(info["nodes"]), 12)
+        self.assertEqual(len(info["edges"]), 20)
     
     def test_graph_compilation(self):
         """测试图编译"""
@@ -80,7 +84,7 @@ class TestFixedToolWorkflow(unittest.TestCase):
             target_context={}
         )
     
-    async def test_fixed_tool_workflow(self):
+    def test_fixed_tool_workflow(self):
         """测试固定工具扫描完整流程"""
         # 模拟工具执行结果
         with patch('core.nodes.registry.call_tool') as mock_registry:
@@ -89,7 +93,7 @@ class TestFixedToolWorkflow(unittest.TestCase):
                 "data": {"server": "nginx"}
             }
             
-            final_state = await self.graph.invoke(self.initial_state)
+            final_state = asyncio.run(self.graph.invoke(self.initial_state))
         
         # 验证流程
         self.assertIn("environment_awareness", final_state.execution_history[0]["task"])
@@ -104,7 +108,7 @@ class TestFixedToolWorkflow(unittest.TestCase):
         self.assertTrue(final_state.is_complete)
         self.assertEqual(len(final_state.completed_tasks), 1)
     
-    async def test_multiple_tools_workflow(self):
+    def test_multiple_tools_workflow(self):
         """测试多个工具执行流程"""
         initial_state = AgentState(
             task_id="test_multiple_tools",
@@ -120,7 +124,7 @@ class TestFixedToolWorkflow(unittest.TestCase):
                 {"status": "success", "data": {"cms": "WordPress"}}
             ]
             
-            final_state = await self.graph.invoke(initial_state)
+            final_state = asyncio.run(self.graph.invoke(initial_state))
         
         # 验证多个工具都被执行
         self.assertEqual(len(final_state.completed_tasks), 3)
@@ -132,7 +136,7 @@ class TestCodeGenerationWorkflow(unittest.TestCase):
     def setUp(self):
         self.graph = create_agent_graph()
     
-    async def test_code_generation_workflow(self):
+    def test_code_generation_workflow(self):
         """测试代码生成完整流程"""
         initial_state = AgentState(
             task_id="test_code_generation",
@@ -165,7 +169,7 @@ class TestCodeGenerationWorkflow(unittest.TestCase):
                 mock_result.status = "success"
                 mock_executor.return_value = mock_result
                 
-                final_state = await self.graph.invoke(initial_state)
+                final_state = asyncio.run(self.graph.invoke(initial_state))
         
         # 验证流程
         self.assertIn("code_generation", [h["task"] for h in final_state.execution_history])
@@ -177,7 +181,7 @@ class TestCodeGenerationWorkflow(unittest.TestCase):
         self.assertIn("code_execution", final_state.tool_results)
         self.assertEqual(final_state.tool_results["code_execution"]["status"], "success")
     
-    async def test_code_execution_failure(self):
+    def test_code_execution_failure(self):
         """测试代码执行失败触发功能补充"""
         initial_state = AgentState(
             task_id="test_code_failure",
@@ -215,7 +219,7 @@ class TestCodeGenerationWorkflow(unittest.TestCase):
                     }
                     mock_enhancer.return_value = mock_enhance_result
                     
-                    final_state = await self.graph.invoke(initial_state)
+                    final_state = asyncio.run(self.graph.invoke(initial_state))
         
         # 验证功能补充被触发
         self.assertIn("capability_enhancement", [h["task"] for h in final_state.execution_history])
@@ -230,7 +234,7 @@ class TestCapabilityEnhancementWorkflow(unittest.TestCase):
     def setUp(self):
         self.graph = create_agent_graph()
     
-    async def test_capability_enhancement_workflow(self):
+    def test_capability_enhancement_workflow(self):
         """测试功能补充完整流程"""
         initial_state = AgentState(
             task_id="test_enhancement",
@@ -259,7 +263,7 @@ class TestCapabilityEnhancementWorkflow(unittest.TestCase):
                 mock_result.status = "success"
                 mock_executor.return_value = mock_result
                 
-                final_state = await self.graph.invoke(initial_state)
+                final_state = asyncio.run(self.graph.invoke(initial_state))
         
         # 验证功能补充和代码执行都被执行
         self.assertIn("capability_enhancement", [h["task"] for h in final_state.execution_history])
@@ -272,7 +276,7 @@ class TestDecisionBranching(unittest.TestCase):
     def setUp(self):
         self.graph = create_agent_graph()
     
-    async def test_fixed_tool_branch(self):
+    def test_fixed_tool_branch(self):
         """测试固定工具分支"""
         initial_state = AgentState(
             task_id="test_decision_fixed",
@@ -280,7 +284,7 @@ class TestDecisionBranching(unittest.TestCase):
             target_context={}
         )
         
-        final_state = await self.graph.invoke(initial_state)
+        final_state = asyncio.run(self.graph.invoke(initial_state))
         
         # 验证选择了固定工具路径
         tool_execution_found = False
@@ -292,7 +296,7 @@ class TestDecisionBranching(unittest.TestCase):
         self.assertTrue(tool_execution_found)
         self.assertNotIn("code_generation", [h["task"] for h in final_state.execution_history])
     
-    async def test_custom_code_branch(self):
+    def test_custom_code_branch(self):
         """测试代码生成分支"""
         initial_state = AgentState(
             task_id="test_decision_custom",
@@ -302,7 +306,7 @@ class TestDecisionBranching(unittest.TestCase):
             }
         )
         
-        final_state = await self.graph.invoke(initial_state)
+        final_state = asyncio.run(self.graph.invoke(initial_state))
         
         # 验证选择了代码生成路径
         code_generation_found = False
@@ -314,7 +318,7 @@ class TestDecisionBranching(unittest.TestCase):
         self.assertTrue(code_generation_found)
         self.assertNotIn("tool_execution", [h["task"] for h in final_state.execution_history])
     
-    async def test_enhance_first_branch(self):
+    def test_enhance_first_branch(self):
         """测试先增强分支"""
         initial_state = AgentState(
             task_id="test_decision_enhance",
@@ -324,7 +328,7 @@ class TestDecisionBranching(unittest.TestCase):
             }
         )
         
-        final_state = await self.graph.invoke(initial_state)
+        final_state = asyncio.run(self.graph.invoke(initial_state))
         
         # 验证选择了功能增强路径
         enhance_found = False
@@ -342,7 +346,7 @@ class TestErrorHandling(unittest.TestCase):
     def setUp(self):
         self.graph = create_agent_graph()
     
-    async def test_node_error_handling(self):
+    def test_node_error_handling(self):
         """测试节点错误处理"""
         initial_state = AgentState(
             task_id="test_error",
@@ -354,14 +358,14 @@ class TestErrorHandling(unittest.TestCase):
             mock_registry.side_effect = Exception("Tool execution failed")
             
             try:
-                final_state = await self.graph.invoke(initial_state)
+                final_state = asyncio.run(self.graph.invoke(initial_state))
                 # 应该捕获错误,但继续执行
                 self.assertGreater(len(final_state.errors), 0)
             except Exception as e:
                 # 应该抛出异常
                 self.assertIn("Tool execution failed", str(e))
     
-    async def test_environment_detection_error(self):
+    def test_environment_detection_error(self):
         """测试环境检测错误处理"""
         initial_state = AgentState(
             task_id="test_env_error",
@@ -374,7 +378,7 @@ class TestErrorHandling(unittest.TestCase):
             mock_env.get_environment_report.side_effect = Exception("Detection failed")
             
             try:
-                final_state = await self.graph.invoke(initial_state)
+                final_state = asyncio.run(self.graph.invoke(initial_state))
                 # 应该捕获错误
                 self.assertGreater(len(final_state.errors), 0)
             except Exception as e:
@@ -387,7 +391,7 @@ class TestStatePropagation(unittest.TestCase):
     def setUp(self):
         self.graph = create_agent_graph()
     
-    async def test_state_propagation_across_nodes(self):
+    def test_state_propagation_across_nodes(self):
         """测试状态在节点间正确传递"""
         initial_state = AgentState(
             task_id="test_state_prop",
@@ -402,13 +406,13 @@ class TestStatePropagation(unittest.TestCase):
                 "data": {"server": "updated_server"}
             }
             
-            final_state = await self.graph.invoke(initial_state)
+            final_state = asyncio.run(self.graph.invoke(initial_state))
         
         # 验证上下文被更新
         self.assertIn("server", final_state.target_context)
         self.assertEqual(final_state.target_context["server"], "updated_server")
     
-    async def test_vulnerability_propagation(self):
+    def test_vulnerability_propagation(self):
         """测试漏洞信息在节点间正确传递"""
         initial_state = AgentState(
             task_id="test_vuln_prop",
@@ -425,7 +429,7 @@ class TestStatePropagation(unittest.TestCase):
                 }
             }
             
-            final_state = await self.graph.invoke(initial_state)
+            final_state = asyncio.run(self.graph.invoke(initial_state))
         
         # 验证漏洞被添加
         self.assertEqual(len(final_state.vulnerabilities), 1)

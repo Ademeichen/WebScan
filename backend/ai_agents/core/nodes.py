@@ -773,9 +773,13 @@ class SeebugAgentNode:
         """
         初始化Seebug Agent节点
         """
-        from backend.utils.seebug_utils import seebug_utils
-        self.seebug_agent = seebug_utils.get_agent()
-        logger.info("✅ Seebug Agent节点初始化完成")
+        try:
+            from utils.seebug_utils import seebug_utils
+            self.seebug_agent = seebug_utils.get_agent()
+            logger.info("✅ Seebug Agent节点初始化完成")
+        except ImportError as e:
+            logger.warning(f"⚠️ Seebug Agent节点初始化失败: {str(e)}")
+            self.seebug_agent = None
     
     async def __call__(self, state: AgentState) -> AgentState:
         """
@@ -955,7 +959,7 @@ class POCVerificationNode:
         
         try:
             # 检查 POC 验证是否启用
-            from backend.config import settings
+            from config import settings
             if not settings.POC_VERIFICATION_ENABLED:
                 logger.warning(f"[{self.node_name}] ⚠️ POC 验证功能已禁用")
                 state.add_execution_step("poc_verification", {}, "disabled")
@@ -1031,7 +1035,10 @@ class POCVerificationNode:
         target = state.target
         
         # 导入必要的模块
-        from backend.ai_agents.poc_system import poc_manager, verification_engine
+        try:
+            from ai_agents.poc_system import poc_manager, verification_engine
+        except ImportError:
+            from poc_system import poc_manager, verification_engine
         from datetime import datetime
         
         # 为每个 POC 任务创建验证任务并执行
@@ -1122,7 +1129,10 @@ class POCVerificationNode:
         logger.info(f"[{self.node_name}] 🔍 开始分析验证结果")
         
         # 导入必要的模块
-        from backend.ai_agents.poc_system import result_analyzer
+        try:
+            from ai_agents.poc_system import result_analyzer
+        except ImportError:
+            from poc_system import result_analyzer
         from datetime import datetime
         
         # 转换为 POCVerificationResult 对象

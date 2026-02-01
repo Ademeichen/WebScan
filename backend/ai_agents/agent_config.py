@@ -4,7 +4,7 @@ Agent 配置文件
 定义Agent相关的配置参数。
 """
 from typing import Dict, List
-from backend.config import settings
+from config import settings
 
 class AgentConfig:
     """
