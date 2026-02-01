@@ -89,7 +89,7 @@ class SeebugUtils:
         """
         return SEBUG_AGENT_AVAILABLE and self._initialized
     
-    def get_client(self) -> Optional[SeebugClient]:
+    def get_client(self) -> Optional['SeebugClient']:
         """
         获取Seebug客户端
         
@@ -98,7 +98,7 @@ class SeebugUtils:
         """
         return self.client if self.is_available() else None
     
-    def get_generator(self) -> Optional[POCGenerator]:
+    def get_generator(self) -> Optional['POCGenerator']:
         """
         获取POC生成器
         

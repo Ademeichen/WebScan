@@ -21,6 +21,7 @@ FastAPI 应用配置文件
     # DEBUG=True
 """
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import Optional
 
 
@@ -455,32 +456,11 @@ class Settings(BaseSettings):
     可以通过环境变量 POC_REPORT_FORMAT 覆盖。
     """
     
-    class Config:
-        """
-        Pydantic 配置类
-        
-        定义配置文件加载方式和行为。
-        """
-        env_file = "backend/.env"
-        """
-        环境变量文件路径
-        
-        从项目根目录的 backend/.env 文件加载配置。
-        文件格式:KEY=VALUE
-        例如:
-            APP_NAME=My App
-            DEBUG=True
-            DATABASE_URL=sqlite://./data/mydb.db
-        """
-        env_file_encoding = "utf-8"
-        
-        case_sensitive = True
-        """
-        是否区分大小写
-        
-        设置为 True 时,环境变量名称必须与配置项名称完全匹配(包括大小写)。
-        例如:OPENAI_API_KEY(不是 openai_api_key)
-        """
+    model_config = ConfigDict(
+        env_file="backend/.env",
+        env_file_encoding="utf-8",
+        case_sensitive=True
+    )
 
 
 settings = Settings()

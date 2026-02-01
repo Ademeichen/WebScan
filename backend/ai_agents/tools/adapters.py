@@ -3,6 +3,7 @@
 
 适配现有插件和POC,提供统一的调用接口。
 """
+import asyncio
 import logging
 from typing import Any, Dict, List
 
@@ -290,3 +291,116 @@ class POCAdapter:
         }
         
         return port_mapping.get(port, [])
+
+
+class DependencyAdapter:
+    """
+    依赖安装适配器
+    
+    适配依赖安装功能,提供统一的调用接口。
+    """
+    
+    @staticmethod
+    def adapt_install_dependencies() -> callable:
+        """
+        适配依赖安装功能
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from .dependency_installer import install_dependencies
+        
+        def install_wrapper(target: str, packages: str = None, **kwargs) -> Dict[str, Any]:
+            try:
+                if packages:
+                    package_list = [p.strip() for p in packages.split(',')]
+                else:
+                    package_list = []
+                
+                result = install_dependencies(package_list, **kwargs)
+                return {
+                    "status": result["status"],
+                    "installed_packages": result["installed_packages"],
+                    "output": result["output"],
+                    "error": result["error"],
+                    "target": target
+                }
+            except Exception as e:
+                logger.error(f"依赖安装失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "installed_packages": [],
+                    "target": target
+                }
+        
+        return install_wrapper
+    
+    @staticmethod
+    def adapt_check_package() -> callable:
+        """
+        适配包检查功能
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from .dependency_installer import check_package_installed
+        
+        def check_wrapper(target: str, package: str = None, **kwargs) -> Dict[str, Any]:
+            try:
+                if not package:
+                    return {
+                        "status": "failed",
+                        "error": "未指定包名",
+                        "installed": False,
+                        "target": target
+                    }
+                
+                installed = check_package_installed(package)
+                return {
+                    "status": "success",
+                    "installed": installed,
+                    "package": package,
+                    "target": target
+                }
+            except Exception as e:
+                logger.error(f"包检查失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "installed": False,
+                    "target": target
+                }
+        
+        return check_wrapper
+    
+    @staticmethod
+    def adapt_get_packages() -> callable:
+        """
+        适配获取已安装包列表功能
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from .dependency_installer import get_installed_packages
+        
+        def list_wrapper(target: str, **kwargs) -> Dict[str, Any]:
+            try:
+                packages = get_installed_packages()
+                return {
+                    "status": "success",
+                    "packages": packages,
+                    "count": len(packages),
+                    "target": target
+                }
+            except Exception as e:
+                logger.error(f"获取包列表失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "packages": {},
+                    "count": 0,
+                    "target": target
+                }
+        
+        return list_wrapper

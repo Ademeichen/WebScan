@@ -331,7 +331,15 @@ def main():
 4. 添加必要的注释说明
 5. 代码应该可以直接执行,无需额外配置
 
-请生成完整的扫描脚本代码,只返回代码内容,不要包含其他说明。
+重要: 必须返回JSON格式,包含以下字段:
+- code: 生成的代码字符串
+- language: 代码语言
+- description: 代码说明
+- estimated_time: 预计执行时间(秒)
+- dependencies: 依赖列表
+
+示例格式:
+{{"code": "import requests\\n...", "language": "python", "description": "扫描脚本", "estimated_time": 60, "dependencies": ["requests"]}}
 """
         
         user_prompt = f"生成一个{scan_type}扫描脚本,目标为{target}"
@@ -343,7 +351,12 @@ def main():
             ])
             
             chain = prompt | self.llm | JsonOutputParser(pydantic_object=CodeGenerationResponse)
-            result = await chain.ainvoke({})
+            result = await chain.ainvoke({
+                "scan_type": scan_type,
+                "target": target,
+                "requirements": requirements,
+                "language": language
+            })
             
             logger.info(f"✅ LLM代码生成完成: {scan_type}")
             

@@ -5,6 +5,7 @@
 """
 import asyncio
 import sys
+import unittest
 
 from pathlib import Path
 
@@ -15,23 +16,24 @@ from backend.ai_agents.core.state import AgentState
 from backend.ai_agents.core.graph import create_agent_graph
 
 
-async def test_fixed_tool_workflow():
-    """测试固定工具扫描完整流程"""
-    print("\n" + "="*60)
-    print("测试1: 固定工具扫描流程")
-    print("="*60)
+class TestE2EWorkflows(unittest.TestCase):
+    """端到端工作流测试"""
     
-    graph = create_agent_graph()
-    initial_state = AgentState(
-        task_id="e2e_fixed_tool",
-        target="https://www.baidu.com",
-        target_context={}
-    )
-    
-    try:
+    async def test_fixed_tool_workflow(self):
+        """测试固定工具扫描完整流程"""
+        print("\n" + "="*60)
+        print("测试1: 固定工具扫描流程")
+        print("="*60)
+        
+        graph = create_agent_graph()
+        initial_state = AgentState(
+            task_id="e2e_fixed_tool",
+            target="https://www.baidu.com",
+            target_context={}
+        )
+        
         final_state = await graph.invoke(initial_state)
         
-
         print(f"  任务ID: {final_state.task_id}")
         print(f"  完成任务: {len(final_state.completed_tasks)}")
         print(f"  发现漏洞: {len(final_state.vulnerabilities)}")
@@ -39,35 +41,27 @@ async def test_fixed_tool_workflow():
         print(f"  最终状态: {'完成' if final_state.is_complete else '未完成'}")
         
         return True
-    except Exception as e:
-        print(f"❌ 测试失败: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-
-async def test_code_generation_workflow():
-    """测试代码生成扫描完整流程"""
-    print("\n" + "="*60)
-    print("测试2: 代码生成扫描流程")
-    print("="*60)
     
-    graph = create_agent_graph()
-    initial_state = AgentState(
-        task_id="e2e_code_generation",
-        target="https://www.baidu.com",
-        target_context={
-            "need_custom_scan": True,
-            "custom_scan_type": "vuln_scan",
-            "custom_scan_requirements": "检测SQL注入漏洞",
-            "custom_scan_language": "python"
-        }
-    )
-    
-    try:
+    async def test_code_generation_workflow(self):
+        """测试代码生成扫描完整流程"""
+        print("\n" + "="*60)
+        print("测试2: 代码生成扫描流程")
+        print("="*60)
+        
+        graph = create_agent_graph()
+        initial_state = AgentState(
+            task_id="e2e_code_generation",
+            target="https://www.baidu.com",
+            target_context={
+                "need_custom_scan": True,
+                "custom_scan_type": "vuln_scan",
+                "custom_scan_requirements": "检测SQL注入漏洞",
+                "custom_scan_language": "python"
+            }
+        )
+        
         final_state = await graph.invoke(initial_state)
         
-
         print(f"  任务ID: {final_state.task_id}")
         print(f"  完成任务: {len(final_state.completed_tasks)}")
         print(f"  发现漏洞: {len(final_state.vulnerabilities)}")
@@ -79,62 +73,46 @@ async def test_code_generation_workflow():
             print("✅ 代码生成节点被执行")
 
         return True
-    except Exception as e:
-        print(f"❌ 测试失败: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-
-async def test_capability_enhancement_workflow():
-    """测试功能补充完整流程"""
-    print("\n" + "="*60)
-    print("测试3: 功能补充流程")
-    print("="*60)
     
-    graph = create_agent_graph()
-    initial_state = AgentState(
-        task_id="e2e_enhancement",
-        target="https://www.baidu.com",
-        target_context={
-            "need_capability_enhancement": True,
-            "capability_requirement": "安装requests库"
-        }
-    )
-    
-    try:
+    async def test_capability_enhancement_workflow(self):
+        """测试功能补充完整流程"""
+        print("\n" + "="*60)
+        print("测试3: 功能补充流程")
+        print("="*60)
+        
+        graph = create_agent_graph()
+        initial_state = AgentState(
+            task_id="e2e_enhancement",
+            target="https://www.baidu.com",
+            target_context={
+                "need_capability_enhancement": True,
+                "capability_requirement": "安装requests库"
+            }
+        )
+        
         final_state = await graph.invoke(initial_state)
         
-
         print(f"  任务ID: {final_state.task_id}")
         print(f"  完成任务: {len(final_state.completed_tasks)}")
         print(f"  执行步骤: {len(final_state.execution_history)}")
         
         return True
-    except Exception as e:
-        print(f"❌ 测试失败: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-
-async def test_full_workflow():
-    """测试完整工作流(环境感知→报告生成)"""
-    print("\n" + "="*60)
-    print("测试4: 完整工作流")
-    print("="*60)
     
-    graph = create_agent_graph()
-    initial_state = AgentState(
-        task_id="e2e_full_workflow",
-        target="https://www.baidu.com",
-        target_context={}
-    )
-    
-    try:
+    async def test_full_workflow(self):
+        """测试完整工作流(环境感知→报告生成)"""
+        print("\n" + "="*60)
+        print("测试4: 完整工作流")
+        print("="*60)
+        
+        graph = create_agent_graph()
+        initial_state = AgentState(
+            task_id="e2e_full_workflow",
+            target="https://www.baidu.com",
+            target_context={}
+        )
+        
         final_state = await graph.invoke(initial_state)
         
-
         print(f"  任务ID: {final_state.task_id}")
         print(f"  完成任务: {len(final_state.completed_tasks)}")
         print(f"  发现漏洞: {len(final_state.vulnerabilities)}")
@@ -148,7 +126,6 @@ async def test_full_workflow():
             "tool_execution", "result_verification", "vulnerability_analysis", "report_generation"
         }
         
-
         for node in expected_nodes:
             if node in executed_nodes:
                 print(f"  ✓ {node}")
@@ -156,31 +133,24 @@ async def test_full_workflow():
                 print(f"  ✗ {node}")
         
         return True
-    except Exception as e:
-        print(f"❌ 测试失败: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-
-async def test_error_recovery():
-    """测试错误恢复能力"""
-    print("\n" + "="*60)
-    print("测试5: 错误恢复能力")
-    print("="*60)
     
-    graph = create_agent_graph()
-    
-    # 测试1: 环境检测失败后的恢复
-    initial_state = AgentState(
-        task_id="e2e_error_recovery",
-        target="https://www.baidu.com",
-        target_context={}
-    )
-    
-    try:
+    async def test_error_recovery(self):
+        """测试错误恢复能力"""
+        print("\n" + "="*60)
+        print("测试5: 错误恢复能力")
+        print("="*60)
+        
+        graph = create_agent_graph()
+        
+        # 测试1: 环境检测失败后的恢复
+        initial_state = AgentState(
+            task_id="e2e_error_recovery",
+            target="https://www.baidu.com",
+            target_context={}
+        )
+        
         final_state = await graph.invoke(initial_state)
-
+        
         print(f"  任务ID: {final_state.task_id}")
         print(f"  错误数量: {len(final_state.errors)}")
         
@@ -188,11 +158,6 @@ async def test_error_recovery():
         self.assertTrue(final_state.is_complete)
         
         return True
-    except Exception as e:
-        print(f"❌ 测试失败: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
 
 
 async def main():

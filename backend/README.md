@@ -81,11 +81,11 @@ backend/
 │   │   ├── graph.py            # LangGraph 图构建
 │   │   ├── nodes.py            # 图节点定义
 │   │   ├── state.py            # Agent 状态管理
-│   │   └── test_*.py           # 单元测试
+│   │   └── tests/             # 核心模块测试
 │   ├── analyzers/              # 分析器模块
 │   │   ├── vuln_analyzer.py    # 漏洞分析器
 │   │   ├── report_gen.py       # 报告生成器
-│   │   └── test_*.py           # 单元测试
+│   │   └── tests/             # 分析器测试
 │   ├── code_execution/         # 代码执行模块
 │   │   ├── code_generator.py    # 代码生成器
 │   │   ├── executor.py         # 代码执行器
@@ -93,7 +93,7 @@ backend/
 │   │   ├── capability_enhancer.py # 能力增强器
 │   │   ├── process_utils.py    # 进程工具
 │   │   ├── README.md           # 代码执行文档
-│   │   └── test_*.py           # 单元测试
+│   │   └── tests/             # 代码执行测试
 │   ├── poc_system/             # POC 系统模块
 │   │   ├── poc_manager.py      # POC 管理器
 │   │   ├── target_manager.py   # 目标管理器
@@ -106,16 +106,40 @@ backend/
 │   │   ├── registry.py         # 工具注册表
 │   │   ├── adapters.py         # 工具适配器
 │   │   ├── wrappers.py         # 工具包装器
-│   │   └── test_*.py           # 单元测试
+│   │   └── tests/             # 工具模块测试
 │   ├── utils/                  # 工具函数
 │   │   ├── cache.py            # 缓存管理
 │   │   ├── file_sync.py        # 文件同步
 │   │   ├── priority.py         # 优先级管理
 │   │   ├── retry.py            # 重试机制
-│   │   └── test_*.py           # 单元测试
+│   │   └── tests/             # 工具函数测试
 │   └── api/                    # AI Agents API
 │       ├── routes.py           # API 路由
 │       └── __init__.py         # 模块初始化
+│
+├── api/                        # API 路由模块
+│   ├── tests/                 # API模块测试
+│   ├── __init__.py             # 路由注册
+│   ├── scan.py                 # 扫描功能 API
+│   ├── poc.py                  # POC 漏洞扫描 API
+│   ├── awvs.py                 # AWVS 集成 API
+│   ├── ai.py                   # AI 对话 API
+│   ├── agent.py                # AI Agent API
+│   ├── settings.py             # 系统设置 API
+│   ├── tasks.py                # 任务管理 API
+│   ├── reports.py              # 报告生成 API
+│   ├── kb.py                   # 知识库 API
+│   ├── poc_gen.py              # POC 智能生成 API
+│   ├── poc_verification.py     # POC 验证 API
+│   ├── poc_files.py            # POC 文件管理 API
+│   ├── seebug_agent.py         # Seebug Agent API
+│   ├── seebug_client.py        # Seebug 客户端 API
+│   ├── user.py                 # 用户管理 API
+│   ├── notifications.py        # 通知管理 API
+│   ├── common.py               # 通用工具
+│   ├── decorators.py           # 装饰器
+│   ├── task_utils.py           # 任务工具
+│   └── validation_utils.py    # 验证工具
 │
 ├── plugins/                    # 扫描插件模块
 │   ├── README.md               # 插件说明文档
@@ -157,6 +181,24 @@ backend/
 │
 ├── logs/                      # 日志目录
 │   └── app.log                # 应用日志
+│
+├── tests/                     # 集成测试
+│   ├── __init__.py
+│   ├── test_api.py
+│   ├── test_api_detail.py
+│   ├── test_poc_files.py
+│   ├── test_poc_verification.py
+│   ├── add_sample_kb.py
+│   ├── check_id.py
+│   ├── check_kb.py
+│   ├── check_tasks.py
+│   ├── check_vulns.py
+│   ├── prepare_test_data.py
+│   └── verify_test_data.py
+│
+├── run_all_tests.py           # 运行所有测试
+├── run_module_tests.py        # 运行模块测试
+├── TEST_OPTIMIZATION_SUMMARY.md # 测试优化总结
 │
 └── Pocsuite3Agent/            # Pocsuite3 Agent 集成
     ├── agent.py               # Pocsuite3 Agent
@@ -463,10 +505,77 @@ python main.py
 3. 更新 `api/poc_gen.py` 中的 POC 生成逻辑
 
 ### 测试
-运行测试套件：
-```bash
-pytest tests/
+
+项目采用模块化的测试结构，测试文件按照功能模块组织：
+
+#### 测试目录结构
 ```
+backend/
+├── ai_agents/
+│   ├── core/tests/          # 核心模块测试
+│   │   ├── test_graph.py     # 图构建和执行测试
+│   │   ├── test_state.py     # 状态管理测试
+│   │   ├── test_nodes.py     # 节点实现测试
+│   │   └── test_e2e.py      # 端到端集成测试
+│   ├── utils/tests/         # 工具模块测试
+│   │   ├── test_retry.py    # 重试机制测试
+│   │   └── test_priority.py # 优先级管理测试
+│   ├── tools/tests/         # 工具适配器测试
+│   │   └── test_adapters.py # 适配器功能测试
+│   ├── code_execution/tests/# 代码执行模块测试
+│   │   ├── test_environment.py    # 环境感知测试
+│   │   ├── test_executor.py       # 代码执行器测试
+│   │   ├── test_code_generator.py # 代码生成器测试
+│   │   └── test_capability_enhancer.py # 能力增强器测试
+│   └── analyzers/tests/     # 分析器模块测试
+│       ├── test_vuln_analyzer.py # 漏洞分析器测试
+│       └── test_report_gen.py    # 报告生成器测试
+├── api/tests/              # API模块测试
+│   └── test_routes.py      # API路由测试
+└── tests/                 # 集成测试
+    ├── test_api.py         # API集成测试
+    ├── test_api_detail.py  # API详细测试
+    ├── test_poc_files.py  # POC文件测试
+    └── test_poc_verification.py # POC验证测试
+```
+
+#### 运行测试
+
+运行所有测试：
+```bash
+pytest tests/ -v
+```
+
+运行特定模块的测试：
+```bash
+pytest ai_agents/core/tests/ -v
+pytest ai_agents/tools/tests/ -v
+pytest ai_agents/code_execution/tests/ -v
+```
+
+运行特定测试文件：
+```bash
+pytest ai_agents/core/tests/test_state.py -v
+```
+
+运行特定测试用例：
+```bash
+pytest ai_agents/core/tests/test_state.py::TestAgentState::test_initialization -v
+```
+
+#### 测试覆盖率
+
+查看测试覆盖率：
+```bash
+pytest --cov=ai_agents tests/ --cov-report=html
+```
+
+#### 测试要求
+
+- 所有新功能必须包含单元测试
+- 测试覆盖率应不低于70%
+- 测试应包含正常流程和异常情况
+- 使用pytest和pytest-asyncio进行测试
 
 ## 部署说明
 

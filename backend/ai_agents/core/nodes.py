@@ -6,6 +6,8 @@ LangGraph 节点定义
 import logging
 import asyncio
 from typing import Dict, Any, List
+from pathlib import Path
+from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
@@ -142,7 +144,8 @@ class TaskPlanningNode:
         
         context_info = ""
         if state.target_context:
-            context_info = f"\n目标上下文: {state.target_context}"
+            # 使用双花括号来转义花括号，避免被ChatPromptTemplate错误解析
+            context_info = f"\n目标上下文: {str(state.target_context).replace('{', '{{').replace('}', '}}')}"
         
         system_prompt = """
         你是Web安全扫描专家,需要为目标规划扫描任务。
@@ -167,13 +170,66 @@ class TaskPlanningNode:
             ])
             
             chain = prompt | self.llm | JsonOutputParser(pydantic_object=PlanningResponse)
-            result = await chain.ainvoke({})
+            result = await chain.ainvoke({"tools": tools_desc})
             
-            logger.info(f"LLM规划结果: {result.plan}")
-            return result.plan
+            # 检查result的类型并提取任务列表
+            tasks = self._extract_tasks_from_result(result)
+            
+            if tasks:
+                logger.info(f"LLM规划结果: {tasks}")
+                return tasks
+            else:
+                raise ValueError("无法从LLM规划结果中提取有效任务列表")
+                
         except Exception as e:
             logger.error(f"LLM规划失败,使用规则化规划: {str(e)}")
             return await self._rule_based_planning(state)
+    
+    def _extract_tasks_from_result(self, result: Any) -> List[str]:
+        """
+        从LLM结果中提取任务列表
+        
+        Args:
+            result: LLM返回的结果
+            
+        Returns:
+            List[str]: 任务列表
+        """
+        if result is None:
+            return []
+        
+        # 情况1: result 是 PlanningResponse 对象
+        if isinstance(result, PlanningResponse):
+            if isinstance(result.plan, list):
+                return result.plan
+            return []
+        
+        # 情况2: result 是字典类型
+        if isinstance(result, dict):
+            if 'plan' in result and isinstance(result['plan'], list):
+                return result['plan']
+            # 如果字典本身就是任务列表（兼容性处理）
+            if all(isinstance(v, str) for v in result.values()):
+                return list(result.values())
+            return []
+        
+        # 情况3: result 是列表类型
+        if isinstance(result, list):
+            if all(isinstance(item, str) for item in result):
+                return result
+            return []
+        
+        # 情况4: result 是字符串类型（JSON字符串）
+        if isinstance(result, str):
+            try:
+                import json
+                parsed = json.loads(result)
+                return self._extract_tasks_from_result(parsed)
+            except json.JSONDecodeError:
+                return []
+        
+        logger.warning(f"无法识别的LLM结果类型: {type(result)}, 值: {result}")
+        return []
 
 
 class ToolExecutionNode:
@@ -199,52 +255,145 @@ class ToolExecutionNode:
         """
         if not state.current_task:
             logger.info(f"[{state.task_id}] ⏹️ 没有待执行任务")
-            state.is_complete = True
+            # 不要立即标记为完成，让工作流继续执行到result_verification节点
             return state
         
         tool_name = state.current_task
         logger.info(f"[{state.task_id}] 🔧 执行工具: {tool_name}")
         
+        step_number = state.add_execution_step_start(
+            tool_name,
+            step_type="tool_execution",
+            input_params={
+                "target": state.target,
+                "tool_name": tool_name,
+                "tool_type": "plugin" if not tool_name.startswith("poc_") else "poc"
+            },
+            processing_logic=f"执行{tool_name}工具进行安全扫描"
+        )
+        
         try:
             async with self.semaphore:
                 result = await registry.call_tool(tool_name, state.target)
-                state.tool_results[tool_name] = result
                 
-                # 更新目标上下文
-                self._update_context(state, tool_name, result)
+                # 检查工具执行状态
+                if result.get("status") == "success":
+                    state.tool_results[tool_name] = result
+                    
+                    # 更新目标上下文
+                    self._update_context(state, tool_name, result)
+                    
+                    # 处理POC结果
+                    if tool_name.startswith("poc_") and result.get("status") == "success":
+                        self._process_poc_result(state, tool_name, result)
+                    
+                    # 标记任务完成
+                    state.completed_tasks.append(tool_name)
+                    if tool_name in state.planned_tasks:
+                        state.planned_tasks.remove(tool_name)
+                    
+                    # 更新下一个任务
+                    state.current_task = state.planned_tasks[0] if state.planned_tasks else None
+                    
+                    logger.info(f"[{state.task_id}] ✅ 工具 {tool_name} 执行完成")
+                    
+                    state.update_execution_step(
+                        step_number,
+                        result=result,
+                        status="success",
+                        output_data={
+                            "tool_status": result.get("status"),
+                            "has_data": "data" in result,
+                            "data_keys": list(result.get("data", {}).keys()) if "data" in result and isinstance(result.get("data"), dict) else []
+                        },
+                        data_changes={
+                            "completed_task": tool_name,
+                            "remaining_tasks": len(state.planned_tasks)
+                        },
+                        state_transitions=["completed", "next_task"]
+                    )
+                else:
+                    # 工具执行失败或超时
+                    error_msg = result.get("error", "未知错误")
+                    logger.error(f"[{state.task_id}] ❌ 工具 {tool_name} 执行失败: {error_msg}")
+                    state.add_error(f"工具执行失败 {tool_name}: {error_msg}")
+                    state.increment_retry()
+                    
+                    state.update_execution_step(
+                        step_number,
+                        result=result,
+                        status="failed",
+                        output_data={
+                            "error": error_msg,
+                            "tool_status": result.get("status")
+                        },
+                        state_transitions=["failed", "retrying"]
+                    )
+                    
+                    # 使用统一的重试逻辑
+                    self._handle_retry(state, tool_name, step_number, error_msg)
                 
-                # 处理POC结果
-                if tool_name.startswith("poc_") and result.get("status") == "success":
-                    self._process_poc_result(state, tool_name, result)
-                
-                # 标记任务完成
-                state.completed_tasks.append(tool_name)
-                if tool_name in state.planned_tasks:
-                    state.planned_tasks.remove(tool_name)
-                
-                # 更新下一个任务
-                state.current_task = state.planned_tasks[0] if state.planned_tasks else None
-                
-                state.add_execution_step(tool_name, result, "success")
-                logger.info(f"[{state.task_id}] ✅ 工具 {tool_name} 执行完成")
-                
+        except ValueError as e:
+            # 工具不存在的错误
+            logger.error(f"[{state.task_id}] ❌ 工具 {tool_name} 不存在: {str(e)}")
+            state.add_error(f"工具不存在: {tool_name}")
+            
+            state.update_execution_step(
+                step_number,
+                result={"error": f"工具不存在: {tool_name}"},
+                status="failed",
+                state_transitions=["failed", "tool_not_found"]
+            )
+            
+            # 标记任务完成（跳过不存在的工具）
+            state.completed_tasks.append(tool_name)
+            if tool_name in state.planned_tasks:
+                state.planned_tasks.remove(tool_name)
+            state.current_task = state.planned_tasks[0] if state.planned_tasks else None
+            
         except Exception as e:
-            logger.error(f"[{state.task_id}] ❌ 工具 {tool_name} 执行失败: {str(e)}")
-            state.add_error(f"工具执行失败 {tool_name}: {str(e)}")
+            # 其他异常
+            logger.error(f"[{state.task_id}] ❌ 工具 {tool_name} 执行异常: {str(e)}")
+            state.add_error(f"工具执行异常 {tool_name}: {str(e)}")
             state.increment_retry()
             
-            # 重试逻辑
-            if state.retry_count < agent_config.MAX_RETRIES:
-                logger.warning(f"[{state.task_id}] 🔄 工具 {tool_name} 重试 {state.retry_count}/{agent_config.MAX_RETRIES}")
-            else:
-                logger.error(f"[{state.task_id}] ❌ 工具 {tool_name} 达到最大重试次数")
-                state.completed_tasks.append(tool_name)
-                if tool_name in state.planned_tasks:
-                    state.planned_tasks.remove(tool_name)
-                state.current_task = state.planned_tasks[0] if state.planned_tasks else None
-                state.reset_retry()
+            state.update_execution_step(
+                step_number,
+                result={"error": str(e)},
+                status="failed",
+                state_transitions=["failed", "retrying"]
+            )
+            
+            # 使用统一的重试逻辑
+            self._handle_retry(state, tool_name, step_number, str(e))
         
         return state
+    
+    def _handle_retry(self, state: AgentState, tool_name: str, step_number: int, error_msg: str):
+        """
+        处理工具重试逻辑
+        
+        Args:
+            state: Agent状态
+            tool_name: 工具名称
+            step_number: 步骤编号
+            error_msg: 错误消息
+        """
+        if state.retry_count < agent_config.MAX_RETRIES:
+            logger.warning(f"[{state.task_id}] 🔄 工具 {tool_name} 重试 {state.retry_count}/{agent_config.MAX_RETRIES}")
+        else:
+            logger.error(f"[{state.task_id}] ❌ 工具 {tool_name} 达到最大重试次数")
+            state.completed_tasks.append(tool_name)
+            if tool_name in state.planned_tasks:
+                state.planned_tasks.remove(tool_name)
+            state.current_task = state.planned_tasks[0] if state.planned_tasks else None
+            state.reset_retry()
+            
+            state.update_execution_step(
+                step_number,
+                status="failed",
+                state_transitions=["failed", "max_retries_reached"]
+            )
     
     def _update_context(self, state: AgentState, tool_name: str, result: Dict[str, Any]):
         """
@@ -255,23 +404,42 @@ class ToolExecutionNode:
             tool_name: 工具名称
             result: 工具结果
         """
+        if not result:
+            logger.warning(f"工具 {tool_name} 返回结果为None")
+            return
+            
         if result.get("status") != "success":
             return
         
         data = result.get("data", {})
+        if not isinstance(data, dict):
+            logger.warning(f"工具 {tool_name} 返回的data不是字典类型: {type(data)}")
+            data = {}
         
-        if tool_name == "baseinfo":
-            state.update_context("server", data.get("server"))
-            state.update_context("os", data.get("os"))
-            state.update_context("ip", data.get("ip"))
-        elif tool_name == "cms_identify":
-            state.update_context("cms", data.get("cms", "unknown"))
-        elif tool_name == "portscan":
-            state.update_context("open_ports", data.get("open_ports", []))
-        elif tool_name == "waf_detect":
-            state.update_context("waf", data.get("waf"))
-        elif tool_name == "cdn_detect":
-            state.update_context("cdn", data.get("has_cdn"))
+        # 使用字典映射来减少重复代码
+        context_mapping = {
+            "baseinfo": {
+                "server": data.get("server"),
+                "os": data.get("os"),
+                "ip": data.get("ip")
+            },
+            "cms_identify": {
+                "cms": data.get("cms", "unknown")
+            },
+            "portscan": {
+                "open_ports": data.get("open_ports", [])
+            },
+            "waf_detect": {
+                "waf": data.get("waf")
+            },
+            "cdn_detect": {
+                "cdn": data.get("has_cdn")
+            }
+        }
+        
+        if tool_name in context_mapping:
+            for key, value in context_mapping[tool_name].items():
+                state.update_context(key, value)
     
     def _process_poc_result(self, state: AgentState, tool_name: str, result: Dict[str, Any]):
         """
@@ -339,11 +507,19 @@ class ResultVerificationNode:
         if not state.planned_tasks:
             logger.info(f"[{state.task_id}] ✅ 所有任务已完成")
             state.should_continue = False
+            state.is_complete = True
         else:
             state.current_task = state.planned_tasks[0]
             logger.info(f"[{state.task_id}] 📋 待执行任务: {state.planned_tasks}")
         
-        state.add_execution_step("result_verification", {"planned_tasks": state.planned_tasks}, "success")
+        # 添加执行步骤
+        state.add_execution_step(
+            "result_verification",
+            {"planned_tasks": state.planned_tasks},
+            "success",
+            step_type="result_verification"
+        )
+        logger.info(f"[{state.task_id}] ✅ 结果验证完成")
         return state
     
     def _supplement_poc_tasks(self, state: AgentState):
@@ -356,23 +532,24 @@ class ResultVerificationNode:
         cms = state.target_context.get("cms", "").lower()
         open_ports = state.target_context.get("open_ports", [])
         
-        supplement_tasks = []
+        # 使用集合来避免重复
+        supplement_tasks = set()
         
         # 根据CMS补充POC
         if cms:
             cms_pocs = POCAdapter.get_poc_by_cms(cms)
             for poc in cms_pocs:
                 if poc not in state.completed_tasks and poc not in state.planned_tasks:
-                    supplement_tasks.append(poc)
+                    supplement_tasks.add(poc)
         
         # 根据端口补充POC
         for port in open_ports:
             port_pocs = POCAdapter.get_poc_by_port(port)
             for poc in port_pocs:
                 if poc not in state.completed_tasks and poc not in state.planned_tasks:
-                    supplement_tasks.append(poc)
+                    supplement_tasks.add(poc)
         
-        # 去重并添加
+        # 添加到计划任务列表
         for task in supplement_tasks:
             if task not in state.planned_tasks:
                 state.planned_tasks.append(task)
@@ -405,6 +582,15 @@ class VulnerabilityAnalysisNode:
         
         if not state.vulnerabilities:
             logger.info(f"[{state.task_id}] ✅ 未发现漏洞")
+            state.add_execution_step(
+                "vulnerability_analysis",
+                {
+                    "total": 0,
+                    "vulnerabilities": []
+                },
+                "success",
+                step_type="analysis"
+            )
             return state
         
         try:
@@ -418,14 +604,44 @@ class VulnerabilityAnalysisNode:
             state.vulnerabilities = sorted_vulns
             
             logger.info(f"[{state.task_id}] ✅ 漏洞分析完成,去重后: {len(sorted_vulns)} 个")
-            state.add_execution_step("vulnerability_analysis", {
-                "total": len(sorted_vulns),
-                "vulnerabilities": sorted_vulns
-            }, "success")
+            state.add_execution_step(
+                "vulnerability_analysis",
+                {
+                    "total": len(sorted_vulns),
+                    "vulnerabilities": sorted_vulns
+                },
+                "success",
+                step_type="analysis"
+            )
             
+        except AttributeError as e:
+            logger.error(f"[{state.task_id}] ❌ 漏洞分析器方法不存在: {str(e)}")
+            state.add_error(f"漏洞分析器方法不存在: {str(e)}")
+            # 保持原始漏洞数据不变
+            state.add_execution_step(
+                "vulnerability_analysis",
+                {
+                    "total": len(state.vulnerabilities),
+                    "vulnerabilities": state.vulnerabilities,
+                    "error": str(e)
+                },
+                "failed",
+                step_type="analysis"
+            )
         except Exception as e:
             logger.error(f"[{state.task_id}] ❌ 漏洞分析失败: {str(e)}")
             state.add_error(f"漏洞分析失败: {str(e)}")
+            # 保持原始漏洞数据不变
+            state.add_execution_step(
+                "vulnerability_analysis",
+                {
+                    "total": len(state.vulnerabilities),
+                    "vulnerabilities": state.vulnerabilities,
+                    "error": str(e)
+                },
+                "failed",
+                step_type="analysis"
+            )
         
         return state
 
@@ -455,12 +671,46 @@ class ReportGenerationNode:
         logger.info(f"[{state.task_id}] 📄 生成扫描报告")
         
         try:
+            # 生成标准扫描报告
             report = self.report_gen.generate_report(state)
             state.tool_results["final_report"] = report
+            
+            # 生成详细的执行轨迹报告
+            trace_report = self.report_gen.generate_execution_trace_report(state)
+            state.tool_results["execution_trace_report"] = trace_report
+            
+            # 生成HTML格式的执行轨迹报告
+            html_trace = self.report_gen.generate_html_execution_trace(state)
+            state.tool_results["html_execution_trace"] = html_trace
+            
             state.mark_complete()
             
             logger.info(f"[{state.task_id}] ✅ 报告生成完成")
-            state.add_execution_step("report_generation", report, "success")
+            state.add_execution_step(
+                "report_generation",
+                {
+                    "standard_report": report,
+                    "trace_report": trace_report,
+                    "html_trace": html_trace
+                },
+                "success",
+                step_type="report_generation",
+                processing_logic="生成标准扫描报告和详细执行轨迹报告",
+                output_data={
+                    "report_sections": [
+                        "task_info",
+                        "scan_summary",
+                        "target_context",
+                        "vulnerabilities",
+                        "tool_results",
+                        "errors",
+                        "execution_trace",
+                        "trace_summary",
+                        "state_changes",
+                        "performance_metrics"
+                    ]
+                }
+            )
             
         except Exception as e:
             logger.error(f"[{state.task_id}] ❌ 报告生成失败: {str(e)}")
@@ -524,7 +774,61 @@ class CodeGenerationNode:
     def __init__(self):
         from ..code_execution.code_generator import CodeGenerator
         self.code_generator = CodeGenerator()
+        
+        # 创建代码文件存储目录
+        self.code_dir = Path(__file__).parent.parent / "code_execution" / "workspace" / "generated_code"
+        self.code_dir.mkdir(parents=True, exist_ok=True)
+        
         logger.info("🔧 代码生成节点初始化完成")
+    
+    def _save_generated_code(
+        self,
+        code: str,
+        language: str,
+        scan_type: str,
+        target: str,
+        task_id: str
+    ) -> str:
+        """
+        保存生成的代码到文件
+        
+        Args:
+            code: 代码内容
+            language: 代码语言
+            scan_type: 扫描类型
+            target: 扫描目标
+            task_id: 任务ID
+            
+        Returns:
+            str: 代码文件路径
+        """
+        try:
+            # 生成唯一标识符
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            file_id = f"{task_id}_{scan_type}_{timestamp}"
+            
+            # 获取文件扩展名
+            extensions = {
+                "python": "py",
+                "bash": "sh",
+                "powershell": "ps1",
+                "shell": "sh"
+            }
+            extension = extensions.get(language, "txt")
+            
+            # 创建代码文件
+            code_file = self.code_dir / f"{file_id}.{extension}"
+            
+            # 写入代码文件
+            with open(code_file, "w", encoding="utf-8") as f:
+                f.write(code)
+            
+            logger.info(f"代码文件已保存: {code_file}")
+            return str(code_file)
+            
+        except Exception as e:
+            logger.error(f"保存代码文件失败: {str(e)}")
+            return ""
     
     async def __call__(self, state: AgentState) -> AgentState:
         """
@@ -538,11 +842,29 @@ class CodeGenerationNode:
         """
         logger.info(f"[{state.task_id}] 🔧 开始代码生成")
         
+        step_number = state.add_execution_step_start(
+            "code_generation",
+            step_type="code_generation",
+            input_params={
+                "target": state.target,
+                "scan_type": state.target_context.get("custom_scan_type", "vuln_scan"),
+                "requirements": state.target_context.get("custom_scan_requirements", ""),
+                "language": state.target_context.get("custom_scan_language", "python")
+            },
+            processing_logic="根据扫描需求和目标特征生成自定义扫描代码"
+        )
+        
         try:
             target = state.target
             
             if not state.target_context.get("need_custom_scan"):
                 logger.info(f"[{state.task_id}] ⏭️ 无需自定义扫描,跳过代码生成")
+                state.update_execution_step(
+                    step_number,
+                    status="skipped",
+                    output_data={"message": "无需自定义扫描"},
+                    state_transitions=["skipped"]
+                )
                 return state
             
             scan_type = state.target_context.get("custom_scan_type", "vuln_scan")
@@ -556,15 +878,52 @@ class CodeGenerationNode:
                 language=language
             )
             
-            state.tool_results["generated_code"] = code_response.to_dict()
-            state.update_context("generated_code", code_response.to_dict())
+            code_dict = code_response.to_dict()
+            state.tool_results["generated_code"] = code_dict
+            state.update_context("generated_code", code_dict)
+            
+            # 保存生成的代码到文件
+            code_file_path = self._save_generated_code(
+                code=code_response.code,
+                language=language,
+                scan_type=scan_type,
+                target=target,
+                task_id=state.task_id
+            )
+            
+            if code_file_path:
+                code_dict["file_path"] = code_file_path
+                logger.info(f"[{state.task_id}] 📝 代码已保存到文件: {code_file_path}")
             
             logger.info(f"[{state.task_id}] ✅ 代码生成完成")
-            state.add_execution_step("code_generation", code_response.to_dict(), "success")
+            
+            state.update_execution_step(
+                step_number,
+                result=code_dict,
+                status="success",
+                output_data={
+                    "code_length": len(code_response.code),
+                    "language": code_response.language,
+                    "dependencies": code_response.dependencies,
+                    "file_path": code_file_path
+                },
+                data_changes={
+                    "generated_code": True,
+                    "scan_type": scan_type
+                },
+                state_transitions=["completed", "ready_for_execution"]
+            )
             
         except Exception as e:
             logger.error(f"[{state.task_id}] ❌ 代码生成失败: {str(e)}")
             state.add_error(f"代码生成失败: {str(e)}")
+            
+            state.update_execution_step(
+                step_number,
+                result={"error": str(e)},
+                status="failed",
+                state_transitions=["failed"]
+            )
         
         return state
 
@@ -593,32 +952,82 @@ class CapabilityEnhancementNode:
         """
         logger.info(f"[{state.task_id}] 🚀 开始功能补充")
         
+        step_number = state.add_execution_step_start(
+            "capability_enhancement",
+            step_type="capability_enhancement",
+            input_params={
+                "target": state.target,
+                "requirement": state.target_context.get("capability_requirement", ""),
+                "capability_name": state.target_context.get("capability_name")
+            },
+            processing_logic="根据需求动态增强AI Agent能力"
+        )
+        
         try:
             if not state.target_context.get("need_capability_enhancement"):
                 logger.info(f"[{state.task_id}] ⏭️ 无需功能补充,跳过")
+                state.update_execution_step(
+                    step_number,
+                    status="skipped",
+                    output_data={"message": "无需功能补充"},
+                    state_transitions=["skipped"]
+                )
                 return state
             
             requirement = state.target_context.get("capability_requirement", "")
             target = state.target
+            capability_name = state.target_context.get("capability_name")
             
             if not requirement:
                 logger.warning(f"[{state.task_id}] ⚠️ 未指定功能需求,跳过功能补充")
+                state.update_execution_step(
+                    step_number,
+                    status="skipped",
+                    output_data={"message": "未指定功能需求"},
+                    state_transitions=["skipped"]
+                )
                 return state
             
             enhance_result = await self.capability_enhancer.enhance_capability(
                 requirement=requirement,
-                target=target
+                target=target,
+                capability_name=capability_name
             )
             
             state.tool_results["capability_enhancement"] = enhance_result
             state.update_context("enhanced_capability", enhance_result)
             
+            # 清除功能增强需求标志，避免无限循环
+            state.target_context["need_capability_enhancement"] = False
+            
             logger.info(f"[{state.task_id}] ✅ 功能补充完成")
-            state.add_execution_step("capability_enhancement", enhance_result, "success")
+            
+            state.update_execution_step(
+                step_number,
+                result=enhance_result,
+                status="success" if enhance_result.get("status") == "success" else "failed",
+                output_data={
+                    "capability_name": enhance_result.get("capability", {}).get("name"),
+                    "capability_version": enhance_result.get("capability", {}).get("version"),
+                    "code_file": enhance_result.get("code_file")
+                },
+                data_changes={
+                    "enhanced_capability": True,
+                    "capability_name": enhance_result.get("capability", {}).get("name")
+                },
+                state_transitions=["completed", "capability_available"]
+            )
             
         except Exception as e:
             logger.error(f"[{state.task_id}] ❌ 功能补充失败: {str(e)}")
             state.add_error(f"功能补充失败: {str(e)}")
+            
+            state.update_execution_step(
+                step_number,
+                result={"error": str(e)},
+                status="failed",
+                state_transitions=["failed"]
+            )
         
         return state
 
@@ -672,8 +1081,16 @@ class CodeExecutionNode:
                 logger.info(f"[{state.task_id}] ✅ 代码执行成功")
             else:
                 logger.warning(f"[{state.task_id}] ⚠️ 代码执行失败: {execution_result.error}")
+                # 设置需要功能增强标志
+                state.target_context["need_capability_enhancement"] = True
+                state.target_context["capability_requirement"] = "自动安装代码执行所需依赖"
             
-            state.add_execution_step("code_execution", execution_result.to_dict(), execution_result.status)
+            state.add_execution_step(
+                "code_execution",
+                execution_result.to_dict(),
+                execution_result.status,
+                step_type="code_execution"
+            )
             
         except Exception as e:
             logger.error(f"[{state.task_id}] ❌ 代码执行失败: {str(e)}")
@@ -959,11 +1376,14 @@ class POCVerificationNode:
         
         try:
             # 检查 POC 验证是否启用
-            from config import settings
-            if not settings.POC_VERIFICATION_ENABLED:
-                logger.warning(f"[{self.node_name}] ⚠️ POC 验证功能已禁用")
-                state.add_execution_step("poc_verification", {}, "disabled")
-                return state
+            try:
+                from config import settings
+                if not settings.POC_VERIFICATION_ENABLED:
+                    logger.warning(f"[{self.node_name}] ⚠️ POC 验证功能已禁用")
+                    state.add_execution_step("poc_verification", {}, "disabled")
+                    return state
+            except ImportError:
+                logger.warning(f"[{self.node_name}] ⚠️ 无法导入配置，默认启用POC验证")
             
             # 从状态中获取待验证的 POC 任务
             poc_tasks = state.poc_verification_tasks
@@ -995,6 +1415,13 @@ class POCVerificationNode:
             
             # 计算执行统计信息
             execution_stats = self._calculate_execution_stats(verification_results)
+            
+            # 记录POC验证结果到工具结果
+            state.tool_results["poc_verification"] = {
+                "verification_results": verification_results,
+                "analysis_results": analysis_results,
+                "execution_stats": execution_stats
+            }
             
             # 添加执行步骤
             state.add_execution_step("poc_verification", {
@@ -1036,10 +1463,14 @@ class POCVerificationNode:
         
         # 导入必要的模块
         try:
-            from ai_agents.poc_system import poc_manager, verification_engine
+            try:
+                from ai_agents.poc_system import poc_manager, verification_engine
+            except ImportError:
+                from poc_system import poc_manager, verification_engine
+            from datetime import datetime
         except ImportError:
-            from poc_system import poc_manager, verification_engine
-        from datetime import datetime
+            logger.warning(f"[{self.node_name}] ⚠️ 无法导入poc_system模块，跳过POC验证")
+            return []
         
         # 为每个 POC 任务创建验证任务并执行
         for poc_task in poc_tasks:

@@ -12,7 +12,7 @@
 - Seebug POC 搜索和下载（使用Pocsuite3内置API）
 """
 from fastapi import APIRouter, HTTPException, BackgroundTasks
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional, Dict, Any
 from backend.models import VulnerabilityKB
 from tortoise.expressions import Q
@@ -52,8 +52,7 @@ class VulnerabilityKBResponse(BaseModel):
     source: str
     created_at: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SyncResponse(BaseModel):
     """

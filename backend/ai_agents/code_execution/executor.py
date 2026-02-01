@@ -89,6 +89,14 @@ class UnifiedExecutor:
         self.workspace = Path(__file__).parent / "workspace"
         self.workspace.mkdir(parents=True, exist_ok=True)
         
+        # 创建代码文件存储目录
+        self.code_dir = self.workspace / "generated_code"
+        self.code_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 创建日志目录
+        self.log_dir = self.workspace / "logs"
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        
         logger.info(f"✅ 统一执行器初始化完成: timeout={timeout}s, sandbox={enable_sandbox}")
     
     async def execute_code(
@@ -124,44 +132,45 @@ class UnifiedExecutor:
                     execution_time=0.0
                 )
             
-            # 创建临时文件
-            with tempfile.NamedTemporaryFile(
-                mode="w",
-                suffix=f".{self._get_file_extension(language)}",
-                delete=False,
-                encoding="utf-8"
-            ) as f:
+            # 生成唯一标识符
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            file_id = f"{language}_{timestamp}"
+            
+            # 创建代码文件（保存到自定义目录）
+            extension = self._get_file_extension(language)
+            code_file = self.code_dir / f"{file_id}.{extension}"
+            
+            # 写入代码文件
+            with open(code_file, "w", encoding="utf-8") as f:
                 f.write(code)
-                temp_file = f.name
+            
+            logger.info(f"📝 代码文件已保存: {code_file}")
             
             # 执行代码
             start_time = datetime.now()
             
             try:
-                if language == "python":
-                    result = await self._execute(temp_file, language, target, **kwargs)
-                elif language == "bash":
-                    result = await self._execute(temp_file, language, target, **kwargs)
-                elif language == "powershell":
-                    result = await self._execute(temp_file, language, target, **kwargs)
-                else:
-                    result = ExecutionResult(
-                        status="failed",
-                        error=f"不支持的语言: {language}",
-                        output="",
-                        execution_time=0.0
-                    )
+                result = await self._execute(str(code_file), language, target, **kwargs)
             finally:
                 execution_time = (datetime.now() - start_time).total_seconds()
                 result.execution_time = execution_time
-                
-                # 清理临时文件
-                try:
-                    Path(temp_file).unlink()
-                except:
-                    pass
             
+            # 记录执行日志
+            log_file = self.log_dir / f"{file_id}.log"
+            with open(log_file, "w", encoding="utf-8") as f:
+                f.write(f"执行时间: {datetime.now().isoformat()}\n")
+                f.write(f"代码文件: {code_file}\n")
+                f.write(f"语言: {language}\n")
+                f.write(f"目标: {target or 'N/A'}\n")
+                f.write(f"执行状态: {result.status}\n")
+                f.write(f"退出码: {result.exit_code}\n")
+                f.write(f"执行时间: {execution_time:.2f}s\n")
+                f.write(f"\n=== 输出 ===\n{result.output}\n")
+                f.write(f"\n=== 错误 ===\n{result.error}\n")
+            
+            logger.info(f"📄 执行日志已保存: {log_file}")
             logger.info(f"✅ 代码执行完成: status={result.status}, time={execution_time:.2f}s")
+            
             return result
             
         except Exception as e:
@@ -248,6 +257,24 @@ class UnifiedExecutor:
             cmd.append(target)
         
         return cmd
+    
+    def _get_file_extension(self, language: str) -> str:
+        """
+        获取文件扩展名
+        
+        Args:
+            language: 代码语言
+            
+        Returns:
+            str: 文件扩展名
+        """
+        extensions = {
+            "python": "py",
+            "bash": "sh",
+            "powershell": "ps1",
+            "shell": "sh"
+        }
+        return extensions.get(language, "txt")
     
     async def generate_and_execute(
         self,

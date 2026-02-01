@@ -5,6 +5,7 @@ Agent 状态管理
 """
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
+from datetime import datetime
 
 
 @dataclass
@@ -254,22 +255,161 @@ class AgentState:
     - source: 来源(seebug_agent)
     """
     
-    def add_execution_step(self, task: str, result: Any, status: str = "success"):
+    def add_execution_step(
+        self,
+        task: str,
+        result: Any,
+        status: str = "success",
+        step_type: str = "tool_execution",
+        input_params: Dict[str, Any] = None,
+        processing_logic: str = "",
+        intermediate_results: List[Dict[str, Any]] = None,
+        output_data: Dict[str, Any] = None,
+        data_changes: Dict[str, Any] = None,
+        state_transitions: List[str] = None,
+        execution_time: float = None
+    ):
         """
-        添加执行步骤到历史记录
+        添加执行步骤到历史记录（增强版）
         
         Args:
             task: 任务名称
             result: 执行结果
-            status: 执行状态(success/failed)
+            status: 执行状态(success/failed/pending/running)
+            step_type: 步骤类型(tool_execution/code_generation/code_execution/capability_enhancement/verification/analysis)
+            input_params: 输入参数
+            processing_logic: 处理逻辑描述
+            intermediate_results: 中间结果列表
+            output_data: 输出数据
+            data_changes: 关键数据变化
+            state_transitions: 状态转换列表
+            execution_time: 执行时间（秒）
         """
         import time
-        self.execution_history.append({
+        current_time = time.time()
+        
+        # 自动生成步骤编号
+        step_number = len(self.execution_history) + 1
+        
+        # 记录当前状态快照
+        current_state_snapshot = {
+            "target": self.target,
+            "current_task": self.current_task,
+            "progress": self.get_progress(),
+            "is_complete": self.is_complete,
+            "should_continue": self.should_continue,
+            "retry_count": self.retry_count
+        }
+        
+        execution_step = {
+            "step_number": step_number,
             "task": task,
-            "result": result,
+            "step_type": step_type,
             "status": status,
-            "timestamp": time.time()
-        })
+            "timestamp": current_time,
+            "timestamp_iso": datetime.fromtimestamp(current_time).isoformat(),
+            "input_params": input_params or {},
+            "processing_logic": processing_logic,
+            "result": result,
+            "intermediate_results": intermediate_results or [],
+            "output_data": output_data or {},
+            "data_changes": data_changes or {},
+            "state_transitions": state_transitions or [],
+            "execution_time": execution_time,
+            "state_snapshot": current_state_snapshot
+        }
+        
+        self.execution_history.append(execution_step)
+    
+    def add_execution_step_start(
+        self,
+        task: str,
+        step_type: str = "tool_execution",
+        input_params: Dict[str, Any] = None,
+        processing_logic: str = ""
+    ):
+        """
+        记录执行步骤开始
+        
+        Args:
+            task: 任务名称
+            step_type: 步骤类型
+            input_params: 输入参数
+            processing_logic: 处理逻辑描述
+        """
+        import time
+        current_time = time.time()
+        
+        step_number = len(self.execution_history) + 1
+        
+        execution_step = {
+            "step_number": step_number,
+            "task": task,
+            "step_type": step_type,
+            "status": "running",
+            "timestamp": current_time,
+            "timestamp_iso": datetime.fromtimestamp(current_time).isoformat(),
+            "input_params": input_params or {},
+            "processing_logic": processing_logic,
+            "start_time": current_time,
+            "intermediate_results": [],
+            "output_data": {},
+            "data_changes": {},
+            "state_transitions": ["started"]
+        }
+        
+        self.execution_history.append(execution_step)
+        return step_number
+    
+    def update_execution_step(
+        self,
+        step_number: int,
+        result: Any = None,
+        status: str = None,
+        intermediate_results: List[Dict[str, Any]] = None,
+        output_data: Dict[str, Any] = None,
+        data_changes: Dict[str, Any] = None,
+        state_transitions: List[str] = None
+    ):
+        """
+        更新执行步骤
+        
+        Args:
+            step_number: 步骤编号
+            result: 执行结果
+            status: 执行状态
+            intermediate_results: 中间结果
+            output_data: 输出数据
+            data_changes: 数据变化
+            state_transitions: 状态转换
+        """
+        import time
+        
+        if step_number <= len(self.execution_history):
+            step = self.execution_history[step_number - 1]
+            
+            if result is not None:
+                step["result"] = result
+            
+            if status is not None:
+                step["status"] = status
+                if status in ["success", "failed"]:
+                    if "start_time" in step:
+                        step["execution_time"] = time.time() - step["start_time"]
+                    step["timestamp"] = time.time()
+                    step["timestamp_iso"] = datetime.fromtimestamp(time.time()).isoformat()
+            
+            if intermediate_results is not None:
+                step["intermediate_results"].extend(intermediate_results)
+            
+            if output_data is not None:
+                step["output_data"].update(output_data)
+            
+            if data_changes is not None:
+                step["data_changes"].update(data_changes)
+            
+            if state_transitions is not None:
+                step["state_transitions"].extend(state_transitions)
     
     def update_context(self, key: str, value: Any):
         """

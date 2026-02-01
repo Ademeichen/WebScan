@@ -1,0 +1,22 @@
+{
+  "name": "test_capability",
+  "description": "Test capability",
+  "version": "1.0.0",
+  "dependencies": [
+    "requests"
+  ],
+  "created_at": "2026-02-01T16:54:36.722289",
+  "timeout": 60,
+  "status": "ready",
+  "statistics": {
+    "name": "test_capability",
+    "execution_count": 0,
+    "success_count": 0,
+    "failure_count": 0,
+    "success_rate": 0,
+    "last_execution_time": null,
+    "last_execution_status": null,
+    "status": "ready",
+    "cache_size": 0
+  }
+}

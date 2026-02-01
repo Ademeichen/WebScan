@@ -59,7 +59,8 @@ class TestCapability:
         assert cap_dict['version'] == '1.0.0'
         assert cap_dict['dependencies'] == ['requests']
         assert 'created_at' in cap_dict
-        assert cap_dict['execution_count'] == 0
+        assert 'statistics' in cap_dict
+        assert cap_dict['statistics']['execution_count'] == 0
 
     @pytest.mark.asyncio
     async def test_execute(self, capability):
@@ -208,10 +209,10 @@ class TestCapabilityEnhancer:
         """
         测试执行不存在的能力
         """
-        result = await enhancer.execute_capability('nonexistent_capability', 'www.baidu.com')
+        from backend.ai_agents.code_execution.capability_enhancer import CapabilityNotFoundError
         
-        assert result['status'] == 'failed'
-        assert '不存在' in result['error'] or 'not found' in result['error'].lower()
+        with pytest.raises(CapabilityNotFoundError):
+            await enhancer.execute_capability('nonexistent_capability', 'www.baidu.com')
 
     def test_remove_capability(self, enhancer):
         """

@@ -217,7 +217,14 @@ class ScanAgentGraph:
             }
         )
         # 功能补充后回到代码执行(重试)
-        workflow.add_edge("capability_enhancement", "code_execution")
+        workflow.add_conditional_edges(
+            "capability_enhancement",
+            self._capability_enhancement_result,
+            {
+                "success": "code_execution",  # 补充成功→重试代码执行
+                "failed": "result_verification"  # 补充失败→继续验证结果
+            }
+        )
         
         # 固定工具流程:执行→验证→循环/分析/POC 验证
         workflow.add_edge("tool_execution", "result_verification")
@@ -392,6 +399,37 @@ class ScanAgentGraph:
             state.target_context["capability_requirement"] = "自动安装代码执行所需依赖"
             return "need_enhance"
     
+    def _capability_enhancement_result(self, state: AgentState) -> Literal["success", "failed"]:
+        """
+        判断功能补充结果:成功→重试代码执行,失败→继续验证结果
+        
+        Args:
+            state: Agent当前状态
+            
+        Returns:
+            Literal["success", "failed"]: 下一步操作
+        """
+        enhancement_result = state.tool_results.get("capability_enhancement", {})
+        
+        if enhancement_result.get("status") == "success":
+            logger.info(f"[{state.task_id}] ✅ 功能补充成功,重试代码执行")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="CAPABILITY_ENHANCEMENT",
+                decision="success",
+                reason="功能补充成功"
+            )
+            return "success"
+        else:
+            logger.warning(f"[{state.task_id}] ⚠️ 功能补充失败,继续验证结果")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="CAPABILITY_ENHANCEMENT",
+                decision="failed",
+                reason=f"功能补充失败: {enhancement_result.get('error', 'unknown')}"
+            )
+            return "failed"
+    
     def compile(self):
         """
         编译图
@@ -416,7 +454,9 @@ class ScanAgentGraph:
         
         try:
             compiled_graph = self.compile()
-            final_state = await compiled_graph.ainvoke(initial_state)
+            # 设置递归限制以避免无限循环
+            config = {"recursion_limit": 100}
+            final_state = await compiled_graph.ainvoke(initial_state, config=config)
             
             # 处理返回的状态对象，可能是字典形式
             task_id = getattr(final_state, 'task_id', initial_state.task_id)
@@ -647,5 +687,35 @@ def initialize_tools():
             timeout=30,
             priority=8
         )
+    
+    # 注册依赖管理工具
+    from ..tools.adapters import DependencyAdapter
+    
+    registry.register(
+        name="install_dependencies",
+        func=DependencyAdapter.adapt_install_dependencies(),
+        description="安装Python包依赖",
+        category="dependency",
+        timeout=300,
+        priority=9
+    )
+    
+    registry.register(
+        name="check_package",
+        func=DependencyAdapter.adapt_check_package(),
+        description="检查Python包是否已安装",
+        category="dependency",
+        timeout=10,
+        priority=9
+    )
+    
+    registry.register(
+        name="list_packages",
+        func=DependencyAdapter.adapt_get_packages(),
+        description="列出已安装的Python包",
+        category="dependency",
+        timeout=10,
+        priority=9
+    )
     
     logger.info(f"✅ 工具初始化完成,共注册 {len(registry.tools)} 个工具")
