@@ -4183,3 +4183,630 @@ TypeError: 'coroutine' object is not callable
 2026-01-31 23:58:37,673 - backend.api.notifications - INFO - 获取通知列表成功: 共 3 条通知,2 条未读
 2026-01-31 23:58:46,053 - backend.api.awvs - INFO - 获取扫描任务列表成功,共 2 个任务
 2026-01-31 23:58:50,232 - backend.api.awvs - INFO - 获取扫描任务列表成功,共 2 个任务
+2026-02-01 20:11:20,828 - backend.api.seebug_client - INFO - ✅ Seebug API客户端初始化完成: https://www.seebug.org/api
+2026-02-01 20:12:23,977 - backend.api.seebug_client - INFO - ✅ Seebug API客户端初始化完成: https://www.seebug.org/api
+2026-02-01 20:12:24,993 - backend.ai_agents.utils.cache - INFO - ✅ 缓存管理器初始化完成, TTL: 3600秒
+2026-02-01 20:12:24,993 - backend.ai_agents.poc_system.poc_manager - INFO - ✅ POC 管理器初始化完成
+2026-02-01 20:12:24,995 - backend.ai_agents.poc_system.target_manager - INFO - ✅ 目标管理器初始化完成
+2026-02-01 20:12:25,757 - backend.Pocsuite3Agent.agent - INFO - Pocsuite3 已安装
+2026-02-01 20:12:25,775 - backend.Pocsuite3Agent.agent - INFO - 加载了 114 个 POC 脚本
+2026-02-01 20:12:25,777 - backend.ai_agents.poc_system.verification_engine - INFO - ✅ POC 验证执行引擎初始化完成
+2026-02-01 20:12:25,783 - backend.ai_agents.poc_system.result_analyzer - INFO - ✅ 结果分析器初始化完成
+2026-02-01 20:12:25,786 - backend.ai_agents.poc_system.report_generator - INFO - ✅ 报告生成器初始化完成
+2026-02-01 20:12:25,815 - backend.ai_agents.utils.file_sync - INFO - ✅ 文件同步管理器初始化完成
+2026-02-01 20:12:25,817 - backend.ai_agents.utils.file_sync - INFO -   基础POC目录: D:\AI_WebSecurity\backend\poc
+2026-02-01 20:12:25,817 - backend.ai_agents.utils.file_sync - INFO -   Seebug生成目录: D:\AI_WebSecurity\Seebug_Agent\generated_pocs
+2026-02-01 20:12:26,003 - backend.ai_agents.tools.registry - INFO - 工具注册表初始化完成
+2026-02-01 20:12:48,119 - backend.ai_agents.core.nodes - INFO - ✅ Seebug Agent节点初始化完成
+2026-02-01 20:12:48,119 - backend.ai_agents.core.nodes - INFO - ✅ POC 验证节点初始化完成
+2026-02-01 20:12:48,120 - backend.ai_agents.core.graph - INFO - 🔧 初始化扫描Agent图
+2026-02-01 20:12:48,143 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-02-01 20:12:58,210 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 10.07秒
+2026-02-01 20:12:58,210 - backend.ai_agents.core.nodes - INFO - 🔍 环境感知节点初始化完成
+2026-02-01 20:12:58,210 - backend.ai_agents.utils.priority - INFO - 🎯 任务优先级管理器初始化完成
+2026-02-01 20:13:00,168 - backend.ai_agents.core.nodes - INFO - 🤖 启用LLM增强任务规划
+2026-02-01 20:13:00,170 - backend.ai_agents.core.nodes - INFO - 🧠 智能决策节点初始化完成
+2026-02-01 20:13:00,170 - backend.ai_agents.core.nodes - INFO - 🔧 工具执行节点初始化,最大并发: 5
+2026-02-01 20:13:02,235 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 20:13:02,236 - backend.ai_agents.core.nodes - INFO - 🔧 代码生成节点初始化完成
+2026-02-01 20:13:04,297 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 20:13:04,297 - backend.ai_agents.code_execution.capability_enhancer - INFO - 🚀 开始初始化功能补充器...
+2026-02-01 20:13:06,318 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 20:13:06,321 - backend.ai_agents.code_execution.capability_enhancer - INFO - ✅ 功能补充器初始化完成
+2026-02-01 20:13:06,323 - backend.ai_agents.code_execution.executor - INFO - ✅ 统一执行器初始化完成: timeout=60s, sandbox=True
+2026-02-01 20:13:06,323 - backend.ai_agents.core.nodes - INFO - ⚡ 代码执行节点初始化完成
+2026-02-01 20:13:06,324 - backend.ai_agents.core.nodes - INFO - 🚀 功能补充节点初始化完成
+2026-02-01 20:13:06,329 - backend.ai_agents.analyzers.vuln_analyzer - INFO - 🔍 漏洞分析器初始化完成
+2026-02-01 20:13:06,329 - backend.ai_agents.core.nodes - INFO - 🔍 漏洞分析节点初始化
+2026-02-01 20:13:06,329 - backend.ai_agents.analyzers.report_gen - INFO - 📄 报告生成器初始化完成
+2026-02-01 20:13:06,329 - backend.ai_agents.core.nodes - INFO - 📄 报告生成节点初始化
+2026-02-01 20:13:06,329 - backend.ai_agents.core.graph - INFO - [2026-02-01 20:13:06] [NODE_ENTRY] 节点: _build_graph, 任务ID: GRAPH_BUILD, 详情: {'total_nodes': 11}
+2026-02-01 20:13:06,337 - backend.ai_agents.core.graph - INFO - 📊 增强版LangGraph图边定义完成
+2026-02-01 20:13:06,337 - backend.ai_agents.core.graph - INFO - [2026-02-01 20:13:06] [NODE_EXIT] 节点: _build_graph, 任务ID: GRAPH_BUILD, 状态: success, 详情: {'nodes_count': 11, 'edges_count': 16}
+2026-02-01 20:13:06,339 - backend.ai_agents.core.graph - INFO - ✅ 扫描Agent图构建完成
+2026-02-01 20:13:06,339 - backend.ai_agents.core.graph - INFO - 🔧 开始初始化工具...
+2026-02-01 20:13:06,369 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: baseinfo (分类: plugin, 优先级: 3)
+2026-02-01 20:13:06,375 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: portscan (分类: plugin, 优先级: 5)
+2026-02-01 20:13:06,380 - WAFDetector - INFO - 成功编译 90 条WAF检测规则
+2026-02-01 20:13:06,382 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: waf_detect (分类: plugin, 优先级: 4)
+2026-02-01 20:13:06,416 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cdn_detect (分类: plugin, 优先级: 4)
+2026-02-01 20:13:06,596 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cms_identify (分类: plugin, 优先级: 4)
+2026-02-01 20:13:06,600 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: infoleak_scan (分类: plugin, 优先级: 3)
+2026-02-01 20:13:06,604 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: subdomain_scan (分类: plugin, 优先级: 3)
+2026-02-01 20:13:06,609 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webside_scan (分类: plugin, 优先级: 3)
+2026-02-01 20:13:06,612 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webweight_scan (分类: plugin, 优先级: 2)
+2026-02-01 20:13:06,624 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2020_2551 (分类: poc, 优先级: 8)
+2026-02-01 20:13:06,625 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2628 (分类: poc, 优先级: 8)
+2026-02-01 20:13:06,625 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2894 (分类: poc, 优先级: 8)
+2026-02-01 20:13:06,625 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_009 (分类: poc, 优先级: 8)
+2026-02-01 20:13:06,625 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_032 (分类: poc, 优先级: 8)
+2026-02-01 20:13:06,626 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_tomcat_2017_12615 (分类: poc, 优先级: 8)
+2026-02-01 20:13:06,627 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_jboss_2017_12149 (分类: poc, 优先级: 8)
+2026-02-01 20:13:06,627 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_nexus_2020_10199 (分类: poc, 优先级: 8)
+2026-02-01 20:13:06,627 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_drupal_2018_7600 (分类: poc, 优先级: 8)
+2026-02-01 20:13:06,632 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: install_dependencies (分类: dependency, 优先级: 9)
+2026-02-01 20:13:06,632 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: check_package (分类: dependency, 优先级: 9)
+2026-02-01 20:13:06,632 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: list_packages (分类: dependency, 优先级: 9)
+2026-02-01 20:13:06,633 - backend.ai_agents.core.graph - INFO - ✅ 工具初始化完成,共注册 21 个工具
+2026-02-01 20:13:07,293 - backend.main - INFO - 启动 WebScan AI Security Platform v1.0.0
+2026-02-01 20:13:07,365 - backend.database - INFO - ✅ 数据库初始化成功 - sqlite:///D:/AI_WebSecurity/backend/data/webscan.db
+2026-02-01 20:13:07,862 - backend.main - INFO - AWVS API 连接测试成功
+2026-02-01 20:13:51,508 - WAFDetector - INFO - 成功编译 90 条WAF检测规则
+2026-02-01 20:13:51,522 - task_executor - INFO - 任务 24 (scan_port) 已启动
+2026-02-01 20:13:51,797 - task_executor - ERROR - 插件任务 24 执行失败: default_connection for the model <class 'models.Task'> cannot be None
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 595, in execute_plugin_task
+    task = await Task.get(id=task_id)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1304, in get
+    return cls._db_queryset(using_db).get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1085, in _db_queryset
+    db = using_db or cls._choose_db(for_write)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1034, in _choose_db
+    return db or cls._meta.db
+                 ^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 291, in db
+    raise ConfigurationError(
+tortoise.exceptions.ConfigurationError: default_connection for the model <class 'models.Task'> cannot be None
+2026-02-01 20:13:51,805 - task_executor - INFO - 任务 25 (scan_infoleak) 已启动
+2026-02-01 20:13:51,805 - task_executor - ERROR - 插件任务 25 执行失败: default_connection for the model <class 'models.Task'> cannot be None
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 595, in execute_plugin_task
+    task = await Task.get(id=task_id)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1304, in get
+    return cls._db_queryset(using_db).get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1085, in _db_queryset
+    db = using_db or cls._choose_db(for_write)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1034, in _choose_db
+    return db or cls._meta.db
+                 ^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 291, in db
+    raise ConfigurationError(
+tortoise.exceptions.ConfigurationError: default_connection for the model <class 'models.Task'> cannot be None
+2026-02-01 20:13:51,812 - task_executor - INFO - 任务 26 (scan_webside) 已启动
+2026-02-01 20:13:51,814 - task_executor - ERROR - 插件任务 26 执行失败: default_connection for the model <class 'models.Task'> cannot be None
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 595, in execute_plugin_task
+    task = await Task.get(id=task_id)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1304, in get
+    return cls._db_queryset(using_db).get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1085, in _db_queryset
+    db = using_db or cls._choose_db(for_write)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1034, in _choose_db
+    return db or cls._meta.db
+                 ^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 291, in db
+    raise ConfigurationError(
+tortoise.exceptions.ConfigurationError: default_connection for the model <class 'models.Task'> cannot be None
+2026-02-01 20:13:51,820 - task_executor - INFO - 任务 27 (scan_baseinfo) 已启动
+2026-02-01 20:13:51,820 - task_executor - ERROR - 插件任务 27 执行失败: default_connection for the model <class 'models.Task'> cannot be None
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 595, in execute_plugin_task
+    task = await Task.get(id=task_id)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1304, in get
+    return cls._db_queryset(using_db).get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1085, in _db_queryset
+    db = using_db or cls._choose_db(for_write)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1034, in _choose_db
+    return db or cls._meta.db
+                 ^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 291, in db
+    raise ConfigurationError(
+tortoise.exceptions.ConfigurationError: default_connection for the model <class 'models.Task'> cannot be None
+2026-02-01 20:13:51,831 - task_executor - INFO - 任务 28 (scan_subdomain) 已启动
+2026-02-01 20:13:51,831 - task_executor - ERROR - 插件任务 28 执行失败: default_connection for the model <class 'models.Task'> cannot be None
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 595, in execute_plugin_task
+    task = await Task.get(id=task_id)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1304, in get
+    return cls._db_queryset(using_db).get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1085, in _db_queryset
+    db = using_db or cls._choose_db(for_write)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1034, in _choose_db
+    return db or cls._meta.db
+                 ^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 291, in db
+    raise ConfigurationError(
+tortoise.exceptions.ConfigurationError: default_connection for the model <class 'models.Task'> cannot be None
+2026-02-01 20:13:51,839 - task_executor - INFO - 任务 29 (scan_dir) 已启动
+2026-02-01 20:13:51,840 - task_executor - ERROR - 插件任务 29 执行失败: default_connection for the model <class 'models.Task'> cannot be None
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 595, in execute_plugin_task
+    task = await Task.get(id=task_id)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1304, in get
+    return cls._db_queryset(using_db).get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1085, in _db_queryset
+    db = using_db or cls._choose_db(for_write)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1034, in _choose_db
+    return db or cls._meta.db
+                 ^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 291, in db
+    raise ConfigurationError(
+tortoise.exceptions.ConfigurationError: default_connection for the model <class 'models.Task'> cannot be None
+2026-02-01 20:13:51,847 - task_executor - INFO - 任务 30 (scan_comprehensive) 已启动
+2026-02-01 20:13:51,848 - task_executor - ERROR - 插件任务 30 执行失败: default_connection for the model <class 'models.Task'> cannot be None
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 595, in execute_plugin_task
+    task = await Task.get(id=task_id)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1304, in get
+    return cls._db_queryset(using_db).get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1085, in _db_queryset
+    db = using_db or cls._choose_db(for_write)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1034, in _choose_db
+    return db or cls._meta.db
+                 ^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 291, in db
+    raise ConfigurationError(
+tortoise.exceptions.ConfigurationError: default_connection for the model <class 'models.Task'> cannot be None
+2026-02-01 20:13:51,868 - backend.api.tasks - INFO - 收到创建任务请求: 测试任务-API测试 (Type: scan_comprehensive, Target: https://test.example.com)
+2026-02-01 20:13:51,870 - backend.api.tasks - INFO - 任务记录创建成功: 31
+2026-02-01 20:13:51,873 - task_executor - INFO - 任务 31 (scan_comprehensive) 已启动
+2026-02-01 20:13:51,874 - task_executor - ERROR - 插件任务 31 执行失败: default_connection for the model <class 'models.Task'> cannot be None
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 595, in execute_plugin_task
+    task = await Task.get(id=task_id)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1304, in get
+    return cls._db_queryset(using_db).get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1085, in _db_queryset
+    db = using_db or cls._choose_db(for_write)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1034, in _choose_db
+    return db or cls._meta.db
+                 ^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 291, in db
+    raise ConfigurationError(
+tortoise.exceptions.ConfigurationError: default_connection for the model <class 'models.Task'> cannot be None
+2026-02-01 20:13:51,994 - backend.api.reports - INFO - 创建报告: 测试报告-API测试 (ID: 16)
+2026-02-01 20:13:56,328 - backend.api.awvs - INFO - 获取扫描任务列表成功,共 2 个任务
+2026-02-01 20:13:57,391 - backend.api.awvs - INFO - 创建扫描任务成功: https://www.baidu.com
+2026-02-01 20:13:58,497 - task_executor - INFO - 任务 33 (poc_scan) 已启动
+2026-02-01 20:14:01,973 - backend.ai_agents.core.graph - INFO - 🔧 初始化扫描Agent图
+2026-02-01 20:14:01,973 - backend.ai_agents.core.nodes - INFO - 🔍 环境感知节点初始化完成
+2026-02-01 20:14:01,973 - backend.ai_agents.utils.priority - INFO - 🎯 任务优先级管理器初始化完成
+2026-02-01 20:14:03,954 - backend.ai_agents.core.nodes - INFO - 🤖 启用LLM增强任务规划
+2026-02-01 20:14:03,954 - backend.ai_agents.core.nodes - INFO - 🧠 智能决策节点初始化完成
+2026-02-01 20:14:03,955 - backend.ai_agents.core.nodes - INFO - 🔧 工具执行节点初始化,最大并发: 5
+2026-02-01 20:14:06,049 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 20:14:06,050 - backend.ai_agents.core.nodes - INFO - 🔧 代码生成节点初始化完成
+2026-02-01 20:14:08,063 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 20:14:08,063 - backend.ai_agents.code_execution.executor - INFO - ✅ 统一执行器初始化完成: timeout=60s, sandbox=True
+2026-02-01 20:14:08,064 - backend.ai_agents.core.nodes - INFO - ⚡ 代码执行节点初始化完成
+2026-02-01 20:14:08,064 - backend.ai_agents.core.nodes - INFO - 🚀 功能补充节点初始化完成
+2026-02-01 20:14:08,064 - backend.ai_agents.analyzers.vuln_analyzer - INFO - 🔍 漏洞分析器初始化完成
+2026-02-01 20:14:08,064 - backend.ai_agents.core.nodes - INFO - 🔍 漏洞分析节点初始化
+2026-02-01 20:14:08,064 - backend.ai_agents.analyzers.report_gen - INFO - 📄 报告生成器初始化完成
+2026-02-01 20:14:08,066 - backend.ai_agents.core.nodes - INFO - 📄 报告生成节点初始化
+2026-02-01 20:14:08,066 - backend.ai_agents.core.graph - INFO - [2026-02-01 20:14:08] [NODE_ENTRY] 节点: _build_graph, 任务ID: GRAPH_BUILD, 详情: {'total_nodes': 11}
+2026-02-01 20:14:08,074 - backend.ai_agents.core.graph - INFO - 📊 增强版LangGraph图边定义完成
+2026-02-01 20:14:08,074 - backend.ai_agents.core.graph - INFO - [2026-02-01 20:14:08] [NODE_EXIT] 节点: _build_graph, 任务ID: GRAPH_BUILD, 状态: success, 详情: {'nodes_count': 11, 'edges_count': 16}
+2026-02-01 20:14:08,075 - backend.ai_agents.core.graph - INFO - ✅ 扫描Agent图构建完成
+2026-02-01 20:14:08,075 - backend.ai_agents.core.graph - INFO - 🔧 开始初始化工具...
+2026-02-01 20:14:08,075 - backend.ai_agents.tools.registry - WARNING - 工具 baseinfo 已存在,将被覆盖
+2026-02-01 20:14:08,075 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: baseinfo (分类: plugin, 优先级: 3)
+2026-02-01 20:14:08,075 - backend.ai_agents.tools.registry - WARNING - 工具 portscan 已存在,将被覆盖
+2026-02-01 20:14:08,075 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: portscan (分类: plugin, 优先级: 5)
+2026-02-01 20:14:08,077 - backend.ai_agents.tools.registry - WARNING - 工具 waf_detect 已存在,将被覆盖
+2026-02-01 20:14:08,077 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: waf_detect (分类: plugin, 优先级: 4)
+2026-02-01 20:14:08,077 - backend.ai_agents.tools.registry - WARNING - 工具 cdn_detect 已存在,将被覆盖
+2026-02-01 20:14:08,077 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cdn_detect (分类: plugin, 优先级: 4)
+2026-02-01 20:14:08,077 - backend.ai_agents.tools.registry - WARNING - 工具 cms_identify 已存在,将被覆盖
+2026-02-01 20:14:08,077 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cms_identify (分类: plugin, 优先级: 4)
+2026-02-01 20:14:08,077 - backend.ai_agents.tools.registry - WARNING - 工具 infoleak_scan 已存在,将被覆盖
+2026-02-01 20:14:08,078 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: infoleak_scan (分类: plugin, 优先级: 3)
+2026-02-01 20:14:08,078 - backend.ai_agents.tools.registry - WARNING - 工具 subdomain_scan 已存在,将被覆盖
+2026-02-01 20:14:08,078 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: subdomain_scan (分类: plugin, 优先级: 3)
+2026-02-01 20:14:08,078 - backend.ai_agents.tools.registry - WARNING - 工具 webside_scan 已存在,将被覆盖
+2026-02-01 20:14:08,078 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webside_scan (分类: plugin, 优先级: 3)
+2026-02-01 20:14:08,080 - backend.ai_agents.tools.registry - WARNING - 工具 webweight_scan 已存在,将被覆盖
+2026-02-01 20:14:08,080 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webweight_scan (分类: plugin, 优先级: 2)
+2026-02-01 20:14:08,080 - backend.ai_agents.tools.registry - WARNING - 工具 poc_weblogic_2020_2551 已存在,将被覆盖
+2026-02-01 20:14:08,080 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2020_2551 (分类: poc, 优先级: 8)
+2026-02-01 20:14:08,080 - backend.ai_agents.tools.registry - WARNING - 工具 poc_weblogic_2018_2628 已存在,将被覆盖
+2026-02-01 20:14:08,082 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2628 (分类: poc, 优先级: 8)
+2026-02-01 20:14:08,082 - backend.ai_agents.tools.registry - WARNING - 工具 poc_weblogic_2018_2894 已存在,将被覆盖
+2026-02-01 20:14:08,082 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2894 (分类: poc, 优先级: 8)
+2026-02-01 20:14:08,083 - backend.ai_agents.tools.registry - WARNING - 工具 poc_struts2_009 已存在,将被覆盖
+2026-02-01 20:14:08,084 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_009 (分类: poc, 优先级: 8)
+2026-02-01 20:14:08,084 - backend.ai_agents.tools.registry - WARNING - 工具 poc_struts2_032 已存在,将被覆盖
+2026-02-01 20:14:08,084 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_032 (分类: poc, 优先级: 8)
+2026-02-01 20:14:08,084 - backend.ai_agents.tools.registry - WARNING - 工具 poc_tomcat_2017_12615 已存在,将被覆盖
+2026-02-01 20:14:08,084 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_tomcat_2017_12615 (分类: poc, 优先级: 8)
+2026-02-01 20:14:08,086 - backend.ai_agents.tools.registry - WARNING - 工具 poc_jboss_2017_12149 已存在,将被覆盖
+2026-02-01 20:14:08,087 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_jboss_2017_12149 (分类: poc, 优先级: 8)
+2026-02-01 20:14:08,087 - backend.ai_agents.tools.registry - WARNING - 工具 poc_nexus_2020_10199 已存在,将被覆盖
+2026-02-01 20:14:08,087 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_nexus_2020_10199 (分类: poc, 优先级: 8)
+2026-02-01 20:14:08,087 - backend.ai_agents.tools.registry - WARNING - 工具 poc_drupal_2018_7600 已存在,将被覆盖
+2026-02-01 20:14:08,087 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_drupal_2018_7600 (分类: poc, 优先级: 8)
+2026-02-01 20:14:08,087 - backend.ai_agents.tools.registry - WARNING - 工具 install_dependencies 已存在,将被覆盖
+2026-02-01 20:14:08,087 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: install_dependencies (分类: dependency, 优先级: 9)
+2026-02-01 20:14:08,088 - backend.ai_agents.tools.registry - WARNING - 工具 check_package 已存在,将被覆盖
+2026-02-01 20:14:08,088 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: check_package (分类: dependency, 优先级: 9)
+2026-02-01 20:14:08,089 - backend.ai_agents.tools.registry - WARNING - 工具 list_packages 已存在,将被覆盖
+2026-02-01 20:14:08,089 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: list_packages (分类: dependency, 优先级: 9)
+2026-02-01 20:14:08,089 - backend.ai_agents.core.graph - INFO - ✅ 工具初始化完成,共注册 21 个工具
+2026-02-01 20:14:08,220 - task_executor - WARNING - Failed to import poc_generator
+2026-02-01 20:14:08,221 - task_executor - ERROR - POC任务 33 执行失败: default_connection for the model <class 'models.Task'> cannot be None
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 353, in execute_poc_task
+    task = await Task.get(id=task_id)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1304, in get
+    return cls._db_queryset(using_db).get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1085, in _db_queryset
+    db = using_db or cls._choose_db(for_write)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 1034, in _choose_db
+    return db or cls._meta.db
+                 ^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\tortoise\models.py", line 291, in db
+    raise ConfigurationError(
+tortoise.exceptions.ConfigurationError: default_connection for the model <class 'models.Task'> cannot be None
+2026-02-01 20:14:08,277 - backend.api.kb - INFO - 开始同步漏洞知识库...
+2026-02-01 20:14:08,277 - backend.api.kb - INFO - 🔍 开始从 Seebug 获取漏洞数据
+2026-02-01 20:14:08,277 - backend.api.seebug_client - INFO - 🔍 开始搜索POC: 关键词=, 页码=1
+2026-02-01 20:14:11,175 - backend.api.seebug_client - INFO - ✅ POC搜索成功: 找到1个结果
+2026-02-01 20:14:11,176 - backend.api.kb - INFO - ✅ 从 Seebug 获取到 1 条漏洞数据
+2026-02-01 20:14:11,177 - backend.api.kb - INFO - 从 Seebug 获取到 1 条数据
+2026-02-01 20:14:11,178 - backend.api.kb - INFO - 🔍 开始从 Exploit-DB 获取漏洞数据
+2026-02-01 20:14:12,150 - backend.api.ai - INFO - ✅ 创建对话历史: 91cf666c-22df-45d4-9f70-bbc21a89f67c
+2026-02-01 20:14:12,151 - backend.api.ai - INFO - ✅ 创建对话实例: 91cf666c-22df-45d4-9f70-bbc21a89f67c
+2026-02-01 20:14:13,707 - httpx - INFO - HTTP Request: GET https://www.exploit-db.com/search?limit=20&order=date&sort=desc "HTTP/1.1 200 OK"
+2026-02-01 20:14:14,449 - backend.api.kb - WARNING - ⚠️ Exploit-DB 返回的不是 JSON 格式: Expecting value: line 1 column 1 (char 0)
+2026-02-01 20:14:14,450 - backend.api.kb - INFO - Exploit-DB 响应内容类型: text/html; charset=UTF-8
+2026-02-01 20:14:14,450 - backend.api.kb - INFO - Exploit-DB API 可能已更改或需要认证，跳过此数据源
+2026-02-01 20:14:14,453 - backend.api.kb - INFO - 从 Exploit-DB 获取到 0 条数据
+2026-02-01 20:14:14,454 - backend.api.kb - INFO - 同步完成，新增 0 条漏洞信息
+2026-02-01 20:14:15,387 - httpx - INFO - HTTP Request: POST https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions "HTTP/1.1 200 OK"
+2026-02-01 20:14:37,992 - backend.api.ai - INFO - ✅ 消息发送成功: 91cf666c-22df-45d4-9f70-bbc21a89f67c
+2026-02-01 20:14:39,054 - backend.api.user - INFO - 获取用户信息成功: admin
+2026-02-01 20:14:39,067 - backend.api.user - INFO - 获取用户权限成功: admin
+2026-02-01 20:14:39,074 - backend.api.user - INFO - 获取用户列表成功: 共 2 个用户
+2026-02-01 20:14:39,102 - backend.api.notifications - INFO - 获取通知列表成功: 共 3 条通知,2 条未读
+2026-02-01 20:14:39,108 - backend.api.notifications - INFO - 创建通知成功: 测试通知-API测试
+2026-02-01 20:14:39,114 - backend.api.notifications - INFO - 获取未读通知数量成功: 3
+2026-02-01 20:14:39,139 - backend.main - ERROR - 未处理的异常: 1 validation errors:
+  {'type': 'dict_type', 'loc': ('response',), 'msg': 'Input should be a valid dictionary', 'input': APIResponse(code=200, message='获取成功', data={'tasks': [{'task_id': '0bbf752d-97e4-4fca-8101-771d8061c2f0', 'task_type': 'agent_scan', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 13, 39, 26, 425394, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 13, 39, 26, 425394, tzinfo=<UTC>)}, {'task_id': '0b9a0a91-4da3-467c-94e3-eb5b8ad4ee95', 'task_type': 'agent_scan', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 13, 13, 33, 544292, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 13, 13, 33, 544292, tzinfo=<UTC>)}, {'task_id': '9c1c5f24-35d2-40bd-8ca8-0b759c02a24e', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 634213, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 634213, tzinfo=<UTC>)}, {'task_id': 'fd6e7a73-3524-4b89-ae5e-54f63d1d00a7', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 631463, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 631978, tzinfo=<UTC>)}, {'task_id': 'cce9c5af-c309-4aa8-a813-0fe6e051f832', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 628853, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 628853, tzinfo=<UTC>)}, {'task_id': '04c1ba0a-b384-41d9-9245-c4d7e81931f5', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 625698, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 625698, tzinfo=<UTC>)}, {'task_id': '39268482-2bf2-4fcf-a353-0c8be3389d57', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 621009, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 621009, tzinfo=<UTC>)}, {'task_id': '75378724-199c-4ac6-a561-1d64a75ff993', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 617905, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 617905, tzinfo=<UTC>)}, {'task_id': 'b8818af5-2746-4557-9bca-cbd97f988b88', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 614739, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 614739, tzinfo=<UTC>)}, {'task_id': 'a4d40015-2b8d-4e2e-8419-bf144699efd4', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 612027, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 612027, tzinfo=<UTC>)}, {'task_id': '93fca30b-fd41-423f-a585-c427b15f60b6', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 608926, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 608926, tzinfo=<UTC>)}, {'task_id': '535d9341-3dc6-4fee-9e8a-ac75c8f50742', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 602571, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 602571, tzinfo=<UTC>)}, {'task_id': 'c8031bcd-4c5e-40fb-bb00-6573eb5d8e3a', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 250337, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 250337, tzinfo=<UTC>)}, {'task_id': '79d5ee7c-729c-47c4-ad3f-0999fff139be', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 247805, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 247805, tzinfo=<UTC>)}, {'task_id': '4351b273-294e-4f4c-a987-76c2fc36ea65', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 245253, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 245253, tzinfo=<UTC>)}, {'task_id': 'e20ee2d1-f61d-4cbd-88e9-2a4a2a792491', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 242242, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 242242, tzinfo=<UTC>)}, {'task_id': '813ed4c4-0c5a-4fd7-9b25-2bc114eeaa5b', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 238669, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 238669, tzinfo=<UTC>)}, {'task_id': '762f38a7-bfb7-4346-b2fe-75fccf7b53bd', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 236068, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 236068, tzinfo=<UTC>)}, {'task_id': 'e9d30f0b-2427-47b5-ba34-4a2ef339f864', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 233950, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 233950, tzinfo=<UTC>)}, {'task_id': 'd49195a3-f767-4d58-b322-15614c3ac295', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 231820, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 231820, tzinfo=<UTC>)}], 'total': 22, 'page': 1, 'page_size': 20, 'total_pages': 2})}
+Traceback (most recent call last):
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\middleware\errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\middleware\cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\starlette\routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\fastapi\routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\AI_WebSecurity\.conda\Lib\site-packages\fastapi\routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 1 validation errors:
+  {'type': 'dict_type', 'loc': ('response',), 'msg': 'Input should be a valid dictionary', 'input': APIResponse(code=200, message='获取成功', data={'tasks': [{'task_id': '0bbf752d-97e4-4fca-8101-771d8061c2f0', 'task_type': 'agent_scan', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 13, 39, 26, 425394, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 13, 39, 26, 425394, tzinfo=<UTC>)}, {'task_id': '0b9a0a91-4da3-467c-94e3-eb5b8ad4ee95', 'task_type': 'agent_scan', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 13, 13, 33, 544292, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 13, 13, 33, 544292, tzinfo=<UTC>)}, {'task_id': '9c1c5f24-35d2-40bd-8ca8-0b759c02a24e', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 634213, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 634213, tzinfo=<UTC>)}, {'task_id': 'fd6e7a73-3524-4b89-ae5e-54f63d1d00a7', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 631463, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 631978, tzinfo=<UTC>)}, {'task_id': 'cce9c5af-c309-4aa8-a813-0fe6e051f832', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 628853, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 628853, tzinfo=<UTC>)}, {'task_id': '04c1ba0a-b384-41d9-9245-c4d7e81931f5', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 625698, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 625698, tzinfo=<UTC>)}, {'task_id': '39268482-2bf2-4fcf-a353-0c8be3389d57', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 621009, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 621009, tzinfo=<UTC>)}, {'task_id': '75378724-199c-4ac6-a561-1d64a75ff993', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 617905, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 617905, tzinfo=<UTC>)}, {'task_id': 'b8818af5-2746-4557-9bca-cbd97f988b88', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 614739, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 614739, tzinfo=<UTC>)}, {'task_id': 'a4d40015-2b8d-4e2e-8419-bf144699efd4', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 612027, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 612027, tzinfo=<UTC>)}, {'task_id': '93fca30b-fd41-423f-a585-c427b15f60b6', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 608926, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 608926, tzinfo=<UTC>)}, {'task_id': '535d9341-3dc6-4fee-9e8a-ac75c8f50742', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 602571, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 602571, tzinfo=<UTC>)}, {'task_id': 'c8031bcd-4c5e-40fb-bb00-6573eb5d8e3a', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 250337, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 250337, tzinfo=<UTC>)}, {'task_id': '79d5ee7c-729c-47c4-ad3f-0999fff139be', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 247805, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 247805, tzinfo=<UTC>)}, {'task_id': '4351b273-294e-4f4c-a987-76c2fc36ea65', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 245253, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 245253, tzinfo=<UTC>)}, {'task_id': 'e20ee2d1-f61d-4cbd-88e9-2a4a2a792491', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 242242, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 242242, tzinfo=<UTC>)}, {'task_id': '813ed4c4-0c5a-4fd7-9b25-2bc114eeaa5b', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 238669, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 238669, tzinfo=<UTC>)}, {'task_id': '762f38a7-bfb7-4346-b2fe-75fccf7b53bd', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 236068, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 236068, tzinfo=<UTC>)}, {'task_id': 'e9d30f0b-2427-47b5-ba34-4a2ef339f864', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 233950, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 233950, tzinfo=<UTC>)}, {'task_id': 'd49195a3-f767-4d58-b322-15614c3ac295', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 231820, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 231820, tzinfo=<UTC>)}], 'total': 22, 'page': 1, 'page_size': 20, 'total_pages': 2})}
+
+2026-02-01 21:11:20,915 - backend.api.seebug_client - INFO - ✅ Seebug API客户端初始化完成: https://www.seebug.org/api
+2026-02-01 21:11:21,054 - backend.ai_agents.utils.cache - INFO - ✅ 缓存管理器初始化完成, TTL: 3600秒
+2026-02-01 21:11:21,054 - backend.ai_agents.poc_system.poc_manager - INFO - ✅ POC 管理器初始化完成
+2026-02-01 21:11:21,062 - backend.ai_agents.poc_system.target_manager - INFO - ✅ 目标管理器初始化完成
+2026-02-01 21:11:22,136 - backend.Pocsuite3Agent.agent - INFO - Pocsuite3 已安装
+2026-02-01 21:11:22,171 - backend.Pocsuite3Agent.agent - INFO - 加载了 114 个 POC 脚本
+2026-02-01 21:11:22,172 - backend.ai_agents.poc_system.verification_engine - INFO - ✅ POC 验证执行引擎初始化完成
+2026-02-01 21:11:22,189 - backend.ai_agents.poc_system.result_analyzer - INFO - ✅ 结果分析器初始化完成
+2026-02-01 21:11:22,197 - backend.ai_agents.poc_system.report_generator - INFO - ✅ 报告生成器初始化完成
+2026-02-01 21:11:22,232 - backend.ai_agents.utils.file_sync - INFO - ✅ 文件同步管理器初始化完成
+2026-02-01 21:11:22,232 - backend.ai_agents.utils.file_sync - INFO -   基础POC目录: D:\AI_WebSecurity\backend\poc
+2026-02-01 21:11:22,232 - backend.ai_agents.utils.file_sync - INFO -   Seebug生成目录: D:\AI_WebSecurity\Seebug_Agent\generated_pocs
+2026-02-01 21:11:22,438 - backend.ai_agents.tools.registry - INFO - 工具注册表初始化完成
+2026-02-01 21:11:45,059 - backend.ai_agents.core.nodes - INFO - ✅ Seebug Agent节点初始化完成
+2026-02-01 21:11:45,060 - backend.ai_agents.core.nodes - INFO - ✅ POC 验证节点初始化完成
+2026-02-01 21:11:45,061 - backend.ai_agents.core.graph - INFO - 🔧 初始化扫描Agent图
+2026-02-01 21:11:45,078 - backend.ai_agents.code_execution.environment - INFO - 🚀 开始初始化环境感知模块...
+2026-02-01 21:11:55,322 - backend.ai_agents.code_execution.environment - INFO - ✅ 环境感知模块初始化完成,耗时: 10.24秒
+2026-02-01 21:11:55,323 - backend.ai_agents.core.nodes - INFO - 🔍 环境感知节点初始化完成
+2026-02-01 21:11:55,323 - backend.ai_agents.utils.priority - INFO - 🎯 任务优先级管理器初始化完成
+2026-02-01 21:11:55,324 - backend.ai_agents.core.nodes - INFO - 🤖 启用LLM增强任务规划
+2026-02-01 21:11:55,326 - backend.ai_agents.core.nodes - INFO - 🧠 智能决策节点初始化完成
+2026-02-01 21:11:55,326 - backend.ai_agents.core.nodes - INFO - 🔧 工具执行节点初始化,最大并发: 5
+2026-02-01 21:11:55,326 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 21:11:55,327 - backend.ai_agents.core.nodes - INFO - 🔧 代码生成节点初始化完成
+2026-02-01 21:11:55,327 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 21:11:55,327 - backend.ai_agents.code_execution.capability_enhancer - INFO - 🚀 开始初始化功能补充器...
+2026-02-01 21:11:55,329 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 21:11:55,333 - backend.ai_agents.code_execution.capability_enhancer - INFO - ✅ 功能补充器初始化完成
+2026-02-01 21:11:55,334 - backend.ai_agents.code_execution.executor - INFO - ✅ 统一执行器初始化完成: timeout=60s, sandbox=True
+2026-02-01 21:11:55,334 - backend.ai_agents.core.nodes - INFO - ⚡ 代码执行节点初始化完成
+2026-02-01 21:11:55,334 - backend.ai_agents.core.nodes - INFO - 🚀 功能补充节点初始化完成
+2026-02-01 21:11:55,339 - backend.ai_agents.analyzers.vuln_analyzer - INFO - 🔍 漏洞分析器初始化完成
+2026-02-01 21:11:55,340 - backend.ai_agents.core.nodes - INFO - 🔍 漏洞分析节点初始化
+2026-02-01 21:11:55,340 - backend.ai_agents.analyzers.report_gen - INFO - 📄 报告生成器初始化完成
+2026-02-01 21:11:55,340 - backend.ai_agents.core.nodes - INFO - 📄 报告生成节点初始化
+2026-02-01 21:11:55,340 - backend.ai_agents.core.graph - INFO - [2026-02-01 21:11:55] [NODE_ENTRY] 节点: _build_graph, 任务ID: GRAPH_BUILD, 详情: {'total_nodes': 11}
+2026-02-01 21:11:55,346 - backend.ai_agents.core.graph - INFO - 📊 增强版LangGraph图边定义完成
+2026-02-01 21:11:55,346 - backend.ai_agents.core.graph - INFO - [2026-02-01 21:11:55] [NODE_EXIT] 节点: _build_graph, 任务ID: GRAPH_BUILD, 状态: success, 详情: {'nodes_count': 11, 'edges_count': 16}
+2026-02-01 21:11:55,348 - backend.ai_agents.core.graph - INFO - ✅ 扫描Agent图构建完成
+2026-02-01 21:11:55,348 - backend.ai_agents.core.graph - INFO - 🔧 开始初始化工具...
+2026-02-01 21:11:55,447 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: baseinfo (分类: plugin, 优先级: 3)
+2026-02-01 21:11:55,452 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: portscan (分类: plugin, 优先级: 5)
+2026-02-01 21:11:55,458 - WAFDetector - INFO - 成功编译 90 条WAF检测规则
+2026-02-01 21:11:55,459 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: waf_detect (分类: plugin, 优先级: 4)
+2026-02-01 21:11:55,490 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cdn_detect (分类: plugin, 优先级: 4)
+2026-02-01 21:11:55,622 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cms_identify (分类: plugin, 优先级: 4)
+2026-02-01 21:11:55,624 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: infoleak_scan (分类: plugin, 优先级: 3)
+2026-02-01 21:11:55,626 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: subdomain_scan (分类: plugin, 优先级: 3)
+2026-02-01 21:11:55,630 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webside_scan (分类: plugin, 优先级: 3)
+2026-02-01 21:11:55,632 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webweight_scan (分类: plugin, 优先级: 2)
+2026-02-01 21:11:55,639 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2020_2551 (分类: poc, 优先级: 8)
+2026-02-01 21:11:55,639 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2628 (分类: poc, 优先级: 8)
+2026-02-01 21:11:55,641 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2894 (分类: poc, 优先级: 8)
+2026-02-01 21:11:55,641 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_009 (分类: poc, 优先级: 8)
+2026-02-01 21:11:55,641 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_032 (分类: poc, 优先级: 8)
+2026-02-01 21:11:55,642 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_tomcat_2017_12615 (分类: poc, 优先级: 8)
+2026-02-01 21:11:55,642 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_jboss_2017_12149 (分类: poc, 优先级: 8)
+2026-02-01 21:11:55,643 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_nexus_2020_10199 (分类: poc, 优先级: 8)
+2026-02-01 21:11:55,643 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_drupal_2018_7600 (分类: poc, 优先级: 8)
+2026-02-01 21:11:55,648 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: install_dependencies (分类: dependency, 优先级: 9)
+2026-02-01 21:11:55,649 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: check_package (分类: dependency, 优先级: 9)
+2026-02-01 21:11:55,649 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: list_packages (分类: dependency, 优先级: 9)
+2026-02-01 21:11:55,650 - backend.ai_agents.core.graph - INFO - ✅ 工具初始化完成,共注册 21 个工具
+2026-02-01 21:11:56,270 - backend.main - INFO - 启动 WebScan AI Security Platform v1.0.0
+2026-02-01 21:11:56,327 - backend.database - INFO - ✅ 数据库初始化成功 - sqlite:///D:/AI_WebSecurity/backend/data/webscan.db
+2026-02-01 21:11:56,460 - backend.main - INFO - AWVS API 连接测试成功
+2026-02-01 21:40:15,801 - WAFDetector - INFO - 成功编译 90 条WAF检测规则
+2026-02-01 21:40:15,813 - task_executor - INFO - 任务 34 (scan_port) 已启动
+2026-02-01 21:40:15,817 - task_executor - INFO - 插件任务 34 (scan_port) 开始执行: 127.0.0.1
+2026-02-01 21:40:15,825 - task_executor - INFO - 任务 35 (scan_infoleak) 已启动
+2026-02-01 21:40:15,830 - task_executor - INFO - 插件任务 35 (scan_infoleak) 开始执行: https://www.baidu.com
+2026-02-01 21:40:15,831 - backend.plugins.infoleak.infoleak - ERROR - 风险路径字典文件不存在:D:\AI_WebSecurity\backend\database\infoleak.json
+2026-02-01 21:40:15,831 - backend.plugins.infoleak.infoleak - ERROR - 未加载到任何风险路径,扫描终止
+2026-02-01 21:40:15,834 - task_executor - INFO - 插件任务 35 执行完成
+2026-02-01 21:40:15,843 - task_executor - INFO - 任务 36 (scan_webside) 已启动
+2026-02-01 21:40:15,846 - task_executor - INFO - 插件任务 36 (scan_webside) 开始执行: 127.0.0.1
+2026-02-01 21:40:15,846 - WebScanSideInfo - INFO - 发起旁站查询请求 | IP:127.0.0.1 | API URL:http://api.webscan.cc/?action=query&ip=127.0.0.1
+2026-02-01 21:40:15,860 - task_executor - INFO - 任务 37 (scan_baseinfo) 已启动
+2026-02-01 21:40:15,863 - task_executor - INFO - 插件任务 37 (scan_baseinfo) 开始执行: https://www.baidu.com
+2026-02-01 21:40:15,967 - task_executor - INFO - 任务 38 (scan_subdomain) 已启动
+2026-02-01 21:40:15,970 - task_executor - INFO - 插件任务 38 (scan_subdomain) 开始执行: baidu.com
+2026-02-01 21:40:15,972 - SubdomainScanner - INFO - 发起请求:http://site.ip138.com/baidu.com/domain.htm
+2026-02-01 21:40:15,978 - task_executor - INFO - 任务 39 (scan_dir) 已启动
+2026-02-01 21:40:15,984 - task_executor - INFO - 插件任务 39 (scan_dir) 开始执行: https://www.baidu.com
+2026-02-01 21:40:15,994 - task_executor - INFO - 插件任务 39 执行完成
+2026-02-01 21:40:15,996 - task_executor - INFO - 任务 40 (scan_comprehensive) 已启动
+2026-02-01 21:40:16,001 - backend.api.tasks - INFO - 收到创建任务请求: 测试任务-API测试 (Type: scan_comprehensive, Target: https://test.example.com)
+2026-02-01 21:40:16,003 - task_executor - INFO - 插件任务 40 (scan_comprehensive) 开始执行: https://www.baidu.com
+2026-02-01 21:40:16,010 - backend.api.tasks - INFO - 任务记录创建成功: 41
+2026-02-01 21:40:16,013 - task_executor - INFO - 任务 41 (scan_comprehensive) 已启动
+2026-02-01 21:40:16,108 - task_executor - INFO - 插件任务 41 (scan_comprehensive) 开始执行: https://test.example.com
+2026-02-01 21:40:16,310 - backend.api.reports - INFO - 创建报告: 测试报告-API测试 (ID: 17)
+2026-02-01 21:40:16,721 - backend.plugins.baseinfo.baseinfo - ERROR - URL https://www.baidu.com 连接失败
+2026-02-01 21:40:16,727 - task_executor - INFO - 插件任务 37 执行完成
+2026-02-01 21:40:16,846 - task_executor - INFO - 插件任务 34 执行完成
+2026-02-01 21:40:17,113 - backend.plugins.baseinfo.baseinfo - ERROR - URL https://www.baidu.com 连接失败
+2026-02-01 21:40:17,113 - backend.plugins.baseinfo.baseinfo - ERROR - URL https://test.example.com 连接失败
+2026-02-01 21:40:17,117 - WhatCMSDetector - INFO - 开始识别CMS | URL:https://www.baidu.com
+2026-02-01 21:40:17,122 - WhatCMSDetector - INFO - 开始识别CMS | URL:https://test.example.com
+2026-02-01 21:40:17,125 - SubdomainScanner - INFO - 提取到 0 个唯一子域名:[]
+2026-02-01 21:40:17,127 - SubdomainScanner - WARNING - 未提取到 baidu.com 的子域名,ip138接口可能异常或无数据
+2026-02-01 21:40:17,311 - task_executor - INFO - 插件任务 38 执行完成
+2026-02-01 21:40:18,034 - urllib3.connectionpool - WARNING - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)'))': /
+2026-02-01 21:40:18,127 - urllib3.connectionpool - WARNING - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)'))': /
+2026-02-01 21:40:19,626 - urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)'))': /
+2026-02-01 21:40:19,833 - urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)'))': /
+2026-02-01 21:40:19,966 - WhatCMSDetector - ERROR - 请求异常:HTTPSConnectionPool(host='www.baidu.com', port=443 | URL:https://www.baidu.com
+2026-02-01 21:40:20,239 - backend.plugins.cdnexist.cdnexist - ERROR - GeoIP2数据库文件不存在:D:\AI_WebSecurity\backend\database\GeoLite2-ASN.mmdb
+2026-02-01 21:40:20,240 - backend.plugins.cdnexist.cdnexist - INFO - IP 39.156.70.239 未匹配CDN网段/ASN,判定为无CDN
+2026-02-01 21:40:20,501 - WhatCMSDetector - ERROR - 请求异常:HTTPSConnectionPool(host='test.example.com', port= | URL:https://test.example.com
+2026-02-01 21:40:20,834 - backend.plugins.cdnexist.cdnexist - ERROR - 域名test.example.com解析失败:[Errno 11001] getaddrinfo failed
+2026-02-01 21:40:20,834 - backend.plugins.cdnexist.cdnexist - ERROR - 目标站点不可访问(解析IP失败)
+2026-02-01 21:40:21,336 - task_executor - INFO - 插件任务 40 执行完成
+2026-02-01 21:40:22,205 - task_executor - INFO - 插件任务 41 执行完成
+2026-02-01 21:40:23,868 - urllib3.connectionpool - WARNING - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ReadTimeoutError("HTTPConnectionPool(host='127.0.0.1', port=7897): Read timed out. (read timeout=8.0)")': http://api.webscan.cc/?action=query&ip=127.0.0.1
+2026-02-01 21:40:24,567 - backend.api.awvs - ERROR - 同步漏洞失败 (ScanID: a8ee30ae-d58d-4042-ba1d-b9fb84bbe5cf): vuln_type: Length of 'jQuery Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting') Vulnerability' 105 > 100
+2026-02-01 21:40:25,549 - backend.api.awvs - INFO - 获取扫描任务列表成功,共 3 个任务
+2026-02-01 21:40:25,833 - backend.api.awvs - INFO - 创建扫描任务成功: https://www.baidu.com
+2026-02-01 21:40:26,118 - task_executor - INFO - 任务 43 (poc_scan) 已启动
+2026-02-01 21:40:26,301 - backend.ai_agents.core.graph - INFO - 🔧 初始化扫描Agent图
+2026-02-01 21:40:26,301 - backend.ai_agents.core.nodes - INFO - 🔍 环境感知节点初始化完成
+2026-02-01 21:40:26,301 - backend.ai_agents.utils.priority - INFO - 🎯 任务优先级管理器初始化完成
+2026-02-01 21:40:26,303 - backend.ai_agents.core.nodes - INFO - 🤖 启用LLM增强任务规划
+2026-02-01 21:40:26,303 - backend.ai_agents.core.nodes - INFO - 🧠 智能决策节点初始化完成
+2026-02-01 21:40:26,303 - backend.ai_agents.core.nodes - INFO - 🔧 工具执行节点初始化,最大并发: 5
+2026-02-01 21:40:26,304 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 21:40:26,304 - backend.ai_agents.core.nodes - INFO - 🔧 代码生成节点初始化完成
+2026-02-01 21:40:26,304 - backend.ai_agents.code_execution.code_generator - INFO - ✅ LLM代码生成器初始化完成
+2026-02-01 21:40:26,306 - backend.ai_agents.code_execution.executor - INFO - ✅ 统一执行器初始化完成: timeout=60s, sandbox=True
+2026-02-01 21:40:26,306 - backend.ai_agents.core.nodes - INFO - ⚡ 代码执行节点初始化完成
+2026-02-01 21:40:26,306 - backend.ai_agents.core.nodes - INFO - 🚀 功能补充节点初始化完成
+2026-02-01 21:40:26,307 - backend.ai_agents.analyzers.vuln_analyzer - INFO - 🔍 漏洞分析器初始化完成
+2026-02-01 21:40:26,307 - backend.ai_agents.core.nodes - INFO - 🔍 漏洞分析节点初始化
+2026-02-01 21:40:26,307 - backend.ai_agents.analyzers.report_gen - INFO - 📄 报告生成器初始化完成
+2026-02-01 21:40:26,307 - backend.ai_agents.core.nodes - INFO - 📄 报告生成节点初始化
+2026-02-01 21:40:26,307 - backend.ai_agents.core.graph - INFO - [2026-02-01 21:40:26] [NODE_ENTRY] 节点: _build_graph, 任务ID: GRAPH_BUILD, 详情: {'total_nodes': 11}
+2026-02-01 21:40:26,312 - backend.ai_agents.core.graph - INFO - 📊 增强版LangGraph图边定义完成
+2026-02-01 21:40:26,312 - backend.ai_agents.core.graph - INFO - [2026-02-01 21:40:26] [NODE_EXIT] 节点: _build_graph, 任务ID: GRAPH_BUILD, 状态: success, 详情: {'nodes_count': 11, 'edges_count': 16}
+2026-02-01 21:40:26,312 - backend.ai_agents.core.graph - INFO - ✅ 扫描Agent图构建完成
+2026-02-01 21:40:26,312 - backend.ai_agents.core.graph - INFO - 🔧 开始初始化工具...
+2026-02-01 21:40:26,314 - backend.ai_agents.tools.registry - WARNING - 工具 baseinfo 已存在,将被覆盖
+2026-02-01 21:40:26,314 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: baseinfo (分类: plugin, 优先级: 3)
+2026-02-01 21:40:26,314 - backend.ai_agents.tools.registry - WARNING - 工具 portscan 已存在,将被覆盖
+2026-02-01 21:40:26,315 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: portscan (分类: plugin, 优先级: 5)
+2026-02-01 21:40:26,315 - backend.ai_agents.tools.registry - WARNING - 工具 waf_detect 已存在,将被覆盖
+2026-02-01 21:40:26,315 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: waf_detect (分类: plugin, 优先级: 4)
+2026-02-01 21:40:26,315 - backend.ai_agents.tools.registry - WARNING - 工具 cdn_detect 已存在,将被覆盖
+2026-02-01 21:40:26,315 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cdn_detect (分类: plugin, 优先级: 4)
+2026-02-01 21:40:26,315 - backend.ai_agents.tools.registry - WARNING - 工具 cms_identify 已存在,将被覆盖
+2026-02-01 21:40:26,315 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: cms_identify (分类: plugin, 优先级: 4)
+2026-02-01 21:40:26,315 - backend.ai_agents.tools.registry - WARNING - 工具 infoleak_scan 已存在,将被覆盖
+2026-02-01 21:40:26,315 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: infoleak_scan (分类: plugin, 优先级: 3)
+2026-02-01 21:40:26,317 - backend.ai_agents.tools.registry - WARNING - 工具 subdomain_scan 已存在,将被覆盖
+2026-02-01 21:40:26,317 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: subdomain_scan (分类: plugin, 优先级: 3)
+2026-02-01 21:40:26,317 - backend.ai_agents.tools.registry - WARNING - 工具 webside_scan 已存在,将被覆盖
+2026-02-01 21:40:26,317 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webside_scan (分类: plugin, 优先级: 3)
+2026-02-01 21:40:26,318 - backend.ai_agents.tools.registry - WARNING - 工具 webweight_scan 已存在,将被覆盖
+2026-02-01 21:40:26,318 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: webweight_scan (分类: plugin, 优先级: 2)
+2026-02-01 21:40:26,318 - backend.ai_agents.tools.registry - WARNING - 工具 poc_weblogic_2020_2551 已存在,将被覆盖
+2026-02-01 21:40:26,318 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2020_2551 (分类: poc, 优先级: 8)
+2026-02-01 21:40:26,318 - backend.ai_agents.tools.registry - WARNING - 工具 poc_weblogic_2018_2628 已存在,将被覆盖
+2026-02-01 21:40:26,319 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2628 (分类: poc, 优先级: 8)
+2026-02-01 21:40:26,319 - backend.ai_agents.tools.registry - WARNING - 工具 poc_weblogic_2018_2894 已存在,将被覆盖
+2026-02-01 21:40:26,319 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_weblogic_2018_2894 (分类: poc, 优先级: 8)
+2026-02-01 21:40:26,319 - backend.ai_agents.tools.registry - WARNING - 工具 poc_struts2_009 已存在,将被覆盖
+2026-02-01 21:40:26,319 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_009 (分类: poc, 优先级: 8)
+2026-02-01 21:40:26,321 - backend.ai_agents.tools.registry - WARNING - 工具 poc_struts2_032 已存在,将被覆盖
+2026-02-01 21:40:26,321 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_struts2_032 (分类: poc, 优先级: 8)
+2026-02-01 21:40:26,321 - backend.ai_agents.tools.registry - WARNING - 工具 poc_tomcat_2017_12615 已存在,将被覆盖
+2026-02-01 21:40:26,321 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_tomcat_2017_12615 (分类: poc, 优先级: 8)
+2026-02-01 21:40:26,321 - backend.ai_agents.tools.registry - WARNING - 工具 poc_jboss_2017_12149 已存在,将被覆盖
+2026-02-01 21:40:26,321 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_jboss_2017_12149 (分类: poc, 优先级: 8)
+2026-02-01 21:40:26,322 - backend.ai_agents.tools.registry - WARNING - 工具 poc_nexus_2020_10199 已存在,将被覆盖
+2026-02-01 21:40:26,322 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_nexus_2020_10199 (分类: poc, 优先级: 8)
+2026-02-01 21:40:26,322 - backend.ai_agents.tools.registry - WARNING - 工具 poc_drupal_2018_7600 已存在,将被覆盖
+2026-02-01 21:40:26,322 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: poc_drupal_2018_7600 (分类: poc, 优先级: 8)
+2026-02-01 21:40:26,322 - backend.ai_agents.tools.registry - WARNING - 工具 install_dependencies 已存在,将被覆盖
+2026-02-01 21:40:26,322 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: install_dependencies (分类: dependency, 优先级: 9)
+2026-02-01 21:40:26,322 - backend.ai_agents.tools.registry - WARNING - 工具 check_package 已存在,将被覆盖
+2026-02-01 21:40:26,322 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: check_package (分类: dependency, 优先级: 9)
+2026-02-01 21:40:26,324 - backend.ai_agents.tools.registry - WARNING - 工具 list_packages 已存在,将被覆盖
+2026-02-01 21:40:26,324 - backend.ai_agents.tools.registry - INFO - ✅ 注册工具: list_packages (分类: dependency, 优先级: 9)
+2026-02-01 21:40:26,324 - backend.ai_agents.core.graph - INFO - ✅ 工具初始化完成,共注册 21 个工具
+2026-02-01 21:40:26,416 - task_executor - ERROR - POC任务 43 执行失败: Unknown filter param 'has_poc'. Allowed base values are ['affected_product', 'affected_versions', 'created_at', 'cve_id', 'cvss_score', 'description', 'id', 'name', 'poc_code', 'references', 'remediation', 'severity', 'updated_at']
+Traceback (most recent call last):
+  File "D:\AI_WebSecurity\backend\task_executor.py", line 382, in execute_poc_task
+    items = await VulnerabilityKB.filter(has_poc=True).filter(Q(name=req) | Q(cve_id=req)).all()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Anaconda3\Lib\site-packages\tortoise\queryset.py", line 1227, in __await__
+    self._make_query()
+  File "D:\Anaconda3\Lib\site-packages\tortoise\queryset.py", line 1200, in _make_query
+    self.resolve_filters()
+  File "D:\Anaconda3\Lib\site-packages\tortoise\queryset.py", line 128, in resolve_filters
+    modifier &= node.resolve(
+                ^^^^^^^^^^^^^
+  File "D:\Anaconda3\Lib\site-packages\tortoise\expressions.py", line 511, in resolve
+    return self._resolve_kwargs(resolve_context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Anaconda3\Lib\site-packages\tortoise\expressions.py", line 468, in _resolve_kwargs
+    key, value = self._get_actual_filter_params(resolve_context, raw_key, raw_value)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Anaconda3\Lib\site-packages\tortoise\expressions.py", line 458, in _get_actual_filter_params
+    raise FieldError(f"Unknown filter param '{key}'. Allowed base values are {allowed}")
+tortoise.exceptions.FieldError: Unknown filter param 'has_poc'. Allowed base values are ['affected_product', 'affected_versions', 'created_at', 'cve_id', 'cvss_score', 'description', 'id', 'name', 'poc_code', 'references', 'remediation', 'severity', 'updated_at']
+2026-02-01 21:40:26,473 - backend.api.kb - INFO - 开始同步漏洞知识库...
+2026-02-01 21:40:26,473 - backend.api.kb - INFO - 🔍 开始从 Seebug 获取漏洞数据
+2026-02-01 21:40:26,473 - backend.api.seebug_client - INFO - 🔍 开始搜索POC: 关键词=, 页码=1
+2026-02-01 21:40:28,661 - backend.api.seebug_client - INFO - ✅ POC搜索成功: 找到1个结果
+2026-02-01 21:40:28,662 - backend.api.kb - INFO - ✅ 从 Seebug 获取到 1 条漏洞数据
+2026-02-01 21:40:28,662 - backend.api.kb - INFO - 从 Seebug 获取到 1 条数据
+2026-02-01 21:40:28,664 - backend.api.kb - INFO - 🔍 开始从 Exploit-DB 获取漏洞数据
+2026-02-01 21:40:28,730 - backend.api.ai - INFO - ✅ 创建对话历史: 4f614c56-2139-4edf-b2d7-e2656df6ab5a
+2026-02-01 21:40:28,730 - backend.api.ai - INFO - ✅ 创建对话实例: 4f614c56-2139-4edf-b2d7-e2656df6ab5a
+2026-02-01 21:40:29,992 - httpx - INFO - HTTP Request: GET https://www.exploit-db.com/search?limit=20&order=date&sort=desc "HTTP/1.1 200 OK"
+2026-02-01 21:40:30,025 - backend.api.kb - WARNING - ⚠️ Exploit-DB 返回的不是 JSON 格式
+2026-02-01 21:40:30,026 - backend.api.kb - INFO - Exploit-DB 响应内容类型: text/html; charset=UTF-8
+2026-02-01 21:40:30,026 - backend.api.kb - INFO - Exploit-DB API 可能已更改或需要认证，跳过此数据源
+2026-02-01 21:40:30,029 - backend.api.kb - INFO - 从 Exploit-DB 获取到 0 条数据
+2026-02-01 21:40:30,029 - backend.api.kb - INFO - 同步完成，新增 0 条漏洞信息
+2026-02-01 21:40:31,717 - httpx - INFO - HTTP Request: POST https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions "HTTP/1.1 200 OK"
+2026-02-01 21:40:32,894 - urllib3.connectionpool - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ReadTimeoutError("HTTPConnectionPool(host='127.0.0.1', port=7897): Read timed out. (read timeout=8.0)")': http://api.webscan.cc/?action=query&ip=127.0.0.1
+2026-02-01 21:40:40,906 - WebScanSideInfo - ERROR - IP 127.0.0.1 请求异常 | 原因:HTTPConnectionPool(host='127.0.0.1', port=7897): M
+2026-02-01 21:40:40,909 - task_executor - INFO - 插件任务 36 执行完成
+2026-02-01 21:40:56,692 - backend.api.ai - INFO - ✅ 消息发送成功: 4f614c56-2139-4edf-b2d7-e2656df6ab5a
+2026-02-01 21:40:57,777 - backend.api.user - INFO - 获取用户信息成功: admin
+2026-02-01 21:40:57,796 - backend.api.user - INFO - 获取用户权限成功: admin
+2026-02-01 21:40:57,824 - backend.api.user - INFO - 获取用户列表成功: 共 2 个用户
+2026-02-01 21:40:57,831 - backend.api.notifications - INFO - 获取通知列表成功: 共 3 条通知,2 条未读
+2026-02-01 21:40:57,857 - backend.api.notifications - INFO - 创建通知成功: 测试通知-API测试
+2026-02-01 21:40:57,863 - backend.api.notifications - INFO - 获取未读通知数量成功: 3
+2026-02-01 21:40:57,890 - backend.main - ERROR - 未处理的异常: 1 validation errors:
+  {'type': 'dict_type', 'loc': ('response',), 'msg': 'Input should be a valid dictionary', 'input': APIResponse(code=200, message='获取成功', data={'tasks': [{'task_id': '0bbf752d-97e4-4fca-8101-771d8061c2f0', 'task_type': 'agent_scan', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 13, 39, 26, 425394, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 13, 39, 26, 425394, tzinfo=<UTC>)}, {'task_id': '0b9a0a91-4da3-467c-94e3-eb5b8ad4ee95', 'task_type': 'agent_scan', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 13, 13, 33, 544292, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 13, 13, 33, 544292, tzinfo=<UTC>)}, {'task_id': '9c1c5f24-35d2-40bd-8ca8-0b759c02a24e', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 634213, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 634213, tzinfo=<UTC>)}, {'task_id': 'fd6e7a73-3524-4b89-ae5e-54f63d1d00a7', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 631463, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 631978, tzinfo=<UTC>)}, {'task_id': 'cce9c5af-c309-4aa8-a813-0fe6e051f832', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 628853, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 628853, tzinfo=<UTC>)}, {'task_id': '04c1ba0a-b384-41d9-9245-c4d7e81931f5', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 625698, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 625698, tzinfo=<UTC>)}, {'task_id': '39268482-2bf2-4fcf-a353-0c8be3389d57', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 621009, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 621009, tzinfo=<UTC>)}, {'task_id': '75378724-199c-4ac6-a561-1d64a75ff993', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 617905, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 617905, tzinfo=<UTC>)}, {'task_id': 'b8818af5-2746-4557-9bca-cbd97f988b88', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 614739, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 614739, tzinfo=<UTC>)}, {'task_id': 'a4d40015-2b8d-4e2e-8419-bf144699efd4', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 612027, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 612027, tzinfo=<UTC>)}, {'task_id': '93fca30b-fd41-423f-a585-c427b15f60b6', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 608926, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 608926, tzinfo=<UTC>)}, {'task_id': '535d9341-3dc6-4fee-9e8a-ac75c8f50742', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 602571, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 602571, tzinfo=<UTC>)}, {'task_id': 'c8031bcd-4c5e-40fb-bb00-6573eb5d8e3a', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 250337, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 250337, tzinfo=<UTC>)}, {'task_id': '79d5ee7c-729c-47c4-ad3f-0999fff139be', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 247805, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 247805, tzinfo=<UTC>)}, {'task_id': '4351b273-294e-4f4c-a987-76c2fc36ea65', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 245253, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 245253, tzinfo=<UTC>)}, {'task_id': 'e20ee2d1-f61d-4cbd-88e9-2a4a2a792491', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 242242, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 242242, tzinfo=<UTC>)}, {'task_id': '813ed4c4-0c5a-4fd7-9b25-2bc114eeaa5b', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 238669, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 238669, tzinfo=<UTC>)}, {'task_id': '762f38a7-bfb7-4346-b2fe-75fccf7b53bd', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 236068, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 236068, tzinfo=<UTC>)}, {'task_id': 'e9d30f0b-2427-47b5-ba34-4a2ef339f864', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 233950, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 233950, tzinfo=<UTC>)}, {'task_id': 'd49195a3-f767-4d58-b322-15614c3ac295', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 231820, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 231820, tzinfo=<UTC>)}], 'total': 22, 'page': 1, 'page_size': 20, 'total_pages': 2})}
+Traceback (most recent call last):
+  File "D:\Anaconda3\Lib\site-packages\starlette\middleware\errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\Anaconda3\Lib\site-packages\starlette\middleware\cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "D:\Anaconda3\Lib\site-packages\starlette\middleware\exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\Anaconda3\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Anaconda3\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Anaconda3\Lib\site-packages\starlette\routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\Anaconda3\Lib\site-packages\starlette\routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "D:\Anaconda3\Lib\site-packages\starlette\routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "D:\Anaconda3\Lib\site-packages\starlette\routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\Anaconda3\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\Anaconda3\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\Anaconda3\Lib\site-packages\starlette\routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\Anaconda3\Lib\site-packages\fastapi\routing.py", line 327, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Anaconda3\Lib\site-packages\fastapi\routing.py", line 176, in serialize_response
+    raise ResponseValidationError(
+fastapi.exceptions.ResponseValidationError: 1 validation errors:
+  {'type': 'dict_type', 'loc': ('response',), 'msg': 'Input should be a valid dictionary', 'input': APIResponse(code=200, message='获取成功', data={'tasks': [{'task_id': '0bbf752d-97e4-4fca-8101-771d8061c2f0', 'task_type': 'agent_scan', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 13, 39, 26, 425394, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 13, 39, 26, 425394, tzinfo=<UTC>)}, {'task_id': '0b9a0a91-4da3-467c-94e3-eb5b8ad4ee95', 'task_type': 'agent_scan', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 13, 13, 33, 544292, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 13, 13, 33, 544292, tzinfo=<UTC>)}, {'task_id': '9c1c5f24-35d2-40bd-8ca8-0b759c02a24e', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 634213, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 634213, tzinfo=<UTC>)}, {'task_id': 'fd6e7a73-3524-4b89-ae5e-54f63d1d00a7', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 631463, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 631978, tzinfo=<UTC>)}, {'task_id': 'cce9c5af-c309-4aa8-a813-0fe6e051f832', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 628853, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 628853, tzinfo=<UTC>)}, {'task_id': '04c1ba0a-b384-41d9-9245-c4d7e81931f5', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 625698, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 625698, tzinfo=<UTC>)}, {'task_id': '39268482-2bf2-4fcf-a353-0c8be3389d57', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 621009, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 621009, tzinfo=<UTC>)}, {'task_id': '75378724-199c-4ac6-a561-1d64a75ff993', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 617905, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 617905, tzinfo=<UTC>)}, {'task_id': 'b8818af5-2746-4557-9bca-cbd97f988b88', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 614739, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 614739, tzinfo=<UTC>)}, {'task_id': 'a4d40015-2b8d-4e2e-8419-bf144699efd4', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 612027, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 612027, tzinfo=<UTC>)}, {'task_id': '93fca30b-fd41-423f-a585-c427b15f60b6', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 608926, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 608926, tzinfo=<UTC>)}, {'task_id': '535d9341-3dc6-4fee-9e8a-ac75c8f50742', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 602571, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 44, 602571, tzinfo=<UTC>)}, {'task_id': 'c8031bcd-4c5e-40fb-bb00-6573eb5d8e3a', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 250337, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 250337, tzinfo=<UTC>)}, {'task_id': '79d5ee7c-729c-47c4-ad3f-0999fff139be', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 247805, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 247805, tzinfo=<UTC>)}, {'task_id': '4351b273-294e-4f4c-a987-76c2fc36ea65', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 245253, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 245253, tzinfo=<UTC>)}, {'task_id': 'e20ee2d1-f61d-4cbd-88e9-2a4a2a792491', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 242242, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 242242, tzinfo=<UTC>)}, {'task_id': '813ed4c4-0c5a-4fd7-9b25-2bc114eeaa5b', 'task_type': 'vuln_analysis', 'status': 'running', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 238669, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 238669, tzinfo=<UTC>)}, {'task_id': '762f38a7-bfb7-4346-b2fe-75fccf7b53bd', 'task_type': 'code_generation', 'status': 'pending', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 236068, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 236068, tzinfo=<UTC>)}, {'task_id': 'e9d30f0b-2427-47b5-ba34-4a2ef339f864', 'task_type': 'poc_generation', 'status': 'failed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 233950, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 233950, tzinfo=<UTC>)}, {'task_id': 'd49195a3-f767-4d58-b322-15614c3ac295', 'task_type': 'report_generation', 'status': 'completed', 'created_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 231820, tzinfo=<UTC>), 'updated_at': datetime.datetime(2026, 1, 31, 12, 6, 3, 231820, tzinfo=<UTC>)}], 'total': 22, 'page': 1, 'page_size': 20, 'total_pages': 2})}
+

@@ -172,7 +172,7 @@ class TaskExecutor:
         except Exception as e:
             logger.error(f"任务 {task_id} 执行失败: {str(e)}", exc_info=True)
             try:
-                from models import Task
+                from backend.models import Task
                 task = await Task.get(id=task_id)
                 task.status = 'failed'
                 task.progress = 0
@@ -182,7 +182,7 @@ class TaskExecutor:
     
     async def _monitor_scan_progress(self, task_id: int, scan_id: str, scan_client):
         """监控扫描进度"""
-        from models import Task
+        from backend.models import Task
         
         last_progress = 20
         no_change_count = 0
@@ -338,17 +338,17 @@ class TaskExecutor:
     async def execute_poc_task(self, task_id: int, target: str, scan_config: Dict):
         """执行POC扫描任务"""
         try:
-            from models import Task, POCScanResult, VulnerabilityKB
+            from backend.models import Task, POCScanResult, VulnerabilityKB
             # Remove api.tasks import to avoid circular dependency
             # from api.tasks import standardize_severity 
             try:
-                from api.poc_gen import poc_generator  # 导入 POC 生成器
+                from api.poc_gen import poc_generator_wrapper  # 导入 POC 生成器包装器
             except ImportError:
-                poc_generator = None
-                logger.warning("Failed to import poc_generator")
+                poc_generator_wrapper = None
+                logger.warning("Failed to import poc_generator_wrapper")
             except Exception as e:
-                poc_generator = None
-                logger.error(f"Error importing poc_generator: {e}")
+                poc_generator_wrapper = None
+                logger.error(f"Error importing poc_generator_wrapper: {e}")
 
             task = await Task.get(id=task_id)
             task.status = 'running'
@@ -525,7 +525,7 @@ class TaskExecutor:
         except Exception as e:
             logger.error(f"POC任务 {task_id} 执行失败: {str(e)}", exc_info=True)
             try:
-                from models import Task
+                from backend.models import Task
                 task = await Task.get(id=task_id)
                 task.status = 'failed'
                 task.progress = 0
@@ -591,7 +591,7 @@ class TaskExecutor:
     async def execute_plugin_task(self, task_id: int, target: str, scan_config: Dict, task_type: str):
         """执行通用插件扫描任务"""
         try:
-            from models import Task
+            from backend.models import Task
             task = await Task.get(id=task_id)
             task.status = 'running'
             task.progress = 10
@@ -612,7 +612,7 @@ class TaskExecutor:
         except Exception as e:
             logger.error(f"插件任务 {task_id} 执行失败: {str(e)}", exc_info=True)
             try:
-                from models import Task
+                from backend.models import Task
                 task = await Task.get(id=task_id)
                 task.status = 'failed'
                 task.result = json.dumps({'error': str(e)})

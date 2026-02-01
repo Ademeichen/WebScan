@@ -1,0 +1,50 @@
+{
+  "test_summary": {
+    "timestamp": "2026-02-01T20:14:45.917548",
+    "total_tests": 45,
+    "passed": 44,
+    "failed": 1,
+    "pass_rate": "97.78%"
+  },
+  "test_phases": [
+    {
+      "phase": "准备测试数据",
+      "status": "completed",
+      "description": "创建测试所需的数据库记录"
+    },
+    {
+      "phase": "验证测试数据",
+      "status": "completed",
+      "description": "验证测试数据的完整性"
+    },
+    {
+      "phase": "运行API测试",
+      "status": "completed",
+      "description": "测试所有后端API接口"
+    },
+    {
+      "phase": "生成测试报告",
+      "status": "completed",
+      "description": "生成详细的测试报告"
+    }
+  ],
+  "tested_apis": [
+    "扫描功能API - 端口扫描、信息泄露、旁站扫描、网站信息、子域名扫描、目录扫描、综合扫描",
+    "任务管理API - 创建、查询、更新、删除任务",
+    "报告管理API - 创建、查询、导出报告",
+    "AWVS扫描API - 扫描管理、漏洞查询、统计",
+    "POC扫描API - POC类型、扫描执行、结果查询",
+    "知识库API - 漏洞查询、同步、搜索",
+    "AI对话API - 对话管理、消息发送",
+    "系统设置API - 配置管理、系统信息、统计",
+    "用户管理API - 用户信息、权限管理",
+    "通知管理API - 通知查询、创建、标记已读",
+    "Agent API - 任务管理、执行",
+    "AI Agents API - 扫描任务、代码生成、工具管理",
+    "Seebug Agent API - 漏洞搜索、POC生成、连接测试"
+  ],
+  "recommendations": [
+    "有 1 个测试失败，请检查失败原因并修复",
+    "测试通过率良好，系统功能基本正常"
+  ]
+}
