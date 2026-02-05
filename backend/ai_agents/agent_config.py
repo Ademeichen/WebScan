@@ -4,7 +4,16 @@ Agent 配置文件
 定义Agent相关的配置参数。
 """
 from typing import Dict, List
-from backend.config import settings
+import sys
+from pathlib import Path
+
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
+try:
+    from backend.config import settings
+except ImportError:
+    from config import settings
 
 class AgentConfig:
     """
@@ -112,7 +121,7 @@ class AgentConfig:
     ENABLE_KB_INTEGRATION: bool = True
     """
     是否启用漏洞知识库集成
-    
+
     设置为True时,漏洞分析会自动匹配知识库中的修复建议。
     默认为True。
     """

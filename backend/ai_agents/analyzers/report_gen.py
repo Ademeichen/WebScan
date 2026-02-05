@@ -198,7 +198,7 @@ class ReportGenerator:
         
         return "共发现 {} 个漏洞: {}".format(
             len(vulnerabilities),
-            ", ".join(parts)
+            ", ".join(summary_parts)
         )
     
     def _summarize_tool_results(self, tool_results: Dict[str, Any]) -> Dict[str, Any]:

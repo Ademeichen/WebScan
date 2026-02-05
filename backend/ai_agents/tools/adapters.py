@@ -7,7 +7,7 @@ import asyncio
 import logging
 from typing import Any, Dict, List
 
-from .wrappers import wrap_async
+from .registry import wrap_async
 
 logger = logging.getLogger(__name__)
 

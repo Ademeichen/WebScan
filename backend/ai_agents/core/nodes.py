@@ -17,7 +17,6 @@ from ..core.state import AgentState
 from ..tools.registry import registry
 from ..tools.adapters import PluginAdapter, POCAdapter
 from ..agent_config import agent_config
-from ..utils.priority import TaskPriorityManager
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +40,6 @@ class TaskPlanningNode:
     """
     
     def __init__(self):
-        self.priority_manager = TaskPriorityManager()
-        
         if agent_config.ENABLE_LLM_PLANNING:
             self.llm = ChatOpenAI(
                 model=agent_config.MODEL_ID,
@@ -1191,7 +1188,7 @@ class SeebugAgentNode:
         初始化Seebug Agent节点
         """
         try:
-            from utils.seebug_utils import seebug_utils
+            from backend.utils.seebug_utils import seebug_utils
             self.seebug_agent = seebug_utils.get_agent()
             logger.info("✅ Seebug Agent节点初始化完成")
         except ImportError as e:

@@ -6,13 +6,22 @@ AI Agents API 路由
 import json
 import asyncio
 import logging
+import sys
+from pathlib import Path
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from uuid import uuid4
 
-from backend.models import AgentTask, AgentResult
-from backend.api.common import APIResponse
+backend_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(backend_dir))
+
+try:
+    from backend.models import AgentTask, AgentResult
+    from backend.api.common import APIResponse
+except ImportError:
+    from models import AgentTask, AgentResult
+    from api.common import APIResponse
 from ..core.state import AgentState
 from ..core.graph import create_agent_graph
 from ..code_execution.executor import UnifiedExecutor

@@ -132,6 +132,9 @@ class ScanAgentGraph:
         """
         logger.info("🔧 初始化扫描Agent图")
         
+        # 初始化工具
+        initialize_tools()
+        
         # 创建节点实例(原有+新增)
         self.env_awareness_node = EnvironmentAwarenessNode()  # 环境感知
         self.planning_node = TaskPlanningNode()  # 任务规划
@@ -166,7 +169,7 @@ class ScanAgentGraph:
         Returns:
             StateGraph: 编译后的图
         """
-        _log_node_entry("_build_graph", "GRAPH_BUILD", {"total_nodes": 11})
+        _log_node_entry("_build_graph", "GRAPH_BUILD", {"total_nodes": 12})
         
         # 创建状态图
         workflow = StateGraph(AgentState)
@@ -688,34 +691,34 @@ def initialize_tools():
             priority=8
         )
     
-    # 注册依赖管理工具
-    from ..tools.adapters import DependencyAdapter
-    
-    registry.register(
-        name="install_dependencies",
-        func=DependencyAdapter.adapt_install_dependencies(),
-        description="安装Python包依赖",
-        category="dependency",
-        timeout=300,
-        priority=9
-    )
-    
-    registry.register(
-        name="check_package",
-        func=DependencyAdapter.adapt_check_package(),
-        description="检查Python包是否已安装",
-        category="dependency",
-        timeout=10,
-        priority=9
-    )
-    
-    registry.register(
-        name="list_packages",
-        func=DependencyAdapter.adapt_get_packages(),
-        description="列出已安装的Python包",
-        category="dependency",
-        timeout=10,
-        priority=9
-    )
+    # 注册依赖管理工具（暂时禁用，因为dependency_installer模块不存在）
+    # from ..tools.adapters import DependencyAdapter
+    # 
+    # registry.register(
+    #     name="install_dependencies",
+    #     func=DependencyAdapter.adapt_install_dependencies(),
+    #     description="安装Python包依赖",
+    #     category="dependency",
+    #     timeout=300,
+    #     priority=9
+    # )
+    # 
+    # registry.register(
+    #     name="check_package",
+    #     func=DependencyAdapter.adapt_check_package(),
+    #     description="检查Python包是否已安装",
+    #     category="dependency",
+    #     timeout=10,
+    #     priority=9
+    # )
+    # 
+    # registry.register(
+    #     name="list_packages",
+    #     func=DependencyAdapter.adapt_get_packages(),
+    #     description="列出已安装的Python包",
+    #     category="dependency",
+    #     timeout=10,
+    #     priority=9
+    # )
     
     logger.info(f"✅ 工具初始化完成,共注册 {len(registry.tools)} 个工具")

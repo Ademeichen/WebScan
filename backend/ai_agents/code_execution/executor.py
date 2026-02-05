@@ -16,6 +16,7 @@ from .environment import EnvironmentAwareness
 from .code_generator import CodeGenerator
 from .capability_enhancer import CapabilityEnhancer
 from .process_utils import execute_process, decode_output, handle_process_error
+from ..utils import measure_performance, retry, performance_monitor, TimeoutController
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,8 @@ class UnifiedExecutor:
         
         logger.info(f"✅ 统一执行器初始化完成: timeout={timeout}s, sandbox={enable_sandbox}")
     
+    @measure_performance(performance_monitor.metrics, "code_execution")
+    @retry(max_attempts=3, delay=1.0, backoff=2.0)
     async def execute_code(
         self,
         code: str,
@@ -108,19 +111,19 @@ class UnifiedExecutor:
     ) -> ExecutionResult:
         """
         执行代码
-        
+
         Args:
             code: 代码内容
             language: 代码语言
             target: 扫描目标(可选)
             **kwargs: 额外参数
-            
+
         Returns:
             ExecutionResult: 执行结果
         """
         try:
             logger.info(f"🔧 开始执行代码: language={language}")
-            
+
             # 验证代码安全性
             validation = self.code_generator.validate_code(code, language)
             if not validation["valid"]:
@@ -131,30 +134,30 @@ class UnifiedExecutor:
                     output="",
                     execution_time=0.0
                 )
-            
+
             # 生成唯一标识符
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             file_id = f"{language}_{timestamp}"
-            
+
             # 创建代码文件（保存到自定义目录）
             extension = self._get_file_extension(language)
             code_file = self.code_dir / f"{file_id}.{extension}"
-            
+
             # 写入代码文件
             with open(code_file, "w", encoding="utf-8") as f:
                 f.write(code)
-            
+
             logger.info(f"📝 代码文件已保存: {code_file}")
-            
+
             # 执行代码
             start_time = datetime.now()
-            
+
             try:
                 result = await self._execute(str(code_file), language, target, **kwargs)
             finally:
                 execution_time = (datetime.now() - start_time).total_seconds()
                 result.execution_time = execution_time
-            
+
             # 记录执行日志
             log_file = self.log_dir / f"{file_id}.log"
             with open(log_file, "w", encoding="utf-8") as f:
@@ -167,12 +170,12 @@ class UnifiedExecutor:
                 f.write(f"执行时间: {execution_time:.2f}s\n")
                 f.write(f"\n=== 输出 ===\n{result.output}\n")
                 f.write(f"\n=== 错误 ===\n{result.error}\n")
-            
+
             logger.info(f"📄 执行日志已保存: {log_file}")
             logger.info(f"✅ 代码执行完成: status={result.status}, time={execution_time:.2f}s")
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"❌ 代码执行失败: {str(e)}")
             return ExecutionResult(

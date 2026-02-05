@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from ..agent_config import agent_config
 from .environment import EnvironmentAwareness
+from ..utils import cached, measure_performance, performance_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -245,6 +246,8 @@ def main():
         
         return templates.get(scan_type, templates.get("port_scan", ""))
     
+    @measure_performance(performance_monitor.metrics, "code_generation")
+    @cached(performance_monitor.cache, ttl=3600)
     async def generate_code(
         self,
         scan_type: str,
@@ -255,7 +258,7 @@ def main():
     ) -> CodeGenerationResponse:
         """
         生成扫描代码
-        
+
         Args:
             self: 代码生成器实例
             scan_type: 扫描类型
@@ -263,7 +266,7 @@ def main():
             requirements: 特殊需求
             language: 代码语言
             additional_params: 额外参数
-            
+
         Returns:
             CodeGenerationResponse: 代码生成响应
         """
