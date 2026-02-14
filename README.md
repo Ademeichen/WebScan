@@ -1,0 +1,911 @@
+# WebScan AI Security Platform
+
+<div align="center">
+
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)
+![Vue](https://img.shields.io/badge/vue-3.5+-brightgreen.svg)
+![Vite](https://img.shields.io/badge/vite-5.4+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-orange.svg)
+
+**AI驱动的Web安全扫描平台**
+
+一个功能强大的Web应用安全扫描平台，集成POC漏洞扫描、端口扫描、AWVS集成、AI Agent等多种安全检测能力
+
+[功能特性](#-功能特性) • [快速开始](#-快速开始) • [项目结构](#-项目结构) • [API文档](#-api文档)
+
+</div>
+
+---
+
+## 📋 目录
+
+- [项目简介](#-项目简介)
+- [功能特性](#-功能特性)
+- [技术栈](#-技术栈)
+- [快速开始](#-快速开始)
+- [项目结构](#-项目结构)
+- [配置说明](#-配置说明)
+- [API文档](#-api文档)
+- [开发指南](#-开发指南)
+- [部署指南](#-部署指南)
+- [常见问题](#-常见问题)
+
+---
+
+## 🎯 项目简介
+
+WebScan AI Security Platform 是一个基于AI技术的Web应用安全扫描平台，旨在帮助开发者和安全专业人员快速发现和修复Web应用中的安全漏洞。
+
+### 核心特点
+
+- 🔍 **全面的漏洞检测** - 支持POC漏洞扫描、端口扫描、AWVS集成、AI Agent等多种扫描方式
+- 🤖 **AI智能分析** - 利用LangGraph和LangChain进行智能漏洞分析和风险评估
+- 📊 **可视化报告** - 提供直观的扫描结果和详细的漏洞报告
+- 🚀 **高性能架构** - 基于FastAPI和Vue 3构建，提供快速响应和流畅体验
+- 🔧 **易于扩展** - 模块化设计，支持自定义扫描插件和规则
+- 🌐 **Seebug集成** - 集成Seebug Agent进行POC智能生成和验证
+
+---
+
+## ✨ 功能特性
+
+### 核心功能
+
+| 功能模块 | 描述 | 状态 |
+|---------|------|------|
+| **POC漏洞扫描** | 基于POC的漏洞检测，支持多种常见漏洞类型 | ✅ 已实现 |
+| **端口扫描** | 快速扫描目标端口，识别开放服务和潜在风险 | ✅ 已实现 |
+| **AWVS集成** | 集成Acunetix Web Vulnerability Scanner进行深度扫描 | ✅ 已实现 |
+| **AI Agent扫描** | 基于LangGraph的智能代理自动化扫描 | ✅ 已实现 |
+| **Seebug Agent** | 智能POC生成和验证 | ✅ 已实现 |
+| **漏洞管理** | 统一管理扫描发现的漏洞，支持分类和优先级排序 | ✅ 已实现 |
+| **扫描报告** | 生成详细的扫描报告，支持多种格式导出 | ✅ 已实现 |
+| **实时监控** | 实时监控扫描进度和结果 | ✅ 已实现 |
+| **漏洞知识库** | 查询和管理漏洞知识库信息 | ✅ 已实现 |
+| **通知中心** | 实时通知和消息管理 | ✅ 已实现 |
+
+### 高级特性
+
+- 🎯 **智能扫描策略** - 根据目标类型自动选择最优扫描策略
+- 🔔 **实时通知** - 扫描完成和发现高危漏洞时及时通知
+- 📈 **趋势分析** - 漏洞趋势分析和安全评分
+- 🔄 **定时扫描** - 支持定时任务和周期性扫描
+- 👥 **多用户支持** - 支持多用户和权限管理
+- 📱 **响应式界面** - 适配桌面、平板和移动设备
+- 🤖 **AI对话** - 智能安全咨询和漏洞分析
+- 🧪 **API测试** - 完整的API测试套件
+
+---
+
+## 🛠 技术栈
+
+### 后端技术
+
+```yaml
+核心框架:
+  - FastAPI: 0.115.6          # 现代化Python Web框架
+  - Uvicorn: 0.34.0           # ASGI服务器
+  - Python-Multipart: 0.0.20  # 文件上传支持
+
+数据库:
+  - Tortoise-ORM: 0.21.7      # 异步ORM框架
+  - Aerich: 0.7.2             # 数据库迁移工具
+  - SQLite                    # 默认数据库（支持MySQL/PostgreSQL）
+
+数据验证:
+  - Pydantic: 2.10.4          # 数据验证和序列化
+  - Pydantic-Settings: 2.7.0 # 配置管理
+
+AI框架:
+  - LangChain: 0.3.14         # AI应用框架
+  - LangGraph: 0.2.59         # AI工作流框架
+  - OpenAI: 1.59.6            # OpenAI API客户端
+
+HTTP客户端:
+  - HTTPX: 0.28.1             # 异步HTTP客户端
+  - Requests: 2.32.3          # 同步HTTP客户端
+
+安全扫描:
+  - Nmap: 0.7.1               # 端口扫描
+  - BeautifulSoup4: 4.12.3    # HTML解析
+  - LXML: 5.3.0               # XML/HTML处理
+  - DNSLib: 0.9.24            # DNS解析
+  - GeoIP2: 4.8.0             # IP地理位置
+  - Pocsuite3: 2.1.0          # POC验证框架
+
+工具库:
+  - Loguru: 0.7.3             # 日志记录
+  - Python-Dotenv: 1.0.1     # 环境变量管理
+  - Colorama: 0.4.6           # 终端彩色输出
+  - TQDM: 4.67.1              # 进度条
+```
+
+### 前端技术
+
+```yaml
+核心框架:
+  - Vue: 3.5.24               # Vue 3核心框架
+  - Vue Router: 4.5.24         # 官方路由管理器
+  - Pinia: 2.3.0              # 状态管理库
+  - Element Plus: 2.8.0        # UI组件库
+
+构建工具:
+  - Vite: 5.4.0               # 下一代前端构建工具
+  - @Vitejs/Plugin-Vue: 5.2.1 # Vue 3插件
+
+HTTP客户端:
+  - Axios: 1.7.9              # HTTP请求库
+
+数据可视化:
+  - Chart.js: 4.4.0            # 图表库
+
+开发工具:
+  - ESLint: 9.17.0            # 代码检查
+  - ESLint-Plugin-Vue: 9.31.0 # Vue代码规范
+  - Vitest: 2.1.8             # 单元测试框架
+```
+
+---
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Python 3.8 或更高版本
+- Node.js 16.0 或更高版本
+- npm 7.0 或更高版本（或 yarn 1.22+）
+
+### 安装步骤
+
+#### 1. 克隆项目
+
+```bash
+git clone https://github.com/yourusername/webscan-ai.git
+cd webscan-ai
+```
+
+#### 2. 后端安装
+
+```bash
+# 进入后端目录
+cd backend
+
+# 创建虚拟环境（推荐）
+python -m venv venv
+
+# 激活虚拟环境
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+
+# 安装依赖
+pip install -r requirements.txt
+```
+
+#### 3. 配置后端
+
+编辑 `backend/.env` 文件，根据需要修改配置：
+
+```bash
+# 应用配置
+APP_NAME=WebScan AI Security Platform
+APP_VERSION=1.0.0
+DEBUG=False
+HOST=127.0.0.1
+PORT=3000
+
+# 数据库配置
+DATABASE_URL=sqlite://./data/webscan.db
+
+# CORS配置
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+
+# 日志配置
+LOG_LEVEL=INFO
+LOG_FILE=logs/app.log
+
+# AI API配置
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_BASE_URL=https://maas-api.cn-huabei-1.xf-yun.com/v2
+MODEL_ID=xop3qwen1b7
+
+# AWVS配置
+AWVS_API_URL=https://127.0.0.1:3443
+AWVS_API_KEY=your_awvs_api_key
+
+# Seebug配置
+SEEBUG_API_KEY=your_seebug_api_key
+SEEBUG_API_BASE_URL=https://www.seebug.org/api
+
+# 扫描配置
+MAX_CONCURRENT_SCANS=5
+SCAN_TIMEOUT=300
+
+# 代码执行配置
+CODE_EXECUTOR_ENABLED=True
+CODE_EXECUTOR_TIMEOUT=30
+CODE_EXECUTOR_WORKSPACE=executor_workspace
+
+# AI Agent配置
+AGENT_MAX_EXECUTION_TIME=300
+AGENT_MAX_RETRIES=3
+
+# POC验证配置
+POC_VERIFICATION_ENABLED=True
+POC_MAX_CONCURRENT_EXECUTIONS=5
+POC_EXECUTION_TIMEOUT=60
+POC_RETRY_MAX_COUNT=3
+```
+
+#### 4. 启动后端服务
+
+```bash
+# 开发模式
+python main.py
+
+# 或使用uvicorn
+uvicorn main:app --host 127.0.0.1 --port 3000 --reload
+```
+
+后端服务将运行在：http://127.0.0.1:3000
+
+#### 5. 前端安装
+
+```bash
+# 打开新终端，进入前端目录
+cd front
+
+# 安装依赖
+npm install
+```
+
+#### 6. 配置前端
+
+编辑 `front/.env.development` 文件：
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:3000/api
+VITE_REQUEST_TIMEOUT=30000
+```
+
+#### 7. 启动前端服务
+
+```bash
+npm run dev
+```
+
+前端服务将运行在：http://localhost:5173
+
+#### 8. 访问应用
+
+在浏览器中打开 http://localhost:5173 即可使用WebScan AI Security Platform
+
+#### 9. 运行API测试（可选）
+
+```bash
+cd api_tests
+
+# 安装测试依赖
+pip install -r requirements.txt
+
+# 运行所有测试
+python run_tests.py
+
+# 运行指定模块测试
+python run_tests.py test_dashboard
+```
+
+---
+
+## 📁 项目结构
+
+```
+AI_WebSecurity/
+├── backend/                      # 后端项目
+│   ├── api/                     # API路由
+│   │   ├── __init__.py         # 路由注册
+│   │   ├── scan.py             # 扫描功能API
+│   │   ├── poc.py              # POC扫描API
+│   │   ├── awvs.py             # AWVS集成API
+│   │   ├── ai.py               # AI对话API
+│   │   ├── agent.py            # AI Agent API
+│   │   ├── settings.py         # 系统设置API
+│   │   ├── tasks.py            # 任务管理API
+│   │   ├── reports.py          # 报告生成API
+│   │   ├── kb.py               # 知识库API
+│   │   ├── poc_gen.py          # POC智能生成API
+│   │   ├── poc_verification.py # POC验证API
+│   │   ├── poc_files.py        # POC文件管理API
+│   │   ├── seebug_agent.py     # Seebug Agent API
+│   │   ├── seebug_client.py    # Seebug客户端API
+│   │   ├── user.py             # 用户管理API
+│   │   └── notifications.py    # 通知管理API
+│   │
+│   ├── ai_agents/              # AI Agents智能代理系统
+│   │   ├── core/              # 核心组件
+│   │   │   ├── graph.py       # LangGraph图构建
+│   │   │   ├── nodes.py       # 图节点定义
+│   │   │   └── state.py       # Agent状态管理
+│   │   ├── analyzers/         # 分析器模块
+│   │   │   ├── vuln_analyzer.py    # 漏洞分析器
+│   │   │   └── report_gen.py       # 报告生成器
+│   │   ├── code_execution/     # 代码执行模块
+│   │   ├── poc_system/        # POC系统模块
+│   │   ├── tools/             # 工具模块
+│   │   ├── utils/             # 工具函数
+│   │   └── api/               # AI Agents API
+│   │
+│   ├── plugins/               # 扫描插件模块
+│   │   ├── portscan/          # 端口扫描
+│   │   ├── infoleak/          # 信息泄露扫描
+│   │   ├── webside/           # 网站侧边栏扫描
+│   │   ├── baseinfo/          # 基础信息收集
+│   │   ├── webweight/         # 网站权重查询
+│   │   ├── iplocating/        # IP定位
+│   │   ├── cdnexist/          # CDN检测
+│   │   ├── waf/               # WAF检测
+│   │   ├── whatcms/           # CMS识别
+│   │   ├── subdomain/         # 子域名扫描
+│   │   ├── loginfo/           # 日志处理
+│   │   ├── randheader/        # 随机请求头生成
+│   │   └── common/            # 通用工具
+│   │
+│   ├── AVWS/                  # AWVS API封装
+│   │   └── API/              # AWVS API模块
+│   │       ├── Base.py        # 基础API类
+│   │       ├── Dashboard.py   # 仪表板API
+│   │       ├── Group.py       # 分组API
+│   │       ├── Report.py      # 报告API
+│   │       ├── Scan.py        # 扫描API
+│   │       ├── Target.py      # 目标API
+│   │       ├── TargetOption.py # 目标选项API
+│   │       └── Vuln.py        # 漏洞API
+│   │
+│   ├── geoip/                 # GeoIP数据库
+│   ├── data/                  # 数据目录
+│   │   └── webscan.db         # SQLite数据库文件
+│   ├── logs/                  # 日志目录
+│   │   └── app.log           # 应用日志
+│   ├── main.py                # 应用入口
+│   ├── config.py              # 配置管理
+│   ├── models.py              # 数据模型
+│   ├── database.py            # 数据库连接
+│   ├── task_executor.py       # 任务执行器
+│   ├── requirements.txt       # Python依赖
+│   ├── .env                   # 环境变量
+│   ├── AWVS_API_README.md     # AWVS API文档
+│   └── README.md              # 后端说明文档
+│
+├── front/                      # 前端项目
+│   ├── src/
+│   │   ├── components/       # 组件
+│   │   │   ├── business/    # 业务组件
+│   │   │   ├── common/      # 通用组件
+│   │   │   └── layout/      # 布局组件
+│   │   ├── views/            # 页面视图
+│   │   │   ├── Dashboard.vue
+│   │   │   ├── ScanTasks.vue
+│   │   │   ├── POCScan.vue
+│   │   │   ├── VulnerabilityResults.vue
+│   │   │   ├── VulnerabilityDetail.vue
+│   │   │   ├── Reports.vue
+│   │   │   ├── ReportDetail.vue
+│   │   │   ├── Settings.vue
+│   │   │   ├── AWVSScan.vue
+│   │   │   ├── AgentScan.vue
+│   │   │   ├── KnowledgeBase.vue
+│   │   │   ├── Notifications.vue
+│   │   │   ├── NotificationDetail.vue
+│   │   │   ├── Profile.vue
+│   │   │   └── NotFound.vue
+│   │   ├── router/           # 路由配置
+│   │   ├── store/            # 状态管理
+│   │   ├── styles/           # 样式文件
+│   │   ├── utils/            # 工具函数
+│   │   ├── App.vue           # 根组件
+│   │   └── main.js           # 应用入口
+│   ├── tests/                 # 测试文件
+│   ├── .env                   # 环境变量
+│   ├── .env.development       # 开发环境变量
+│   ├── .env.production        # 生产环境变量
+│   ├── .env.test              # 测试环境变量
+│   ├── index.html             # HTML模板
+│   ├── package.json           # 项目配置
+│   ├── vite.config.js         # Vite配置
+│   ├── vitest.config.js       # Vitest配置
+│   ├── eslint.config.js       # ESLint配置
+│   └── README.md              # 前端说明文档
+│
+├── api_tests/                 # API测试
+│   ├── api_tester.py          # API测试工具
+│   ├── config.py              # 测试配置
+│   ├── run_tests.py           # 测试运行脚本
+│   ├── test_dashboard.py      # 仪表盘测试
+│   ├── test_tasks.py          # 任务测试
+│   ├── test_poc.py            # POC测试
+│   ├── test_awvs.py           # AWVS测试
+│   ├── test_agent.py          # Agent测试
+│   ├── test_reports.py        # 报告测试
+│   ├── test_scan.py           # 扫描测试
+│   ├── test_user_notification.py # 用户和通知测试
+│   ├── test_ai_chat.py        # AI对话测试
+│   ├── requirements.txt       # 测试依赖
+│   └── README.md              # 测试说明文档
+│
+├── Seebug_Agent/              # Seebug Agent独立模块
+│   ├── client.py             # Seebug客户端
+│   ├── generator.py          # POC生成器
+│   ├── config.py             # 配置管理
+│   ├── main.py               # 主程序
+│   ├── requirements.txt       # Python依赖
+│   └── README.md             # Seebug Agent文档
+│
+├── Spider/                   # 爬虫模块
+│   ├── src/                  # 源代码
+│   ├── main.py               # 主程序
+│   ├── requirements.txt       # Python依赖
+│   ├── PLAYWRIGHT_INSTALL.md  # Playwright安装说明
+│   ├── QUICKSTART.md         # 快速开始
+│   └── README.md             # 爬虫文档
+│
+├── .trae/                    # 项目配置
+├── API_DOCUMENTATION.md       # API文档
+├── README.md                 # 项目说明文档
+└── .gitignore                # Git忽略文件
+```
+
+---
+
+## ⚙️ 配置说明
+
+### 后端配置
+
+主要配置文件：`backend/config.py` 和 `backend/.env`
+
+```python
+class Settings(BaseSettings):
+    # 应用基础配置
+    APP_NAME: str = "WebScan AI Security Platform"
+    APP_VERSION: str = "1.0.0"
+    DEBUG: bool = False
+    
+    # 服务器配置
+    HOST: str = "127.0.0.1"
+    PORT: int = 3000
+    
+    # CORS配置
+    CORS_ORIGINS: list = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    
+    # 数据库配置
+    DATABASE_URL: str = "sqlite://./data/webscan.db"
+    
+    # 日志配置
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: str = "logs/app.log"
+    
+    # AI API配置
+    OPENAI_API_KEY: str = "your_openai_api_key"
+    OPENAI_BASE_URL: str = "https://maas-api.cn-huabei-1.xf-yun.com/v2"
+    MODEL_ID: str = "xop3qwen1b7"
+    
+    # AWVS配置
+    AWVS_API_URL: str = "https://127.0.0.1:3443"
+    AWVS_API_KEY: str = "your_awvs_api_key"
+    
+    # Seebug配置
+    SEEBUG_API_KEY: str = "your_seebug_api_key"
+    SEEBUG_API_BASE_URL: str = "https://www.seebug.org/api"
+    
+    # 扫描配置
+    MAX_CONCURRENT_SCANS: int = 5
+    SCAN_TIMEOUT: int = 300
+    
+    # 代码执行配置
+    CODE_EXECUTOR_ENABLED: bool = True
+    CODE_EXECUTOR_TIMEOUT: int = 30
+    CODE_EXECUTOR_WORKSPACE: str = "executor_workspace"
+    
+    # AI Agent配置
+    AGENT_MAX_EXECUTION_TIME: int = 300
+    AGENT_MAX_RETRIES: int = 3
+    
+    # POC验证配置
+    POC_VERIFICATION_ENABLED: bool = True
+    POC_MAX_CONCURRENT_EXECUTIONS: int = 5
+    POC_EXECUTION_TIMEOUT: int = 60
+    POC_RETRY_MAX_COUNT: int = 3
+```
+
+### 前端配置
+
+主要配置文件：`front/vite.config.js` 和 `front/.env.development`
+
+```javascript
+export default defineConfig({
+  server: {
+    port: 5173,
+    open: true,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
+  }
+})
+```
+
+环境变量配置：`front/.env.development`
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:3000/api
+VITE_REQUEST_TIMEOUT=30000
+```
+
+---
+
+## 📚 API文档
+
+### 启动API文档
+
+启动后端服务后，访问以下地址查看自动生成的API文档：
+
+- **Swagger UI**: http://127.0.0.1:3000/docs
+- **ReDoc**: http://127.0.0.1:3000/redoc
+
+### 主要API端点
+
+#### 健康检查
+```http
+GET /health
+```
+
+#### POC扫描
+```http
+POST /api/poc/scan
+Content-Type: application/json
+
+{
+  "target": "http://example.com",
+  "poc_list": ["poc1", "poc2"]
+}
+```
+
+#### 端口扫描
+```http
+POST /api/port/scan
+Content-Type: application/json
+
+{
+  "target": "example.com",
+  "ports": [80, 443, 8080]
+}
+```
+
+#### AWVS扫描
+```http
+POST /api/awvs/scan
+Content-Type: application/json
+
+{
+  "url": "http://example.com",
+  "scan_type": "full_scan"
+}
+```
+
+#### AI Agent扫描
+```http
+POST /api/ai_agents/scan
+Content-Type: application/json
+
+{
+  "target": "http://example.com",
+  "enable_llm_planning": true
+}
+```
+
+#### 获取扫描任务
+```http
+GET /api/tasks
+```
+
+#### 获取漏洞列表
+```http
+GET /api/vulnerabilities
+```
+
+详细API文档请参考：
+- [后端API文档](backend/README.md)
+- [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
+
+---
+
+## 💻 开发指南
+
+### 后端开发
+
+#### 添加新的API端点
+
+1. 在 `backend/api/` 目录下创建或编辑API模块
+2. 定义路由和处理函数
+3. 在 `backend/api/__init__.py` 中注册路由
+
+示例：
+
+```python
+# backend/api/my_feature.py
+from fastapi import APIRouter
+from models import APIResponse
+
+router = APIRouter()
+
+@router.get("/my-feature")
+async def get_my_feature():
+    return APIResponse(
+        code=200,
+        message="Success",
+        data={"feature": "data"}
+    )
+```
+
+#### 添加新的扫描插件
+
+1. 在 `backend/plugins/` 目录下创建插件文件
+2. 实现扫描逻辑
+3. 在主程序中注册插件
+
+#### 扩展AI Agents功能
+
+1. 在 `backend/ai_agents/core/nodes.py` 中添加新的节点
+2. 在 `backend/ai_agents/core/graph.py` 中集成到工作流
+3. 添加相应的工具函数
+
+### 前端开发
+
+#### 添加新页面
+
+1. 在 `front/src/views/` 目录下创建Vue组件
+2. 在 `front/src/router/index.js` 中添加路由
+
+示例：
+
+```vue
+<!-- front/src/views/NewPage.vue -->
+<template>
+  <div class="page-container">
+    <h1>新页面</h1>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'NewPage'
+}
+</script>
+```
+
+```javascript
+// front/src/router/index.js
+import NewPage from '@/views/NewPage.vue'
+
+const routes = [
+  {
+    path: '/new-page',
+    name: 'NewPage',
+    component: NewPage
+  }
+]
+```
+
+详细开发指南请参考：
+- [后端开发文档](backend/README.md)
+- [前端开发文档](front/README.md)
+- [AI Agents文档](backend/ai_agents/README.md)
+
+---
+
+## 🚀 部署指南
+
+### 后端部署
+
+#### 使用Docker
+
+```bash
+# 构建镜像
+docker build -t webscan-ai-backend ./backend
+
+# 运行容器
+docker run -d -p 3000:3000 \
+  -v $(pwd)/backend/data:/app/data \
+  -v $(pwd)/backend/logs:/app/logs \
+  webscan-ai-backend
+```
+
+#### 使用systemd（Linux）
+
+创建服务文件 `/etc/systemd/system/webscan-ai.service`：
+
+```ini
+[Unit]
+Description=WebScan AI Backend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/path/to/AI_WebSecurity/backend
+ExecStart=/path/to/venv/bin/python main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+启动服务：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start webscan-ai
+sudo systemctl enable webscan-ai
+```
+
+### 前端部署
+
+#### 构建生产版本
+
+```bash
+cd front
+npm run build
+```
+
+#### 使用Nginx
+
+配置Nginx：
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    root /path/to/front/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+---
+
+## ❓ 常见问题
+
+### 1. 后端启动失败
+
+**问题**: 端口被占用
+
+**解决方案**:
+```bash
+# Windows
+netstat -ano | findstr :3000
+taskkill /PID <进程ID> /F
+
+# Linux/Mac
+lsof -ti:3000 | xargs kill -9
+```
+
+### 2. 数据库连接错误
+
+**问题**: 无法连接到数据库
+
+**解决方案**:
+- 检查数据库配置是否正确
+- 确保数据库文件有正确的权限
+- 尝试删除数据库文件重新初始化
+
+### 3. AWVS连接失败
+
+**问题**: 无法连接到AWVS服务
+
+**解决方案**:
+- 确认AWVS服务正在运行
+- 检查AWVS API URL和密钥配置
+- 确认网络连接正常
+
+### 4. 前端无法连接后端
+
+**问题**: API请求失败
+
+**解决方案**:
+- 检查后端服务是否正常运行
+- 确认API地址配置正确
+- 检查CORS配置
+- 查看浏览器控制台错误信息
+
+### 5. 扫描任务卡住
+
+**问题**: 扫描任务长时间无响应
+
+**解决方案**:
+- 检查目标网站是否可访问
+- 查看后端日志获取详细信息
+- 增加扫描超时时间配置
+- 尝试减少并发扫描数量
+
+### 6. AI Agent执行失败
+
+**问题**: AI Agent任务执行失败
+
+**解决方案**:
+- 检查OPENAI_API_KEY配置
+- 确认网络连接正常
+- 查看后端日志获取详细错误信息
+- 尝试禁用LLM规划使用规则化规划
+
+---
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+---
+
+## 🤝 贡献指南
+
+我们欢迎任何形式的贡献！
+
+### 贡献流程
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+### 代码规范
+
+- 后端遵循 PEP 8 代码规范
+- 前端遵循 Vue 3 风格指南
+- 提交信息使用清晰的描述
+
+---
+
+## 📞 联系方式
+
+- 项目主页: https://github.com/yourusername/webscan-ai
+- 问题反馈: https://github.com/yourusername/webscan-ai/issues
+- 邮箱: your.email@example.com
+
+---
+
+## 🙏 致谢
+
+感谢所有为这个项目做出贡献的开发者！
+
+特别感谢以下开源项目：
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Vue.js](https://vuejs.org/)
+- [Vite](https://vitejs.dev/)
+- [LangChain](https://langchain.com/)
+- [LangGraph](https://langchain-ai.github.io/langgraph/)
+- [Acunetix](https://www.acunetix.com/)
+- [Seebug](https://www.seebug.org/)
+
+---
+
+<div align="center">
+
+**如果这个项目对您有帮助，请给我们一个 ⭐️**
+
+Made with ❤️ by WebScan AI Team
+
+</div>

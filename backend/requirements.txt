@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+websockets
+pydantic-settings
+tortoise-orm
+requests
+openai
+paramiko
+psutil
+langchain-openai
+langchain-core
+langgraph
+email-validator
+fake-useragent
+geoip2
+beautifulsoup4

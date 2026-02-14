@@ -1,0 +1,470 @@
+"""
+工具适配器
+
+适配现有插件和POC,提供统一的调用接口。
+"""
+import asyncio
+import logging
+from typing import Any, Dict, List
+
+from .wrappers import wrap_async
+
+logger = logging.getLogger(__name__)
+
+
+class PluginAdapter:
+    """
+    插件适配器
+    
+    适配现有的扫描插件,提供统一的调用接口。
+    """
+    
+    @staticmethod
+    def adapt_baseinfo() -> callable:
+        """
+        适配基础信息收集插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.baseinfo.baseinfo import getbaseinfo
+        return getbaseinfo
+    
+    @staticmethod
+    def adapt_portscan() -> callable:
+        """
+        适配端口扫描插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.portscan.portscan import ScanPort
+        
+        def portscan_wrapper(target: str) -> Dict[str, Any]:
+            try:
+                scanner = ScanPort(target)
+                if scanner.run_scan():
+                    results = scanner.get_results()
+                    return {
+                        "status": "success",
+                        "open_ports": results,
+                        "target": target
+                    }
+                return {
+                    "status": "success",
+                    "open_ports": [],
+                    "target": target
+                }
+            except Exception as e:
+                logger.error(f"端口扫描失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "open_ports": []
+                }
+        
+        return portscan_wrapper
+    
+    @staticmethod
+    def adapt_waf_detect() -> callable:
+        """
+        适配WAF检测插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.waf.waf import get_waf
+        return get_waf
+    
+    @staticmethod
+    def adapt_cdn_detect() -> callable:
+        """
+        适配CDN检测插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.cdnexist.cdnexist import iscdn
+        
+        def cdn_wrapper(target: str) -> Dict[str, Any]:
+            try:
+                result = iscdn(target)
+                return {
+                    "status": "success",
+                    "has_cdn": bool(result),
+                    "cdn_info": str(result) if result else None
+                }
+            except Exception as e:
+                logger.error(f"CDN检测失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "has_cdn": False
+                }
+        
+        return cdn_wrapper
+    
+    @staticmethod
+    def adapt_cms_identify() -> callable:
+        """
+        适配CMS识别插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.whatcms.whatcms import getwhatcms
+        return getwhatcms
+    
+    @staticmethod
+    def adapt_infoleak_scan() -> callable:
+        """
+        适配信息泄露扫描插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.infoleak.infoleak import get_infoleak
+        return get_infoleak
+    
+    @staticmethod
+    def adapt_subdomain_scan() -> callable:
+        """
+        适配子域名扫描插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.subdomain.subdomain import get_subdomain
+        return get_subdomain
+    
+    @staticmethod
+    def adapt_webside_scan() -> callable:
+        """
+        适配站点信息扫描插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.webside.webside import get_side_info
+        return get_side_info
+    
+    @staticmethod
+    def adapt_webweight_scan() -> callable:
+        """
+        适配网站权重扫描插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.webweight.webweight import get_web_weight
+        return get_web_weight
+    
+    @staticmethod
+    def adapt_iplocating() -> callable:
+        """
+        适配IP定位插件
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from plugins.iplocating.iplocating import get_locating
+        return get_locating
+
+    @staticmethod
+    def adapt_awvs() -> callable:
+        """
+        适配AWVS扫描
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from backend.config import settings
+        from AVWS.API.Target import Target
+        from AVWS.API.Scan import Scan
+        
+        def awvs_wrapper(target: str) -> Dict[str, Any]:
+            try:
+                # 初始化API客户端
+                api_url = settings.AWVS_API_URL
+                api_key = settings.AWVS_API_KEY
+                
+                if not api_url or not api_key:
+                    return {
+                        "status": "failed",
+                        "error": "AWVS配置缺失(API_URL或API_KEY)",
+                        "target": target
+                    }
+                
+                target_api = Target(api_url, api_key)
+                scan_api = Scan(api_url, api_key)
+                
+                # 1. 添加目标
+                target_id = target_api.add(target)
+                if not target_id:
+                    return {
+                        "status": "failed",
+                        "error": "添加目标失败",
+                        "target": target
+                    }
+                
+                # 2. 启动扫描 (默认使用全扫描)
+                scan_id = scan_api.add(target_id, 'full_scan')
+                if not scan_id:
+                    return {
+                        "status": "failed", 
+                        "error": "启动扫描失败",
+                        "target_id": target_id
+                    }
+                    
+                return {
+                    "status": "success",
+                    "message": "AWVS扫描任务已启动",
+                    "scan_id": scan_id,
+                    "target_id": target_id,
+                    "target": target
+                }
+                
+            except Exception as e:
+                logger.error(f"AWVS扫描启动失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "target": target
+                }
+                
+        return awvs_wrapper
+
+
+class POCAdapter:
+    """
+    POC适配器
+    
+    适配现有的POC脚本,提供统一的调用接口。
+    """
+    
+    @staticmethod
+    def adapt_poc(poc_name: str, poc_module: Any, timeout: int = 30) -> callable:
+        """
+        适配单个POC
+        
+        Args:
+            poc_name: POC名称
+            poc_module: POC模块
+            timeout: 超时时间(秒)
+            
+        Returns:
+            callable: 适配后的函数
+        """
+        async def poc_wrapper(target: str, timeout: int = timeout) -> Dict[str, Any]:
+            try:
+                if hasattr(poc_module, 'poc'):
+                    poc_func = poc_module.poc
+                else:
+                    poc_func = poc_module
+                
+                is_vulnerable, message = await asyncio.to_thread(
+                    poc_func, target, timeout
+                )
+                
+                return {
+                    "status": "success",
+                    "vulnerable": is_vulnerable,
+                    "message": message,
+                    "poc_name": poc_name
+                }
+            except Exception as e:
+                logger.error(f"POC {poc_name} 执行失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "vulnerable": False,
+                    "poc_name": poc_name
+                }
+        
+        return wrap_async(poc_wrapper, timeout=timeout)
+    
+    @staticmethod
+    def get_all_pocs() -> Dict[str, Any]:
+        """
+        获取所有POC模块
+        
+        Returns:
+            Dict[str, Any]: POC名称到模块的映射
+        """
+        from poc import (
+            cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
+            struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
+            cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
+        )
+        
+        return {
+            "poc_weblogic_2020_2551": cve_2020_2551_poc,
+            "poc_weblogic_2018_2628": cve_2018_2628_poc,
+            "poc_weblogic_2018_2894": cve_2018_2894_poc,
+            "poc_struts2_009": struts2_009_poc,
+            "poc_struts2_032": struts2_032_poc,
+            "poc_tomcat_2017_12615": cve_2017_12615_poc,
+            "poc_jboss_2017_12149": cve_2017_12149_poc,
+            "poc_nexus_2020_10199": cve_2020_10199_poc,
+            "poc_drupal_2018_7600": cve_2018_7600_poc,
+        }
+    
+    @staticmethod
+    def get_poc_by_cms(cms: str) -> List[str]:
+        """
+        根据CMS类型获取相关POC
+        
+        Args:
+            cms: CMS类型
+            
+        Returns:
+            List[str]: 相关POC名称列表
+        """
+        cms_lower = cms.lower()
+        poc_mapping = {
+            "weblogic": ["poc_weblogic_2020_2551", "poc_weblogic_2018_2628", 
+                       "poc_weblogic_2018_2894", "poc_weblogic_2020_14756", "poc_weblogic_2023_21839"],
+            "struts2": ["poc_struts2_009", "poc_struts2_032"],
+            "tomcat": ["poc_tomcat_2017_12615", "poc_tomcat_2022_22965", "poc_tomcat_2022_47986"],
+            "jboss": ["poc_jboss_2017_12149"],
+            "nexus": ["poc_nexus_2020_10199"],
+            "drupal": ["poc_drupal_2018_7600"],
+        }
+        
+        for key, pocs in poc_mapping.items():
+            if key in cms_lower:
+                return pocs
+        
+        return []
+    
+    @staticmethod
+    def get_poc_by_port(port: int) -> List[str]:
+        """
+        根据端口获取相关POC
+        
+        Args:
+            port: 端口号
+            
+        Returns:
+            List[str]: 相关POC名称列表
+        """
+        port_mapping = {
+            7001: ["poc_weblogic_2020_2551", "poc_weblogic_2018_2628", 
+                    "poc_weblogic_2018_2894", "poc_weblogic_2020_14756", "poc_weblogic_2023_21839"],
+            8080: ["poc_tomcat_2017_12615", "poc_tomcat_2022_22965", "poc_tomcat_2022_47986"],
+        }
+        
+        return port_mapping.get(port, [])
+
+
+class DependencyAdapter:
+    """
+    依赖安装适配器
+    
+    适配依赖安装功能,提供统一的调用接口。
+    """
+    
+    @staticmethod
+    def adapt_install_dependencies() -> callable:
+        """
+        适配依赖安装功能
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from .dependency_installer import install_dependencies
+        
+        def install_wrapper(target: str, packages: str = None, **kwargs) -> Dict[str, Any]:
+            try:
+                if packages:
+                    package_list = [p.strip() for p in packages.split(',')]
+                else:
+                    package_list = []
+                
+                result = install_dependencies(package_list, **kwargs)
+                return {
+                    "status": result["status"],
+                    "installed_packages": result["installed_packages"],
+                    "output": result["output"],
+                    "error": result["error"],
+                    "target": target
+                }
+            except Exception as e:
+                logger.error(f"依赖安装失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "installed_packages": [],
+                    "target": target
+                }
+        
+        return install_wrapper
+    
+    @staticmethod
+    def adapt_check_package() -> callable:
+        """
+        适配包检查功能
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from .dependency_installer import check_package_installed
+        
+        def check_wrapper(target: str, package: str = None, **kwargs) -> Dict[str, Any]:
+            try:
+                if not package:
+                    return {
+                        "status": "failed",
+                        "error": "未指定包名",
+                        "installed": False,
+                        "target": target
+                    }
+                
+                installed = check_package_installed(package)
+                return {
+                    "status": "success",
+                    "installed": installed,
+                    "package": package,
+                    "target": target
+                }
+            except Exception as e:
+                logger.error(f"包检查失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "installed": False,
+                    "target": target
+                }
+        
+        return check_wrapper
+    
+    @staticmethod
+    def adapt_get_packages() -> callable:
+        """
+        适配获取已安装包列表功能
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from .dependency_installer import get_installed_packages
+        
+        def list_wrapper(target: str, **kwargs) -> Dict[str, Any]:
+            try:
+                packages = get_installed_packages()
+                return {
+                    "status": "success",
+                    "packages": packages,
+                    "count": len(packages),
+                    "target": target
+                }
+            except Exception as e:
+                logger.error(f"获取包列表失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "packages": {},
+                    "count": 0,
+                    "target": target
+                }
+        
+        return list_wrapper

@@ -1,0 +1,122 @@
+:root {
+  --icon-primary-color: #409EFF;
+  --icon-success-color: #67C23A;
+  --icon-warning-color: #E6A23C;
+  --icon-danger-color: #F56C6C;
+  --icon-info-color: #909399;
+  --icon-hover-scale: 1.1;
+  --icon-active-scale: 0.95;
+  --icon-transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.el-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  transition: var(--icon-transition);
+}
+
+.el-icon:hover {
+  transform: scale(var(--icon-hover-scale));
+}
+
+.el-icon:active {
+  transform: scale(var(--icon-active-scale));
+}
+
+.el-icon.is-loading {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  transition: var(--icon-transition);
+}
+
+.app-icon:hover {
+  transform: scale(var(--icon-hover-scale));
+}
+
+.app-icon:active {
+  transform: scale(var(--icon-active-scale));
+}
+
+.app-icon.is-spin {
+  animation: rotate 1s linear infinite;
+}
+
+.app-icon.is-loading {
+  animation: rotate 1s linear infinite;
+  opacity: 0.6;
+}
+
+.app-icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+.app-icon svg path {
+  transition: fill 0.3s ease;
+}
+
+.app-icon:hover svg path {
+  fill-opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-icon,
+  .app-icon {
+    transition: none;
+  }
+
+  .el-icon:hover,
+  .app-icon:hover,
+  .el-icon:active,
+  .app-icon:active {
+    transform: none;
+  }
+
+  .el-icon.is-loading,
+  .app-icon.is-loading,
+  .app-icon.is-spin {
+    animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .el-icon,
+  .app-icon {
+    transform: none;
+  }
+
+  .el-icon:hover,
+  .app-icon:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .el-icon,
+  .app-icon {
+    transform: none;
+  }
+
+  .el-icon:hover,
+  .app-icon:hover {
+    transform: none;
+  }
+}

