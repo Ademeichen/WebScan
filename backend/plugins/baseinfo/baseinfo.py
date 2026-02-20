@@ -70,10 +70,18 @@ def get_ip_addr(ip: str) -> str:
     default_msg = " (未查询到物理地址)  "
     error_msg = " (IP查询接口异常)  "
     try:
+        # 优先尝试socket解析(最快且稳定)
+        try:
+            ip_obj = socket.gethostbyname(ip)
+            # 如果输入本身是IP,这里直接返回. 如果是域名,返回IP
+            # 这里输入预期是IP,所以socket.gethostbyname(ip)只是验证
+        except:
+            pass
+
         # 调用ip-api.com,添加超时+编码处理
         resp = SESSION.get(
             f"http://ip-api.com/json/{ip}",
-            timeout=8,
+            timeout=5, # 缩短超时时间
             headers={"User-Agent": get_ua()["User-Agent"]}
         )
         resp.encoding = resp.apparent_encoding  # 自动识别编码,避免乱码
@@ -91,16 +99,16 @@ def get_ip_addr(ip: str) -> str:
         return f" (物理地址: {country},{region},{city},{as_info})  "
     
     except (ConnectTimeout, ReadTimeout):
-        logger.error(f"IP {ip} 地址查询超时")
-        return " (IP查询接口超时)  "
+        logger.warning(f"IP {ip} 地址查询超时")
+        return " (IP查询超时,跳过物理地址)  "
     except RequestException as e:
-        logger.error(f"IP {ip} 地址查询请求异常:{e}")
-        return error_msg
+        logger.warning(f"IP {ip} 地址查询请求异常:{e}")
+        return default_msg
     except json.JSONDecodeError:
-        logger.error(f"IP {ip} 地址查询响应解析失败")
-        return error_msg
+        logger.warning(f"IP {ip} 地址查询响应解析失败")
+        return default_msg
     except Exception as e:
-        logger.error(f"IP {ip} 地址查询未知异常:{e}")
+        logger.warning(f"IP {ip} 地址查询未知异常:{e}")
         return default_msg
 
 def get_ip_list(domain: str) -> List[str]:

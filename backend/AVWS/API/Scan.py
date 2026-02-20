@@ -73,14 +73,34 @@ class Scan(Base):
             }
         data['schedule'] = schedule
         try:
-            response = requests.post(self.scan_api, json=data, headers=self.auth_headers, verify=False)
-
-
-            status_code = 200
-        except Exception:
-            self.logger.error('Add Scan Failed......', exc_info=True)
-            status_code = 404
-        return status_code
+            # Add timeout to prevent hanging
+            response = requests.post(self.scan_api, json=data, headers=self.auth_headers, verify=False, timeout=30)
+            if response.status_code == 201:
+                # 尝试从Location头获取ID
+                location = response.headers.get('Location', '')
+                if location:
+                    scan_id = location.split('/')[-1]
+                    return scan_id
+            
+            # 尝试从响应体获取
+            try:
+                result = response.json()
+                scan_id = result.get('scan_id')
+                if scan_id:
+                    return scan_id
+            except:
+                pass
+                
+            # 如果是200/201但没获取到ID,可能需要后续查询,但这里先返回True表示请求成功但无ID
+            if response.status_code in [200, 201]:
+                # 这种情况下无法返回scan_id,可能导致后续逻辑问题
+                # 但为了兼容性,暂时这样处理? 不,最好返回None让调用者知道失败
+                return None
+                
+            return None
+        except Exception as e:
+            self.logger.error(f'Add Scan Failed: {str(e)}', exc_info=True)
+            return None
 
     def delete(self, scan_id):
 
@@ -94,7 +114,7 @@ class Scan(Base):
 
         scan_delete_api = f'{self.scan_api}/{scan_id}'
         try:
-            response = requests.delete(scan_delete_api, headers=self.auth_headers, verify=False)
+            response = requests.delete(scan_delete_api, headers=self.auth_headers, verify=False, timeout=30)
         except Exception:
             self.logger.error('Delete Scan Failed......', exc_info=True)
 
@@ -109,7 +129,7 @@ class Scan(Base):
 
 
         try:
-            response = requests.get(self.scan_api, headers=self.auth_headers, verify=False)
+            response = requests.get(self.scan_api, headers=self.auth_headers, verify=False, timeout=30)
             request_url = response.url
             scan_response = response.json().get('scans')
             scan_list = []
@@ -138,7 +158,7 @@ class Scan(Base):
 
         scan_get_api = f'{self.scan_api}/{scan_id}'
         try:
-            response = requests.get(scan_get_api, headers=self.auth_headers, verify=False)
+            response = requests.get(scan_get_api, headers=self.auth_headers, verify=False, timeout=30)
             return response.json()
         except Exception:
             self.logger.error('Get Scan Failed......', exc_info=True)
@@ -160,7 +180,7 @@ class Scan(Base):
 
         scan_result_api = f'{self.scan_api}/{scan_id}/results/{scan_session_id}/vulnerabilities'
         try:
-            response = requests.get(scan_result_api, headers=self.auth_headers, verify=False)
+            response = requests.get(scan_result_api, headers=self.auth_headers, verify=False, timeout=30)
             vuln_list = response.json().get('vulnerabilities')
             return vuln_list
         except Exception:
@@ -185,7 +205,7 @@ class Scan(Base):
 
         scan_vuln_detail_api = f'{self.scan_api}/{scan_id}/results/{scan_session_id}/vulnerabilities/{vuln_id}'
         try:
-            response = requests.get(scan_vuln_detail_api, headers=self.auth_headers, verify=False)
+            response = requests.get(scan_vuln_detail_api, headers=self.auth_headers, verify=False, timeout=30)
             vuln_detail = response.json()
             return vuln_detail
         except Exception:

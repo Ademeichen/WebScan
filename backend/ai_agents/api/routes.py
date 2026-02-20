@@ -6,22 +6,14 @@ AI Agents API 路由
 import json
 import asyncio
 import logging
-import sys
-from pathlib import Path
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from uuid import uuid4
 
-backend_dir = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(backend_dir))
-
-try:
-    from backend.models import AgentTask, AgentResult
-    from backend.api.common import APIResponse
-except ImportError:
-    from models import AgentTask, AgentResult
-    from api.common import APIResponse
+from backend.models import Task, AgentResult
+from backend.api.common import APIResponse
+from backend.task_executor import task_executor
 from ..core.state import AgentState
 from ..core.graph import create_agent_graph
 from ..code_execution.executor import UnifiedExecutor
@@ -117,83 +109,40 @@ async def start_agent_scan(
     启动Agent扫描任务
     
     创建Agent任务并在后台执行扫描工作流。
-    
-    Args:
-        request: 扫描请求
-        background_tasks: FastAPI后台任务
-        
-    Returns:
-        AgentScanResponse: 任务创建响应
-        
-    Raises:
-        HTTPException: 任务创建失败时抛出500错误
-        
-    Examples:
-        >>> 启动Agent扫描
-        >>> POST /ai_agents/scan
-        >>> {
-        ...     "target": "https://www.baidu.com",
-        ...     "enable_llm_planning": true
-        ... }
     """
     try:
-        # 生成任务ID
-        task_id = str(uuid4())
+        # 1. 构造扫描配置
+        scan_config = request.dict()
         
-        # 创建数据库记录
-        task_obj = await AgentTask.create(
-            task_id=task_id,
-            input_json=json.dumps(request.dict(), ensure_ascii=False),
-            task_type="agent_scan",
-            status="running"
-        )
-        
-        # 更新配置
+        # 2. 更新全局配置 (如果需要)
         if request.enable_llm_planning is not None:
             agent_config.ENABLE_LLM_PLANNING = request.enable_llm_planning
-        
-        # 初始化Agent状态
-        initial_state = AgentState(
+            
+        # 3. 创建任务记录 (Unified Task Model)
+        task_obj = await Task.create(
+            task_name=f"AI Agent Scan {request.target}",
+            task_type="ai_agent_scan",
             target=request.target,
-            task_id=task_id
+            status="pending",
+            progress=0,
+            config=json.dumps(scan_config, ensure_ascii=False)
         )
         
-        # 如果有自定义任务,使用自定义任务
-        if request.custom_tasks:
-            initial_state.planned_tasks = request.custom_tasks.copy()
+        task_id = task_obj.id
         
-        # 设置自定义扫描参数
-        if request.need_custom_scan:
-            initial_state.update_context("need_custom_scan", True)
-            initial_state.update_context("custom_scan_type", request.custom_scan_type)
-            initial_state.update_context("custom_scan_requirements", request.custom_scan_requirements)
-            initial_state.update_context("custom_scan_language", request.custom_scan_language)
-        
-        # 设置功能补充参数
-        if request.need_capability_enhancement:
-            initial_state.update_context("need_capability_enhancement", True)
-            initial_state.update_context("capability_requirement", request.capability_requirement)
-        
-        # 保存任务到内存
-        agent_tasks[task_id] = {
-            "task_id": task_id,
-            "target": request.target,
-            "status": "running",
-            "created_at": asyncio.get_event_loop().time(),
-            "progress": 0
-        }
-        
-        # 在后台执行Agent工作流
-        background_tasks.add_task(
-            _run_agent_task(task_id, initial_state)
+        # 4. 提交到任务执行器 (串行队列)
+        await task_executor.start_task(
+            task_id=task_id,
+            target=request.target,
+            scan_config=scan_config
         )
         
-        logger.info(f"✅ Agent任务已启动: {task_id} -> {request.target}")
+        logger.info(f"✅ Agent任务已提交到队列: {task_id} -> {request.target}")
         
         return AgentScanResponse(
-            task_id=task_id,
-            status="running",
-            message="Agent扫描任务已启动"
+            task_id=str(task_id),
+            status="pending",
+            message="Agent扫描任务已提交到队列"
         )
         
     except Exception as e:
@@ -276,23 +225,13 @@ async def _run_agent_task(task_id: str, initial_state: AgentState):
 async def get_agent_task(task_id: str) -> Dict[str, Any]:
     """
     获取Agent任务详情
-    
-    根据任务ID获取任务的详细信息。
-    
-    Args:
-        task_id: 任务ID
-        
-    Returns:
-        Dict: 任务详情
-        
-    Raises:
-        HTTPException: 任务不存在时抛出404错误
-        
-    Examples:
-        >>> 获取任务详情
-        >>> GET /ai_agents/tasks/123e4567-e89b-12d3-a456-426614174000
     """
     try:
+        # 尝试转换为int (兼容 Task ID)
+        db_task_id = None
+        if task_id.isdigit():
+            db_task_id = int(task_id)
+            
         # 先从内存中获取
         if task_id in agent_tasks:
             task_info = agent_tasks[task_id]
@@ -307,24 +246,44 @@ async def get_agent_task(task_id: str) -> Dict[str, Any]:
                 "error": task_info.get("error")
             }
         
-        # 从数据库获取
-        task = await AgentTask.get_or_none(task_id=task_id)
+        # 从数据库获取 (使用 Unified Task Model)
+        task = None
+        if db_task_id:
+            task = await Task.get_or_none(id=db_task_id)
+            
+        # 如果找不到且 task_id 是 UUID 格式，尝试查找 AgentTask (兼容旧数据)
+        if not task and len(task_id) > 20:
+             task = await AgentTask.get_or_none(task_id=task_id)
+             if task:
+                 # 旧模型适配
+                 result = await AgentResult.get_or_none(task=task)
+                 return {
+                    "task_id": str(task.task_id),
+                    "input_json": task.input_json,
+                    "task_type": task.task_type,
+                    "status": task.status,
+                    "created_at": task.created_at,
+                    "updated_at": task.updated_at,
+                    "final_output": result.final_output if result else None,
+                    "execution_time": result.execution_time if result else None,
+                    "error_message": result.error_message if result else None
+                 }
+
         if not task:
             raise HTTPException(status_code=404, detail="任务不存在")
         
-        # 获取结果
-        result = await AgentResult.get_or_none(task=task)
-        
+        # 返回 Task 模型数据
         return {
-            "task_id": task_id,
-            "input_json": task.input_json,
+            "task_id": str(task.id),
             "task_type": task.task_type,
+            "target": task.target,
             "status": task.status,
+            "progress": task.progress,
+            "config": task.config,
             "created_at": task.created_at,
             "updated_at": task.updated_at,
-            "final_output": result.final_output if result else None,
-            "execution_time": result.execution_time if result else None,
-            "error_message": result.error_message if result else None
+            "final_output": task.result,
+            "error_message": task.error_message
         }
         
     except HTTPException:
@@ -343,29 +302,17 @@ async def list_agent_tasks(
 ) -> Dict[str, Any]:
     """
     获取Agent任务列表
-    
-    支持按状态和类型过滤,以及分页查询。
-    
-    Args:
-        status: 按任务状态过滤
-        task_type: 按任务类型过滤
-        page: 页码,从1开始
-        page_size: 每页数量
-        
-    Returns:
-        Dict: 任务列表和分页信息
-        
-    Examples:
-        >>> 获取所有运行中的任务
-        >>> GET /ai_agents/tasks?status=running
     """
     try:
-        query = AgentTask.all()
+        # 查询 Unified Task Model, 过滤 ai_agent_scan 类型
+        query = Task.filter(task_type="ai_agent_scan")
         
         if status:
             query = query.filter(status=status)
-        if task_type:
-            query = query.filter(task_type=task_type)
+        # 如果指定了 task_type (如 code_generation)，可以在 config 中查找或扩展 Task 字段
+        # 目前简单处理: 如果 task_type 不是 ai_agent_scan，可能无法通过 Task.task_type 过滤准确
+        # 但 Task.task_type 记录的是 "ai_agent_scan"。
+        # 实际 Agent 的具体类型 (code/vuln) 可能存在 config 中。
         
         total = await query.count()
         
@@ -377,9 +324,11 @@ async def list_agent_tasks(
         task_list = []
         for task in tasks:
             task_list.append({
-                "task_id": str(task.task_id),
+                "task_id": str(task.id),
                 "task_type": task.task_type,
+                "target": task.target,
                 "status": task.status,
+                "progress": task.progress,
                 "created_at": task.created_at,
                 "updated_at": task.updated_at
             })
@@ -401,52 +350,117 @@ async def list_agent_tasks(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/tasks/{task_id}")
+@router.post("/tasks/{task_id}/cancel")
 async def cancel_agent_task(task_id: str) -> Dict[str, Any]:
     """
     取消Agent任务
-    
-    取消指定的Agent任务。
-    
-    Args:
-        task_id: 任务ID
-        
-    Returns:
-        Dict: 取消结果
-        
-    Raises:
-        HTTPException: 任务不存在时抛出404错误
-        
-    Examples:
-        >>> 取消任务
-        >>> DELETE /ai_agents/tasks/123e4567-e89b-12d3-a456-426614174000
     """
     try:
-        # 从内存中删除
+        # 尝试转换为int
+        db_task_id = None
+        if task_id.isdigit():
+            db_task_id = int(task_id)
+            
+        # 1. 内存清理
         if task_id in agent_tasks:
             del agent_tasks[task_id]
             logger.info(f"✅ Agent任务已从内存中删除: {task_id}")
         
-        # 更新数据库状态
-        task = await AgentTask.get_or_none(task_id=task_id)
-        if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
-        
-        if task.status == "running":
-            await task.update_from_dict({"status": "cancelled"})
-            await task.save()
-            logger.info(f"✅ Agent任务已取消: {task_id}")
-        
-        return {
-            "task_id": task_id,
-            "status": "cancelled",
-            "message": "任务已取消"
-        }
+        # 2. 数据库状态更新 & 任务终止
+        if db_task_id:
+            task = await Task.get_or_none(id=db_task_id)
+            if task:
+                # 调用任务执行器取消任务
+                if task_executor:
+                    await task_executor.cancel_task(db_task_id)
+                
+                # 确保数据库状态更新
+                if task.status == "running" or task.status == "pending":
+                    task.status = "cancelled"
+                    await task.save()
+                
+                return {
+                    "task_id": str(task.id),
+                    "status": "cancelled",
+                    "message": "任务已取消"
+                }
+
+        # 3. 兼容旧AgentTask (UUID)
+        if len(task_id) > 20:
+            task = await AgentTask.get_or_none(task_id=task_id)
+            if task:
+                if task.status == "running":
+                    await task.update_from_dict({"status": "cancelled"})
+                    await task.save()
+                return {
+                    "task_id": task_id,
+                    "status": "cancelled",
+                    "message": "任务已取消"
+                }
+
+        raise HTTPException(status_code=404, detail="任务不存在")
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"❌ 取消Agent任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/tasks/{task_id}")
+async def delete_agent_task(task_id: str) -> Dict[str, Any]:
+    """
+    删除Agent任务
+    
+    删除任务记录。如果任务正在运行，会先取消任务。
+    """
+    try:
+        # 尝试转换为int
+        db_task_id = None
+        if task_id.isdigit():
+            db_task_id = int(task_id)
+            
+        # 1. 内存清理
+        if task_id in agent_tasks:
+            del agent_tasks[task_id]
+        
+        # 2. 删除 Unified Task
+        if db_task_id:
+            task = await Task.get_or_none(id=db_task_id)
+            if task:
+                # 如果正在运行，先取消
+                if task.status == "running" or task.status == "pending":
+                    if task_executor:
+                        await task_executor.cancel_task(db_task_id)
+                
+                # 删除数据库记录
+                await task.delete()
+                
+                return {
+                    "task_id": str(db_task_id),
+                    "status": "deleted",
+                    "message": "任务已删除"
+                }
+
+        # 3. 删除旧AgentTask
+        if len(task_id) > 20:
+             task = await AgentTask.get_or_none(task_id=task_id)
+             if task:
+                 await task.delete()
+                 # 关联的 AgentResult 会因为级联删除吗？ TortoiseORM默认可能不会，手动删除
+                 await AgentResult.filter(task=task).delete()
+                 return {
+                    "task_id": task_id,
+                    "status": "deleted",
+                    "message": "任务已删除"
+                }
+
+        raise HTTPException(status_code=404, detail="任务不存在")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 删除Agent任务失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

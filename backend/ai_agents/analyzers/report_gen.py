@@ -53,7 +53,15 @@ class ReportGenerator:
             "vulnerabilities": {
                 "list": state.vulnerabilities,
                 "total": len(state.vulnerabilities),
-                "summary": self._generate_vuln_summary(state.vulnerabilities)
+                "summary": self._generate_vuln_summary(state.vulnerabilities),
+                "deduplication_policy": "Disabled (All findings reported)"
+            },
+            
+            # POC 验证结果
+            "poc_verification": {
+                "results": state.poc_verification_results,
+                "stats": state.poc_execution_stats,
+                "status": state.poc_verification_status
             },
             
             # 工具结果
@@ -133,12 +141,26 @@ class ReportGenerator:
     
     <div class="section">
         <h2>漏洞详情</h2>
+        <div class="summary">
+            <p><strong>去重策略说明:</strong> 当前配置已禁用漏洞去重功能。系统将报告所有发现的漏洞实例，包括针对同一CVE但在不同位置或参数中发现的变体。这确保了漏洞覆盖的完整性，防止因过度去重而遗漏特定上下文中的有效漏洞。</p>
+        </div>
         {self._generate_vuln_rows(state.vulnerabilities)}
     </div>
     
     <div class="section">
+        <h2>AI智能POC验证结果</h2>
+        <div class="summary">
+            <p><strong>验证流程说明:</strong> AI Agent 自动分析高危漏洞，基于CVE和漏洞特征在 Pocsuite3 库中检索匹配的POC脚本。对于匹配成功的漏洞，系统自动创建验证任务并执行POC以确认漏洞的可利用性。</p>
+        </div>
+        {self._generate_poc_verification_section(report_data['poc_verification'])}
+    </div>
+    
+    <div class="section">
         <h2>工具执行结果</h2>
-        {self._generate_tool_rows(state.tool_results)}
+        <table>
+            <tr><th>工具名称</th><th>状态</th><th>执行结果摘要</th></tr>
+            {self._generate_tool_rows(state.tool_results)}
+        </table>
     </div>
     
     {self._generate_error_section(state.errors)}
@@ -198,7 +220,7 @@ class ReportGenerator:
         
         return "共发现 {} 个漏洞: {}".format(
             len(vulnerabilities),
-            ", ".join(summary_parts)
+            ", ".join(parts)
         )
     
     def _summarize_tool_results(self, tool_results: Dict[str, Any]) -> Dict[str, Any]:
@@ -282,6 +304,103 @@ class ReportGenerator:
         
         return "\n".join(rows)
     
+    def _generate_poc_verification_section(self, poc_data: Dict[str, Any]) -> str:
+        """
+        生成POC验证结果部分
+        
+        Args:
+            poc_data: POC验证数据
+            
+        Returns:
+            str: HTML内容
+        """
+        results = poc_data.get("results", [])
+        if not results:
+            return "<p>本次扫描未触发POC验证（未发现匹配的高危漏洞或无可用POC）。</p>"
+            
+        rows = []
+        for res in results:
+            status_color = "#28a745" if res.get("vulnerable") else "#dc3545"
+            status_text = "验证成功 (VULNERABLE)" if res.get("vulnerable") else "验证失败 (NOT VULNERABLE)"
+            
+            rows.append(f"""
+            <div class="vulnerability" style="border-left: 5px solid {status_color};">
+                <p><strong>POC名称:</strong> {res.get('poc_name')}</p>
+                <p><strong>目标:</strong> {res.get('target')}</p>
+                <p><strong>验证结果:</strong> <span style="color: {status_color}; font-weight: bold;">{status_text}</span></p>
+                <p><strong>详细信息:</strong> {res.get('message')}</p>
+                <p><strong>耗时:</strong> {res.get('execution_time', 0):.2f}s</p>
+                <div style="background: #f8f9fa; padding: 10px; margin-top: 10px; border-radius: 4px;">
+                    <p><strong>验证日志/输出:</strong></p>
+                    <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 12px;">{res.get('output', '无输出')}</pre>
+                </div>
+            </div>
+            """)
+            
+        return "\n".join(rows)
+
+    def _get_tool_summary(self, tool_name: str, result: Dict[str, Any]) -> str:
+        """
+        获取工具执行结果摘要
+        """
+        if not result:
+            return "无结果"
+            
+        status = result.get("status")
+        if status != "success":
+            return result.get("error", "执行失败")
+        
+        data = result.get("data", {})
+        if not data:
+            return "无数据"
+
+        # 处理各个工具的特定输出
+        if tool_name == "baseinfo":
+            details = []
+            if isinstance(data, dict):
+                if data.get("domain"): details.append(f"域名: {data['domain']}")
+                if data.get("ip"): details.append(f"IP: {data['ip']}")
+                if data.get("server"): details.append(f"Server: {data['server']}")
+                if data.get("os"): details.append(f"OS: {data['os']}")
+            return ", ".join(details) if details else "获取基础信息成功"
+        
+        elif tool_name == "portscan":
+            ports = data.get("open_ports", [])
+            if not ports:
+                return "未发现开放端口"
+            return f"开放端口: {', '.join(ports)}"
+            
+        elif tool_name == "waf_detect":
+            has_waf = data.get("has_waf")
+            if has_waf == "yes":
+                return f"发现WAF: {data.get('waf_name', 'Unknown')}"
+            return "未发现WAF"
+            
+        elif tool_name == "cdn_detect":
+            has_cdn = data.get("has_cdn")
+            if has_cdn:
+                return f"发现CDN: {data.get('cdn_info', 'Unknown')}"
+            return "未发现CDN"
+            
+        elif tool_name == "cms_identify":
+            # cms_identify 返回的 data 结构: {"success": True, "data": {...}}
+            inner_data = data.get("data", {}) if isinstance(data, dict) else {}
+            if not inner_data:
+                return data.get("message", "未识别到CMS")
+            
+            apps = inner_data.get("apps", [])
+            if apps:
+                 app_names = [app.get("name") for app in apps if app.get("name")]
+                 return f"识别组件: {', '.join(app_names)}"
+            return "未识别到CMS"
+
+        elif tool_name.startswith("poc_"):
+            if data.get("vulnerable"):
+                return "发现漏洞"
+            return "未发现漏洞"
+
+        return "执行完成"
+
     def _generate_tool_rows(self, tool_results: Dict[str, Any]) -> str:
         """
         生成工具结果HTML行
@@ -301,11 +420,13 @@ class ReportGenerator:
                 "timeout": "#ffc107"
             }.get(status, "#6c757d")
             
+            summary = self._get_tool_summary(tool_name, result)
+            
             rows.append(f"""
     <tr>
         <td>{tool_name}</td>
         <td style="color: {status_color}; font-weight: bold;">{status.upper()}</td>
-        <td>{'是' if result.get('data') else '否'}</td>
+        <td>{summary}</td>
     </tr>
             """)
         

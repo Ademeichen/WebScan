@@ -15,6 +15,7 @@ from backend.models import POCVerificationTask
 from backend.utils.seebug_utils import seebug_utils
 from backend.ai_agents.utils.cache import CacheManager
 from backend.utils.poc_utils import validate_poc_script_code
+from backend.Pocsuite3Agent.agent import get_pocsuite3_agent
 
 logger = logging.getLogger(__name__)
 
@@ -88,14 +89,36 @@ class POCManager:
         初始化 POC 管理器
         """
         self.poc_registry: Dict[str, POCMetadata] = {}
+        self.generated_poc_codes: Dict[str, str] = {}  # Store generated POC codes
         self.poc_cache = CacheManager(ttl=settings.POC_CACHE_TTL)
         
         # 使用统一的Seebug工具
         self.seebug_client = seebug_utils.get_client()
         self.seebug_agent = seebug_utils.get_agent()
         
+        # 使用 Pocsuite3 Agent
+        self.pocsuite3_agent = get_pocsuite3_agent()
+        
         logger.info("✅ POC 管理器初始化完成")
+
+    def register_dynamic_poc(self, poc_id: str, code: str):
+        """Register a dynamically generated POC code"""
+        self.generated_poc_codes[poc_id] = code
+        # Also create metadata
+        self.poc_registry[poc_id] = POCMetadata(
+            poc_name="Dynamic POC",
+            poc_id=poc_id,
+            source="generated",
+            description="Dynamically generated POC"
+        )
     
+    async def get_poc_code(self, poc_id: str) -> Optional[str]:
+        """Get POC code by ID (checks dynamic first, then seebug)"""
+        if poc_id in self.generated_poc_codes:
+            return self.generated_poc_codes[poc_id]
+        
+        return await self.download_poc_from_seebug(poc_id)
+
     async def sync_from_seebug(
         self,
         keyword: str = "",
@@ -179,8 +202,9 @@ class POCManager:
             
             # 检查缓存
             cache_key = f"poc_code_{ssvid}"
-            if cache_key in self.poc_cache:
-                return self.poc_cache[cache_key]["code"]
+            cached_code = self.poc_cache.get(cache_key)
+            if cached_code:
+                return cached_code["code"] if isinstance(cached_code, dict) else cached_code
             
             # 使用Seebug_Agent的客户端下载POC
             download_result = self.seebug_client.download_poc(ssvid)
@@ -196,10 +220,7 @@ class POCManager:
                 return None
             
             # 更新缓存
-            self.poc_cache[cache_key] = {
-                "timestamp": datetime.now(),
-                "code": poc_code
-            }
+            self.poc_cache.set(cache_key, poc_code)
             
             logger.info(f"✅ 从 Seebug 下载 POC 完成,代码长度: {len(poc_code)}")
             return poc_code
@@ -452,7 +473,6 @@ class POCManager:
                 task_id=task_id,
                 poc_name=poc_metadata.poc_name,
                 poc_id=poc_id,
-                poc_code=await self.get_poc_code(poc_id),
                 target=target,
                 priority=priority,
                 status="pending",
@@ -470,6 +490,19 @@ class POCManager:
             logger.error(f"❌ 创建 POC 验证任务失败: {str(e)}")
             raise
     
+    def register_generated_poc(self, poc_id: str, code: str, metadata: POCMetadata):
+        """
+        注册生成的 POC
+        
+        Args:
+            poc_id: POC ID
+            code: POC 代码
+            metadata: POC 元数据
+        """
+        self.poc_registry[poc_id] = metadata
+        self.generated_poc_codes[poc_id] = code
+        logger.info(f"✅ 注册生成的 POC: {poc_id}")
+
     async def get_poc_code(self, poc_id: str) -> Optional[str]:
         """
         获取 POC 代码
@@ -480,10 +513,15 @@ class POCManager:
         Returns:
             Optional[str]: POC 代码
         """
+        # Check generated POCs first
+        if poc_id in self.generated_poc_codes:
+            return self.generated_poc_codes[poc_id]
+
         # 检查缓存
         cache_key = f"poc_code_{poc_id}"
-        if cache_key in self.poc_cache:
-            return self.poc_cache[cache_key]["code"]
+        cached_code = self.poc_cache.get(cache_key)
+        if cached_code:
+            return cached_code
         
         # 如果是本地 POC,从文件读取
         if poc_id.startswith("local_"):
@@ -494,6 +532,18 @@ class POCManager:
             if local_path.exists():
                 with open(local_path, 'r', encoding='utf-8') as f:
                     return f.read()
+
+        # 如果是 Pocsuite3 POC,从注册表获取路径并读取
+        if poc_id.startswith("pocsuite3_"):
+            poc_name = poc_id.replace("pocsuite3_", "")
+            poc_path = self.pocsuite3_agent.poc_registry.get(poc_name)
+            if poc_path and Path(poc_path).exists():
+                try:
+                    with open(poc_path, 'r', encoding='utf-8') as f:
+                        return f.read()
+                except Exception as e:
+                    logger.error(f"读取 Pocsuite3 POC 失败: {str(e)}")
+                    return None
         
         # 如果是 Seebug POC,从缓存或重新下载
         ssvid = poc_id.replace("seebug_", "")
@@ -502,6 +552,61 @@ class POCManager:
         except (ValueError, TypeError):
             return None
     
+    async def search_pocsuite_pocs(
+        self,
+        keyword: str,
+        limit: int = 10
+    ) -> List[POCMetadata]:
+        """
+        搜索 Pocsuite3 内置 POC
+        
+        Args:
+            keyword: 搜索关键词
+            limit: 返回数量限制
+            
+        Returns:
+            List[POCMetadata]: POC 元数据列表
+        """
+        try:
+            logger.info(f"🔍 开始搜索 Pocsuite3 POC,关键词: {keyword}")
+            
+            # 使用 Pocsuite3 Agent 搜索
+            poc_names = self.pocsuite3_agent.search_pocs(keyword)
+            
+            if not poc_names:
+                return []
+                
+            # 限制返回数量
+            poc_names = poc_names[:limit]
+            
+            # 转换为 POC 元数据
+            poc_metadata_list = []
+            for name in poc_names:
+                # 尝试从文件内容或名称推断信息
+                # 这里简化处理，主要使用名称
+                poc_id = f"pocsuite3_{name}"
+                
+                metadata = POCMetadata(
+                    poc_name=name,
+                    poc_id=poc_id,
+                    poc_type="web", # 默认为web
+                    severity="high", # 默认设为高危，因为通常内置POC针对已知漏洞
+                    source="pocsuite3",
+                    version="1.0",
+                    tags=["pocsuite3"]
+                )
+                poc_metadata_list.append(metadata)
+                
+                # 注册到 POC 注册表
+                self.poc_registry[poc_id] = metadata
+                
+            logger.info(f"✅ Pocsuite3 POC搜索成功,找到 {len(poc_metadata_list)} 个POC")
+            return poc_metadata_list
+            
+        except Exception as e:
+            logger.error(f"❌ Pocsuite3 POC搜索失败: {str(e)}")
+            return []
+
     async def search_seebug_pocs(
         self,
         keyword: str,
@@ -564,10 +669,7 @@ class POCManager:
                 self.poc_registry[metadata.poc_id] = metadata
             
             # 更新缓存
-            self.poc_cache[cache_key] = {
-                "timestamp": datetime.now(),
-                "pocs": poc_metadata_list
-            }
+            self.poc_cache.set(cache_key, poc_metadata_list)
             
             logger.info(f"✅ Seebug POC搜索成功,找到 {len(poc_metadata_list)} 个POC")
             return poc_metadata_list

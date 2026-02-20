@@ -12,7 +12,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import logging
 from tortoise.functions import Count
 import json
@@ -306,16 +306,23 @@ async def list_tasks(
         if start_date:
             try:
                 start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-                query = query.filter(created_at__gte=start_dt)
+                # 处理时区: 假设前端传入的是北京时间(UTC+8), 转换为UTC时间进行查询
+                cn_tz = timezone(timedelta(hours=8))
+                start_dt = start_dt.replace(tzinfo=cn_tz)
+                start_dt_utc = start_dt.astimezone(timezone.utc)
+                query = query.filter(created_at__gte=start_dt_utc)
             except ValueError:
                 pass
         if end_date:
             try:
                 end_dt = datetime.strptime(end_date, "%Y-%m-%d")
                 # 加一天以包含结束日期当天
-                from datetime import timedelta
                 end_dt = end_dt + timedelta(days=1)
-                query = query.filter(created_at__lt=end_dt)
+                # 处理时区: 假设前端传入的是北京时间(UTC+8), 转换为UTC时间进行查询
+                cn_tz = timezone(timedelta(hours=8))
+                end_dt = end_dt.replace(tzinfo=cn_tz)
+                end_dt_utc = end_dt.astimezone(timezone.utc)
+                query = query.filter(created_at__lt=end_dt_utc)
             except ValueError:
                 pass
         
@@ -351,11 +358,11 @@ async def list_tasks(
                 "progress": task.progress,
                 "config": json.loads(task.config) if task.config else {},
                 "result": res,
-                "created_at": task.created_at,
-                "updated_at": task.updated_at
-            }
-            
-            # 计算漏洞统计 (从数据库)
+            "created_at": task.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updated_at": task.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+        }
+        
+        # 计算漏洞统计 (从数据库)
             # 这确保了 Dashboard 显示的数字与详情页一致 (包括 Critical)
             try:
                 vuln_counts = await Vulnerability.filter(task_id=task.id).group_by('severity').annotate(count=Count('id')).values('severity', 'count')
@@ -433,8 +440,8 @@ async def get_task(task_id: int):
             "progress": task.progress,
             "config": json.loads(task.config) if task.config else {},
             "result": json.loads(task.result) if task.result else None,
-            "created_at": task.created_at,
-            "updated_at": task.updated_at
+            "created_at": task.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updated_at": task.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         
         return APIResponse(code=200, message="获取成功", data=task_dict)

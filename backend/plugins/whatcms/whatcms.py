@@ -53,7 +53,7 @@ from urllib3.util.retry import Retry
 # === 配置项集中管理 ===
 # 规则文件路径(兼容跨平台)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE_DIR = os.path.normpath(os.path.join(BASE_DIR, '../../database'))
+DATABASE_DIR = os.path.normpath(os.path.join(BASE_DIR, '../../geoip'))
 APPS_JSON_PATH = os.path.join(DATABASE_DIR, 'apps.json')
 APPS_TXT_PATH = os.path.join(DATABASE_DIR, 'apps.txt')
 
@@ -115,7 +115,7 @@ class SingletonWappalyzer:
             logger.info(f"成功加载Wappalyzer规则,共{len(self.apps)}个应用")
 
         except FileNotFoundError as e:
-            logger.error(f"加载apps.json失败:{e}")
+            logger.warning(f"加载apps.json失败(将跳过Wappalyzer检测):{e}")
             self.apps = {}
             self.categories = {}
         except json.JSONDecodeError as e:

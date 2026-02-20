@@ -60,7 +60,7 @@ async def start_task_execution(
         target: 扫描目标
         scan_config: 扫描配置
     """
-    from task_executor import task_executor
+    from backend.task_executor import task_executor
     
     if scan_config is None:
         scan_config = {}

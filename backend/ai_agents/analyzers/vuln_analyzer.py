@@ -23,28 +23,20 @@ class VulnerabilityAnalyzer:
     
     def deduplicate(self, vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        漏洞去重
+        漏洞去重 (已禁用)
         
         根据CVE和目标组合去重。
+        当前配置：禁用去重，直接返回原列表。
         
         Args:
             vulnerabilities: 漏洞列表
             
         Returns:
-            List[Dict]: 去重后的漏洞列表
+            List[Dict]: 原始漏洞列表
         """
-        unique_vulns = {}
-        
-        for vuln in vulnerabilities:
-            key = self._get_vuln_key(vuln)
-            if key not in unique_vulns:
-                unique_vulns[key] = vuln
-            else:
-                logger.debug(f"去重漏洞: {key}")
-        
-        deduplicated = list(unique_vulns.values())
-        logger.info(f"漏洞去重: {len(vulnerabilities)} -> {len(deduplicated)}")
-        return deduplicated
+        # 用户要求禁用去重
+        logger.info(f"漏洞去重已禁用: {len(vulnerabilities)} 个漏洞保持不变")
+        return vulnerabilities
     
     def sort_by_severity(self, vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -59,7 +51,7 @@ class VulnerabilityAnalyzer:
         sorted_vulns = sorted(
             vulnerabilities,
             key=lambda x: self.severity_order.get(
-                x.get("severity", "info").lower(),
+                str(x.get("severity", "info")).lower(),
                 0
             ),
             reverse=True
@@ -90,7 +82,7 @@ class VulnerabilityAnalyzer:
         # 按严重度统计
         severity_stats = {}
         for vuln in vulnerabilities:
-            severity = vuln.get("severity", "info").lower()
+            severity = str(vuln.get("severity", "info")).lower()
             severity_stats[severity] = severity_stats.get(severity, 0) + 1
         
         # 生成摘要

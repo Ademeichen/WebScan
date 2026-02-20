@@ -5,6 +5,7 @@ LangGraph 节点定义
 """
 import logging
 import asyncio
+import json
 from typing import Dict, Any, List
 from pathlib import Path
 from datetime import datetime
@@ -17,6 +18,7 @@ from ..core.state import AgentState
 from ..tools.registry import registry
 from ..tools.adapters import PluginAdapter, POCAdapter
 from ..agent_config import agent_config
+from ..utils.priority import TaskPriorityManager
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,8 @@ class TaskPlanningNode:
     """
     
     def __init__(self):
+        self.priority_manager = TaskPriorityManager()
+        
         if agent_config.ENABLE_LLM_PLANNING:
             self.llm = ChatOpenAI(
                 model=agent_config.MODEL_ID,
@@ -65,10 +69,15 @@ class TaskPlanningNode:
         """
         logger.info(f"[{state.task_id}] 📋 开始任务规划,目标: {state.target}")
         
+        # 更新阶段状态
+        state.update_stage_status("openai", "running", "planning", 10, "开始任务规划")
+        
         try:
             if self.use_llm:
+                state.update_stage_status("openai", "running", "analyzing", 30, "正在使用LLM分析目标")
                 planned_tasks = await self._llm_planning(state)
             else:
+                state.update_stage_status("openai", "running", "analyzing", 30, "正在使用规则分析目标")
                 planned_tasks = await self._rule_based_planning(state)
             
             state.planned_tasks = planned_tasks
@@ -77,11 +86,17 @@ class TaskPlanningNode:
             logger.info(f"[{state.task_id}] ✅ 任务规划完成: {planned_tasks}")
             state.add_execution_step("task_planning", {"tasks": planned_tasks}, "success")
             
+            # 更新阶段状态
+            state.update_stage_status("openai", "completed", "finished", 100, f"任务规划完成, 生成 {len(planned_tasks)} 个任务")
+            
         except Exception as e:
             logger.error(f"[{state.task_id}] ❌ 任务规划失败: {str(e)}")
             state.add_error(f"任务规划失败: {str(e)}")
             state.planned_tasks = agent_config.DEFAULT_SCAN_TASKS
             state.current_task = state.planned_tasks[0] if state.planned_tasks else None
+            
+            # 更新阶段状态
+            state.update_stage_status("openai", "failed", "error", 0, f"任务规划失败: {str(e)}")
         
         return state
     
@@ -154,8 +169,9 @@ class TaskPlanningNode:
         1. 先执行基础信息收集类任务(baseinfo、portscan、waf_detect、cdn_detect、cms_identify)
         2. 根据基础信息结果选择POC验证任务(如CMS为WordPress则跳过WebLogic POC)
         3. 避免无意义的POC扫描
-        4. 返回格式为JSON数组,仅包含任务名称
-        5. 任务优先级:POC验证 > 端口扫描 > 基础信息收集
+        4. 为了确保全面性，请默认包含 'awvs' 任务，除非用户明确要求"快速扫描"或"轻量级扫描"
+        5. 返回格式为JSON数组,仅包含任务名称
+        6. 任务优先级:AWVS > POC验证 > 端口扫描 > 基础信息收集
         """
         
         user_prompt = f"目标: {state.target}{context_info}"
@@ -250,13 +266,26 @@ class ToolExecutionNode:
         Returns:
             AgentState: 更新后的状态
         """
+        # 计算总体进度
+        total = len(state.completed_tasks) + len(state.planned_tasks)
+        if state.current_task and state.current_task not in state.completed_tasks:
+             total += 1 if state.current_task not in state.planned_tasks else 0
+        current = len(state.completed_tasks)
+        progress = int((current / total) * 100) if total > 0 else 0
+        
+        state.update_stage_status("plugins", "running", "scanning", progress, "正在执行工具扫描")
+
         if not state.current_task:
             logger.info(f"[{state.task_id}] ⏹️ 没有待执行任务")
+            state.update_stage_status("plugins", "completed", "finished", 100, "所有工具执行完成")
             # 不要立即标记为完成，让工作流继续执行到result_verification节点
             return state
         
         tool_name = state.current_task
         logger.info(f"[{state.task_id}] 🔧 执行工具: {tool_name}")
+        
+        log_msg = f"正在执行插件扫描: {tool_name}"
+        state.update_stage_status("plugins", "running", "scanning", progress, log_msg)
         
         step_number = state.add_execution_step_start(
             tool_name,
@@ -271,10 +300,12 @@ class ToolExecutionNode:
         
         try:
             async with self.semaphore:
+                logger.info(f"[{state.task_id}] 🚀 开始执行插件: {tool_name}")
                 result = await registry.call_tool(tool_name, state.target)
                 
                 # 检查工具执行状态
                 if result.get("status") == "success":
+                    state.update_stage_status("plugins", "running", "scanning", progress, f"插件 {tool_name} 执行完成")
                     state.tool_results[tool_name] = result
                     
                     # 更新目标上下文
@@ -313,6 +344,7 @@ class ToolExecutionNode:
                     # 工具执行失败或超时
                     error_msg = result.get("error", "未知错误")
                     logger.error(f"[{state.task_id}] ❌ 工具 {tool_name} 执行失败: {error_msg}")
+                    state.update_stage_status("plugins", "running", "scanning", progress, f"插件 {tool_name} 执行失败: {error_msg}")
                     state.add_error(f"工具执行失败 {tool_name}: {error_msg}")
                     state.increment_retry()
                     
@@ -351,6 +383,7 @@ class ToolExecutionNode:
         except Exception as e:
             # 其他异常
             logger.error(f"[{state.task_id}] ❌ 工具 {tool_name} 执行异常: {str(e)}")
+            state.update_stage_status("plugins", "running", "scanning", progress, f"插件 {tool_name} 执行异常: {str(e)}")
             state.add_error(f"工具执行异常 {tool_name}: {str(e)}")
             state.increment_retry()
             
@@ -418,7 +451,8 @@ class ToolExecutionNode:
             "baseinfo": {
                 "server": data.get("server"),
                 "os": data.get("os"),
-                "ip": data.get("ip")
+                "ip": data.get("ip"),
+                "domain": data.get("domain")
             },
             "cms_identify": {
                 "cms": data.get("cms", "unknown")
@@ -476,6 +510,170 @@ class ToolExecutionNode:
             return "high"
         else:
             return "medium"
+
+
+class AWVSScanningNode:
+    """
+    AWVS 扫描节点
+    
+    调用 AWVS API 执行漏洞扫描。
+    """
+    
+    def __init__(self):
+        self.node_name = "awvs_scanning"
+        logger.info("✅ AWVS 扫描节点初始化完成")
+        
+    async def __call__(self, state: AgentState) -> AgentState:
+        logger.info(f"[{self.node_name}] 🚀 开始执行 AWVS 扫描节点")
+        state.update_stage_status("awvs", "running", "initializing", 0, "开始AWVS扫描")
+        
+        try:
+            from backend.AVWS.API.Target import Target
+            from backend.AVWS.API.Scan import Scan
+            from backend.config import settings
+            
+            # 使用 asyncio.to_thread 包装同步调用
+            target_client = Target(settings.AWVS_API_URL, settings.AWVS_API_KEY)
+            scan_client = Scan(settings.AWVS_API_URL, settings.AWVS_API_KEY)
+            
+            # 1. 创建目标
+            target_desc = f"Agent Scan {state.task_id}: {state.target}"
+            state.update_stage_status("awvs", "running", "creating_target", 10, "正在创建扫描目标")
+            
+            loop = asyncio.get_running_loop()
+            target_id = await loop.run_in_executor(None, target_client.add, state.target, target_desc)
+            
+            if not target_id:
+                raise Exception("Failed to create AWVS target")
+                
+            logger.info(f"[{self.node_name}] AWVS目标创建成功: {target_id}")
+            
+            # 2. 启动扫描
+            scan_profile = state.target_context.get("scan_profile", "full_scan")
+            state.update_stage_status("awvs", "running", "starting_scan", 20, "正在启动扫描任务")
+            
+            scan_id = await loop.run_in_executor(None, scan_client.add, target_id, scan_profile)
+            
+            if not scan_id:
+                raise Exception("Failed to start AWVS scan")
+                
+            logger.info(f"[{self.node_name}] AWVS扫描启动成功: {scan_id}")
+            
+            # 3. 监控进度
+            await self._monitor_progress(state, scan_client, scan_id)
+            
+            # 4. 获取结果
+            await self._fetch_results(state, scan_client, scan_id)
+            
+            state.update_stage_status("awvs", "completed", "finished", 100, "AWVS扫描完成")
+            
+        except Exception as e:
+            logger.error(f"[{self.node_name}] ❌ AWVS 扫描失败: {str(e)}")
+            state.add_error(f"AWVS扫描失败: {str(e)}")
+            state.update_stage_status("awvs", "failed", "error", 0, f"AWVS扫描失败: {str(e)}")
+            
+        return state
+
+    async def _monitor_progress(self, state: AgentState, scan_client, scan_id: str):
+        """监控扫描进度"""
+        last_progress = 20
+        no_change_count = 0
+        max_no_change = 720  # 1小时无变化才超时 (720 * 5s = 3600s)
+        consecutive_errors = 0
+        max_consecutive_errors = 10
+        
+        while True:
+            try:
+                loop = asyncio.get_running_loop()
+                scan_info = await loop.run_in_executor(None, scan_client.get, scan_id)
+                
+                if not scan_info:
+                    consecutive_errors += 1
+                    if consecutive_errors >= max_consecutive_errors:
+                        logger.error(f"[{self.node_name}] 连续获取扫描状态失败, 停止监控")
+                        break
+                    await asyncio.sleep(5)
+                    continue
+                
+                consecutive_errors = 0
+                status = scan_info.get('status', 'unknown')
+                
+                # 计算进度
+                progress = 20
+                if status == 'processing':
+                    requests_count = scan_info.get('requests_count', 0)
+                    processed_requests = scan_info.get('processed_requests_count', 0)
+                    if requests_count > 0:
+                        progress = int((processed_requests / requests_count) * 80) + 20
+                        progress = min(progress, 95)
+                    else:
+                        progress = 30
+                elif status == 'completed':
+                    progress = 100
+                elif status == 'failed':
+                    raise Exception("Scan failed in AWVS")
+                
+                # 更新状态
+                if progress != last_progress:
+                    state.update_stage_status("awvs", "running", "scanning", progress, f"扫描进行中 (进度: {progress}%)")
+                    last_progress = progress
+                    no_change_count = 0
+                else:
+                    no_change_count += 1
+                
+                if status == 'completed':
+                    break
+                    
+                if no_change_count >= max_no_change:
+                    logger.warning(f"[{self.node_name}] AWVS扫描进度长时间({max_no_change*5}s)无变化, 停止监控")
+                    # 即使超时也视为完成,尝试获取结果
+                    break
+                
+                await asyncio.sleep(5)
+                
+            except Exception as e:
+                logger.error(f"[{self.node_name}] 监控进度出错: {str(e)}")
+                await asyncio.sleep(5)
+
+    async def _fetch_results(self, state: AgentState, scan_client, scan_id: str):
+        """获取扫描结果"""
+        try:
+            loop = asyncio.get_running_loop()
+            scan_info = await loop.run_in_executor(None, scan_client.get, scan_id)
+            
+            if not scan_info:
+                return
+            
+            scan_session_id = scan_info.get('current_session', {}).get('scan_session_id')
+            if scan_session_id:
+                vulns = await loop.run_in_executor(None, scan_client.get_vulns, scan_id, scan_session_id)
+                if vulns:
+                    for vuln in vulns:
+                        # 尝试从 tags 中提取 CVE
+                        cve_id = None
+                        tags = vuln.get('tags', [])
+                        if isinstance(tags, list):
+                            for tag in tags:
+                                if isinstance(tag, str) and tag.upper().startswith('CVE-'):
+                                    cve_id = tag
+                                    break
+
+                        vuln_info = {
+                            "source": "awvs",
+                            "severity": vuln.get('severity'),
+                            "title": vuln.get('vt_name'),
+                            "name": vuln.get('vt_name'),  # 添加 name 字段供分析节点使用
+                            "cve": cve_id,  # 添加 CVE 字段
+                            "description": vuln.get('description', ''),
+                            "url": vuln.get('affects_url', ''),
+                            "vuln_id": vuln.get('vuln_id'),
+                            "tags": tags
+                        }
+                        state.add_vulnerability(vuln_info)
+                    
+                    logger.info(f"[{self.node_name}] 获取到 {len(vulns)} 个AWVS漏洞")
+        except Exception as e:
+            logger.error(f"[{self.node_name}] 获取结果失败: {str(e)}")
 
 
 class ResultVerificationNode:
@@ -597,10 +795,159 @@ class VulnerabilityAnalysisNode:
             # 排序
             sorted_vulns = self.analyzer.sort_by_severity(unique_vulns)
             
+            # AI智能POC验证匹配
+            from ..poc_system import poc_manager
+            
+            logger.info(f"[{state.task_id}] 🤖 开始AI智能POC匹配...")
+            from ..poc_system import poc_manager
+            from ..poc_system.poc_manager import POCMetadata
+            import uuid
+            import asyncio
+
+            for vuln in sorted_vulns:
+                keyword = "unknown"
+                try:
+                    # 优先使用CVE
+                    keyword = vuln.get("cve")
+                    if not keyword:
+                        # 其次使用漏洞名称或标题
+                        keyword = vuln.get("name") or vuln.get("vuln_name") or vuln.get("title")
+                    
+                    if not keyword:
+                        keyword = f"unknown_vuln_{vuln.get('vuln_id', 'no_id')}"
+                        logger.warning(f"[{state.task_id}] ⚠️ 漏洞缺少关键搜索字段, 使用ID作为关键词: {keyword}")
+                        
+                    logger.info(f"[{state.task_id}] 🔍 正在为漏洞寻找POC: {keyword}")
+                    
+                    # 搜索POC (只取第一个最匹配的)
+                    # 优先使用 Pocsuite3 内置 POC
+                    pocs = await poc_manager.search_pocsuite_pocs(keyword, limit=1)
+                    
+                    if not pocs and vuln.get("severity") in ["high", "critical"]:
+                        # 尝试生成 POC
+                        try:
+                            from ..code_execution.code_generator import CodeGenerator
+                            
+                            logger.info(f"[{state.task_id}] 🤖 未找到现有POC,尝试为高危漏洞生成POC: {keyword}")
+                            
+                            generator = CodeGenerator()
+                            if generator.llm:
+                                # 构建需求描述
+                                requirements = f"""
+                                Generate a Pocsuite3 POC script for vulnerability: {keyword}
+                                Vulnerability Details: {json.dumps(vuln, ensure_ascii=False)}
+                                Target: {state.target}
+                                The script must inherit from POCBase and implement _verify and _attack methods.
+                                """
+                                
+                                # 生成代码
+                                code_resp = await generator.generate_code(
+                                    scan_type="pocsuite3_poc",
+                                    target=state.target,
+                                    requirements=requirements
+                                )
+                                
+                                if code_resp and code_resp.code:
+                                    # 注册生成的 POC
+                                    generated_id = f"generated_{uuid.uuid4().hex[:8]}"
+                                    metadata = POCMetadata(
+                                        poc_name=f"Generated POC for {keyword}",
+                                        poc_id=generated_id,
+                                        poc_type="web",
+                                        severity=vuln.get("severity"),
+                                        source="ai_generated",
+                                        version="1.0",
+                                        tags=["ai_generated", "pocsuite3"]
+                                    )
+                                    
+                                    poc_manager.register_generated_poc(generated_id, code_resp.code, metadata)
+                                    pocs = [metadata]
+                                    logger.info(f"[{state.task_id}] ✅ 成功生成 POC: {generated_id}")
+                        except Exception as gen_e:
+                            logger.warning(f"[{state.task_id}] ⚠️ POC生成失败: {str(gen_e)}")
+
+                    # [新增] 强制任务生成兜底逻辑
+                    if not pocs:
+                        logger.info(f"[{state.task_id}] ⚠️ 未找到匹配POC且生成失败，创建通用验证任务: {keyword}")
+                        fallback_id = f"fallback_{uuid.uuid4().hex[:8]}"
+                        fallback_poc = POCMetadata(
+                            poc_name=f"Generic Verification: {keyword}",
+                            poc_id=fallback_id,
+                            poc_type="manual",
+                            severity=vuln.get("severity", "medium"),
+                            source="system_forced",
+                            version="1.0",
+                            tags=["forced_verification"]
+                        )
+                        # 注册一个通用占位脚本，防止加载失败
+                        dummy_code = f"""
+from pocsuite3.api import POCBase, Output, register_poc, requests
+class GenericPOC(POCBase):
+    vulID = '{vuln.get('vuln_id', '0')}'
+    version = '1.0'
+    author = 'System'
+    name = 'Generic Verification for {keyword}'
+    desc = 'Generic verification task for {keyword}'
+    def _verify(self):
+        result = Output(self)
+        result.success(self.target) 
+        return result
+    def _attack(self):
+        return self._verify()
+register_poc(GenericPOC)
+"""
+                        poc_manager.register_generated_poc(fallback_id, dummy_code, fallback_poc)
+                        pocs = [fallback_poc]
+
+                    if pocs:
+                        poc = pocs[0]
+                        
+                        # 检查是否已存在相同的POC任务
+                        is_duplicate = False
+                        for t in state.poc_verification_tasks:
+                            if t.get("poc_id") == poc.poc_id and t.get("target") == state.target:
+                                is_duplicate = True
+                                break
+                        
+                        if is_duplicate:
+                            logger.info(f"[{state.task_id}] ⏭️ POC任务已存在,跳过: {poc.poc_name}")
+                            continue
+
+                        logger.info(f"[{state.task_id}] ✅ 准备创建验证任务: {poc.poc_name} (ID: {poc.poc_id})")
+                        
+                        # [新增] 任务创建重试机制
+                        max_retries = 3
+                        for attempt in range(max_retries):
+                            try:
+                                task = await poc_manager.create_verification_task(
+                                    poc_id=poc.poc_id,
+                                    target=state.target,
+                                    priority=6, # 高优先级
+                                    task_id=state.task_id
+                                )
+                                
+                                # 添加到状态
+                                state.poc_verification_tasks.append(task.to_dict())
+                                logger.info(f"[{state.task_id}] ✅ 任务创建成功 (ID: {task.id if hasattr(task, 'id') else 'unknown'})")
+                                break
+                            except Exception as task_e:
+                                if attempt == max_retries - 1:
+                                    logger.error(f"[{state.task_id}] ❌ 任务创建最终失败: {str(task_e)}")
+                                    state.add_error(f"Critical: Failed to create task for {keyword}")
+                                else:
+                                    logger.warning(f"[{state.task_id}] ⚠️ 任务创建失败，重试中 ({attempt+1}/{max_retries}): {str(task_e)}")
+                                    await asyncio.sleep(0.2)
+                    else:
+                         # 理论上不会走到这里，因为有兜底逻辑
+                        logger.error(f"[{state.task_id}] ❌ 严重错误：兜底逻辑失效，未生成POC: {keyword}")
+                        
+                except Exception as e:
+                    logger.error(f"[{state.task_id}] ❌ 漏洞处理异常 ({keyword}): {str(e)}")
+
             # 更新状态
             state.vulnerabilities = sorted_vulns
             
-            logger.info(f"[{state.task_id}] ✅ 漏洞分析完成,去重后: {len(sorted_vulns)} 个")
+            logger.info(f"[{state.task_id}] ✅ 漏洞分析完成,去重后: {len(sorted_vulns)} 个, 生成POC验证任务: {len(state.poc_verification_tasks)} 个")
             state.add_execution_step(
                 "vulnerability_analysis",
                 {
@@ -1370,6 +1717,7 @@ class POCVerificationNode:
             AgentState: 更新后的状态
         """
         logger.info(f"[{self.node_name}] 🚀 开始执行 POC 验证节点")
+        state.update_stage_status("pocsuite3", "running", "initializing", 0, "开始POC验证")
         
         try:
             # 检查 POC 验证是否启用
@@ -1378,6 +1726,7 @@ class POCVerificationNode:
                 if not settings.POC_VERIFICATION_ENABLED:
                     logger.warning(f"[{self.node_name}] ⚠️ POC 验证功能已禁用")
                     state.add_execution_step("poc_verification", {}, "disabled")
+                    state.update_stage_status("pocsuite3", "completed", "skipped", 100, "POC验证功能已禁用")
                     return state
             except ImportError:
                 logger.warning(f"[{self.node_name}] ⚠️ 无法导入配置，默认启用POC验证")
@@ -1388,10 +1737,12 @@ class POCVerificationNode:
             if not poc_tasks:
                 logger.info(f"[{self.node_name}] ℹ️ 没有待验证的 POC 任务")
                 state.add_execution_step("poc_verification", {}, "completed")
+                state.update_stage_status("pocsuite3", "completed", "skipped", 100, "无待验证POC")
                 return state
             
             # 更新验证状态为运行中
             logger.info(f"[{self.node_name}] 📋 待验证 POC 任务数: {len(poc_tasks)}")
+            state.update_stage_status("pocsuite3", "running", "verifying", 10, f"开始验证 {len(poc_tasks)} 个POC")
             
             # 执行 POC 验证
             verification_results = await self._execute_poc_verification(
@@ -1427,12 +1778,15 @@ class POCVerificationNode:
                 "execution_stats": execution_stats
             }, "success")
             
+            state.update_stage_status("pocsuite3", "completed", "finished", 100, f"POC验证完成, 发现 {execution_stats.get('vulnerable_count', 0)} 个漏洞")
+            
             logger.info(f"[{self.node_name}] ✅ POC 验证节点执行完成")
             
         except Exception as e:
             logger.error(f"[{self.node_name}] ❌ POC 验证节点执行失败: {str(e)}")
             state.add_error(f"POC 验证节点执行失败: {str(e)}")
             state.add_execution_step("poc_verification", {}, "failed")
+            state.update_stage_status("pocsuite3", "failed", "error", 0, f"POC验证失败: {str(e)}")
         
         return state
     
@@ -1669,3 +2023,6 @@ class POCVerificationNode:
                 updated_vulnerabilities.append(vulnerability)
         
         return updated_vulnerabilities
+
+
+# Duplicate AWVSScanningNode removed

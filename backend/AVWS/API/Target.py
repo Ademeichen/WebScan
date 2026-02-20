@@ -49,7 +49,7 @@ class Target(Base):
 
 
         try:
-            response = requests.get(self.targets_api, headers=self.auth_headers, verify=False)
+            response = requests.get(self.targets_api, headers=self.auth_headers, verify=False, timeout=30)
             result = response.json()
             target_list = result.get('targets')
             return target_list
@@ -72,7 +72,7 @@ class Target(Base):
         """
         search_targets_api = f'{self.targets_api}?q=threat:{threat};criticality:{criticality};group_id:{group_id};text_search:{keyword}'
         try:
-            response = requests.get(search_targets_api, headers=self.auth_headers, verify=False)
+            response = requests.get(search_targets_api, headers=self.auth_headers, verify=False, timeout=30)
             result = response.json()
             target_list = result.get('targets')
             return target_list
@@ -99,15 +99,17 @@ class Target(Base):
         data = {
             'address': address,
             'description': description,
+            'criticality': '10'
         }
         try:
-            response = requests.post(self.targets_api, headers=self.auth_headers, json=data, verify=False)
+            # Add timeout to prevent hanging
+            response = requests.post(self.targets_api, headers=self.auth_headers, json=data, verify=False, timeout=30)
             result = response.json()
             target_id = result.get('target_id')
             return target_id
 
-        except Exception:
-            self.logger.error('Add Target Failed......', exc_info=True)
+        except Exception as e:
+            self.logger.error(f'Add Target Failed: {str(e)}', exc_info=True)
             return None
 
     def delete(self, target_id):
@@ -125,7 +127,7 @@ class Target(Base):
 
         delete_targets_api = f'{self.targets_api}/{target_id}'
         try:
-            response = requests.delete(delete_targets_api, headers=self.auth_headers, verify=False)
+            response = requests.delete(delete_targets_api, headers=self.auth_headers, verify=False, timeout=30)
             if response.status_code == 200:
                 return True
             else:

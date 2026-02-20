@@ -183,6 +183,89 @@ class SeebugAPIClient:
                 status_code=500
             )
 
+    async def crawl_recent_vulnerabilities(self, limit: int = 20) -> APIResponse:
+        """
+        通过爬虫获取最新漏洞信息（包含详情）
+        
+        Args:
+            limit: 限制获取的数量
+            
+        Returns:
+            APIResponse: 包含漏洞列表的响应
+        """
+        logger.info(f"🕷️ 开始爬取最新漏洞信息, limit={limit}")
+        
+        try:
+            all_pocs = []
+            page = 1
+            max_pages = 5  # 限制最大页数防止无限循环
+            
+            # 1. 循环爬取列表直到满足limit或无数据
+            while len(all_pocs) < limit and page <= max_pages:
+                logger.info(f"🕷️ 爬取第 {page} 页...")
+                if hasattr(self.seebug_client, '_search_poc_web'):
+                    search_result = self.seebug_client._search_poc_web("", page=page)
+                else:
+                    return APIResponse(success=False, message="Seebug客户端不支持爬取", status_code=501)
+                
+                if search_result.get("status") != "success":
+                    logger.warning(f"⚠️ 第 {page} 页爬取失败: {search_result.get('msg')}")
+                    break
+                    
+                page_pocs = search_result.get("data", {}).get("list", [])
+                if not page_pocs:
+                    logger.info(f"⚠️ 第 {page} 页无数据，停止爬取")
+                    break
+                    
+                all_pocs.extend(page_pocs)
+                page += 1
+                
+                # 简单防封延时
+                import asyncio
+                await asyncio.sleep(1)
+            
+            if not all_pocs:
+                return APIResponse(success=True, data=[], message="未找到漏洞")
+                
+            # 限制数量
+            all_pocs = all_pocs[:limit]
+            enriched_pocs = []
+            
+            # 2. 爬取详情并合并
+            for index, poc in enumerate(all_pocs):
+                try:
+                    ssvid = poc.get("ssvid")
+                    logger.info(f"🕷️ [{index+1}/{len(all_pocs)}] 获取详情 SSVID={ssvid}")
+                    if ssvid and hasattr(self.seebug_client, '_get_poc_detail_web'):
+                        detail_result = self.seebug_client._get_poc_detail_web(ssvid)
+                        if detail_result.get("status") == "success":
+                            detail = detail_result.get("data", {})
+                            # 合并详情
+                            poc.update(detail)
+                            
+                    enriched_pocs.append(poc)
+                    # 简单防封延时
+                    await asyncio.sleep(0.5)
+                    
+                except Exception as e:
+                    logger.error(f"❌ 爬取漏洞详情失败 SSVID={poc.get('ssvid')}: {e}")
+                    # 即使详情失败也保留基本信息
+                    enriched_pocs.append(poc)
+            
+            return APIResponse(
+                success=True,
+                data=enriched_pocs,
+                message=f"成功爬取 {len(enriched_pocs)} 条漏洞数据"
+            )
+            
+        except Exception as e:
+            logger.error(f"❌ 爬取漏洞数据异常: {e}")
+            return APIResponse(
+                success=False,
+                message=f"爬取异常: {str(e)}",
+                status_code=500
+            )
+
     async def download_poc(self, ssvid: int) -> APIResponse:
         """
         下载POC代码

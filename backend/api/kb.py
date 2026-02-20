@@ -441,49 +441,51 @@ async def get_poc_detail(ssvid: int):
         }
 
 async def fetch_seebug_data():
-    """
-    从 Seebug 获取漏洞数据
+        """
+        从 Seebug 获取漏洞数据
 
-    使用 Seebug API 获取最新的漏洞信息。
-    Seebug 是国内知名的漏洞平台，提供详细的漏洞信息和 POC。
+        使用 Seebug API 获取最新的漏洞信息。
+        Seebug 是国内知名的漏洞平台，提供详细的漏洞信息和 POC。
 
-    Returns:
-        List[Dict]: 漏洞数据列表
-    """
-    try:
-        logger.info("🔍 开始从 Seebug 获取漏洞数据")
+        Returns:
+            List[Dict]: 漏洞数据列表
+        """
+        try:
+            logger.info("🔍 开始从 Seebug 获取漏洞数据 (爬虫模式)")
 
-        response = await global_seebug_client.search_poc("", page=1, page_size=20)
+            # response = await global_seebug_client.search_poc("", page=1, page_size=20)
+            # 使用爬虫模式获取最新数据，增加limit到50
+            response = await global_seebug_client.crawl_recent_vulnerabilities(limit=50)
 
-        if response.success and response.data:
-            vulnerabilities = []
-            pocs = response.data if isinstance(response.data, list) else response.data.get('list', [])
-            for poc in pocs:
-                vulnerabilities.append({
-                    "cve_id": poc.get("cve_id", ""),
-                    "name": poc.get("name", poc.get("title", poc.get("vul_name", "Unknown"))),
-                    "description": poc.get("description", poc.get("summary", "")),
-                    "severity": poc.get("level", "Unknown"),
-                    "cvss_score": poc.get("cvss_score", 0.0),
-                    "affected_product": poc.get("product", poc.get("affected", "")),
-                    "solution": poc.get("solution", poc.get("patch", "")),
-                    "has_poc": True,
-                    "source": "seebug",
-                    "poc_code": "",
-                    "ssvid": poc.get("ssvid", poc.get("id"))
-                })
+            if response.success and response.data:
+                vulnerabilities = []
+                pocs = response.data if isinstance(response.data, list) else response.data.get('list', [])
+                for poc in pocs:
+                    vulnerabilities.append({
+                        "cve_id": poc.get("cve_id", ""),
+                        "name": poc.get("name", poc.get("title", poc.get("vul_name", "Unknown"))),
+                        "description": poc.get("description", poc.get("summary", "")),
+                        "severity": poc.get("level", "Unknown"),
+                        "cvss_score": poc.get("cvss_score", 0.0),
+                        "affected_product": poc.get("product", poc.get("affected", "")),
+                        "solution": poc.get("solution", poc.get("patch", "")),
+                        "has_poc": True,
+                        "source": "seebug",
+                        "poc_code": "",
+                        "ssvid": poc.get("ssvid", poc.get("id"))
+                    })
 
-            logger.info(f"✅ 从 Seebug 获取到 {len(vulnerabilities)} 条漏洞数据")
-            return vulnerabilities
-        else:
-            logger.warning(f"⚠️ 从 Seebug 获取数据失败: {response.message}")
-            logger.info(f"Seebug 响应数据类型: {type(response.data)}")
+                logger.info(f"✅ 从 Seebug 获取到 {len(vulnerabilities)} 条漏洞数据")
+                return vulnerabilities
+            else:
+                logger.warning(f"⚠️ 从 Seebug 获取数据失败: {response.message}")
+                logger.info(f"Seebug 响应数据类型: {type(response.data)}")
+                return []
+
+        except Exception as e:
+            logger.error(f"❌ 从 Seebug 获取数据失败: {e}")
+            logger.info(f"Seebug 响应数据: {response.data if 'response' in locals() else 'N/A'}")
             return []
-
-    except Exception as e:
-        logger.error(f"❌ 从 Seebug 获取数据失败: {e}")
-        logger.info(f"Seebug 响应数据: {response.data if 'response' in locals() else 'N/A'}")
-        return []
 
 async def fetch_exploit_db_data():
     """
@@ -510,20 +512,12 @@ async def fetch_exploit_db_data():
 
         headers = {
             "User-Agent": "WebScan-AI-Security-Platform/1.0",
-            "Accept": "application/json"
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
         }
 
         async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             response = await client.get(api_url, params=params, headers=headers)
             response.raise_for_status()
-
-            content_type = response.headers.get('content-type', '')
-
-            if 'application/json' not in content_type:
-                logger.warning(f"⚠️ Exploit-DB 返回的不是 JSON 格式")
-                logger.info(f"Exploit-DB 响应内容类型: {content_type}")
-                logger.info(f"Exploit-DB API 可能已更改或需要认证，跳过此数据源")
-                return []
 
             try:
                 data = response.json()

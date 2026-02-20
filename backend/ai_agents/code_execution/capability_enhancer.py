@@ -317,44 +317,44 @@ class CapabilityEnhancer:
         """
         初始化功能补充器(单例模式)
         """
-        if hasattr(self, "_initialized") and self._initialized:
+        if hasattr(self, '_initialized') and self._initialized:
             return
-
+            
         self._lock = threading.Lock()
         self._initialized = False
-
+        
         try:
             logger.info("🚀 开始初始化功能补充器...")
-
+            
             self.env_awareness = EnvironmentAwareness()
             self.code_generator = CodeGenerator()
             self.capabilities: Dict[str, Capability] = {}
-
+            
             # 使用绝对路径创建工作目录
             self.workspace = Path(__file__).parent / "workspace"
             self.workspace.mkdir(parents=True, exist_ok=True)
-
+            
             # 创建能力代码存储目录
             self.capabilities_dir = self.workspace / "capabilities"
             self.capabilities_dir.mkdir(parents=True, exist_ok=True)
-
+            
             # 创建持久化存储目录
             self.persistence_dir = self.workspace / "persistence"
             self.persistence_dir.mkdir(parents=True, exist_ok=True)
-
+            
             # 创建日志目录
             self.log_dir = self.workspace / "logs"
             self.log_dir.mkdir(parents=True, exist_ok=True)
-
+            
             # 线程池用于异步操作
             self.executor = ThreadPoolExecutor(max_workers=4)
-
+            
             # 加载持久化的能力
             self._load_capabilities()
-
+            
             self._initialized = True
             logger.info("✅ 功能补充器初始化完成")
-
+            
         except Exception as e:
             logger.error(f"❌ 功能补充器初始化失败: {str(e)}")
             raise
@@ -384,11 +384,11 @@ class CapabilityEnhancer:
         """
         try:
             logger.info(f"🔧 开始增强功能: {requirement}")
-
+            
             # 生成能力名称
             if not capability_name:
                 capability_name = f"custom_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-
+            
             # 检查能力是否已存在
             if capability_name in self.capabilities:
                 logger.warning(f"能力已存在: {capability_name}")
@@ -396,7 +396,7 @@ class CapabilityEnhancer:
                     "status": "failed",
                     "error": f"能力已存在: {capability_name}"
                 }
-
+            
             # 生成代码
             code_response = await self.code_generator.generate_code(
                 scan_type="custom",
@@ -404,34 +404,34 @@ class CapabilityEnhancer:
                 requirements=requirement,
                 language="python"
             )
-
+            
             # 验证代码(增强版)
             validation = self._validate_code_enhanced(
                 code_response.code,
                 code_response.language
             )
-
+            
             if not validation["valid"]:
                 logger.warning(f"代码验证失败: {validation['issues']}")
                 raise CodeValidationError(f"代码验证失败: {validation['issues']}")
-
+            
             # 检查并安装依赖(异步)
             dependencies = code_response.dependencies
             if dependencies:
                 logger.info(f"📦 检测到依赖: {dependencies}")
                 install_result = await self._install_dependencies_async(dependencies)
-
+                
                 if install_result["status"] != "success":
                     logger.warning(f"依赖安装失败: {install_result['error']}")
                     raise DependencyInstallError(f"依赖安装失败: {install_result['error']}")
-
+                
                 logger.info(f"✅ 依赖安装完成: {install_result['installed_packages']}")
-
+            
             # 保存代码
             code_file = self.capabilities_dir / f"{capability_name}.py"
             with open(code_file, "w", encoding="utf-8") as f:
                 f.write(code_response.code)
-
+            
             # 创建能力
             capability = await self._create_capability_from_code(
                 capability_name,
@@ -440,28 +440,28 @@ class CapabilityEnhancer:
                 timeout=timeout,
                 enable_cache=enable_cache
             )
-
+            
             # 验证能力
             if not capability.execute_func:
                 logger.warning(f"能力未定义执行函数: {capability_name}")
                 raise CodeValidationError(f"能力未定义执行函数: {capability_name}")
-
+            
             # 注册能力
             with self._lock:
                 self.capabilities[capability_name] = capability
-
+            
             # 持久化能力
             self._save_capability(capability)
-
+            
             logger.info(f"✅ 功能增强完成: {capability_name}")
-
+            
             return {
                 "status": "success",
                 "capability": capability.to_dict(),
                 "code_file": str(code_file),
                 "validation": validation
             }
-
+            
         except CodeValidationError as e:
             logger.error(f"代码验证失败: {str(e)}")
             return {
@@ -525,18 +525,18 @@ class CapabilityEnhancer:
         for pattern in dangerous_patterns:
             if pattern in code:
                 issues.append(f"代码包含潜在危险操作: {pattern}")
-
+        
         # 检查导入限制
         restricted_imports = [
             "import os",
             "import subprocess",
             "import sys"
         ]
-
+        
         for imp in restricted_imports:
             if imp in code:
                 issues.append(f"代码包含受限导入: {imp}")
-
+        
         return {
             "valid": len(issues) == 0,
             "issues": issues
@@ -579,10 +579,10 @@ class CapabilityEnhancer:
             # 解析输出
             output = result.stdout
             error = result.stderr
-
+            
             # 检查是否成功
             success = result.returncode == 0
-
+            
             # 提取安装的包信息
             installed_packages = []
             if success:
@@ -590,9 +590,9 @@ class CapabilityEnhancer:
                     if 'Successfully installed' in line:
                         packages_str = line.replace('Successfully installed', '').strip()
                         installed_packages = packages_str.split()
-
+            
             logger.info(f"✅ 依赖安装完成: {len(installed_packages)} 个包")
-
+            
             return {
                 "status": "success" if success else "failed",
                 "dependencies": dependencies,
@@ -601,7 +601,7 @@ class CapabilityEnhancer:
                 "error": error,
                 "return_code": result.returncode
             }
-
+            
         except subprocess.TimeoutExpired:
             logger.error(f"❌ 依赖安装超时")
             return {

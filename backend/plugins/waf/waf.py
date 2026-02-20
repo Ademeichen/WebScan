@@ -192,8 +192,8 @@ def getwaf(url: str, headers: Dict[str, str] = None, content: str = None) -> Opt
 # 恶意Payload(触发WAF的试探参数)
 DETECT_PAYLOAD = r'/?id=1%27&d=2"&y=3%27or%27select%20*%20from%20users%20limit%200,1&b=<script>alert(1)</script>&o=eval&yy=%0a%0d'
 # 请求配置
-REQUEST_TIMEOUT = 4  # 超时时间(秒)
-RETRY_TIMES = 2      # 重试次数
+REQUEST_TIMEOUT = 15  # 超时时间(秒)
+RETRY_TIMES = 3      # 重试次数
 VERIFY_SSL = False   # 是否验证SSL证书(生产环境建议True)
 # 日志配置
 logging.basicConfig(

@@ -13,7 +13,6 @@ from pydantic import BaseModel, Field
 
 from ..agent_config import agent_config
 from .environment import EnvironmentAwareness
-from ..utils import cached, measure_performance, performance_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +85,55 @@ class CodeGenerator:
             str: 模板代码
         """
         templates = {
+            "pocsuite3_poc": """
+from pocsuite3.api import Output, POCBase, register_poc, requests, logger
+from pocsuite3.lib.utils import random_str
+
+class DemoPOC(POCBase):
+    vulID = 'Generated-001'  # ssvid
+    version = '1.0'
+    author = ['AI Agent']
+    vulDate = '2024-01-01'
+    createDate = '2024-01-01'
+    updateDate = '2024-01-01'
+    references = ['https://github.com/knownsec/pocsuite3']
+    name = 'Custom POC'
+    appPowerLink = 'http://www.example.com'
+    appName = 'Unknown'
+    appVersion = 'Unknown'
+    vulType = 'Unknown'
+    desc = '''
+    Vulnerability description
+    '''
+    samples = []
+    install_requires = ['']
+
+    def _verify(self):
+        result = {}
+        target = self.url
+        
+        # Verify Logic Here
+        # Example:
+        # resp = requests.get(target)
+        # if 'vulnerable_string' in resp.text:
+        #     result['VerifyInfo'] = {}
+        #     result['VerifyInfo']['URL'] = target
+            
+        return self.parse_output(result)
+
+    def _attack(self):
+        return self._verify()
+
+    def parse_output(self, result):
+        output = Output(self)
+        if result:
+            output.success(result)
+        else:
+            output.fail('target is not vulnerable')
+        return output
+
+register_poc(DemoPOC)
+""",
             "port_scan": """
 #!/usr/bin/env python3
 import socket
@@ -95,17 +143,17 @@ from concurrent.futures import ThreadPoolExecutor
 def scan_port(target: str, port: int, timeout: int = 3):
     \"\"\"扫描单个端口\"\"\"
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
-        result = sock.connect_ex((target, port))
-        if result == 0:
-            return True
-        return False
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(timeout)
+            result = sock.connect_ex((target, port))
+            if result == 0:
+                return True
+            return False
     except:
         return False
 
 def main():
-    target = "{target}"
+    target = "__TARGET__"
     ports = [21, 22, 80, 443, 445, 3306, 3389, 8080]
     
     print(f"开始端口扫描: {target}")
@@ -124,6 +172,9 @@ def main():
 #!/usr/bin/env python3
 import requests
 import sys
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def check_vulnerability(target: str, vuln_type: str, payload: str):
     \"\"\"检查单个漏洞\"\"\"
@@ -132,45 +183,48 @@ def check_vulnerability(target: str, vuln_type: str, payload: str):
         response = requests.post(url, data=payload, timeout=10, verify=False)
         
         if response.status_code == 200:
-            return {{
+            return {
                 "vulnerable": True,
                 "status_code": response.status_code,
                 "response": response.text[:200]
-            }}
-        return {{
+            }
+        return {
             "vulnerable": False,
             "status_code": response.status_code,
             "error": str(response.status_code)
-        }}
+        }
     except Exception as e:
-        return {{
+        return {
             "vulnerable": False,
             "error": str(e)
-        }}
+        }
 
 def main():
-    target = "{target}"
+    target = "__TARGET__"
     
     print(f"开始漏洞扫描: {target}")
     
-    payloads = {{
+    payloads = {
         "sqli": "' OR '1'='1",
         "xss": "<script>alert('XSS')</script>",
         "rce": "; cat /etc/passwd"
-    }}
+    }
     
     for vuln_type, payload in payloads.items():
         result = check_vulnerability(target, vuln_type, payload)
         if result.get("vulnerable"):
-            print(f"[+] 发现漏洞: {{vuln_type}}")
+            print(f"[+] 发现漏洞: {vuln_type}")
         else:
-            print(f"[-] 未发现漏洞: {{vuln_type}}")
+            print(f"[-] 未发现漏洞: {vuln_type}")
 """,
             "dir_scan": """
 #!/usr/bin/env python3
 import requests
 import sys
 from urllib.parse import urljoin
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def scan_directory(target: str, wordlist: str = None, extensions: str = None):
     \"\"\"扫描目录\"\"\"
@@ -186,22 +240,22 @@ def scan_directory(target: str, wordlist: str = None, extensions: str = None):
         
         for word in wordlist.split(","):
             for ext in extensions.split(","):
-                test_url = urljoin(base_url, f"{{word}}{{ext}}")
+                test_url = urljoin(base_url, f"{word}{ext}")
                 
                 try:
                     response = requests.get(test_url, timeout=5, verify=False)
                     
                     if response.status_code == 200:
                         found_dirs.append(test_url)
-                        print(f"[+] 发现目录: {{test_url}}")
+                        print(f"[+] 发现目录: {test_url}")
                 except:
                     pass
         
-        print(f"目录扫描完成,发现: {{len(found_dirs)}} 个目录")
+        print(f"目录扫描完成,发现: {len(found_dirs)} 个目录")
         return found_dirs
 
 def main():
-    target = "{target}"
+    target = "__TARGET__"
     scan_directory(target)
 """,
             "subdomain_scan": """
@@ -215,7 +269,7 @@ def resolve_subdomain(domain: str):
         answers = dns.resolver.resolve(domain, 'A')
         return answers
     except Exception as e:
-        print(f"DNS解析失败: {{domain}} - {{str(e)}}")
+        print(f"DNS解析失败: {domain} - {str(e)}")
         return []
 
 def brute_subdomain(domain: str, wordlist: str = None):
@@ -226,28 +280,26 @@ def brute_subdomain(domain: str, wordlist: str = None):
     subdomains = []
     
     for word in wordlist.split(","):
-        subdomain = f"{{word}}.{{domain}}"
+        subdomain = f"{word}.{domain}"
         try:
             ip = resolve_subdomain(subdomain)
             if ip:
                 subdomains.append(subdomain)
-                print(f"[+] 发现子域名: {{subdomain}}")
+                print(f"[+] 发现子域名: {subdomain}")
         except:
             pass
     
-    print(f"子域名扫描完成,发现: {{len(subdomains)}} 个子域名")
+    print(f"子域名扫描完成,发现: {len(subdomains)} 个子域名")
     return subdomains
 
 def main():
-    domain = "{target}"
+    domain = "__TARGET__"
     brute_subdomain(domain)
 """
         }
         
         return templates.get(scan_type, templates.get("port_scan", ""))
     
-    @measure_performance(performance_monitor.metrics, "code_generation")
-    @cached(performance_monitor.cache, ttl=3600)
     async def generate_code(
         self,
         scan_type: str,
@@ -258,7 +310,7 @@ def main():
     ) -> CodeGenerationResponse:
         """
         生成扫描代码
-
+        
         Args:
             self: 代码生成器实例
             scan_type: 扫描类型
@@ -266,7 +318,7 @@ def main():
             requirements: 特殊需求
             language: 代码语言
             additional_params: 额外参数
-
+            
         Returns:
             CodeGenerationResponse: 代码生成响应
         """
@@ -397,7 +449,8 @@ def main():
             CodeGenerationResponse: 代码生成响应
         """
         template = self._get_template(scan_type)
-        code = template.replace("{target}", target)
+        # 使用 __TARGET__ 作为占位符，避免替换 f-string 中的变量
+        code = template.replace("__TARGET__", target)
         
         if requirements:
             code += f"\n# 特殊需求: {requirements}"

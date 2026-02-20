@@ -4,16 +4,7 @@ Agent 配置文件
 定义Agent相关的配置参数。
 """
 from typing import Dict, List
-import sys
-from pathlib import Path
-
-backend_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(backend_dir))
-
-try:
-    from backend.config import settings
-except ImportError:
-    from config import settings
+from backend.config import settings
 
 class AgentConfig:
     """
@@ -28,7 +19,7 @@ class AgentConfig:
     Agent最大执行时间(秒)
     
     超过此时间后Agent将被强制终止。
-    默认为300秒(5分钟)。
+    默认为18000秒(5小时)。
     """
     
     MAX_RETRIES: int = settings.AGENT_MAX_RETRIES
@@ -121,7 +112,7 @@ class AgentConfig:
     ENABLE_KB_INTEGRATION: bool = True
     """
     是否启用漏洞知识库集成
-
+    
     设置为True时,漏洞分析会自动匹配知识库中的修复建议。
     默认为True。
     """

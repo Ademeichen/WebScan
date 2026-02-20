@@ -101,7 +101,7 @@ CDN_ASN_LIST = [
 ]
 
 # GeoIP2数据库路径配置(支持相对/绝对路径)
-GEOIP2_ASN_DB_PATH = Path(__file__).parent.parent.parent / "database" / "GeoLite2-ASN.mmdb"
+GEOIP2_ASN_DB_PATH = Path(__file__).parent.parent.parent / "geoip" / "GeoLite2-ASN.mmdb"
 
 # === 缓存初始化(提升性能) ===
 # 预编译CDN网段为ip_network对象,避免每次调用重复解析
@@ -192,7 +192,7 @@ def check_ip_asn_in_cdn_list(ip: str) -> bool:
     """
     # 检查数据库文件是否存在
     if not GEOIP2_ASN_DB_PATH.exists():
-        logger.error(f"GeoIP2数据库文件不存在:{GEOIP2_ASN_DB_PATH}")
+        logger.warning(f"GeoIP2数据库文件不存在:{GEOIP2_ASN_DB_PATH}，将跳过ASN检测")
         return False
 
     try:

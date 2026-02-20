@@ -1,119 +1,100 @@
 /* WebScan AI - 全局样式 */
 :root {
-  --primary-color: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --secondary-color: #8b5cf6;
-  --secondary-light: #a78bfa;
-  --secondary-dark: #7c3aed;
-  --success-color: #10b981;
-  --success-light: #34d399;
-  --success-dark: #059669;
-  --warning-color: #f59e0b;
-  --danger-color: #ef4444;
-  --info-color: #3b82f6;
+  /* Element Plus 色彩系统 */
+  --el-color-primary: #409EFF;
+  --el-color-primary-light-3: #79bbff;
+  --el-color-primary-light-5: #a0cfff;
+  --el-color-primary-light-7: #c6e2ff;
+  --el-color-primary-light-8: #d9ecff;
+  --el-color-primary-light-9: #ecf5ff;
+  --el-color-primary-dark-2: #337ecc;
+  --el-color-success: #67C23A;
+  --el-color-success-light-3: #95d475;
+  --el-color-success-light-5: #b3e19d;
+  --el-color-success-light-7: #d1edc4;
+  --el-color-success-light-8: #e1f3d8;
+  --el-color-success-light-9: #f0f9eb;
+  --el-color-success-dark-2: #529b2e;
+  --el-color-warning: #E6A23C;
+  --el-color-warning-light-3: #ebb563;
+  --el-color-warning-light-5: #f0c78a;
+  --el-color-warning-light-7: #f3d19e;
+  --el-color-warning-light-8: #f5dab1;
+  --el-color-warning-light-9: #fdf6ec;
+  --el-color-warning-dark-2: #b88230;
+  --el-color-danger: #F56C6C;
+  --el-color-danger-light-3: #f89898;
+  --el-color-danger-light-5: #fab6b6;
+  --el-color-danger-light-7: #fde2e2;
+  --el-color-danger-light-8: #fef0f0;
+  --el-color-danger-light-9: #fef0f0;
+  --el-color-danger-dark-2: #c45656;
+  --el-color-error: #F56C6C;
+  --el-color-info: #909399;
+  --el-color-info-light-3: #b1b3b8;
+  --el-color-info-light-5: #c8c9cc;
+  --el-color-info-light-7: #dedfe0;
+  --el-color-info-light-8: #e9e9eb;
+  --el-color-info-light-9: #f4f4f5;
+  --el-color-info-dark-2: #73767a;
 
-  --critical-risk: #dc2626;
-  --critical-risk-light: #f87171;
-  --high-risk: #ef4444;
-  --high-risk-light: #fca5a5;
-  --high-risk-dark: #dc2626;
-  --medium-risk: #f59e0b;
-  --medium-risk-light: #fbbf24;
-  --medium-risk-dark: #d97706;
-  --low-risk: #3b82f6;
-  --low-risk-light: #60a5fa;
-  --low-risk-dark: #2563eb;
-  --info-risk: #6b7280;
+  /* 自定义风险等级颜色 */
+  --critical-risk: #c0392b;
+  --critical-risk-light: #e74c3c;
+  --high-risk: #e74c3c;
+  --high-risk-light: #ec7063;
+  --high-risk-dark: #c0392b;
+  --medium-risk: #f39c12;
+  --medium-risk-light: #f7b731;
+  --medium-risk-dark: #d68910;
+  --low-risk: #3498db;
+  --low-risk-light: #5dade2;
+  --low-risk-dark: #2980b9;
+  --info-risk: #95a5a6;
 
-  --background-color: #f8fafc;
-  --background-dark: #f1f5f9;
-  --card-background: #ffffff;
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --border-color: #e2e8f0;
-  --border-dark: #cbd5e1;
+  /* Element Plus 中性色系统 */
+  --el-text-color-primary: #303133;
+  --el-text-color-regular: #606266;
+  --el-text-color-secondary: #909399;
+  --el-text-color-placeholder: #a8abb2;
+  --el-border-color: #dcdfe6;
+  --el-border-color-light: #e4e7ed;
+  --el-border-color-lighter: #ebeef5;
+  --el-border-color-extra-light: #f2f6fc;
+  --el-border-color-dark: #d4d7de;
+  --el-border-color-darker: #cdd3d9;
+  --el-fill-color: #f0f2f5;
+  --el-fill-color-light: #f5f7fa;
+  --el-fill-color-lighter: #fafafa;
+  --el-fill-color-extra-light: #fafcff;
+  --el-fill-color-dark: #ebedf0;
+  --el-fill-color-darker: #e6e8eb;
+  --el-fill-color-blank: #ffffff;
+  --el-box-shadow: 0px 12px 32px 4px rgba(0, 0, 0, .04), 0px 8px 20px rgba(0, 0, 0, .08);
+  --el-box-shadow-light: 0px 0px 12px rgba(0, 0, 0, .12);
+  --el-box-shadow-lighter: 0px 0px 6px rgba(0, 0, 0, .12);
+  --el-box-shadow-dark: 0px 16px 48px 16px rgba(0, 0, 0, .08);
 
-  --color-primary: var(--primary-color);
-  --color-primary-bg: rgba(99, 102, 241, 0.1);
-  --color-primary-dark: var(--primary-dark);
-  --color-secondary: var(--secondary-color);
-  --color-secondary-bg: rgba(139, 92, 246, 0.1);
-  --color-secondary-dark: var(--secondary-dark);
-  --color-success: var(--success-color);
-  --color-success-bg: rgba(16, 185, 129, 0.1);
-  --color-success-dark: var(--success-dark);
-  --color-warning: var(--warning-color);
-  --color-warning-bg: rgba(245, 158, 11, 0.1);
-  --color-warning-dark: var(--warning-color);
-  --color-error: var(--danger-color);
-  --color-error-bg: rgba(239, 68, 68, 0.1);
-  --color-info: var(--info-color);
-  --color-info-bg: rgba(59, 130, 246, 0.1);
-  --color-info-dark: var(--info-color);
-  --color-critical: var(--critical-risk);
-  --color-critical-bg: rgba(220, 38, 38, 0.1);
-  --color-accent: #06b6d4;
-  --color-accent-bg: rgba(6, 182, 212, 0.1);
-  --color-accent-dark: #0891b2;
-  --bg-secondary: #f8fafc;
-  --card-bg: #ffffff;
-
-  --el-color-primary: var(--primary-color);
-  --el-color-primary-light-3: var(--primary-light);
-  --el-color-primary-light-5: #c7d2fe;
-  --el-color-primary-light-7: #e0e7ff;
-  --el-color-primary-light-8: #eef2ff;
-  --el-color-primary-light-9: #f5f7ff;
-  --el-color-primary-dark-2: var(--primary-dark);
-  --el-color-success: var(--success-color);
-  --el-color-success-light-3: var(--success-light);
-  --el-color-success-light-5: #6ee7b7;
-  --el-color-success-light-7: #a7f3d0;
-  --el-color-success-light-8: #d1fae5;
-  --el-color-success-light-9: #ecfdf5;
-  --el-color-success-dark-2: var(--success-dark);
-  --el-color-warning: var(--warning-color);
-  --el-color-warning-light-3: #fcd34d;
-  --el-color-warning-light-5: #fde68a;
-  --el-color-warning-light-7: #fef3c7;
-  --el-color-warning-light-8: #fef9c3;
-  --el-color-warning-light-9: #fffbeb;
-  --el-color-warning-dark-2: var(--warning-color);
-  --el-color-danger: var(--danger-color);
-  --el-color-danger-light-3: #fca5a5;
-  --el-color-danger-light-5: #fca5a5;
-  --el-color-danger-light-7: #fee2e2;
-  --el-color-danger-light-8: #fef2f2;
-  --el-color-danger-light-9: #fef2f2;
-  --el-color-danger-dark-2: var(--high-risk-dark);
-  --el-color-error: var(--danger-color);
-  --el-color-info: var(--info-color);
-  --el-color-info-light-3: var(--low-risk-light);
-  --el-color-info-light-5: #93c5fd;
-  --el-color-info-light-7: #bfdbfe;
-  --el-color-info-light-8: #dbeafe;
-  --el-color-info-light-9: #eff6ff;
-  --el-color-info-dark-2: var(--low-risk-dark);
-
-  --el-text-color-primary: var(--text-primary);
-  --el-text-color-regular: var(--text-secondary);
-  --el-text-color-secondary: var(--text-muted);
-  --el-text-color-placeholder: #cbd5e1;
-  --el-border-color: var(--border-color);
-  --el-border-color-light: #f1f5f9;
-  --el-border-color-lighter: #f8fafc;
-  --el-border-color-extra-light: #f8fafc;
-  --el-border-color-dark: var(--border-dark);
-  --el-border-color-darker: #94a3b8;
-  --el-fill-color: var(--background-color);
-  --el-fill-color-light: var(--background-dark);
-  --el-fill-color-lighter: #f8fafc;
-  --el-fill-color-extra-light: #fafafa;
-  --el-fill-color-dark: #e2e8f0;
-  --el-fill-color-darker: #cbd5e1;
-  --el-fill-color-blank: var(--card-background);
+  /* 兼容旧变量名 */
+  --primary-color: var(--el-color-primary);
+  --primary-light: var(--el-color-primary-light-5);
+  --primary-dark: var(--el-color-primary-dark-2);
+  --secondary-color: var(--el-color-primary);
+  --secondary-light: var(--el-color-primary-light-3);
+  --secondary-dark: var(--el-color-primary-dark-2);
+  --success-color: var(--el-color-success);
+  --success-light: var(--el-color-success-light-5);
+  --success-dark: var(--el-color-success-dark-2);
+  --warning-color: var(--el-color-warning);
+  --danger-color: var(--el-color-danger);
+  --background-color: var(--el-fill-color-light);
+  --background-dark: var(--el-fill-color);
+  --card-background: var(--el-fill-color-blank);
+  --text-primary: var(--el-text-color-primary);
+  --text-secondary: var(--el-text-color-regular);
+  --text-muted: var(--el-text-color-secondary);
+  --border-color: var(--el-border-color);
+  --border-dark: var(--el-border-color-dark);
 
   /* 字体系统 */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -279,15 +260,15 @@ h3 {
 
 .btn-primary {
   background-color: var(--primary-color);
-  color: #ffffff;
-  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(26, 58, 108, 0.3);
   border: 1px solid var(--primary-dark);
 }
 
 .btn-primary:hover:not(:disabled) {
   background-color: var(--primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 8px rgba(26, 58, 108, 0.4);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -297,15 +278,15 @@ h3 {
 
 .btn-secondary {
   background-color: var(--secondary-color);
-  color: #ffffff;
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3);
   border: 1px solid var(--secondary-dark);
 }
 
 .btn-secondary:hover:not(:disabled) {
   background-color: var(--secondary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
 }
 
 .btn-secondary:active:not(:disabled) {
@@ -315,15 +296,15 @@ h3 {
 
 .btn-success {
   background-color: var(--success-color);
-  color: #ffffff;
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(46, 204, 113, 0.3);
   border: 1px solid var(--success-dark);
 }
 
 .btn-success:hover:not(:disabled) {
   background-color: var(--success-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 8px rgba(46, 204, 113, 0.4);
 }
 
 .btn-success:active:not(:disabled) {
@@ -333,15 +314,15 @@ h3 {
 
 .btn-danger {
   background-color: var(--danger-color);
-  color: #ffffff;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
   border: 1px solid var(--high-risk-dark);
 }
 
 .btn-danger:hover:not(:disabled) {
   background-color: var(--high-risk-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
 }
 
 .btn-danger:active:not(:disabled) {
@@ -351,15 +332,15 @@ h3 {
 
 .btn-warning {
   background-color: var(--warning-color);
-  color: #ffffff;
-  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+  color: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(243, 156, 18, 0.3);
   border: 1px solid var(--medium-risk-dark);
 }
 
 .btn-warning:hover:not(:disabled) {
   background-color: var(--medium-risk-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 4px 8px rgba(243, 156, 18, 0.4);
 }
 
 .btn-warning:active:not(:disabled) {

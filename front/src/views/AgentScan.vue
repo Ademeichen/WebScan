@@ -24,7 +24,7 @@
             @click="handleViewTask(task.task_id)"
           >
             <div class="task-header">
-              <span class="task-id">{{ task.task_id.substring(0, 8) }}...</span>
+              <span class="task-id">{{ String(task.task_id).substring(0, 8) }}...</span>
               <span class="task-status" :class="`status-${task.status}`">
                 {{ getStatusText(task.status) }}
               </span>
@@ -33,11 +33,19 @@
               <span class="task-target">{{ task.target }}</span>
               <span class="task-time">{{ formatDate(task.created_at) }}</span>
             </div>
-            <div v-if="task.status === 'running'" class="task-progress">
+            <div v-if="task.status === 'running' || task.status === 'queued'" class="task-progress">
               <div class="progress-bar">
                 <div class="progress-fill" :style="{ width: `${task.progress || 0}%` }"></div>
               </div>
               <span class="progress-text">{{ task.progress || 0 }}%</span>
+            </div>
+            <!-- Stage Summary Mini-view -->
+            <div v-if="task.stages" class="stage-mini-summary">
+               <span v-for="(stageData, stageName) in task.stages" :key="stageName" 
+                     class="stage-dot" 
+                     :class="stageData.status"
+                     :title="`${stageName}: ${stageData.status}`">
+               </span>
             </div>
           </div>
         </div>
@@ -75,6 +83,23 @@
               <div class="detail-item">
                 <span class="detail-label">完成时间:</span>
                 <span class="detail-value">{{ formatDate(selectedTask.completed_at) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage Progress Section -->
+          <div class="detail-section" v-if="selectedTask.stages">
+            <h3>执行阶段</h3>
+            <div class="stages-container">
+              <div v-for="(stageData, stageName) in selectedTask.stages" :key="stageName" class="stage-item" :class="stageData.status">
+                <div class="stage-header">
+                  <span class="stage-name">{{ formatStageName(stageName) }}</span>
+                  <span class="stage-status-text">{{ getStatusText(stageData.status) }}</span>
+                </div>
+                <div class="stage-details" v-if="stageData.sub_status || stageData.log">
+                   <div v-if="stageData.sub_status" class="sub-status">当前步骤: {{ stageData.sub_status }}</div>
+                   <div v-if="stageData.log" class="stage-log">{{ stageData.log }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -122,6 +147,7 @@ import { aiAgentsApi } from '@/utils/aiAgents'
 import AgentScanForm from '@/components/business/AgentScanForm.vue'
 import Alert from '@/components/common/Alert.vue'
 import { formatDate } from '@/utils/date'
+import { useWebSocket } from '@/utils/websocket'
 
 export default {
   name: 'AgentScan',
@@ -134,20 +160,35 @@ export default {
     const successMessage = ref('')
     const recentTasks = ref([])
     const selectedTask = ref(null)
-    let refreshInterval = null
+
+    // Use WebSocket composable
+    // Use hardcoded URL for now, or get from environment/config if available
+    // Assuming backend runs on localhost:3000 based on config.py
+    const { connect, on, disconnect } = useWebSocket('ws://localhost:3000/api/ws')
 
     const loadRecentTasks = async () => {
       try {
         const response = await aiAgentsApi.getTasks({ page: 1, page_size: 10 })
+        let tasks = []
         if (response && response.data && response.data.tasks) {
-          recentTasks.value = response.data.tasks
+          tasks = response.data.tasks
         } else if (response && response.tasks) {
-          recentTasks.value = response.tasks
+          tasks = response.tasks
         } else if (response && Array.isArray(response)) {
-          recentTasks.value = response
-        } else {
-          recentTasks.value = []
+          tasks = response
         }
+        
+        // Initialize stages for existing tasks if not present
+        recentTasks.value = tasks.map(task => ({
+          ...task,
+          task_id: String(task.task_id || task.id),
+          stages: task.stages || {
+            openai: { status: 'pending' },
+            plugins: { status: 'pending' },
+            awvs: { status: 'pending' },
+            pocsuite3: { status: 'pending' }
+          }
+        }))
       } catch (error) {
         console.error('加载最近任务失败:', error)
         if (error.response && error.response.status === 500) {
@@ -165,7 +206,7 @@ export default {
 
     const handleSuccess = () => {
       successMessage.value = 'AI Agent扫描任务创建成功'
-      loadRecentTasks()
+      // loadRecentTasks() // WebSocket will handle updates
     }
 
     const handleError = (error) => {
@@ -182,6 +223,7 @@ export default {
     const getStatusText = (status) => {
       const statusMap = {
         pending: '等待中',
+        queued: '队列中',
         running: '运行中',
         completed: '已完成',
         failed: '失败',
@@ -190,44 +232,136 @@ export default {
       return statusMap[status] || status
     }
 
-    const refreshRunningTasks = async () => {
-      const runningTasks = (recentTasks.value || []).filter(t => t.status === 'running')
-      if (runningTasks.length > 0) {
-        for (const task of runningTasks) {
-          try {
-            const response = await aiAgentsApi.getTask(task.task_id)
-            let taskData = null
-            if (response && response.data) {
-              taskData = response.data
-            } else if (response && response.task_id) {
-              taskData = response
-            }
-            
-            if (taskData && taskData.status) {
-              const index = recentTasks.value.findIndex(t => t.task_id === task.task_id)
-              if (index !== -1) {
-                recentTasks.value[index] = {
-                  ...recentTasks.value[index],
-                  ...taskData
-                }
-              }
-            }
-          } catch (error) {
-            console.error('刷新任务状态失败:', error)
+    const formatStageName = (name) => {
+      const map = {
+        openai: 'AI分析规划',
+        plugins: '插件执行',
+        awvs: '漏洞扫描',
+        pocsuite3: 'POC验证'
+      }
+      return map[name] || name
+    }
+
+    // WebSocket Handlers
+    const updateTaskStatus = (taskId, payload) => {
+      taskId = String(taskId)
+      const taskIndex = recentTasks.value.findIndex(t => t.task_id === taskId)
+      if (taskIndex !== -1) {
+        recentTasks.value[taskIndex] = { ...recentTasks.value[taskIndex], ...payload }
+        if (selectedTask.value && selectedTask.value.task_id === taskId) {
+           selectedTask.value = { ...selectedTask.value, ...payload }
+        }
+      } else if (payload.status === 'queued') {
+        // New task
+        const newTask = {
+          task_id: taskId,
+          target: payload.target || 'Unknown', // Ideally payload has target
+          status: 'queued',
+          created_at: new Date().toISOString(),
+          progress: 0,
+          stages: {
+            openai: { status: 'pending' },
+            plugins: { status: 'pending' },
+            awvs: { status: 'pending' },
+            pocsuite3: { status: 'pending' }
           }
+        }
+        recentTasks.value.unshift(newTask)
+      }
+    }
+
+    const updateTaskProgress = (taskId, progress) => {
+      taskId = String(taskId)
+      const task = recentTasks.value.find(t => t.task_id === taskId)
+      if (task) {
+        task.progress = progress
+      }
+    }
+
+    const updateTaskCompleted = (taskId, payload) => {
+      taskId = String(taskId)
+      const taskIndex = recentTasks.value.findIndex(t => t.task_id === taskId)
+      if (taskIndex !== -1) {
+        const result = payload.result || {}
+        const stages = result.stages || recentTasks.value[taskIndex].stages
+        
+        const updatedTask = {
+            ...recentTasks.value[taskIndex],
+            status: 'completed',
+            progress: 100,
+            result: result,
+            stages: stages,
+            completed_at: payload.completed_at
+        }
+        recentTasks.value[taskIndex] = updatedTask
+        if (selectedTask.value && selectedTask.value.task_id === taskId) {
+            selectedTask.value = updatedTask
+        }
+      }
+    }
+    
+    const updateTaskFailed = (taskId, error) => {
+      taskId = String(taskId)
+      const taskIndex = recentTasks.value.findIndex(t => t.task_id === taskId)
+      if (taskIndex !== -1) {
+        const updatedTask = {
+             ...recentTasks.value[taskIndex],
+             status: 'failed',
+             error_message: error
+        }
+        recentTasks.value[taskIndex] = updatedTask
+        if (selectedTask.value && selectedTask.value.task_id === taskId) {
+            selectedTask.value = updatedTask
+        }
+      }
+    }
+
+    const updateTaskStage = (taskId, stage, data) => {
+      taskId = String(taskId)
+      const task = recentTasks.value.find(t => t.task_id === taskId)
+      if (task) {
+        if (!task.stages) task.stages = {}
+        task.stages[stage] = { ...task.stages[stage], ...data }
+        
+        // Update selectedTask if it matches
+        if (selectedTask.value && selectedTask.value.task_id === taskId) {
+           if (!selectedTask.value.stages) selectedTask.value.stages = {}
+           selectedTask.value.stages[stage] = { ...selectedTask.value.stages[stage], ...data }
+           // Force reactivity update if needed (Vue 3 ref should handle deep changes, but sometimes replacing the object is safer)
+           selectedTask.value = { ...selectedTask.value }
         }
       }
     }
 
     onMounted(() => {
       loadRecentTasks()
-      refreshInterval = setInterval(refreshRunningTasks, 5000)
-    })
+      
+      // Connect WebSocket
+      connect()
+      
+      on('task:update', (payload) => {
+        updateTaskStatus(payload.task_id || payload.payload.task_id, payload.payload || payload)
+      })
+      
+      on('task:progress', (payload) => {
+        updateTaskProgress(payload.payload.task_id, payload.payload.progress)
+      })
+      
+      on('task:completed', (payload) => {
+        updateTaskCompleted(payload.payload.task_id, payload.payload)
+      })
+      
+      on('task:failed', (payload) => {
+        updateTaskFailed(payload.payload.task_id, payload.payload.error)
+      })
 
+      on('stage:update', (payload) => {
+         updateTaskStage(payload.task_id, payload.stage, payload.data)
+      })
+    })
+    
     onUnmounted(() => {
-      if (refreshInterval) {
-        clearInterval(refreshInterval)
-      }
+      disconnect()
     })
 
     return {
@@ -240,7 +374,8 @@ export default {
       handleError,
       handleViewTask,
       getStatusText,
-      formatDate
+      formatDate,
+      formatStageName
     }
   }
 }
@@ -249,6 +384,25 @@ export default {
 <style scoped>
 .agent-scan {
   padding: var(--spacing-xl);
+
+  /* Fix: Map missing CSS variables to global styles */
+  --card-bg: var(--card-background);
+  --bg-secondary: var(--el-fill-color-light);
+  --bg-primary: var(--el-fill-color);
+  
+  --color-primary: var(--el-color-primary);
+  --color-success: var(--el-color-success);
+  --color-warning: var(--el-color-warning);
+  --color-error: var(--el-color-danger);
+  --color-info: var(--el-color-info);
+  
+  --color-primary-bg: var(--el-color-primary-light-9);
+  --color-success-bg: var(--el-color-success-light-9);
+  --color-warning-bg: var(--el-color-warning-light-9);
+  --color-error-bg: var(--el-color-danger-light-9);
+  --color-info-bg: var(--el-color-info-light-9);
+
+  --color-accent: #9b59b6;
 }
 
 .page-header {
@@ -340,6 +494,12 @@ export default {
   color: var(--color-warning);
 }
 
+.status-queued {
+    background-color: var(--color-info-bg);
+    color: var(--color-info);
+    opacity: 0.8;
+}
+
 .status-running {
   background-color: var(--color-info-bg);
   color: var(--color-info);
@@ -401,6 +561,27 @@ export default {
   font-size: 0.75rem;
   color: var(--text-secondary);
   text-align: right;
+}
+
+.stage-mini-summary {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+.stage-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--border-color);
+}
+.stage-dot.running { background-color: var(--color-info); animation: pulse 1.5s infinite; }
+.stage-dot.completed { background-color: var(--color-success); }
+.stage-dot.failed { background-color: var(--color-error); }
+
+@keyframes pulse {
+    0% { opacity: 0.5; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0.5; transform: scale(0.9); }
 }
 
 .task-detail-modal {
@@ -494,6 +675,44 @@ export default {
   font-size: 1rem;
   color: var(--text-primary);
   word-break: break-all;
+}
+
+/* Stage Styles */
+.stages-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.stage-item {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+    background: var(--bg-secondary);
+}
+.stage-item.running { border-left: 4px solid var(--color-info); }
+.stage-item.completed { border-left: 4px solid var(--color-success); }
+.stage-item.failed { border-left: 4px solid var(--color-error); }
+
+.stage-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.sub-status {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+.stage-log {
+    margin-top: 8px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    background: var(--bg-primary);
+    padding: 8px;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    max-height: 100px;
+    overflow-y: auto;
 }
 
 .result-content {

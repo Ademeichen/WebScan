@@ -236,8 +236,8 @@ class VerificationEngine:
             logger.info(f"[{config.poc_id}] 🔄 尝试执行 POC (第 {attempt + 1} 次)")
             
             try:
-                # 使用 Pocsuite3 执行 POC
-                result = await self.pocsuite3_agent.execute_poc(
+                # 使用 Pocsuite3 执行 POC (自定义代码模式)
+                result = await self.pocsuite3_agent.execute_custom_poc(
                     poc_code=config.poc_code,
                     target=config.target
                 )

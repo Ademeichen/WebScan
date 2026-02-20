@@ -37,7 +37,10 @@
             :label="profile.label"
             :value="profile.value"
           >
-            <el-icon><Setting /></el-icon>
+            <div style="display: flex; align-items: center">
+              <el-icon style="margin-right: 8px"><Setting /></el-icon>
+              <span>{{ profile.label }}</span>
+            </div>
           </el-option>
         </el-select>
       </el-form-item>
@@ -76,12 +79,13 @@
 import { ref, onMounted } from 'vue'
 import { awvsApi } from '@/utils/api'
 import { ElMessage } from 'element-plus'
-import { Setting } from '@element-plus/icons-vue'
+import { Setting, Link, RefreshLeft, Position } from '@element-plus/icons-vue'
 
 export default {
   name: 'AWVSScanForm',
   components: {
-    Setting
+    Setting,
+    Link
   },
   emits: ['submit', 'success', 'error'],
   setup(props, { emit }) {
@@ -172,7 +176,9 @@ export default {
       isSubmitting,
       errorMessage,
       handleSubmit,
-      handleReset
+      handleReset,
+      RefreshLeft,
+      Position
     }
   }
 }

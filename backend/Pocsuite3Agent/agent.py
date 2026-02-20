@@ -97,8 +97,8 @@ class Pocsuite3Agent:
             import pocsuite3
             logger.info("Pocsuite3 已安装")
             return True
-        except ImportError:
-            logger.warning("Pocsuite3 未安装,部分功能将不可用")
+        except (ImportError, OSError):
+            logger.warning("Pocsuite3 未安装或安装损坏,部分功能将不可用")
             return False
     
     def _load_pocs(self):
@@ -129,7 +129,7 @@ class Pocsuite3Agent:
             
         except Exception as e:
             logger.error(f"加载 POC 脚本失败: {e}")
-    
+
     async def execute_poc(self, poc_name: str, target: str, verify: bool = True) -> POCResult:
         """
         执行单个 POC

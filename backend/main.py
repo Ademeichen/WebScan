@@ -89,6 +89,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"执行 AWVS 连接测试时发生错误: {str(e)}")
 
+    # 启动后台任务执行器
+    try:
+        from backend.task_executor import task_executor
+        task_executor.start_worker()
+        logger.info("任务执行器 Worker 已启动")
+    except Exception as e:
+        logger.error(f"启动任务执行器失败: {str(e)}")
+
     yield
     
     # 关闭时执行

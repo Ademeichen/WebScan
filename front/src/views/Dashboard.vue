@@ -90,6 +90,45 @@
         </el-col>
       </el-row>
 
+      <!-- Frozen Tasks Panel -->
+      <el-card v-if="frozenTasks.length > 0" shadow="hover" class="frozen-tasks-section">
+        <template #header>
+          <div class="card-header danger-header">
+            <div class="header-title">
+              <h3>⚠️ 冻结任务监控</h3>
+              <el-tag type="danger" size="small">{{ frozenTasks.length }} 个异常</el-tag>
+            </div>
+            <span class="header-desc">以下任务运行时间已超过预设阈值的 80%，可能已卡死</span>
+          </div>
+        </template>
+        <el-table :data="frozenTasks" style="width: 100%" size="small">
+          <el-table-column prop="task_name" label="任务名称" />
+          <el-table-column prop="task_type" label="类型" width="120" />
+          <el-table-column prop="duration" label="运行时长" width="120">
+             <template #default="{row}">
+               <span class="danger-text">{{ row.duration }} min</span>
+             </template>
+          </el-table-column>
+          <el-table-column prop="threshold" label="阈值" width="100">
+             <template #default="{row}">
+               {{ row.threshold }} min
+             </template>
+          </el-table-column>
+          <el-table-column prop="progress" label="进度" width="180">
+            <template #default="{row}">
+              <el-progress :percentage="row.progress" status="exception" />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120">
+            <template #default="{row}">
+              <el-button type="danger" size="small" @click="handleAbortTask(row.id)">
+                强制中止
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+
       <el-card shadow="hover" class="recent-tasks-section">
         <template #header>
           <div class="section-header">
@@ -183,6 +222,7 @@ export default {
     const errorMessage = ref('')
     const statistics = ref({})
     const recentTasks = ref([])
+    const frozenTasks = ref([])
     const systemInfo = ref(null)
     const trendChart = ref(null)
     const distributionChart = ref(null)
@@ -207,6 +247,17 @@ export default {
         }
       } catch (error) {
         console.error('加载最近任务失败:', error)
+      }
+    }
+
+    const loadFrozenTasks = async () => {
+      try {
+        const response = await tasksApi.getFrozenTasks()
+        if (response.code === 200) {
+          frozenTasks.value = response.data || []
+        }
+      } catch (error) {
+        console.error('加载冻结任务失败:', error)
       }
     }
 
@@ -238,6 +289,14 @@ export default {
               labels: statistics.value.trend_data.map(d => d.date),
               datasets: [
                 {
+                  label: '严重',
+                  data: statistics.value.trend_data.map(d => d.critical),
+                  borderColor: '#c0392b',
+                  backgroundColor: 'rgba(192, 57, 43, 0.1)',
+                  fill: true,
+                  tension: 0.4
+                },
+                {
                   label: '高危',
                   data: statistics.value.trend_data.map(d => d.high),
                   borderColor: '#e74c3c',
@@ -258,6 +317,14 @@ export default {
                   data: statistics.value.trend_data.map(d => d.low),
                   borderColor: '#3498db',
                   backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                  fill: true,
+                  tension: 0.4
+                },
+                {
+                  label: '信息',
+                  data: statistics.value.trend_data.map(d => d.info),
+                  borderColor: '#95a5a6',
+                  backgroundColor: 'rgba(149, 165, 166, 0.1)',
                   fill: true,
                   tension: 0.4
                 }
@@ -350,20 +417,38 @@ export default {
       }
     }
 
+    const handleAbortTask = async (taskId) => {
+      try {
+        await ElMessageBox.confirm('确定要强制中止该任务吗？', '警告', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await tasksApi.cancelTask(taskId)
+        ElMessage.success('中止指令已发送')
+        await loadFrozenTasks()
+      } catch (e) {
+        if (e !== 'cancel') {
+          ElMessage.error('操作失败: ' + (e.message || '未知错误'))
+        }
+      }
+    }
+
     const loadData = async () => {
       loading.value = true
       try {
         await Promise.all([
           loadStatistics(),
           loadRecentTasks(),
-          loadSystemInfo()
+          loadSystemInfo(),
+          loadFrozenTasks()
         ])
-        await nextTick()
-        initCharts()
       } catch {
         errorMessage.value = '加载数据失败'
       } finally {
         loading.value = false
+        await nextTick()
+        initCharts()
       }
     }
 
@@ -387,6 +472,7 @@ export default {
       errorMessage,
       statistics,
       recentTasks,
+      frozenTasks,
       systemInfo,
       trendChart,
       distributionChart,
@@ -394,6 +480,7 @@ export default {
       handleViewTask,
       handleGenerateReport,
       handleDeleteTask,
+      handleAbortTask,
       loadSystemInfo
     }
   }

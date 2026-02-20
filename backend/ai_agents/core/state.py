@@ -6,6 +6,51 @@ Agent 状态管理
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
+import asyncio
+import logging
+import json
+from backend.utils.serializers import sanitize_json_data
+
+logger = logging.getLogger(__name__)
+
+
+async def persist_task_state(task_id: str, stage_status: Dict, progress: int):
+    """Persist task state to database"""
+    try:
+        from backend.models import Task
+        
+        try:
+            tid = int(task_id)
+        except ValueError:
+            return
+            
+        task = await Task.get(id=tid)
+        task.progress = progress
+        
+        try:
+            current_result = json.loads(task.result) if task.result else {}
+        except:
+            current_result = {}
+            
+        current_result['stages'] = stage_status
+
+        # Ensure default fields exist to prevent frontend errors
+        if 'scan_summary' not in current_result:
+            current_result['scan_summary'] = {}
+        if 'vulnerabilities' not in current_result:
+            current_result['vulnerabilities'] = []
+        if 'report' not in current_result:
+            current_result['report'] = ""
+        if 'execution_history' not in current_result:
+            current_result['execution_history'] = []
+
+        # Ensure json serialization handles common types if needed, or assume clean data
+        current_result = sanitize_json_data(current_result)
+        task.result = json.dumps(current_result, default=str)
+        
+        await task.save()
+    except Exception as e:
+        logger.error(f"Failed to persist task state for {task_id}: {e}")
 
 
 @dataclass
@@ -161,6 +206,13 @@ class AgentState:
     记录当前任务的重试次数。
     """
     
+    enhancement_retry_count: int = 0
+    """
+    功能增强重试次数
+    
+    记录功能增强的重试次数,防止无限循环。
+    """
+    
     # = 控制开关 =
     is_complete: bool = False
     """
@@ -255,6 +307,79 @@ class AgentState:
     - source: 来源(seebug_agent)
     """
     
+    # = Stage Tracking =
+    stage_status: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {
+        "openai": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "plugins": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "awvs": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "pocsuite3": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None}
+    })
+    """
+    Stage Tracking
+    
+    Track the progress of 4 stages: openai, plugins, awvs, pocsuite3.
+    """
+    
+    def update_stage_status(self, stage: str, status: str = None, sub_status: str = None, progress: int = None, log: str = None):
+        """
+        Update stage status and broadcast via WebSocket
+        """
+        # Import here to avoid circular dependency
+        from backend.api.websocket import manager
+
+        if stage in self.stage_status:
+            if status:
+                self.stage_status[stage]["status"] = status
+            if sub_status:
+                self.stage_status[stage]["sub_status"] = sub_status
+            if progress is not None:
+                self.stage_status[stage]["progress"] = progress
+            if log:
+                entry = {
+                    "timestamp": datetime.now().isoformat(),
+                    "message": log,
+                    "sub_status": sub_status or self.stage_status[stage]["sub_status"]
+                }
+                self.stage_status[stage]["logs"].append(entry)
+            
+            # 广播阶段更新
+            try:
+                # 只有在事件循环中才能执行async操作
+                try:
+                    loop = asyncio.get_running_loop()
+                    if loop.is_running():
+                        asyncio.create_task(manager.broadcast({
+                            "type": "stage_update",
+                            "payload": {
+                                "task_id": self.task_id,
+                                "stage": stage,
+                                "data": self.stage_status[stage]
+                            }
+                        }))
+                        
+                        # 持久化到数据库
+                        asyncio.create_task(persist_task_state(
+                            self.task_id, 
+                            self.stage_status, 
+                            self.get_progress()
+                        ))
+                except RuntimeError:
+                    # 如果没有运行的事件循环，则忽略（通常在同步测试中）
+                    pass
+            except Exception as e:
+                logger.error(f"Failed to broadcast stage update: {e}")
+
+    def get_progress(self) -> int:
+        """
+        Get total progress
+        """
+        total = 0
+        count = 0
+        for stage in self.stage_status.values():
+            total += stage["progress"]
+            count += 1
+        return int(total / count) if count > 0 else 0
+
     def add_execution_step(
         self,
         task: str,
@@ -450,6 +575,18 @@ class AgentState:
         重置重试次数
         """
         self.retry_count = 0
+    
+    def increment_enhancement_retry(self):
+        """
+        增加功能增强重试次数
+        """
+        self.enhancement_retry_count += 1
+        
+    def reset_enhancement_retry(self):
+        """
+        重置功能增强重试次数
+        """
+        self.enhancement_retry_count = 0
     
     def mark_complete(self):
         """

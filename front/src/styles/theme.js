@@ -1,22 +1,22 @@
 export const lightTheme = {
   name: 'light',
   colors: {
-    primary: '#6366f1',
-    success: '#10b981',
-    warning: '#f59e0b',
-    danger: '#ef4444',
-    info: '#3b82f6'
+    primary: '#409EFF',
+    success: '#67C23A',
+    warning: '#E6A23C',
+    danger: '#F56C6C',
+    info: '#909399'
   }
 }
 
 export const darkTheme = {
   name: 'dark',
   colors: {
-    primary: '#818cf8',
-    success: '#34d399',
-    warning: '#fbbf24',
-    danger: '#f87171',
-    info: '#60a5fa'
+    primary: '#409EFF',
+    success: '#67C23A',
+    warning: '#E6A23C',
+    danger: '#F56C6C',
+    info: '#909399'
   }
 }
 

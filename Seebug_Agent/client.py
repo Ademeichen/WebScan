@@ -9,6 +9,12 @@ import re
 from typing import Optional, Dict, Any, List
 from config import Config
 
+try:
+    from bs4 import BeautifulSoup
+    BS4_AVAILABLE = True
+except ImportError:
+    BS4_AVAILABLE = False
+
 
 class SeebugClient:
     """
@@ -84,18 +90,25 @@ class SeebugClient:
             self.is_valid = False
             return {"status": "error", "msg": "Key invalid or network error"}
 
-    def _search_poc_web(self, keyword: str) -> Dict[str, Any]:
+    def _search_poc_web(self, keyword: str, page: int = 1) -> Dict[str, Any]:
         """
         网页爬取模式搜索POC
         
         Args:
             keyword: 搜索关键词
+            page: 页码 (默认为1)
             
         Returns:
             搜索结果
         """
         web_search_url = "https://www.seebug.org/search/"
-        params = {"keywords": keyword}
+        # 如果关键词为空，使用漏洞列表页（支持分页）
+        if not keyword:
+            web_search_url = "https://www.seebug.org/vuldb/vulnerabilities"
+            
+        params = {"keywords": keyword, "page": page}
+        if not keyword:
+            params = {"page": page}
         
         try:
             response = requests.get(
@@ -106,21 +119,74 @@ class SeebugClient:
             )
             if response.status_code == 200:
                 html = response.text
-                pattern = re.compile(
-                    r'href="/vuldb/ssvid-(\d+)">SSV-\d+</a>.*?class="vul-title"\s+title="(.*?)"',
-                    re.DOTALL
-                )
-                matches = pattern.findall(html)
-                
                 results = []
-                for ssvid, title in matches:
-                    results.append({
-                        "id": ssvid,
-                        "ssvid": ssvid,
-                        "name": title.strip(),
-                        "vul_name": title.strip(),
-                        "type": "Web Vulnerability"
-                    })
+                
+                if BS4_AVAILABLE:
+                    soup = BeautifulSoup(html, 'html.parser')
+                    # Find all links that match SSVID pattern AND have class 'vul-title'
+                    # This ensures we get the link with the real title, not the SSV-ID link
+                    links = soup.find_all('a', href=re.compile(r'/vuldb/ssvid-\d+'), class_='vul-title')
+                    seen_ssvids = set()
+                    
+                    for link in links:
+                        href = link.get('href')
+                        match = re.search(r'ssvid-(\d+)', href)
+                        if not match:
+                            continue
+                            
+                        ssvid = match.group(1)
+                        if ssvid in seen_ssvids:
+                            continue
+                        seen_ssvids.add(ssvid)
+                        
+                        title = link.get('title') or link.text.strip()
+                        if not title:
+                            continue
+                            
+                        # Try to extract level/date if they are in parent/siblings
+                        # Usually Seebug list has structure: <tr><td><a ...>SSV-ID</a></td><td>Date</td><td>Level</td>...<td>Title</td></tr>
+                        # Since we are now at Title (4th column usually), we need to look back or find parent row
+                        level = "Unknown"
+                        submit_time = ""
+                        
+                        try:
+                            row = link.find_parent('tr')
+                            if row:
+                                cols = row.find_all('td')
+                                # Structure: [SSV-ID, Date, Level, Title, CVE/POC]
+                                if len(cols) >= 3:
+                                    # Date is usually 2nd column (index 1)
+                                    submit_time = cols[1].text.strip()
+                                    # Level is usually 3rd column (index 2)
+                                    level = cols[2].text.strip()
+                        except:
+                            pass
+
+                        results.append({
+                            "id": ssvid,
+                            "ssvid": ssvid,
+                            "name": title,
+                            "vul_name": title,
+                            "submit_time": submit_time,
+                            "level": level,
+                            "type": "Web Vulnerability"
+                        })
+                else:
+                    # Fallback to regex if BS4 not available
+                    pattern = re.compile(
+                        r'href="/vuldb/ssvid-(\d+)">SSV-\d+</a>.*?class="vul-title"\s+title="(.*?)"',
+                        re.DOTALL
+                    )
+                    matches = pattern.findall(html)
+                    
+                    for ssvid, title in matches:
+                        results.append({
+                            "id": ssvid,
+                            "ssvid": ssvid,
+                            "name": title.strip(),
+                            "vul_name": title.strip(),
+                            "type": "Web Vulnerability"
+                        })
                 
                 if results:
                     return {
@@ -156,20 +222,107 @@ class SeebugClient:
             )
             if response.status_code == 200:
                 html = response.text
-                title_match = re.search(r'<title>(.*?) - Seebug 漏洞平台</title>', html)
-                title = title_match.group(1) if title_match else f"SSVID-{ssvid_str}"
                 
-                return {
-                    "status": "success",
-                    "data": {
+                if BS4_AVAILABLE:
+                    soup = BeautifulSoup(html, 'html.parser')
+                    
+                    # Extract Title
+                    title_tag = soup.find('h1', class_='vul-title')
+                    if title_tag:
+                        # Remove any child tags like small (SSV-ID)
+                        for child in title_tag.find_all('small'):
+                            child.decompose()
+                        title = title_tag.text.strip()
+                    else:
+                        title_match = re.search(r'<title>(.*?) - Seebug 漏洞平台</title>', html)
+                        title = title_match.group(1) if title_match else f"SSVID-{ssvid_str}"
+
+                    data = {
                         "name": title,
                         "vul_name": title,
-                        "description": f"Details for {title} (SSVID-{ssvid_str}).",
                         "ssvid": ssvid_str,
                         "type": "Web Vulnerability",
-                        "component": "Unknown"
+                        "component": "Unknown",
+                        "description": "",
+                        "solution": "",
+                        "cve_id": "",
+                        "cnvd_id": "",
+                        "cvss_score": 0.0,
+                        "level": "Unknown",
+                        "submit_time": ""
                     }
-                }
+                    
+                    # Extract Info Fields from dl-horizontal or similar list
+                    # Seebug typically uses <dl class="dl-horizontal"> or similar
+                    for dt in soup.find_all('dt'):
+                        key = dt.text.strip()
+                        dd = dt.find_next_sibling('dd')
+                        if dd:
+                            val = dd.text.strip()
+                            # Clean up value (remove extra spaces/newlines)
+                            val = re.sub(r'\s+', ' ', val).strip()
+                            
+                            if 'CNVD' in key:
+                                data['cnvd_id'] = val
+                            elif 'CVE' in key:
+                                data['cve_id'] = val
+                            elif '发布时间' in key or 'Time' in key:
+                                data['submit_time'] = val
+                            elif '危害级别' in key or 'Level' in key:
+                                data['level'] = val
+                            elif 'CVSS' in key:
+                                try:
+                                    # Extract number from string like "9.8 (High)"
+                                    score_match = re.search(r'(\d+(\.\d+)?)', val)
+                                    if score_match:
+                                        data['cvss_score'] = float(score_match.group(1))
+                                except:
+                                    pass
+                            elif '组件' in key or 'Component' in key:
+                                data['product'] = val
+                                data['component'] = val
+
+                    # Extract Description and Solution
+                    # Look for section headers
+                    for header in soup.find_all(['h3', 'h4', 'div']):
+                        header_text = header.text.strip()
+                        if header.name in ['h3', 'h4'] or (header.name == 'div' and 'header' in header.get('class', [])):
+                            if '漏洞概要' in header_text or '漏洞详情' in header_text or 'Summary' in header_text:
+                                content_div = header.find_next_sibling('div')
+                                if content_div:
+                                    data['description'] = content_div.text.strip()
+                            elif '解决方案' in header_text or 'Solution' in header_text:
+                                content_div = header.find_next_sibling('div')
+                                if content_div:
+                                    data['solution'] = content_div.text.strip()
+                    
+                    # If description is still empty, try to find meta description
+                    if not data['description']:
+                        meta_desc = soup.find('meta', attrs={'name': 'description'})
+                        if meta_desc:
+                            data['description'] = meta_desc.get('content', '')
+
+                    return {
+                        "status": "success",
+                        "data": data
+                    }
+
+                else:
+                    # Fallback to regex
+                    title_match = re.search(r'<title>(.*?) - Seebug 漏洞平台</title>', html)
+                    title = title_match.group(1) if title_match else f"SSVID-{ssvid_str}"
+                    
+                    return {
+                        "status": "success",
+                        "data": {
+                            "name": title,
+                            "vul_name": title,
+                            "description": f"Details for {title} (SSVID-{ssvid_str}).",
+                            "ssvid": ssvid_str,
+                            "type": "Web Vulnerability",
+                            "component": "Unknown"
+                        }
+                    }
         except Exception:
             pass
             

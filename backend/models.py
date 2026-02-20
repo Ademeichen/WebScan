@@ -4,6 +4,7 @@
 from tortoise import fields
 from tortoise.models import Model
 from uuid import uuid4
+import json
 
 
 class Task(Model):
@@ -64,6 +65,40 @@ class Task(Model):
     def is_failed(self) -> bool:
         """检查任务是否失败"""
         return self.status == "failed"
+
+    async def save(self, *args, **kwargs):
+        """
+        重写 save 方法以实现状态机检查
+        Requirement 3.1: 严格校验状态流转 PENDING->RUNNING->(SUCCESS|FAILED|ABORTED)
+        """
+        if self.id:
+            # 获取当前数据库中的状态
+            current = await self.__class__.get_or_none(id=self.id)
+            if current:
+                old_status = current.status
+                new_status = self.status
+                
+                # 状态未改变，直接跳过检查
+                if old_status != new_status:
+                    # 定义合法流转
+                    valid_transitions = {
+                        "pending": ["running", "cancelled", "failed", "processing"],
+                        "running": ["completed", "failed", "cancelled", "processing"],
+                        "processing": ["running", "completed", "failed", "cancelled"], # 兼容 AWVS 状态
+                        "completed": ["pending", "running", "processing"], # 允许重试
+                        "failed": ["pending", "running", "processing"],    # 允许重试
+                        "cancelled": ["pending", "running", "processing"]  # 允许重试
+                    }
+                    
+                    allowed = valid_transitions.get(old_status, [])
+                    if new_status not in allowed:
+                        # 为了系统稳定性，这里打印错误日志并抛出异常
+                        # 调用者应当捕获此异常
+                        error_msg = f"Invalid state transition: Task-{self.id} {old_status} -> {new_status}"
+                        # 这里我们只抛出异常，让上层处理
+                        raise ValueError(error_msg)
+                        
+        await super().save(*args, **kwargs)
 
 
 class Report(Model):
@@ -210,6 +245,61 @@ class ScanResult(Model):
     def is_success(self) -> bool:
         """检查扫描是否成功"""
         return self.status == "success"
+
+
+class SystemSettings(Model):
+    """
+    系统设置表
+    
+    用于存储系统全局配置，支持动态更新。
+    
+    Attributes:
+        id: 设置ID
+        category: 设置分类（general, scan, notification, security等）
+        key: 设置键名
+        value: 设置值（字符串形式存储）
+        value_type: 值类型（string, number, boolean, object, array）
+        description: 设置描述
+        is_public: 是否公开（非敏感配置）
+        created_at: 创建时间
+        updated_at: 更新时间
+    """
+    id = fields.IntField(pk=True, description="设置ID")
+    category = fields.CharField(max_length=50, description="设置分类")
+    key = fields.CharField(max_length=100, description="设置键名")
+    value = fields.TextField(description="设置值")
+    value_type = fields.CharField(max_length=20, default="string", description="值类型")
+    description = fields.CharField(max_length=255, null=True, description="设置描述")
+    is_public = fields.BooleanField(default=True, description="是否公开")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
+
+    class Meta:
+        table = "system_settings"
+        table_description = "系统设置表"
+        unique_together = (("category", "key"),)
+
+    def __str__(self):
+        return f"{self.category}.{self.key} = {self.value}"
+
+    def get_parsed_value(self):
+        """获取解析后的值"""
+        if self.value_type == "boolean":
+            return self.value.lower() == "true"
+        elif self.value_type == "number":
+            try:
+                return int(self.value)
+            except ValueError:
+                try:
+                    return float(self.value)
+                except ValueError:
+                    return 0
+        elif self.value_type in ["object", "array"]:
+            try:
+                return json.loads(self.value)
+            except:
+                return self.value
+        return self.value
 
 
 class SystemLog(Model):
@@ -558,200 +648,75 @@ class VulnerabilityKB(Model):
         return f"{self.cve_id} - {self.name}"
     
     def is_critical(self) -> bool:
-        """检查是否为严重漏洞"""
-        return self.severity == "critical"
+        """检查是否为高危漏洞"""
+        return self.severity in ["critical", "high"]
 
 
 class POCVerificationTask(Model):
     """
-    POC 验证任务表
-    
-    用于记录和管理 POC 验证任务，支持批量验证多个 POC。
-    验证任务与结果是一对多关系，一个任务可以产生多个验证结果。
+    POC验证子任务表 (用于DynamicVerificationEngine内部调度)
     
     Attributes:
-        task_id: 任务唯一标识（UUID）
-        user_id: 用户ID，标识任务所属用户
-        target: 验证目标，域名、IP或URL
-        poc_list: 要验证的POC列表，JSON格式存储
-        status: 任务状态，pending（待执行）、running（执行中）、completed（已完成）、failed（失败）
-        created_at: 任务创建时间
-        updated_at: 任务最后更新时间
+        id: 任务唯一标识（UUID）
+        poc_id: POC ID
+        target: 验证目标
+        status: 状态
+        poc_name: POC名称
+        created_at: 创建时间
     """
-    
-    task_id = fields.UUIDField(pk=True, description="任务ID（UUID）")
-    user_id = fields.CharField(max_length=100, null=True, description="用户ID")
-    target = fields.CharField(max_length=500, description="验证目标（域名/IP/URL）")
-    poc_list = fields.TextField(description="POC列表（JSON格式）")
-    status = fields.CharField(max_length=50, default="pending", description="状态：pending, running, completed, failed, cancelled")
+    id = fields.UUIDField(pk=True, description="任务ID")
+    poc_id = fields.CharField(max_length=100, description="POC ID")
+    target = fields.CharField(max_length=500, description="验证目标")
+    status = fields.CharField(max_length=50, default="pending", description="状态")
+    poc_name = fields.CharField(max_length=255, description="POC名称")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
-    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
-    
-    # 关系定义
-    results: fields.ReverseRelation["POCVerificationResult"]
     
     class Meta:
         table = "poc_verification_tasks"
-        table_description = "POC 验证任务表"
-        ordering = ["-created_at"]
-        indexes = [
-            ("user_id",),
-            ("status",),
-        ]
-    
-    def __str__(self):
-        return f"POCVerificationTask {self.task_id} ({self.status})"
-    
-    def is_running(self) -> bool:
-        """检查任务是否正在运行"""
-        return self.status == "running"
-    
-    def is_completed(self) -> bool:
-        """检查任务是否已完成"""
-        return self.status == "completed"
-    
-    def is_failed(self) -> bool:
-        """检查任务是否失败"""
-        return self.status == "failed"
-
+        table_description = "POC验证子任务表"
 
 class POCVerificationResult(Model):
     """
-    POC 验证结果表
-    
-    用于存储POC验证任务的执行结果，包括漏洞验证结果、执行日志等。
-    验证结果与任务是多对一关系，一个结果对应一个验证任务。
-    与执行日志是一对多关系，一个结果可以有多条执行日志。
+    POC验证结果详情 (用于DynamicVerificationEngine)
     
     Attributes:
-        id: 结果唯一标识（自增整数）
-        verification_task: 关联的验证任务对象
-        poc_name: POC 名称
-        poc_id: POC ID
-        target: 验证目标
+        id: 结果唯一标识（UUID）
+        task: 关联的验证任务
         vulnerable: 是否存在漏洞
-        message: 结果消息
-        output: 完整输出
+        output: 验证输出
         error: 错误信息
-        execution_time: 执行时间（秒）
-        confidence: 结果置信度（0-1）
-        severity: 漏洞严重度
-        cvss_score: CVSS 评分
-        created_at: 结果创建时间
+        created_at: 创建时间
     """
-    
-    id = fields.BigIntField(pk=True, description="结果ID（自增）")
-    verification_task: fields.ForeignKeyRelation[POCVerificationTask] = fields.ForeignKeyField(
+    id = fields.UUIDField(pk=True, description="结果ID")
+    task: fields.ForeignKeyRelation[POCVerificationTask] = fields.ForeignKeyField(
         "models.POCVerificationTask", related_name="results", description="关联验证任务"
     )
-    poc_name = fields.CharField(max_length=255, description="POC 名称")
-    poc_id = fields.CharField(max_length=100, null=True, description="POC ID")
-    target = fields.CharField(max_length=500, description="验证目标")
     vulnerable = fields.BooleanField(default=False, description="是否存在漏洞")
-    message = fields.TextField(description="结果消息")
-    output = fields.TextField(null=True, description="完整输出")
+    output = fields.TextField(null=True, description="验证输出")
     error = fields.TextField(null=True, description="错误信息")
-    execution_time = fields.FloatField(default=0.0, description="执行时间（秒）")
-    confidence = fields.FloatField(default=0.0, description="结果置信度（0-1）")
-    severity = fields.CharField(max_length=50, null=True, description="漏洞严重度：critical, high, medium, low, info")
-    cvss_score = fields.FloatField(null=True, description="CVSS 评分（0-10）")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     
     class Meta:
         table = "poc_verification_results"
-        table_description = "POC 验证结果表"
-        ordering = ["-created_at"]
-        indexes = [
-            ("verification_task",),
-            ("vulnerable",),
-            ("severity",),
-        ]
-    
-    def __str__(self):
-        return f"{self.poc_name} - {self.target} ({'Vulnerable' if self.vulnerable else 'Not Vulnerable'})"
-
+        table_description = "POC验证结果详情表"
 
 class POCExecutionLog(Model):
     """
-    POC 执行日志表
-    
-    用于记录 POC 执行过程中的详细日志，包括执行步骤、输出、错误等。
-    与验证结果是一对多关系，一个结果可以有多条执行日志。
+    POC执行日志
     
     Attributes:
-        id: 日志唯一标识
-        verification_result: 关联的验证结果对象
-        log_level: 日志级别
-        message: 日志消息
-        details: 详细信息
-        timestamp: 日志时间戳
+        id: 日志ID
+        task_id: 关联的任务ID
+        message: 日志内容
+        level: 日志级别
+        created_at: 创建时间
     """
-    
-    id = fields.BigIntField(pk=True, description="日志ID（自增）")
-    verification_result: fields.ForeignKeyRelation[POCVerificationResult] = fields.ForeignKeyField(
-        "models.POCVerificationResult", related_name="execution_logs", description="关联验证结果"
-    )
-    log_level = fields.CharField(max_length=20, default="info", description="日志级别：debug, info, warning, error, critical")
-    message = fields.TextField(description="日志消息")
-    details = fields.TextField(null=True, description="详细信息（JSON格式）")
-    timestamp = fields.DatetimeField(auto_now_add=True, description="日志时间戳")
+    id = fields.IntField(pk=True, description="日志ID")
+    task_id = fields.CharField(max_length=100, description="任务ID")
+    message = fields.TextField(description="日志内容")
+    level = fields.CharField(max_length=20, default="INFO", description="日志级别")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     
     class Meta:
         table = "poc_execution_logs"
-        table_description = "POC 执行日志表"
-        ordering = ["timestamp"]
-        indexes = [
-            ("verification_result",),
-            ("log_level",),
-            ("timestamp",),
-        ]
-    
-    def __str__(self):
-        return f"[{self.log_level.upper()}] {self.message[:50]}..."
-
-
-class SystemSettings(Model):
-    """
-    系统设置表
-    
-    用于存储和管理系统配置项，支持动态配置管理。
-    设置按分类组织，每个分类下可以有多个键值对。
-    
-    Attributes:
-        id: 设置唯一标识
-        category: 设置分类，如general（通用）、scan（扫描）、notification（通知）等
-        key: 设置键名，在分类内唯一
-        value: 设置值，字符串格式存储
-        value_type: 值类型，string、number、boolean、object、array
-        description: 设置描述，说明该设置的作用
-        is_public: 是否公开，公开的设置可以被前端访问
-        created_at: 创建时间
-        updated_at: 更新时间
-    """
-    
-    id = fields.IntField(pk=True, description="设置ID")
-    category = fields.CharField(max_length=50, description="设置分类")
-    key = fields.CharField(max_length=100, description="设置键名")
-    value = fields.TextField(description="设置值")
-    value_type = fields.CharField(max_length=20, default="string", description="值类型：string, number, boolean, object, array")
-    description = fields.CharField(max_length=500, null=True, description="设置描述")
-    is_public = fields.BooleanField(default=True, description="是否公开")
-    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
-    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
-    
-    class Meta:
-        table = "system_settings"
-        table_description = "系统设置表"
-        ordering = ["category", "key"]
-        unique_together = [("category", "key")]
-        indexes = [
-            ("category",),
-            ("key",),
-        ]
-    
-    def __str__(self):
-        return f"{self.category}.{self.key} = {self.value[:50]}..."
-    
-    def is_public_setting(self) -> bool:
-        """检查是否为公开设置"""
-        return self.is_public
+        table_description = "POC执行日志表"

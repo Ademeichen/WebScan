@@ -177,8 +177,8 @@ async def list_reports(
                 "report_type": report.report_type,
                 "content": json.loads(report.content) if report.content else None,
                 "size": size,
-                "created_at": report.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "updated_at": report.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+                "created_at": report.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "updated_at": report.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
             }
             report_list.append(report_dict)
         
@@ -214,7 +214,9 @@ async def create_report(report: ReportCreate):
         
         for v in vulns:
             vuln_list.append({
+                "id": v.id,
                 "title": v.title,
+                "name": v.title,
                 "severity": v.severity,
                 "url": v.url,
                 "description": v.description,
@@ -248,11 +250,20 @@ async def create_report(report: ReportCreate):
         report_dict = {
             "id": new_report.id,
             "task_id": new_report.task_id,
+            "task_type": task.task_type,
+            "target_url": task.target,
             "report_name": new_report.report_name,
             "report_type": new_report.report_type,
             "content": report_content,
-            "created_at": new_report.created_at,
-            "updated_at": new_report.updated_at
+            "created_at": new_report.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updated_at": new_report.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            # 添加统计信息到顶层，供前端直接使用
+            "total_vulnerabilities": sum(stats.values()),
+            "critical_count": stats.get('critical', 0),
+            "high_count": stats.get('high', 0),
+            "medium_count": stats.get('medium', 0),
+            "low_count": stats.get('low', 0),
+            "info_count": stats.get('info', 0),
         }
         
         return APIResponse(code=200, message="报告创建成功", data=report_dict)
@@ -269,20 +280,33 @@ async def get_report(report_id: int):
     获取报告详情(使用数据库)
     """
     try:
-        report = await Report.get_or_none(id=report_id)
+        report = await Report.filter(id=report_id).prefetch_related('task').first()
         
         if not report:
             raise HTTPException(status_code=404, detail="报告不存在")
         
+        # 解析报告内容
+        content_data = json.loads(report.content) if report.content else {}
+        summary = content_data.get('summary', {})
+
         # 转换为字典格式
         report_dict = {
             "id": report.id,
             "task_id": report.task_id,
+            "task_type": report.task.task_type if report.task else None,
+            "target_url": report.task.target if report.task else None,
             "report_name": report.report_name,
             "report_type": report.report_type,
-            "content": json.loads(report.content) if report.content else None,
-            "created_at": report.created_at,
-            "updated_at": report.updated_at
+            "content": content_data,
+            "created_at": report.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updated_at": report.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            # 添加统计信息到顶层，供前端直接使用
+            "total_vulnerabilities": sum(summary.values()) if summary else 0,
+            "critical_count": summary.get('critical', 0),
+            "high_count": summary.get('high', 0),
+            "medium_count": summary.get('medium', 0),
+            "low_count": summary.get('low', 0),
+            "info_count": summary.get('info', 0),
         }
         
         return APIResponse(code=200, message="获取成功", data=report_dict)
@@ -318,19 +342,32 @@ async def update_report(report_id: int, report_update: ReportUpdate):
             await report.save()
 
         # 重新获取更新后的报告
-        report = await Report.get(id=report_id)
+        report = await Report.filter(id=report_id).prefetch_related('task').first()
         
         logger.info(f"更新报告: {report_id}")
         
+        # 解析报告内容
+        content_data = json.loads(report.content) if report.content else {}
+        summary = content_data.get('summary', {})
+
         # 转换为字典格式
         report_dict = {
             "id": report.id,
             "task_id": report.task_id,
+            "task_type": report.task.task_type if report.task else None,
+            "target_url": report.task.target if report.task else None,
             "report_name": report.report_name,
             "report_type": report.report_type,
-            "content": json.loads(report.content) if report.content else None,
-            "created_at": report.created_at,
-            "updated_at": report.updated_at
+            "content": content_data,
+            "created_at": report.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updated_at": report.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            # 添加统计信息到顶层，供前端直接使用
+            "total_vulnerabilities": sum(summary.values()) if summary else 0,
+            "critical_count": summary.get('critical', 0),
+            "high_count": summary.get('high', 0),
+            "medium_count": summary.get('medium', 0),
+            "low_count": summary.get('low', 0),
+            "info_count": summary.get('info', 0),
         }
         
         return APIResponse(code=200, message="更新成功", data=report_dict)

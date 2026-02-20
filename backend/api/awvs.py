@@ -75,6 +75,22 @@ def get_awvs_client():
         'api_key': settings.AWVS_API_KEY
     }
 
+def map_awvs_status(awvs_status: str) -> str:
+    """
+    映射 AWVS 状态到系统状态
+    AWVS: processing, completed, failed, aborted, queued, scheduled
+    System: running, completed, failed, cancelled, pending
+    """
+    status_map = {
+        'processing': 'running',
+        'queued': 'pending',
+        'scheduled': 'pending',
+        'aborted': 'cancelled',
+        'completed': 'completed',
+        'failed': 'failed'
+    }
+    return status_map.get(awvs_status, awvs_status)
+
 def map_severity(awvs_severity: int, vuln_title: str) -> str:
     """
     映射 AWVS 严重程度到系统 5 级分类
@@ -192,7 +208,8 @@ async def sync_scans_from_awvs():
             result_json = json.dumps(scan)
             
             current_session = scan.get('current_session', {})
-            status = current_session.get('status', 'unknown')
+            raw_status = current_session.get('status', 'unknown')
+            status = map_awvs_status(raw_status)
             progress = current_session.get('progress', 0)
             scan_session_id = current_session.get('scan_session_id')
             
@@ -214,7 +231,7 @@ async def sync_scans_from_awvs():
                 # 获取所有未关联 scan_id 的活跃任务
                 pending_tasks = await Task.filter(
                     task_type='awvs_scan',
-                    status__in=['pending', 'submitted', 'processing']
+                    status__in=['pending', 'submitted', 'processing', 'running']
                 ).all()
                 
                 for p_task in pending_tasks:
@@ -264,7 +281,7 @@ async def sync_scans_from_awvs():
                     target_task = new_task
             
             # 同步漏洞数据 (仅当任务处于处理中或已完成时)
-            if target_task and scan_session_id and status in ['processing', 'completed', 'aborted']:
+            if target_task and scan_session_id and status in ['running', 'completed', 'cancelled', 'processing', 'aborted']:
                  await sync_vulnerabilities(scan_id, scan_session_id, target_task.id)
                 
     except Exception as e:
@@ -461,41 +478,13 @@ async def create_scan(request: AWVSScanRequest):
             config=json.dumps({'scan_type': request.scan_type})
         )
         
-        # 2. 先添加目标
-        t = Target(client['api_url'], client['api_key'])
-        target_id = t.add(request.url)
+        # 2. 提交任务到执行队列
+        from backend.task_executor import task_executor
         
-        if target_id is None:
-            task.status = 'failed'
-            task.error_message = "Failed to add target to AWVS"
-            await task.save()
-            return APIResponse(code=400, message="添加目标失败", data=None)
+        scan_config = {'scan_type': request.scan_type, 'profile': request.scan_type}
+        await task_executor.start_task(task.id, request.url, scan_config)
         
-        # 更新任务配置
-        config = json.loads(task.config)
-        config['target_id'] = target_id
-        task.config = json.dumps(config)
-        await task.save()
-        
-        # 3. 创建扫描任务
-        s = Scan(client['api_url'], client['api_key'])
-        status_code = s.add(target_id, request.scan_type)
-        
-        if status_code == 200:
-            logger.info(f"创建扫描任务成功: {request.url}")
-            task.status = 'submitted'
-            await task.save()
-            
-            # 尝试立即同步一次以获取 scan_id
-            # 但AWVS可能需要一点时间生成scan_id,所以这里可能获取不到
-            # 下次 list scans 时会自动同步
-            
-            return APIResponse(code=200, message="扫描任务创建成功", data={"target_id": target_id})
-        else:
-            task.status = 'failed'
-            task.error_message = "Failed to start scan in AWVS"
-            await task.save()
-            return APIResponse(code=400, message="创建扫描任务失败", data=None)
+        return APIResponse(code=200, message="扫描任务已提交到队列", data={"task_id": task.id, "status": "queued"})
             
     except Exception as e:
         logger.error(f"创建扫描任务失败: {str(e)}")

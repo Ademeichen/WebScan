@@ -27,12 +27,14 @@ from .nodes import (
     CodeExecutionNode,
     IntelligentDecisionNode,
     SeebugAgentNode,
-    POCVerificationNode
+    POCVerificationNode,
+    AWVSScanningNode
 )
 
 # 创建节点实例
 seebug_agent_node = SeebugAgentNode()
 poc_verification_node = POCVerificationNode()
+awvs_scanning_node = AWVSScanningNode()
 from ..agent_config import agent_config
 
 logger = logging.getLogger(__name__)
@@ -132,9 +134,6 @@ class ScanAgentGraph:
         """
         logger.info("🔧 初始化扫描Agent图")
         
-        # 初始化工具
-        initialize_tools()
-        
         # 创建节点实例(原有+新增)
         self.env_awareness_node = EnvironmentAwarenessNode()  # 环境感知
         self.planning_node = TaskPlanningNode()  # 任务规划
@@ -146,6 +145,7 @@ class ScanAgentGraph:
         self.verification_node = ResultVerificationNode()  # 结果验证
         self.poc_verification_node = poc_verification_node  # POC 验证(新增)
         self.seebug_agent_node = seebug_agent_node  # Seebug Agent(新增)
+        self.awvs_scanning_node = awvs_scanning_node # AWVS 扫描(新增)
         self.analysis_node = VulnerabilityAnalysisNode()  # 漏洞分析
         self.report_node = ReportGenerationNode()  # 报告生成
         
@@ -169,7 +169,7 @@ class ScanAgentGraph:
         Returns:
             StateGraph: 编译后的图
         """
-        _log_node_entry("_build_graph", "GRAPH_BUILD", {"total_nodes": 12})
+        _log_node_entry("_build_graph", "GRAPH_BUILD", {"total_nodes": 11})
         
         # 创建状态图
         workflow = StateGraph(AgentState)
@@ -185,6 +185,7 @@ class ScanAgentGraph:
         workflow.add_node("result_verification", self.verification_node)
         workflow.add_node("poc_verification", self.poc_verification_node)  # 新增:POC 验证
         workflow.add_node("seebug_agent", self.seebug_agent_node)  # 新增:Seebug Agent
+        workflow.add_node("awvs_scanning", self.awvs_scanning_node) # 新增:AWVS 扫描
         workflow.add_node("vulnerability_analysis", self.analysis_node)
         workflow.add_node("report_generation", self.report_node)
         
@@ -204,7 +205,8 @@ class ScanAgentGraph:
                 "custom_code": "code_generation",  # 生成代码扫描
                 "enhance_first": "capability_enhancement",  # 先增强功能再扫描
                 "poc_verification": "poc_verification",  # POC 验证
-                "seebug_agent": "seebug_agent"  # Seebug Agent(新增)
+                "seebug_agent": "seebug_agent",  # Seebug Agent(新增)
+                "awvs_scan": "awvs_scanning" # AWVS 扫描
             }
         )
         
@@ -238,7 +240,8 @@ class ScanAgentGraph:
             {
                 "continue": "tool_execution",  # 继续执行工具
                 "analyze": "vulnerability_analysis",  # 进入漏洞分析
-                "poc_verify": "poc_verification"  # 进入 POC 验证(新增)
+                "poc_verify": "poc_verification",  # 进入 POC 验证(新增)
+                "awvs_scan": "awvs_scanning"  # 进入 AWVS 扫描
             }
         )
         
@@ -248,15 +251,44 @@ class ScanAgentGraph:
         # Seebug Agent流程:Seebug Agent → POC 验证
         workflow.add_edge("seebug_agent", "poc_verification")
         
-        # 后续流程:分析→报告→结束
-        workflow.add_edge("vulnerability_analysis", "report_generation")
+        # AWVS 扫描流程: AWVS 扫描 → 漏洞分析
+        workflow.add_edge("awvs_scanning", "vulnerability_analysis")
+        
+        # 后续流程:分析→POC验证(如果有任务)或报告
+        workflow.add_conditional_edges(
+            "vulnerability_analysis",
+            self._post_analysis_routing,
+            {
+                "poc_verification": "poc_verification",
+                "report_generation": "report_generation"
+            }
+        )
         workflow.add_edge("report_generation", END)
         
         logger.info("📊 增强版LangGraph图边定义完成")
         _log_node_exit("_build_graph", "GRAPH_BUILD", "success", {"nodes_count": 11, "edges_count": 16})
         return workflow
     
-    def _should_continue_or_verify(self, state: AgentState) -> Literal["continue", "analyze", "poc_verify"]:
+    def _post_analysis_routing(self, state: AgentState) -> Literal["poc_verification", "report_generation"]:
+        """
+        漏洞分析后的路由判断
+        
+        Args:
+            state: Agent当前状态
+            
+        Returns:
+            Literal["poc_verification", "report_generation"]: 下一步节点
+        """
+        # 检查是否有待验证(pending)的POC任务
+        pending_pocs = [t for t in state.poc_verification_tasks if t.get("status") == "pending"]
+        if pending_pocs:
+            logger.info(f"[{state.task_id}] 🔄 发现 {len(pending_pocs)} 个待验证POC任务,进入POC验证阶段")
+            return "poc_verification"
+            
+        logger.info(f"[{state.task_id}] ✅ 漏洞分析完成且无待验证POC,生成报告")
+        return "report_generation"
+
+    def _should_continue_or_verify(self, state: AgentState) -> Literal["continue", "analyze", "poc_verify", "awvs_scan"]:
         """
         判断是否继续执行工具或进入 POC 验证
         
@@ -264,20 +296,28 @@ class ScanAgentGraph:
             state: Agent当前状态
             
         Returns:
-            Literal["continue", "analyze", "poc_verify"]: 下一步节点名称
+            Literal["continue", "analyze", "poc_verify", "awvs_scan"]: 下一步节点名称
         """
         # 检查是否有待验证的 POC 任务
         if state.poc_verification_tasks and len(state.poc_verification_tasks) > 0:
             logger.info(f"[{state.task_id}] 📋 发现待验证的 POC 任务,进入 POC 验证节点")
             return "poc_verify"
         
-        # 原有逻辑:所有任务已完成,进入分析阶段
-        if state.is_complete or not state.planned_tasks:
-            logger.info(f"[{state.task_id}] 📋 所有任务已完成,进入分析阶段")
-            return "analyze"
-        else:
-            logger.info(f"[{state.task_id}] 🔄 继续执行工具: {state.current_task}")
+        # 检查是否还有非AWVS的计划任务
+        non_awvs_tasks = [t for t in state.planned_tasks if t != 'awvs']
+        if non_awvs_tasks:
+            logger.info(f"[{state.task_id}] 🔄 继续执行工具: {non_awvs_tasks[0]}")
             return "continue"
+
+        # 检查是否需要执行AWVS扫描
+        awvs_status = state.stage_status.get("awvs", {}).get("status")
+        if (state.target_context.get("use_awvs") or "awvs" in state.planned_tasks) and awvs_status != "completed":
+             logger.info(f"[{state.task_id}] 🔍 启用 AWVS 扫描")
+             return "awvs_scan"
+        
+        # 所有任务已完成,进入分析阶段
+        logger.info(f"[{state.task_id}] 📋 所有任务已完成,进入分析阶段")
+        return "analyze"
     
     def _should_continue(self, state: AgentState) -> Literal["continue", "analyze"]:
         """
@@ -296,18 +336,18 @@ class ScanAgentGraph:
             logger.info(f"[{state.task_id}] 🔄 继续执行工具: {state.current_task}")
             return "continue"
     
-    def _decide_scan_type(self, state: AgentState) -> Literal["fixed_tool", "custom_code", "enhance_first", "poc_verification", "seebug_agent"]:
+    def _decide_scan_type(self, state: AgentState) -> Literal["fixed_tool", "custom_code", "enhance_first", "poc_verification", "seebug_agent", "awvs_scan"]:
         """
         智能决策:选择扫描类型(核心分支逻辑)
         
         根据环境信息和目标特征,智能决定使用固定工具扫描、
-        生成自定义代码扫描,还是先增强功能再扫描,或者进行 POC 验证,或者使用 Seebug Agent。
+        生成自定义代码扫描,还是先增强功能再扫描,或者进行 POC 验证,或者使用 Seebug Agent,或者使用AWVS。
         
         Args:
             state: Agent当前状态
             
         Returns:
-            Literal["fixed_tool", "custom_code", "enhance_first", "poc_verification", "seebug_agent"]: 扫描类型
+            Literal["fixed_tool", "custom_code", "enhance_first", "poc_verification", "seebug_agent", "awvs_scan"]: 扫描类型
         """
         target_context = state.target_context
         
@@ -354,10 +394,33 @@ class ScanAgentGraph:
                 reason="使用Seebug Agent"
             )
             return "seebug_agent"
-        
-        # 5. 其他情况→使用现有工具
-        else:
+            
+        # 5. 检查是否有普通工具任务 (优先于AWVS, 确保混合任务时先执行工具)
+        non_awvs_tasks = [t for t in state.planned_tasks if t != 'awvs']
+        if non_awvs_tasks:
             logger.info(f"[{state.task_id}] 🛠️ 使用现有工具执行扫描")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="SCAN_TYPE",
+                decision="fixed_tool",
+                reason="使用现有工具"
+            )
+            return "fixed_tool"
+
+        # 6. 检查是否需要AWVS扫描 (如果没其他任务了)
+        if target_context.get("use_awvs") or "awvs" in state.planned_tasks:
+            logger.info(f"[{state.task_id}] 🔍 启用 AWVS 扫描")
+            _log_decision(
+                task_id=state.task_id,
+                decision_type="SCAN_TYPE",
+                decision="awvs_scan",
+                reason="用户指定或计划任务包含AWVS"
+            )
+            return "awvs_scan"
+        
+        # 7. 默认使用现有工具 (虽然可能没有任务了,但作为Fallback)
+        else:
+            logger.info(f"[{state.task_id}] 🛠️ 使用现有工具执行扫描 (Fallback)")
             _log_decision(
                 task_id=state.task_id,
                 decision_type="SCAN_TYPE",
@@ -388,10 +451,23 @@ class ScanAgentGraph:
                 decision="success",
                 reason="代码执行成功"
             )
+            # 重置增强重试计数
+            state.reset_enhancement_retry()
             return "success"
         else:
+            # 检查重试次数,防止无限循环
+            if state.enhancement_retry_count >= 3:
+                logger.error(f"[{state.task_id}] ❌ 代码执行失败且达到最大增强重试次数,停止增强")
+                _log_decision(
+                    task_id=state.task_id,
+                    decision_type="CODE_EXECUTION",
+                    decision="max_retries",
+                    reason=f"达到最大增强重试次数(3), 错误: {execution_result.get('error', 'unknown')}"
+                )
+                return "success"  # 视为"完成"当前阶段，进入结果验证
+            
             # 执行失败时,标记需要功能增强
-            logger.warning(f"[{state.task_id}] ⚠️ 代码执行失败,需要功能增强")
+            logger.warning(f"[{state.task_id}] ⚠️ 代码执行失败,需要功能增强 (重试 {state.enhancement_retry_count + 1}/3)")
             _log_decision(
                 task_id=state.task_id,
                 decision_type="CODE_EXECUTION",
@@ -400,6 +476,7 @@ class ScanAgentGraph:
             )
             state.target_context["need_capability_enhancement"] = True
             state.target_context["capability_requirement"] = "自动安装代码执行所需依赖"
+            state.increment_enhancement_retry()
             return "need_enhance"
     
     def _capability_enhancement_result(self, state: AgentState) -> Literal["success", "failed"]:
@@ -677,6 +754,16 @@ def initialize_tools():
         timeout=30,
         priority=2
     )
+
+    # 注册AWVS扫描工具
+    registry.register(
+        name="awvs",
+        func=PluginAdapter.adapt_awvs(),
+        description="AWVS全自动漏洞扫描(包含SQL注入/XSS等深度扫描)",
+        category="scanner",
+        timeout=3600,  # AWVS扫描时间较长
+        priority=6     # 最高优先级
+    )
     
     # 注册POC
     pocs = POCAdapter.get_all_pocs()
@@ -691,34 +778,34 @@ def initialize_tools():
             priority=8
         )
     
-    # 注册依赖管理工具（暂时禁用，因为dependency_installer模块不存在）
-    # from ..tools.adapters import DependencyAdapter
-    # 
-    # registry.register(
-    #     name="install_dependencies",
-    #     func=DependencyAdapter.adapt_install_dependencies(),
-    #     description="安装Python包依赖",
-    #     category="dependency",
-    #     timeout=300,
-    #     priority=9
-    # )
-    # 
-    # registry.register(
-    #     name="check_package",
-    #     func=DependencyAdapter.adapt_check_package(),
-    #     description="检查Python包是否已安装",
-    #     category="dependency",
-    #     timeout=10,
-    #     priority=9
-    # )
-    # 
-    # registry.register(
-    #     name="list_packages",
-    #     func=DependencyAdapter.adapt_get_packages(),
-    #     description="列出已安装的Python包",
-    #     category="dependency",
-    #     timeout=10,
-    #     priority=9
-    # )
+    # 注册依赖管理工具
+    from ..tools.adapters import DependencyAdapter
+    
+    registry.register(
+        name="install_dependencies",
+        func=DependencyAdapter.adapt_install_dependencies(),
+        description="安装Python包依赖",
+        category="dependency",
+        timeout=300,
+        priority=9
+    )
+    
+    registry.register(
+        name="check_package",
+        func=DependencyAdapter.adapt_check_package(),
+        description="检查Python包是否已安装",
+        category="dependency",
+        timeout=10,
+        priority=9
+    )
+    
+    registry.register(
+        name="list_packages",
+        func=DependencyAdapter.adapt_get_packages(),
+        description="列出已安装的Python包",
+        category="dependency",
+        timeout=10,
+        priority=9
+    )
     
     logger.info(f"✅ 工具初始化完成,共注册 {len(registry.tools)} 个工具")

@@ -88,26 +88,24 @@ class EnvironmentAwareness:
         self._init_lock = threading.Lock()
         self._initialized = False
         self._init_error = None
-        self._init_time = None
         
         try:
             logger.info("🚀 开始初始化环境感知模块...")
             start_time = time.time()
-
+            
             # 快速检测(同步,无阻塞)
             self.os_info = self._detect_os()
             self.python_info = self._detect_python()
-
+            
             # 并发检测(使用线程池)
             self.available_tools, self.network_info, self.system_resources = self._detect_concurrent()
-
+            
             init_time = time.time() - start_time
-            self._init_time = init_time
             logger.info(f"✅ 环境感知模块初始化完成,耗时: {init_time:.2f}秒")
-
+            
             with self._init_lock:
                 self._initialized = True
-
+                
         except Exception as e:
             logger.error(f"❌ 环境感知模块初始化失败: {str(e)}")
             with self._init_lock:
@@ -421,15 +419,19 @@ class EnvironmentAwareness:
                 )
                 stdout, stderr = process.communicate(timeout=self.NETWORK_TIMEOUT)
                 return process.returncode == 0
-        except Exception:
+
+            if process:
+                process.kill()
+                process.wait()
             return False
-        finally:
+        except Exception:
             if process:
                 try:
                     process.kill()
                     process.wait()
                 except:
                     pass
+            return False
     
     def _check_internet(self) -> bool:
         """
@@ -465,16 +467,7 @@ class EnvironmentAwareness:
             Dict: 资源信息
         """
         try:
-            # 使用当前工作目录的根目录，兼容Windows和Linux
-            path = os.getcwd()
-            if platform.system() == "Windows":
-                # Windows: 使用当前驱动器的根目录
-                drive = os.path.splitdrive(path)[0] + "\\"
-                disk_usage = shutil.disk_usage(drive)
-            else:
-                # Linux/Unix: 使用根目录
-                disk_usage = shutil.disk_usage("/")
-            
+            disk_usage = shutil.disk_usage("/")
             total, used, free = disk_usage
             used_percent = (used / total) * 100
             
@@ -509,7 +502,7 @@ class EnvironmentAwareness:
             "system_resources": self.system_resources,
             "scan_recommendations": self._generate_scan_recommendations(),
             "performance_metrics": {
-                "initialization_time": getattr(self, "_init_time", None),
+                "initialization_time": getattr(self, '_init_time', None),
                 "concurrent_workers": self.MAX_WORKERS,
                 "timeout_settings": {
                     "tool_timeout": self.TOOL_TIMEOUT,
@@ -522,16 +515,16 @@ class EnvironmentAwareness:
     def _generate_scan_recommendations(self) -> List[str]:
         """
         生成扫描建议
-
+        
         Returns:
             List[str]: 扫描建议列表
         """
         recommendations = []
-
+        
         try:
             os_system = self.os_info.get("system", "").lower()
             available_tools = self.available_tools
-
+            
             if os_system == "windows":
                 recommendations.append("建议使用PowerShell进行脚本执行")
                 if available_tools.get("nmap", {}).get("available"):
@@ -540,15 +533,15 @@ class EnvironmentAwareness:
                 recommendations.append("建议使用Bash进行脚本执行")
                 if available_tools.get("nmap", {}).get("available"):
                     recommendations.append("建议使用nmap进行端口扫描")
-
+            
             if self.python_info.get("dependencies", {}).get("langchain"):
                 recommendations.append("建议启用LLM增强任务规划")
-
+            
             if self.system_resources.get("disk_used_percent", 0) > 80:
                 recommendations.append("磁盘空间不足,建议清理临时文件")
         except Exception as e:
             logger.warning(f"生成扫描建议失败: {str(e)}")
-
+        
         return recommendations
     
     def is_tool_available(self, tool_name: str) -> bool:
@@ -625,7 +618,7 @@ def benchmark_performance(iterations: int = 5) -> Dict[str, Any]:
         except Exception as e:
             errors.append(str(e))
             logger.error(f"  第 {i+1} 次测试失败: {str(e)}")
-
+    
     if times:
         results = {
             "total_tests": iterations,
@@ -644,7 +637,7 @@ def benchmark_performance(iterations: int = 5) -> Dict[str, Any]:
             "failed_tests": len(errors),
             "errors": errors
         }
-
+    
 
     logger.info(f"  平均耗时: {results.get('avg_time', 0):.2f}秒")
     logger.info(f"  最小耗时: {results.get('min_time', 0):.2f}秒")
@@ -676,24 +669,24 @@ if __name__ == "__main__":
         print(f"  磁盘总空间: {report['system_resources']['disk_total'] / (1024**3):.2f}GB")
         print(f"  磁盘已用空间: {report['system_resources']['disk_used'] / (1024**3):.2f}GB")
         print(f"  磁盘可用空间: {report['system_resources']['disk_free'] / (1024**3):.2f}GB")
-
+        
         print("\n🔍 扫描建议:")
         for idx, rec in enumerate(report["scan_recommendations"], 1):
             print(f"  {idx}. {rec}")
         
-            # 可选:输出完整JSON报告
-            if "--json" in sys.argv:
-                print("\n📄 完整JSON报告:")
-                print(json.dumps(report, ensure_ascii=False, indent=2))
-
-            # 性能基准测试
-            if "--benchmark" in sys.argv:
-                print("\n🚀 开始性能基准测试...")
-                benchmark_results = benchmark_performance(iterations=3)
-                print("\n📊 性能测试结果:")
-                print(json.dumps(benchmark_results, ensure_ascii=False, indent=2))
-
-            print("\n✅ 环境感知模块自测完成！")
+        # 可选:输出完整JSON报告
+        if "--json" in sys.argv:
+            print("\n📄 完整JSON报告:")
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+        
+        # 性能基准测试
+        if "--benchmark" in sys.argv:
+            print("\n🚀 开始性能基准测试...")
+            benchmark_results = benchmark_performance(iterations=3)
+            print("\n📊 性能测试结果:")
+            print(json.dumps(benchmark_results, ensure_ascii=False, indent=2))
+        
+        print("\n✅ 环境感知模块自测完成！")
     except Exception as e:
         print(f"\n❌ 自测失败: {e}")
         import traceback

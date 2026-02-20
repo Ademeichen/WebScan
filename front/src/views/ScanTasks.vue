@@ -51,16 +51,26 @@
 
       <div class="filter-group">
         <label>日期范围:</label>
-        <input
+        <el-date-picker
           v-model="filters.start_date"
           type="date"
+          placeholder="YYYY-MM-DD"
+          format="YYYY-MM-DD"
+          value-format="YYYY-MM-DD"
           @change="loadTasks"
+          @update:model-value="(val) => filters.start_date = val || ''"
+          style="width: 160px"
         />
         <span>至</span>
-        <input
+        <el-date-picker
           v-model="filters.end_date"
           type="date"
+          placeholder="YYYY-MM-DD"
+          format="YYYY-MM-DD"
+          value-format="YYYY-MM-DD"
           @change="loadTasks"
+          @update:model-value="(val) => filters.end_date = val || ''"
+          style="width: 160px"
         />
       </div>
     </div>

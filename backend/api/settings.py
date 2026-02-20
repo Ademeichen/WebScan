@@ -513,6 +513,7 @@ async def get_statistics(period: int = 7):
             day_stats = {
                 'date': date.strftime("%m/%d"),
                 'scans': daily_scans_count,
+                'critical': 0,
                 'high': 0,
                 'medium': 0,
                 'low': 0,
@@ -521,9 +522,7 @@ async def get_statistics(period: int = 7):
             
             for item in daily_vulns:
                 sev = str(item['severity']).lower()
-                if sev == 'critical':
-                    day_stats['high'] += item['count']
-                elif sev in day_stats:
+                if sev in day_stats:
                     day_stats[sev] += item['count']
             
             trend_data.append(day_stats)

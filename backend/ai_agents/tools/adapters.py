@@ -7,7 +7,7 @@ import asyncio
 import logging
 from typing import Any, Dict, List
 
-from .registry import wrap_async
+from .wrappers import wrap_async
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +73,8 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.waf.waf import getwaf
-        return getwaf
+        from plugins.waf.waf import get_waf
+        return get_waf
     
     @staticmethod
     def adapt_cdn_detect() -> callable:
@@ -169,6 +169,70 @@ class PluginAdapter:
         """
         from plugins.iplocating.iplocating import get_locating
         return get_locating
+
+    @staticmethod
+    def adapt_awvs() -> callable:
+        """
+        适配AWVS扫描
+        
+        Returns:
+            callable: 适配后的函数
+        """
+        from backend.config import settings
+        from AVWS.API.Target import Target
+        from AVWS.API.Scan import Scan
+        
+        def awvs_wrapper(target: str) -> Dict[str, Any]:
+            try:
+                # 初始化API客户端
+                api_url = settings.AWVS_API_URL
+                api_key = settings.AWVS_API_KEY
+                
+                if not api_url or not api_key:
+                    return {
+                        "status": "failed",
+                        "error": "AWVS配置缺失(API_URL或API_KEY)",
+                        "target": target
+                    }
+                
+                target_api = Target(api_url, api_key)
+                scan_api = Scan(api_url, api_key)
+                
+                # 1. 添加目标
+                target_id = target_api.add(target)
+                if not target_id:
+                    return {
+                        "status": "failed",
+                        "error": "添加目标失败",
+                        "target": target
+                    }
+                
+                # 2. 启动扫描 (默认使用全扫描)
+                scan_id = scan_api.add(target_id, 'full_scan')
+                if not scan_id:
+                    return {
+                        "status": "failed", 
+                        "error": "启动扫描失败",
+                        "target_id": target_id
+                    }
+                    
+                return {
+                    "status": "success",
+                    "message": "AWVS扫描任务已启动",
+                    "scan_id": scan_id,
+                    "target_id": target_id,
+                    "target": target
+                }
+                
+            except Exception as e:
+                logger.error(f"AWVS扫描启动失败: {str(e)}")
+                return {
+                    "status": "failed",
+                    "error": str(e),
+                    "target": target
+                }
+                
+        return awvs_wrapper
 
 
 class POCAdapter:

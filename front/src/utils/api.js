@@ -170,7 +170,7 @@ export const tasksApi = {
 
   deleteTask: async (taskId) => {
     return request({
-      url: `/tasks/${taskId}`,
+      url: `/agent/task/${taskId}`,
       method: 'delete'
     })
   },
@@ -184,8 +184,23 @@ export const tasksApi = {
 
   cancelTask: async (taskId) => {
     return request({
-      url: `/tasks/${taskId}/cancel`,
+      url: `/agent/task/${taskId}/abort`,
       method: 'post'
+    })
+  },
+
+  getTaskLogs: async (taskId, params = {}) => {
+    return request({
+      url: `/agent/task/${taskId}/logs`,
+      method: 'get',
+      params
+    })
+  },
+
+  getFrozenTasks: async () => {
+    return request({
+      url: `/agent/tasks/frozen`,
+      method: 'get'
     })
   },
 

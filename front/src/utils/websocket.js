@@ -91,6 +91,9 @@ class WebSocketManager {
       case 'task_completed':
         this.emit('task:completed', payload)
         break
+      case 'stage_update':
+        this.emit('stage:update', payload)
+        break
       case 'task_failed':
         this.emit('task:failed', payload)
         break

@@ -93,9 +93,9 @@
       <div class="report-section vulnerabilities-section" v-if="report.content?.vulnerabilities">
         <h2 class="section-title">漏洞详情</h2>
         <div class="vulnerabilities-list">
-          <div class="vulnerability-card" v-for="vuln in report.content.vulnerabilities" :key="vuln.id">
+          <div class="vulnerability-card" v-for="(vuln, index) in report.content.vulnerabilities" :key="vuln.id || index">
             <div class="vuln-header">
-              <span class="vuln-name">{{ vuln.name }}</span>
+              <span class="vuln-name">{{ vuln.name || vuln.title }}</span>
               <span class="vuln-severity" :class="vuln.severity">{{ getSeverityLabel(vuln.severity) }}</span>
             </div>
             <div class="vuln-body">
@@ -161,7 +161,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { reportsApi } from '@/utils/api'
 import { formatDate } from '@/utils/date'
@@ -171,10 +171,39 @@ export default {
   setup() {
     const route = useRoute()
     const router = useRouter()
-    const report = ref(null)
+    const reportData = ref(null)
     const loading = ref(false)
     const exporting = ref(false)
     const errorMessage = ref('')
+
+    const report = computed(() => {
+      if (!reportData.value) return null
+      
+      const r = reportData.value
+      // 尝试从 content 中获取数据作为兜底
+      const content = r.content || {}
+      const summary = content.summary || {}
+      
+      // 计算统计数据
+      let total = r.total_vulnerabilities
+      if (total === undefined || total === null) {
+        // 如果后端没返回总数，尝试从 summary 计算
+        total = Object.values(summary).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0)
+      }
+      
+      return {
+        ...r,
+        // 优先使用顶层字段，如果没有则从 content 中获取
+        target_url: r.target_url || content.target || '-',
+        total_vulnerabilities: total,
+        critical_count: r.critical_count !== undefined ? r.critical_count : (summary.critical || 0),
+        high_count: r.high_count !== undefined ? r.high_count : (summary.high || 0),
+        medium_count: r.medium_count !== undefined ? r.medium_count : (summary.medium || 0),
+        low_count: r.low_count !== undefined ? r.low_count : (summary.low || 0),
+        // 如果 task_type 为空，但报告名包含 AWVS，可以尝试推断（可选）
+        task_type: r.task_type
+      }
+    })
 
     const loadReportDetail = async () => {
       loading.value = true
@@ -187,9 +216,9 @@ export default {
         
         const response = await reportsApi.getReportDetail(reportId)
         if (response && response.data) {
-          report.value = response.data
+          reportData.value = response.data
         } else if (response) {
-          report.value = response
+          reportData.value = response
         } else {
           throw new Error('无效的报告数据')
         }

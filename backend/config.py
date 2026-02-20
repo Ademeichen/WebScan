@@ -21,7 +21,7 @@ FastAPI 应用配置文件
     # DEBUG=True
 """
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
+from pydantic import ConfigDict, field_validator
 from typing import Optional
 
 
@@ -257,7 +257,7 @@ class Settings(BaseSettings):
     可以通过环境变量 AWVS_API_URL 覆盖。
     """
     
-    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c533a96f18b19416da99a2e732075e570"
+    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c74deac5b05e4406bb3630cb247b0d2d3"
     """
     AWVS API 密钥
     
@@ -340,7 +340,7 @@ class Settings(BaseSettings):
     """
     
     # = AI Agent 配置 =
-    AGENT_MAX_EXECUTION_TIME: int = 300
+    AGENT_MAX_EXECUTION_TIME: int = 18000
     """
     AI Agent 最大执行时间(秒)
     
@@ -348,7 +348,7 @@ class Settings(BaseSettings):
     超过此时间后 Agent 将被强制终止。
     防止 Agent 任务无限期运行。
     
-    默认为 300 秒(5 分钟)。
+    默认为 18000 秒(5 小时)。
     可以根据任务复杂度调整。
     可以通过环境变量 AGENT_MAX_EXECUTION_TIME 覆盖。
     """
@@ -456,6 +456,13 @@ class Settings(BaseSettings):
     可以通过环境变量 POC_REPORT_FORMAT 覆盖。
     """
     
+    @field_validator('AWVS_API_KEY', 'OPENAI_API_KEY', 'QWEN_API_KEY', 'SEEBUG_API_KEY', mode='before')
+    @classmethod
+    def strip_whitespace(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        return v.strip()
+
     model_config = ConfigDict(
         env_file="backend/.env",
         env_file_encoding="utf-8",
