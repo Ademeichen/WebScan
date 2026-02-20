@@ -456,6 +456,28 @@ class Settings(BaseSettings):
     可以通过环境变量 POC_REPORT_FORMAT 覆盖。
     """
     
+    # = Kafka 配置 =
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    """
+    Kafka 引导服务器地址
+    
+    用于任务状态变更的消息队列。
+    格式为 host:port。
+    
+    默认为 localhost:9092。
+    可以通过环境变量 KAFKA_BOOTSTRAP_SERVERS 覆盖。
+    """
+    
+    KAFKA_TOPIC: str = "task_status_changes"
+    """
+    Kafka 主题名称
+    
+    用于发布任务状态变更消息。
+    
+    默认为 task_status_changes。
+    可以通过环境变量 KAFKA_TOPIC 覆盖。
+    """
+    
     @field_validator('AWVS_API_KEY', 'OPENAI_API_KEY', 'QWEN_API_KEY', 'SEEBUG_API_KEY', mode='before')
     @classmethod
     def strip_whitespace(cls, v: Optional[str]) -> Optional[str]:

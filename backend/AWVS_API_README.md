@@ -77,15 +77,7 @@ AWVS_API_KEY: str = "your_api_key"
         "start_date": "2025-12-26T20:00:00"
       },
       "target": {
-<<<<<<< HEAD
-        "address": "https://www.baidu.com"
-=======
-<<<<<<< HEAD
-        "address": "https://www.baidu.com"
-=======
         "address": "http://example.com"
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
       }
     }
   ]
@@ -100,15 +92,7 @@ AWVS_API_KEY: str = "your_api_key"
 **请求体：**
 ```json
 {
-<<<<<<< HEAD
-  "url": "https://www.baidu.com",
-=======
-<<<<<<< HEAD
-  "url": "https://www.baidu.com",
-=======
   "url": "http://example.com",
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
   "scan_type": "full_scan"
 }
 ```
@@ -146,15 +130,7 @@ AWVS_API_KEY: str = "your_api_key"
     {
       "id": 1,
       "severity": "High",
-<<<<<<< HEAD
-      "target": "https://www.baidu.com",
-=======
-<<<<<<< HEAD
-      "target": "https://www.baidu.com",
-=======
       "target": "http://example.com",
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
       "vuln_id": "xxx",
       "vuln_name": "SQL Injection",
       "time": "2025-12-26 20:00:00"
@@ -174,15 +150,7 @@ AWVS_API_KEY: str = "your_api_key"
   "code": 200,
   "message": "获取成功",
   "data": {
-<<<<<<< HEAD
-    "affects_url": "https://www.baidu.com",
-=======
-<<<<<<< HEAD
-    "affects_url": "https://www.baidu.com",
-=======
     "affects_url": "http://example.com",
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
     "last_seen": "2025-12-26 20:00:00",
     "vt_name": "SQL Injection",
     "details": "漏洞详细信息...",
@@ -246,15 +214,7 @@ AWVS_API_KEY: str = "your_api_key"
   "data": [
     {
       "target_id": "xxx",
-<<<<<<< HEAD
-      "address": "https://www.baidu.com",
-=======
-<<<<<<< HEAD
-      "address": "https://www.baidu.com",
-=======
       "address": "http://example.com",
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
       "description": "测试站点",
       "criticality": 10
     }
@@ -270,15 +230,7 @@ AWVS_API_KEY: str = "your_api_key"
 **请求体：**
 ```json
 {
-<<<<<<< HEAD
-  "address": "https://www.baidu.com",
-=======
-<<<<<<< HEAD
-  "address": "https://www.baidu.com",
-=======
   "address": "http://example.com",
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
   "description": "测试站点"
 }
 ```
@@ -307,15 +259,7 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8888/api/awvs/scans" -Method GET -UseBa
 
 # 创建扫描任务
 $body = @{
-<<<<<<< HEAD
-    url = "https://www.baidu.com"
-=======
-<<<<<<< HEAD
-    url = "https://www.baidu.com"
-=======
     url = "http://example.com"
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
     scan_type = "full_scan"
 } | ConvertTo-Json
 
@@ -339,15 +283,7 @@ print(response.json())
 
 # 创建扫描任务
 data = {
-<<<<<<< HEAD
-    "url": "https://www.baidu.com",
-=======
-<<<<<<< HEAD
-    "url": "https://www.baidu.com",
-=======
     "url": "http://example.com",
->>>>>>> de97d03d8b5dfa00af0eaddf983e9c20433e9b15
->>>>>>> origin/renruipeng
     "scan_type": "full_scan"
 }
 response = requests.post(f"{BASE_URL}/scan", json=data)

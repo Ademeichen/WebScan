@@ -63,10 +63,10 @@ class TaskExecutor:
         try:
             if KafkaProducer:
                 self.kafka_producer = KafkaProducer(
-                    bootstrap_servers=['localhost:9092'], # TODO: Use settings
+                    bootstrap_servers=[settings.KAFKA_BOOTSTRAP_SERVERS],
                     value_serializer=lambda x: json.dumps(x).encode('utf-8')
                 )
-                logger.info("Kafka Producer initialized")
+                logger.info(f"Kafka Producer initialized: {settings.KAFKA_BOOTSTRAP_SERVERS}")
         except Exception as e:
             logger.warning(f"Kafka setup failed: {e}")
 

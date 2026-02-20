@@ -2,6 +2,10 @@
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning:tortoise.fields.data",
+    "ignore::DeprecationWarning:requests.utils",
+]
 
 [tool.aerich]
 tortoise_orm = "config.TORTOISE_ORM"

@@ -52,7 +52,12 @@ class ToolRegistry:
         if name in self.tools:
             logger.warning(f"工具 {name} 已存在,将被覆盖")
         
-        wrapper = AsyncToolWrapper(func, timeout=timeout)
+        # 检查是否已经是AsyncToolWrapper，避免双重包装
+        if isinstance(func, AsyncToolWrapper):
+            wrapper = func
+        else:
+            wrapper = AsyncToolWrapper(func, timeout=timeout)
+        
         self.tools[name] = wrapper
         self.tool_metadata[name] = {
             "description": description,

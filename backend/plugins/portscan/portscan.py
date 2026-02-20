@@ -28,10 +28,10 @@ class ServiceSign:
 
 # 预编译SIGNS正则(字节串匹配)
 SIGNS = [
-    ServiceSign(b'smb', b'smb', re.compile(b'^\0\0\0.\xffSMBr\0\0\0\0.*', re.IGNORECASE)),
-    ServiceSign(b'xmpp', b'xmpp', re.compile(b'^\<\?xml version=\'1.0\'\?\>', re.IGNORECASE)),
-    ServiceSign(b'netbios', b'netbios', re.compile(b'^\x79\x08.*BROWSE', re.IGNORECASE)),
-    ServiceSign(b'http', b'http', re.compile(b'HTTP/1.1', re.IGNORECASE)),
+    ServiceSign(b'smb', b'smb', re.compile(rb'^\0\0\0.\xffSMBr\0\0\0.*', re.IGNORECASE)),
+    ServiceSign(b'xmpp', b'xmpp', re.compile(rb'^<\?xml version=\'1.0\'\?>', re.IGNORECASE)),
+    ServiceSign(b'netbios', b'netbios', re.compile(rb'^\x79\x08.*BROWSE', re.IGNORECASE)),
+    ServiceSign(b'http', b'http', re.compile(rb'HTTP/1.1', re.IGNORECASE)),
     ServiceSign(b'ftp', b'ftp', re.compile(b'^220.*FTP', re.IGNORECASE)),
     ServiceSign(b'ssh', b'ssh', re.compile(b'^SSH-', re.IGNORECASE)),
     ServiceSign(b'redis', b'redis', re.compile(b'^-ERR unknown command', re.IGNORECASE)),

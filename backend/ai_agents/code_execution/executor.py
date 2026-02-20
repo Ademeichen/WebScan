@@ -6,7 +6,7 @@
 import asyncio
 import logging
 import sys
-
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -173,13 +173,69 @@ class UnifiedExecutor:
             
             return result
             
-        except Exception as e:
+        except subprocess.TimeoutExpired as e:
+            logger.error(f"❌ 代码执行超时: {str(e)}")
+            return ExecutionResult(
+                status="timeout",
+                error=f"执行超时: {str(e)}",
+                output="",
+                execution_time=0.0,
+                exit_code=-1
+            )
+        except subprocess.CalledProcessError as e:
             logger.error(f"❌ 代码执行失败: {str(e)}")
             return ExecutionResult(
                 status="failed",
-                error=str(e),
+                error=f"进程错误: {str(e)}",
+                output=e.stdout or "",
+                execution_time=0.0,
+                exit_code=e.returncode
+            )
+        except IOError as e:
+            logger.error(f"❌ 文件操作失败: {str(e)}")
+            return ExecutionResult(
+                status="failed",
+                error=f"文件错误: {str(e)}",
                 output="",
-                execution_time=0.0
+                execution_time=0.0,
+                exit_code=-1
+            )
+        except PermissionError as e:
+            logger.error(f"❌ 权限不足: {str(e)}")
+            return ExecutionResult(
+                status="failed",
+                error=f"权限错误: {str(e)}",
+                output="",
+                execution_time=0.0,
+                exit_code=-1
+            )
+        except MemoryError as e:
+            logger.error(f"❌ 内存不足: {str(e)}")
+            return ExecutionResult(
+                status="failed",
+                error=f"内存错误: {str(e)}",
+                output="",
+                execution_time=0.0,
+                exit_code=-1
+            )
+        except OSError as e:
+            logger.error(f"❌ 操作系统错误: {str(e)}")
+            return ExecutionResult(
+                status="failed",
+                error=f"系统错误: {str(e)}",
+                output="",
+                execution_time=0.0,
+                exit_code=-1
+            )
+        except Exception as e:
+            logger.error(f"❌ 代码执行未知错误: {type(e).__name__}: {str(e)}")
+            logger.debug(f"错误堆栈: {e.__traceback__}")
+            return ExecutionResult(
+                status="failed",
+                error=f"未知错误: {type(e).__name__}: {str(e)}",
+                output="",
+                execution_time=0.0,
+                exit_code=-1
             )
     
     async def _execute(

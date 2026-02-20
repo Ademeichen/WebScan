@@ -39,7 +39,7 @@ from ai_agents.api.routes import (
     CodeExecutionRequest,
     CapabilityEnhancementRequest
 )
-from models import AgentTask, AgentResult
+from backend.models import AgentTask, AgentResult
 from ai_agents.agent_config import agent_config
 
 

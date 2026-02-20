@@ -281,19 +281,20 @@ npm run dev
 
 在浏览器中打开 http://localhost:5173 即可使用WebScan AI Security Platform
 
-#### 9. 运行API测试（可选）
+#### 9. 运行测试（可选）
 
 ```bash
+# 后端测试
+cd backend
+pytest
+
+# 前端测试
+cd front
+npm run test
+
+# API测试
 cd api_tests
-
-# 安装测试依赖
-pip install -r requirements.txt
-
-# 运行所有测试
 python run_tests.py
-
-# 运行指定模块测试
-python run_tests.py test_dashboard
 ```
 
 ---
@@ -363,16 +364,25 @@ AI_WebSecurity/
 │   │       └── Vuln.py        # 漏洞API
 │   │
 │   ├── geoip/                 # GeoIP数据库
+│   ├── poc/                   # POC漏洞库
+│   │   ├── Drupal/            # Drupal漏洞POC
+│   │   ├── jboss/             # JBoss漏洞POC
+│   │   ├── nexus/             # Nexus漏洞POC
+│   │   ├── struts2/           # Struts2漏洞POC
+│   │   ├── thinkphp/          # ThinkPHP漏洞POC
+│   │   ├── tomcat/            # Tomcat漏洞POC
+│   │   └── weblogic/          # WebLogic漏洞POC
+│   │
 │   ├── data/                  # 数据目录
 │   │   └── webscan.db         # SQLite数据库文件
 │   ├── logs/                  # 日志目录
-│   │   └── app.log           # 应用日志
 │   ├── main.py                # 应用入口
 │   ├── config.py              # 配置管理
 │   ├── models.py              # 数据模型
 │   ├── database.py            # 数据库连接
 │   ├── task_executor.py       # 任务执行器
 │   ├── requirements.txt       # Python依赖
+│   ├── pyproject.toml         # 项目配置
 │   ├── .env                   # 环境变量
 │   ├── AWVS_API_README.md     # AWVS API文档
 │   └── README.md              # 后端说明文档
@@ -409,7 +419,6 @@ AI_WebSecurity/
 │   ├── .env                   # 环境变量
 │   ├── .env.development       # 开发环境变量
 │   ├── .env.production        # 生产环境变量
-│   ├── .env.test              # 测试环境变量
 │   ├── index.html             # HTML模板
 │   ├── package.json           # 项目配置
 │   ├── vite.config.js         # Vite配置
@@ -449,8 +458,12 @@ AI_WebSecurity/
 │   ├── QUICKSTART.md         # 快速开始
 │   └── README.md             # 爬虫文档
 │
-├── .trae/                    # 项目配置
+├── docs/                     # 文档目录
+│   ├── architecture_design.md # 架构设计文档
+│   └── ci_cd_pipeline.md     # CI/CD流水线文档
+│
 ├── API_DOCUMENTATION.md       # API文档
+├── CHANGELOG.md               # 更新日志
 ├── README.md                 # 项目说明文档
 └── .gitignore                # Git忽略文件
 ```
@@ -720,22 +733,24 @@ docker build -t webscan-ai-backend ./backend
 docker run -d -p 3000:3000 \
   -v $(pwd)/backend/data:/app/data \
   -v $(pwd)/backend/logs:/app/logs \
+  --name webscan-backend \
   webscan-ai-backend
 ```
 
-#### 使用systemd（Linux）
+#### 使用Systemd（Linux）
 
-创建服务文件 `/etc/systemd/system/webscan-ai.service`：
+创建服务文件 `/etc/systemd/system/webscan.service`:
 
 ```ini
 [Unit]
-Description=WebScan AI Backend
+Description=WebScan AI Backend Service
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/path/to/AI_WebSecurity/backend
+WorkingDirectory=/path/to/backend
+Environment="PATH=/path/to/venv/bin"
 ExecStart=/path/to/venv/bin/python main.py
 Restart=always
 
@@ -747,8 +762,8 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl start webscan-ai
-sudo systemctl enable webscan-ai
+sudo systemctl start webscan
+sudo systemctl enable webscan
 ```
 
 ### 前端部署
@@ -759,6 +774,8 @@ sudo systemctl enable webscan-ai
 cd front
 npm run build
 ```
+
+构建产物将生成在 `front/dist/` 目录。
 
 #### 使用Nginx
 
@@ -781,19 +798,33 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+```
+
+#### 使用Docker
+
+```bash
+# 构建镜像
+docker build -t webscan-ai-front ./front
+
+# 运行容器
+docker run -d -p 80:80 \
+  --name webscan-front \
+  webscan-ai-front
 ```
 
 ---
 
 ## ❓ 常见问题
 
-### 1. 后端启动失败
+### 1. 端口被占用
 
-**问题**: 端口被占用
+**问题**: 启动服务时提示端口已被占用
 
 **解决方案**:
+
 ```bash
 # Windows
 netstat -ano | findstr :3000

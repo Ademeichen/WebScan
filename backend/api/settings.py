@@ -5,7 +5,7 @@
 所有设置通过数据库持久化，支持动态配置管理。
 """
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 import logging
@@ -44,7 +44,8 @@ class SettingsUpdateRequest(BaseModel):
     notification: Optional[Dict[str, Any]] = Field(None, description="通知设置")
     security: Optional[Dict[str, Any]] = Field(None, description="安全设置")
     
-    @validator('*', pre=True)
+    @field_validator('*', mode='before')
+    @classmethod
     def validate_settings(cls, v):
         """验证设置值"""
         if v is None:
