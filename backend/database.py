@@ -42,7 +42,8 @@ async def init_db():
         await Tortoise.init(
             db_url=db_url,
             modules={"models": ["backend.models"]},
-            _create_db=True
+            _create_db=True,
+            use_tz=False
         )
         await Tortoise.generate_schemas()
         logger.info(f"✅ 数据库初始化成功 - {db_url}")

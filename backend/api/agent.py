@@ -21,6 +21,7 @@ from backend.models import Task, AgentTask, AgentResult
 from backend.ai_agents.core.graph import create_agent_graph, initialize_tools
 from backend.ai_agents.core.state import AgentState
 from backend.api.task_utils import handle_task_error
+from backend.api.common import APIResponse
 import uuid
 from pathlib import Path
 import datetime
@@ -33,12 +34,6 @@ router = APIRouter(tags=["AI Agent"])
 agent_graph = create_agent_graph()
 initialize_tools()
 
-
-class APIResponse(BaseModel):
-    """统一API响应模型"""
-    code: int = Field(..., description="状态码", ge=100, le=599)
-    message: str = Field(..., description="响应消息")
-    data: Optional[Any] = Field(None, description="响应数据")
 
 class ToolDef(BaseModel):
     """

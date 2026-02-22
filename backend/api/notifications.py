@@ -8,10 +8,12 @@
 - 删除通知
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, List, Any
+from datetime import datetime
 import logging
+from backend.api.common import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -35,46 +37,47 @@ class CreateNotification(BaseModel):
     type: str = Field(..., description="通知类型")
 
 
-class APIResponse(BaseModel):
-    """统一API响应模型"""
-    code: int = Field(..., description="状态码")
-    message: str = Field(..., description="响应消息")
-    data: Optional[Any] = Field(None, description="响应数据")
+def format_time(dt: datetime) -> str:
+    """格式化时间为相对时间"""
+    if not dt:
+        return "未知时间"
+    
+    # 确保dt是naive datetime
+    if dt.tzinfo is not None:
+        dt = dt.replace(tzinfo=None)
+    
+    now = datetime.now()
+    delta = now - dt
+    
+    if delta.total_seconds() < 60:
+        return "刚刚"
+    elif delta.total_seconds() < 3600:
+        minutes = int(delta.total_seconds() / 60)
+        return f"{minutes}分钟前"
+    elif delta.total_seconds() < 86400:
+        hours = int(delta.total_seconds() / 3600)
+        return f"{hours}小时前"
+    elif delta.days < 7:
+        days = delta.days
+        return f"{days}天前"
+    else:
+        return dt.strftime("%Y-%m-%d")
 
 
-# 模拟通知数据库
-MOCK_NOTIFICATIONS = [
-    {
-        "id": 1,
-        "title": "高危漏洞发现",
-        "message": "在 shop.www.baidu.com 发现 SQL 注入漏洞",
-        "type": "high-vulnerability",
-        "time": "5分钟前",
-        "read": False
-    },
-    {
-        "id": 2,
-        "title": "扫描任务完成",
-        "message": "企业官网安全扫描已完成",
-        "type": "scan-complete",
-        "time": "1小时前",
-        "read": False
-    },
-    {
-        "id": 3,
-        "title": "系统更新",
-        "message": "漏洞库已更新到最新版本",
-        "type": "system-update",
-        "time": "2小时前",
-        "read": True
+def notification_to_dict(notification) -> dict:
+    """将Notification模型转换为字典"""
+    return {
+        "id": notification.id,
+        "title": notification.title,
+        "message": notification.message,
+        "type": notification.type,
+        "time": format_time(notification.created_at),
+        "read": notification.read
     }
-]
-
-NOTIFICATION_ID_COUNTER = 4
 
 
 @router.get("/", response_model=APIResponse, summary="获取通知列表")
-async def get_notifications(skip: int = 0, limit: int = 50, unread_only: bool = False):
+async def get_notifications(skip: int = 0, limit: int = 50, unread_only: bool = False, user_id: int = 1):
     """
     获取通知列表
     
@@ -82,6 +85,7 @@ async def get_notifications(skip: int = 0, limit: int = 50, unread_only: bool = 
         skip: 跳过的记录数
         limit: 返回的记录数
         unread_only: 是否只返回未读通知
+        user_id: 用户ID,默认为1
         
     Returns:
         APIResponse: 包含通知列表的响应
@@ -99,21 +103,19 @@ async def get_notifications(skip: int = 0, limit: int = 50, unread_only: bool = 
         ... }
     """
     try:
-        notifications = MOCK_NOTIFICATIONS.copy()
+        from backend.models import Notification
         
-        # 过滤未读通知
+        query = Notification.filter(user_id=user_id)
+        
         if unread_only:
-            notifications = [n for n in notifications if not n["read"]]
+            query = query.filter(read=False)
         
-        # 排序(最新的在前)
-        notifications.reverse()
+        total = await query.count()
+        notifications = await query.order_by("-created_at").offset(skip).limit(limit)
         
-        # 分页
-        total = len(notifications)
-        paginated_notifications = notifications[skip:skip + limit]
+        unread_count = await Notification.filter(user_id=user_id, read=False).count()
         
-        # 统计未读数量
-        unread_count = sum(1 for n in MOCK_NOTIFICATIONS if not n["read"])
+        notification_list = [notification_to_dict(n) for n in notifications]
         
         logger.info(f"获取通知列表成功: 共 {total} 条通知,{unread_count} 条未读")
         
@@ -121,7 +123,7 @@ async def get_notifications(skip: int = 0, limit: int = 50, unread_only: bool = 
             code=200,
             message="获取通知列表成功",
             data={
-                "notifications": paginated_notifications,
+                "notifications": notification_list,
                 "total": total,
                 "unread_count": unread_count
             }
@@ -132,12 +134,13 @@ async def get_notifications(skip: int = 0, limit: int = 50, unread_only: bool = 
 
 
 @router.get("/{notification_id}", response_model=APIResponse, summary="获取通知详情")
-async def get_notification(notification_id: int):
+async def get_notification(notification_id: int, user_id: int = 1):
     """
     获取单个通知的详细信息
     
     Args:
         notification_id: 通知ID
+        user_id: 用户ID,默认为1
         
     Returns:
         APIResponse: 包含通知详情的响应
@@ -154,7 +157,9 @@ async def get_notification(notification_id: int):
         ... }
     """
     try:
-        notification = next((n for n in MOCK_NOTIFICATIONS if n["id"] == notification_id), None)
+        from backend.models import Notification
+        
+        notification = await Notification.get_or_none(id=notification_id, user_id=user_id)
         if not notification:
             raise HTTPException(status_code=404, detail="通知不存在")
         
@@ -163,7 +168,7 @@ async def get_notification(notification_id: int):
         return APIResponse(
             code=200,
             message="获取通知详情成功",
-            data=notification
+            data=notification_to_dict(notification)
         )
     except HTTPException:
         raise
@@ -173,12 +178,13 @@ async def get_notification(notification_id: int):
 
 
 @router.post("/", response_model=APIResponse, summary="创建通知")
-async def create_notification(notification_data: CreateNotification):
+async def create_notification(notification_data: CreateNotification, user_id: int = 1):
     """
     创建新通知
     
     Args:
         notification_data: 通知数据
+        user_id: 用户ID,默认为1
         
     Returns:
         APIResponse: 包含创建的通知的响应
@@ -197,26 +203,26 @@ async def create_notification(notification_data: CreateNotification):
         ... }
     """
     try:
-        global NOTIFICATION_ID_COUNTER
+        from backend.models import Notification, User
         
-        new_notification = {
-            "id": NOTIFICATION_ID_COUNTER,
-            "title": notification_data.title,
-            "message": notification_data.message,
-            "type": notification_data.type,
-            "time": "刚刚",
-            "read": False
-        }
+        user = await User.get_or_none(id=user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="用户不存在")
         
-        MOCK_NOTIFICATIONS.append(new_notification)
-        NOTIFICATION_ID_COUNTER += 1
+        new_notification = await Notification.create(
+            user=user,
+            title=notification_data.title,
+            message=notification_data.message,
+            type=notification_data.type,
+            read=False
+        )
         
         logger.info(f"创建通知成功: {notification_data.title}")
         
         return APIResponse(
             code=200,
             message="创建通知成功",
-            data=new_notification
+            data=notification_to_dict(new_notification)
         )
     except Exception as e:
         logger.error(f"创建通知失败: {e}")
@@ -224,12 +230,13 @@ async def create_notification(notification_data: CreateNotification):
 
 
 @router.put("/{notification_id}/read", response_model=APIResponse, summary="标记通知为已读")
-async def mark_as_read(notification_id: int):
+async def mark_as_read(notification_id: int, user_id: int = 1):
     """
     标记通知为已读
     
     Args:
         notification_id: 通知ID
+        user_id: 用户ID,默认为1
         
     Returns:
         APIResponse: 包含更新后通知的响应
@@ -246,18 +253,21 @@ async def mark_as_read(notification_id: int):
         ... }
     """
     try:
-        notification = next((n for n in MOCK_NOTIFICATIONS if n["id"] == notification_id), None)
+        from models import Notification
+        
+        notification = await Notification.get_or_none(id=notification_id, user_id=user_id)
         if not notification:
             raise HTTPException(status_code=404, detail="通知不存在")
         
-        notification["read"] = True
+        notification.read = True
+        await notification.save()
         
         logger.info(f"标记通知为已读成功: {notification_id}")
         
         return APIResponse(
             code=200,
             message="标记为已读成功",
-            data=notification
+            data=notification_to_dict(notification)
         )
     except HTTPException:
         raise
@@ -267,10 +277,13 @@ async def mark_as_read(notification_id: int):
 
 
 @router.put("/read-all", response_model=APIResponse, summary="标记所有通知为已读")
-async def mark_all_as_read():
+async def mark_all_as_read(user_id: int = 1):
     """
     标记所有通知为已读
     
+    Args:
+        user_id: 用户ID,默认为1
+        
     Returns:
         APIResponse: 包含更新后通知列表的响应
         
@@ -283,15 +296,16 @@ async def mark_all_as_read():
         ... }
     """
     try:
-        for notification in MOCK_NOTIFICATIONS:
-            notification["read"] = True
+        from backend.models import Notification
+        
+        updated_count = await Notification.filter(user_id=user_id, read=False).update(read=True)
         
         logger.info("标记所有通知为已读成功")
         
         return APIResponse(
             code=200,
             message="标记所有通知为已读成功",
-            data={"updated_count": len(MOCK_NOTIFICATIONS)}
+            data={"updated_count": updated_count}
         )
     except Exception as e:
         logger.error(f"标记所有通知为已读失败: {e}")
@@ -299,12 +313,13 @@ async def mark_all_as_read():
 
 
 @router.delete("/{notification_id}", response_model=APIResponse, summary="删除通知")
-async def delete_notification(notification_id: int):
+async def delete_notification(notification_id: int, user_id: int = 1):
     """
     删除通知
     
     Args:
         notification_id: 通知ID
+        user_id: 用户ID,默认为1
         
     Returns:
         APIResponse: 删除成功的响应
@@ -321,11 +336,13 @@ async def delete_notification(notification_id: int):
         ... }
     """
     try:
-        notification_index = next((i for i, n in enumerate(MOCK_NOTIFICATIONS) if n["id"] == notification_id), None)
-        if notification_index is None:
+        from models import Notification
+        
+        notification = await Notification.get_or_none(id=notification_id, user_id=user_id)
+        if not notification:
             raise HTTPException(status_code=404, detail="通知不存在")
         
-        MOCK_NOTIFICATIONS.pop(notification_index)
+        await notification.delete()
         
         logger.info(f"删除通知成功: {notification_id}")
         
@@ -342,10 +359,13 @@ async def delete_notification(notification_id: int):
 
 
 @router.delete("/", response_model=APIResponse, summary="删除所有已读通知")
-async def delete_read_notifications():
+async def delete_read_notifications(user_id: int = 1):
     """
     删除所有已读通知
     
+    Args:
+        user_id: 用户ID,默认为1
+        
     Returns:
         APIResponse: 删除成功的响应
         
@@ -358,9 +378,9 @@ async def delete_read_notifications():
         ... }
     """
     try:
-        initial_count = len(MOCK_NOTIFICATIONS)
-        MOCK_NOTIFICATIONS[:] = [n for n in MOCK_NOTIFICATIONS if not n["read"]]
-        deleted_count = initial_count - len(MOCK_NOTIFICATIONS)
+        from models import Notification
+        
+        deleted_count = await Notification.filter(user_id=user_id, read=True).delete()
         
         logger.info(f"删除已读通知成功: 共删除 {deleted_count} 条通知")
         
@@ -375,10 +395,13 @@ async def delete_read_notifications():
 
 
 @router.get("/count/unread", response_model=APIResponse, summary="获取未读通知数量")
-async def get_unread_count():
+async def get_unread_count(user_id: int = 1):
     """
     获取未读通知数量
     
+    Args:
+        user_id: 用户ID,默认为1
+        
     Returns:
         APIResponse: 包含未读通知数量的响应
         
@@ -391,7 +414,9 @@ async def get_unread_count():
         ... }
     """
     try:
-        unread_count = sum(1 for n in MOCK_NOTIFICATIONS if not n["read"])
+        from backend.models import Notification
+        
+        unread_count = await Notification.filter(user_id=user_id, read=False).count()
         
         logger.info(f"获取未读通知数量成功: {unread_count}")
         

@@ -11,6 +11,7 @@ import logging
 import json
 from urllib.parse import quote
 from backend.models import Report, Task, Vulnerability
+from backend.api.common import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -124,12 +125,6 @@ class ReportResponse(BaseModel):
     content: Optional[Dict[str, Any]]
     created_at: datetime
     updated_at: datetime
-
-
-class APIResponse(BaseModel):
-    code: int
-    message: str
-    data: Optional[Any] = None
 
 
 @router.get("/", response_model=APIResponse)

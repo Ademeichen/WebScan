@@ -17,6 +17,7 @@ from tortoise.functions import Count
 from urllib.parse import urlparse
 from backend.config import settings
 from backend.models import Task, Vulnerability
+from backend.api.common import APIResponse
 
 # 导入 AWVS API 类
 from backend.AVWS.API.Target import Target
@@ -59,13 +60,6 @@ class AWVSScanRequest(BaseModel):
 class AWVSTargetRequest(BaseModel):
     address: str
     description: Optional[str] = None
-
-
-# 响应模型
-class APIResponse(BaseModel):
-    code: int
-    message: str
-    data: Optional[Any] = None
 
 
 def get_awvs_client():

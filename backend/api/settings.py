@@ -14,6 +14,7 @@ import platform
 import json
 from tortoise.functions import Count
 from backend.models import Task, Vulnerability, SystemSettings, Report, SystemLog, AIChatInstance
+from backend.api.common import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +22,6 @@ router = APIRouter()
 
 
 # ====================== 请求/响应模型 ======================
-
-class APIResponse(BaseModel):
-    """统一API响应模型"""
-    code: int = Field(..., description="状态码", ge=100, le=599)
-    message: str = Field(..., description="响应消息")
-    data: Optional[Any] = Field(None, description="响应数据")
-
 
 class SettingItem(BaseModel):
     """单个设置项模型"""

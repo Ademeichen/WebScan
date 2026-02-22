@@ -720,3 +720,129 @@ class POCExecutionLog(Model):
     class Meta:
         table = "poc_execution_logs"
         table_description = "POC执行日志表"
+
+
+class User(Model):
+    """
+    用户表
+    
+    用于存储和管理系统用户信息，包括用户基本信息、角色权限等。
+    
+    Attributes:
+        id: 用户唯一标识
+        username: 用户名，唯一标识用户
+        email: 邮箱地址，用于登录和通知
+        password_hash: 密码哈希值，存储加密后的密码
+        role: 用户角色，如administrator（管理员）、user（普通用户）等
+        avatar: 头像URL地址
+        last_login: 最后登录时间
+        is_active: 是否激活，False表示用户被禁用
+        created_at: 用户创建时间
+        updated_at: 用户信息最后更新时间
+    """
+    
+    id = fields.IntField(pk=True, description="用户ID")
+    username = fields.CharField(max_length=100, unique=True, description="用户名")
+    email = fields.CharField(max_length=255, unique=True, description="邮箱地址")
+    password_hash = fields.CharField(max_length=255, null=True, description="密码哈希值")
+    role = fields.CharField(max_length=50, default="user", description="用户角色：administrator, user, etc.")
+    avatar = fields.CharField(max_length=500, null=True, description="头像URL")
+    last_login = fields.DatetimeField(null=True, description="最后登录时间")
+    is_active = fields.BooleanField(default=True, description="是否激活")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
+    
+    # 关系定义
+    notifications: fields.ReverseRelation["Notification"]
+    
+    class Meta:
+        table = "users"
+        table_description = "用户表"
+        ordering = ["-created_at"]
+        indexes = [
+            ("username",),
+            ("email",),
+            ("role",),
+        ]
+    
+    def __str__(self):
+        return f"{self.username} ({self.role})"
+    
+    def is_administrator(self) -> bool:
+        """检查是否为管理员"""
+        return self.role == "administrator"
+    
+    def is_active_user(self) -> bool:
+        """检查用户是否激活"""
+        return self.is_active
+    
+    def get_permissions(self) -> list:
+        """获取用户权限列表"""
+        if self.role == "administrator":
+            return [
+                "scan:create",
+                "scan:read",
+                "scan:update",
+                "scan:delete",
+                "report:generate",
+                "report:read",
+                "report:delete",
+                "settings:manage",
+                "user:manage"
+            ]
+        else:
+            return [
+                "scan:create",
+                "scan:read",
+                "report:generate",
+                "report:read"
+            ]
+
+
+class Notification(Model):
+    """
+    通知表
+    
+    用于存储和管理用户通知信息，包括系统通知、漏洞告警等。
+    通知与用户是多对一关系，一个用户可以接收多个通知。
+    
+    Attributes:
+        id: 通知唯一标识
+        user: 关联的用户对象，外键关联到User表
+        title: 通知标题
+        message: 通知详细内容
+        type: 通知类型，如high-vulnerability（高危漏洞）、system（系统通知）等
+        read: 是否已读，True表示已读，False表示未读
+        created_at: 通知创建时间
+    """
+    
+    id = fields.IntField(pk=True, description="通知ID")
+    user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
+        "models.User", related_name="notifications", description="关联用户"
+    )
+    title = fields.CharField(max_length=255, description="通知标题")
+    message = fields.TextField(description="通知详细内容")
+    type = fields.CharField(max_length=50, default="system", description="通知类型：high-vulnerability, medium-vulnerability, system, etc.")
+    read = fields.BooleanField(default=False, description="是否已读")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    
+    class Meta:
+        table = "notifications"
+        table_description = "通知表"
+        ordering = ["-created_at"]
+        indexes = [
+            ("user_id",),
+            ("read",),
+            ("type",),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} ({'已读' if self.read else '未读'})"
+    
+    def is_unread(self) -> bool:
+        """检查通知是否未读"""
+        return not self.read
+    
+    def is_high_priority(self) -> bool:
+        """检查是否为高优先级通知"""
+        return self.type in ["high-vulnerability", "critical-vulnerability"]

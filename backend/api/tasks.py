@@ -19,6 +19,7 @@ import json
 import asyncio
 from backend.models import Task, Vulnerability, POCScanResult, Report
 from backend.config import settings
+from backend.api.common import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -146,19 +147,6 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = None
     progress: Optional[int] = None
     result: Optional[Any] = None
-
-class APIResponse(BaseModel):
-    """
-    统一 API 响应模型
-    
-    Attributes:
-        code: 响应状态码,200 表示成功
-        message: 响应消息
-        data: 响应数据,可选
-    """
-    code: int
-    message: str
-    data: Optional[Any] = None
 
 # ====== 任务管理接口 ======
 

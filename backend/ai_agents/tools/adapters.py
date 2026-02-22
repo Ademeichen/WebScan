@@ -27,7 +27,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.baseinfo.baseinfo import getbaseinfo
+        from backend.plugins.baseinfo.baseinfo import getbaseinfo
         return getbaseinfo
     
     @staticmethod
@@ -38,7 +38,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.portscan.portscan import ScanPort
+        from backend.plugins.portscan.portscan import ScanPort
         
         def portscan_wrapper(target: str) -> Dict[str, Any]:
             try:
@@ -73,7 +73,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.waf.waf import get_waf
+        from backend.plugins.waf.waf import get_waf
         return get_waf
     
     @staticmethod
@@ -84,7 +84,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.cdnexist.cdnexist import iscdn
+        from backend.plugins.cdnexist.cdnexist import iscdn
         
         def cdn_wrapper(target: str) -> Dict[str, Any]:
             try:
@@ -112,7 +112,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.whatcms.whatcms import getwhatcms
+        from backend.plugins.whatcms.whatcms import getwhatcms
         return getwhatcms
     
     @staticmethod
@@ -123,7 +123,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.infoleak.infoleak import get_infoleak
+        from backend.plugins.infoleak.infoleak import get_infoleak
         return get_infoleak
     
     @staticmethod
@@ -134,7 +134,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.subdomain.subdomain import get_subdomain
+        from backend.plugins.subdomain.subdomain import get_subdomain
         return get_subdomain
     
     @staticmethod
@@ -145,7 +145,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.webside.webside import get_side_info
+        from backend.plugins.webside.webside import get_side_info
         return get_side_info
     
     @staticmethod
@@ -156,7 +156,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.webweight.webweight import get_web_weight
+        from backend.plugins.webweight.webweight import get_web_weight
         return get_web_weight
     
     @staticmethod
@@ -167,7 +167,7 @@ class PluginAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from plugins.iplocating.iplocating import get_locating
+        from backend.plugins.iplocating.iplocating import get_locating
         return get_locating
 
     @staticmethod

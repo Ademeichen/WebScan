@@ -7,11 +7,13 @@
 - 用户权限管理
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List, Any
 from datetime import datetime
 import logging
+from tortoise import Tortoise
+from backend.api.common import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -35,49 +37,13 @@ class UpdateUserInfo(BaseModel):
     avatar: Optional[str] = Field(None, description="头像URL")
 
 
-class APIResponse(BaseModel):
-    """统一API响应模型"""
-    code: int = Field(..., description="状态码")
-    message: str = Field(..., description="响应消息")
-    data: Optional[Any] = Field(None, description="响应数据")
-
-# TODO
-# 模拟用户数据库
-MOCK_USERS = {
-    1: {
-        "id": 1,
-        "username": "admin",
-        "email": "admin@webscan.ai",
-        "role": "administrator",
-        "avatar": None,
-        "last_login": datetime.now(),
-        "permissions": [
-            "scan:create",
-            "scan:read",
-            "scan:update",
-            "scan:delete",
-            "report:generate",
-            "report:read",
-            "report:delete",
-            "settings:manage",
-            "user:manage"
-        ]
-    },
-    2: {
-        "id": 2,
-        "username": "user",
-        "email": "user@webscan.ai",
-        "role": "user",
-        "avatar": None,
-        "last_login": datetime.now(),
-        "permissions": [
-            "scan:create",
-            "scan:read",
-            "report:generate",
-            "report:read"
-        ]
-    }
-}
+async def get_user_or_404(user_id: int):
+    """获取用户或返回404错误"""
+    from backend.models import User
+    user = await User.get_or_none(id=user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    return user
 
 
 @router.get("/profile", response_model=APIResponse, summary="获取用户信息")
@@ -111,16 +77,24 @@ async def get_user_profile(user_id: int = 1):
         ... }
     """
     try:
-        user_data = MOCK_USERS.get(user_id)
-        if not user_data:
-            raise HTTPException(status_code=404, detail="用户不存在")
+        user = await get_user_or_404(user_id)
         
-        logger.info(f"获取用户信息成功: {user_data['username']}")
+        user_data = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "avatar": user.avatar,
+            "last_login": user.last_login,
+            "permissions": user.get_permissions()
+        }
+        
+        logger.info(f"获取用户信息成功: {user.username}")
         
         return APIResponse(
             code=200,
             message="获取用户信息成功",
-            data=UserInfo(**user_data).dict()
+            data=user_data
         )
     except HTTPException:
         raise
@@ -160,22 +134,31 @@ async def update_user_profile(user_id: int = 1, update_data: UpdateUserInfo = No
         if not update_data:
             raise HTTPException(status_code=400, detail="请提供要更新的数据")
         
-        user_data = MOCK_USERS.get(user_id)
-        if not user_data:
-            raise HTTPException(status_code=404, detail="用户不存在")
+        user = await get_user_or_404(user_id)
         
-        # 更新用户信息
         if update_data.email:
-            user_data["email"] = update_data.email
+            user.email = update_data.email
         if update_data.avatar:
-            user_data["avatar"] = update_data.avatar
+            user.avatar = update_data.avatar
         
-        logger.info(f"更新用户信息成功: {user_data['username']}")
+        await user.save()
+        
+        user_data = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "avatar": user.avatar,
+            "last_login": user.last_login,
+            "permissions": user.get_permissions()
+        }
+        
+        logger.info(f"更新用户信息成功: {user.username}")
         
         return APIResponse(
             code=200,
             message="更新用户信息成功",
-            data=UserInfo(**user_data).dict()
+            data=user_data
         )
     except HTTPException:
         raise
@@ -206,16 +189,14 @@ async def get_user_permissions(user_id: int = 1):
         ... }
     """
     try:
-        user_data = MOCK_USERS.get(user_id)
-        if not user_data:
-            raise HTTPException(status_code=404, detail="用户不存在")
+        user = await get_user_or_404(user_id)
         
-        logger.info(f"获取用户权限成功: {user_data['username']}")
+        logger.info(f"获取用户权限成功: {user.username}")
         
         return APIResponse(
             code=200,
             message="获取用户权限成功",
-            data={"permissions": user_data["permissions"]}
+            data={"permissions": user.get_permissions()}
         )
     except HTTPException:
         raise
@@ -248,22 +229,20 @@ async def get_user_list(skip: int = 0, limit: int = 20):
         ... }
     """
     try:
-        users = list(MOCK_USERS.values())
-        total = len(users)
+        from backend.models import User
         
-        # 分页
-        paginated_users = users[skip:skip + limit]
+        total = await User.all().count()
+        users = await User.all().order_by("-created_at").offset(skip).limit(limit)
         
-        # 移除敏感信息
         safe_users = []
-        for user in paginated_users:
+        for user in users:
             safe_user = {
-                "id": user["id"],
-                "username": user["username"],
-                "email": user["email"],
-                "role": user["role"],
-                "avatar": user["avatar"],
-                "last_login": user["last_login"]
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": user.role,
+                "avatar": user.avatar,
+                "last_login": user.last_login
             }
             safe_users.append(safe_user)
         

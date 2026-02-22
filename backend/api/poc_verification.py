@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel, Field
 
 from backend.models import POCVerificationTask, POCVerificationResult
