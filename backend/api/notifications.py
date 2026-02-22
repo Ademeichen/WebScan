@@ -14,14 +14,15 @@ from typing import Optional, List, Any
 from datetime import datetime
 import logging
 from backend.api.common import APIResponse
+from backend.models import Notification, User
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notifications", tags=["通知管理"])
 
 
-class Notification(BaseModel):
-    """通知模型"""
+class NotificationResponse(BaseModel):
+    """通知响应模型"""
     id: int = Field(..., description="通知ID")
     title: str = Field(..., description="通知标题")
     message: str = Field(..., description="通知内容")
@@ -103,8 +104,6 @@ async def get_notifications(skip: int = 0, limit: int = 50, unread_only: bool = 
         ... }
     """
     try:
-        from backend.models import Notification
-        
         query = Notification.filter(user_id=user_id)
         
         if unread_only:
@@ -157,8 +156,6 @@ async def get_notification(notification_id: int, user_id: int = 1):
         ... }
     """
     try:
-        from backend.models import Notification
-        
         notification = await Notification.get_or_none(id=notification_id, user_id=user_id)
         if not notification:
             raise HTTPException(status_code=404, detail="通知不存在")
@@ -203,8 +200,6 @@ async def create_notification(notification_data: CreateNotification, user_id: in
         ... }
     """
     try:
-        from backend.models import Notification, User
-        
         user = await User.get_or_none(id=user_id)
         if not user:
             raise HTTPException(status_code=404, detail="用户不存在")
@@ -253,8 +248,6 @@ async def mark_as_read(notification_id: int, user_id: int = 1):
         ... }
     """
     try:
-        from models import Notification
-        
         notification = await Notification.get_or_none(id=notification_id, user_id=user_id)
         if not notification:
             raise HTTPException(status_code=404, detail="通知不存在")
@@ -296,8 +289,6 @@ async def mark_all_as_read(user_id: int = 1):
         ... }
     """
     try:
-        from backend.models import Notification
-        
         updated_count = await Notification.filter(user_id=user_id, read=False).update(read=True)
         
         logger.info("标记所有通知为已读成功")
@@ -336,8 +327,6 @@ async def delete_notification(notification_id: int, user_id: int = 1):
         ... }
     """
     try:
-        from models import Notification
-        
         notification = await Notification.get_or_none(id=notification_id, user_id=user_id)
         if not notification:
             raise HTTPException(status_code=404, detail="通知不存在")
@@ -378,8 +367,6 @@ async def delete_read_notifications(user_id: int = 1):
         ... }
     """
     try:
-        from models import Notification
-        
         deleted_count = await Notification.filter(user_id=user_id, read=True).delete()
         
         logger.info(f"删除已读通知成功: 共删除 {deleted_count} 条通知")
@@ -414,8 +401,6 @@ async def get_unread_count(user_id: int = 1):
         ... }
     """
     try:
-        from backend.models import Notification
-        
         unread_count = await Notification.filter(user_id=user_id, read=False).count()
         
         logger.info(f"获取未读通知数量成功: {unread_count}")

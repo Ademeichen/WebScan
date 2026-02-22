@@ -408,7 +408,28 @@ class TestTasksAPI(APITestSuite):
             result.message = f"获取任务详情失败: {response}"
 
     def test_update_task(self, result: APITestResult):
-        """测试更新任务"""
+        """测试更新任务 - 遵循业务规则的状态转换"""
+        task_id = self.test_data.get("test_task_id")
+        if not task_id:
+            result.success = False
+            result.message = "没有可用的任务ID"
+            return
+        
+        data = {
+            "status": "running",
+            "progress": 50
+        }
+        response = self.make_request("PUT", f"/api/tasks/{task_id}", data=data)
+        if response and response["status_code"] == 200:
+            result.success = True
+            result.message = "更新任务成功 (pending -> running)"
+            result.response_data = response["data"]
+        else:
+            result.success = False
+            result.message = f"更新任务失败: {response}"
+
+    def test_complete_task(self, result: APITestResult):
+        """测试完成任务 - 合法状态转换 running -> completed"""
         task_id = self.test_data.get("test_task_id")
         if not task_id:
             result.success = False
@@ -422,11 +443,11 @@ class TestTasksAPI(APITestSuite):
         response = self.make_request("PUT", f"/api/tasks/{task_id}", data=data)
         if response and response["status_code"] == 200:
             result.success = True
-            result.message = "更新任务成功"
+            result.message = "完成任务成功 (running -> completed)"
             result.response_data = response["data"]
         else:
             result.success = False
-            result.message = f"更新任务失败: {response}"
+            result.message = f"完成任务失败: {response}"
 
     def test_get_task_results(self, result: APITestResult):
         """测试获取任务结果"""
@@ -454,7 +475,8 @@ class TestTasksAPI(APITestSuite):
         self.run_test("创建任务", self.test_create_task)
         self.run_test("获取任务列表", self.test_list_tasks)
         self.run_test("获取任务详情", self.test_get_task)
-        self.run_test("更新任务", self.test_update_task)
+        self.run_test("更新任务状态(pending->running)", self.test_update_task)
+        self.run_test("完成任务(running->completed)", self.test_complete_task)
         self.run_test("获取任务结果", self.test_get_task_results)
 
 
@@ -475,11 +497,26 @@ class TestReportsAPI(APITestSuite):
 
     def test_create_report(self, result: APITestResult):
         """测试创建报告"""
+        task_data = {
+            "task_name": "测试任务-报告测试",
+            "task_type": "scan_port",
+            "target": "127.0.0.1"
+        }
+        task_response = self.make_request("POST", "/api/tasks/create", data=task_data)
+        task_id = None
+        if task_response and task_response["status_code"] == 200:
+            task_id = task_response["data"].get("data", {}).get("task_id")
+        
+        if not task_id:
+            result.success = False
+            result.message = "创建任务失败，无法测试报告创建"
+            return
+        
         data = {
-            "task_id": 1,
+            "task_id": task_id,
             "name": "测试报告-API测试",
             "format": "json",
-            "content": []
+            "content": {}
         }
         response = self.make_request("POST", "/api/reports/", data=data)
         if response and response["status_code"] == 200:

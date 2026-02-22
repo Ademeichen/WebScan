@@ -108,7 +108,7 @@ class ReportCreate(BaseModel):
     task_id: int
     name: str  # Frontend sends 'name'
     format: str  # Frontend sends 'format'
-    content: Optional[List[str]] = []  # Frontend sends 'content' list
+    content: Optional[Dict[str, Any]] = None  # Changed from List[str] to Dict[str, Any]
 
 
 class ReportUpdate(BaseModel):
@@ -137,6 +137,7 @@ async def list_reports(
     获取报告列表(使用数据库)
     """
     try:
+        logger.info("[报告列表] 开始获取报告列表")
         query = Report.all()
         
         # 过滤条件
@@ -151,6 +152,7 @@ async def list_reports(
         
         # 分页查询
         reports = await query.prefetch_related('task').offset(skip).limit(limit)
+        logger.info(f"[报告列表] 获取成功 | 报告数量: {total}")
         
         # 转换为字典格式
         report_list = []
@@ -188,7 +190,7 @@ async def list_reports(
             }
         )
     except Exception as e:
-        logger.error(f"获取报告列表失败: {str(e)}")
+        logger.error(f"[报告列表] 获取失败 | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -198,12 +200,17 @@ async def create_report(report: ReportCreate):
     创建新报告(使用数据库)
     """
     try:
+        logger.info(f"[创建报告] 开始处理请求 | 任务ID: {report.task_id} | 报告名称: {report.name} | 格式: {report.format}")
+        
         task = await Task.get_or_none(id=report.task_id)
         if not task:
+            logger.warning(f"[创建报告] 任务不存在 | 任务ID: {report.task_id}")
             raise HTTPException(status_code=400, detail="任务不存在")
         
-        # 生成报告内容
+        logger.info(f"[创建报告] 查询任务漏洞 | 任务ID: {report.task_id}")
         vulns = await Vulnerability.filter(task_id=task.id).all()
+        logger.info(f"[创建报告] 漏洞查询完成 | 漏洞数量: {len(vulns)}")
+        
         vuln_list = []
         stats = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
         
@@ -223,6 +230,8 @@ async def create_report(report: ReportCreate):
             else:
                 stats["info"] += 1
 
+        logger.info(f"[创建报告] 漏洞统计 | critical: {stats['critical']}, high: {stats['high']}, medium: {stats['medium']}, low: {stats['low']}, info: {stats['info']}")
+
         report_content = {
             "task_name": task.task_name,
             "target": task.target,
@@ -231,7 +240,7 @@ async def create_report(report: ReportCreate):
             "vulnerabilities": vuln_list
         }
 
-        # 创建报告记录
+        logger.info(f"[创建报告] 创建报告记录 | 任务ID: {report.task_id}")
         new_report = await Report.create(
             task_id=report.task_id,
             report_name=report.name,
@@ -239,7 +248,7 @@ async def create_report(report: ReportCreate):
             content=json.dumps(report_content)
         )
         
-        logger.info(f"创建报告: {report.name} (ID: {new_report.id})")
+        logger.info(f"[创建报告] 报告创建成功 | 报告ID: {new_report.id} | 报告名称: {report.name}")
         
         # 转换为字典格式
         report_dict = {
@@ -275,10 +284,14 @@ async def get_report(report_id: int):
     获取报告详情(使用数据库)
     """
     try:
+        logger.info(f"[报告详情] 开始获取报告 | 报告ID: {report_id}")
         report = await Report.filter(id=report_id).prefetch_related('task').first()
         
         if not report:
+            logger.warning(f"[报告详情] 报告不存在 | 报告ID: {report_id}")
             raise HTTPException(status_code=404, detail="报告不存在")
+        
+        logger.info(f"[报告详情] 报告获取成功 | 报告ID: {report_id}")
         
         # 解析报告内容
         content_data = json.loads(report.content) if report.content else {}

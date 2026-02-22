@@ -179,8 +179,8 @@ class PluginAdapter:
             callable: 适配后的函数
         """
         from backend.config import settings
-        from AVWS.API.Target import Target
-        from AVWS.API.Scan import Scan
+        from backend.AVWS.API.Target import Target
+        from backend.AVWS.API.Scan import Scan
         
         def awvs_wrapper(target: str) -> Dict[str, Any]:
             try:
@@ -291,7 +291,7 @@ class POCAdapter:
         Returns:
             Dict[str, Any]: POC名称到模块的映射
         """
-        from poc import (
+        from backend.poc import (
             cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
             struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
             cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
@@ -372,7 +372,7 @@ class DependencyAdapter:
         Returns:
             callable: 适配后的函数
         """
-        from .dependency_installer import install_dependencies
+        from backend.ai_agents.tools.dependency_installer import install_dependencies
         
         def install_wrapper(target: str, packages: str = None, **kwargs) -> Dict[str, Any]:
             try:

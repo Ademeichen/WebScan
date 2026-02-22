@@ -48,6 +48,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# 配置API专用日志器
+api_logger = logging.getLogger("api_logger")
+api_logger.setLevel(getattr(logging, settings.LOG_LEVEL))
+api_file_handler = logging.FileHandler("logs/api.log", encoding='utf-8')
+api_file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(message)s'
+))
+api_logger.addHandler(api_file_handler)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -121,6 +130,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 配置 API 日志中间件
+from backend.api.logging_middleware import setup_api_logging
+setup_api_logging(app, settings.LOG_LEVEL)
 
 
 @app.get("/")

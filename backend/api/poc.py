@@ -91,6 +91,22 @@ POC_FUNCTIONS = {
 }
 
 
+@router.get("/list", response_model=APIResponse)
+async def list_pocs():
+    """
+    获取可用的POC列表
+    """
+    try:
+        logger.info("[POC列表] 开始获取POC列表")
+        from backend.ai_agents.poc_system.poc_manager import poc_manager
+        pocs = poc_manager.list_pocs()
+        logger.info(f"[POC列表] 获取成功 | POC数量: {len(pocs) if pocs else 0}")
+        return APIResponse(code=200, message="获取成功", data={"pocs": pocs, "total": len(pocs) if pocs else 0})
+    except Exception as e:
+        logger.error(f"[POC列表] 获取失败 | 错误: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/types", response_model=APIResponse)
 async def get_available_poc_types():
     """
@@ -167,6 +183,8 @@ async def scan_poc(request: POCScanRequest):
         ... }
     """
     try:
+        logger.info(f"[POC扫描] 开始处理请求 | 目标: {request.target} | POC类型: {request.poc_types}")
+        
         from backend.models import Task
         from task_executor import task_executor
         
@@ -175,7 +193,8 @@ async def scan_poc(request: POCScanRequest):
         task_name = f"POC Scan: {request.target}"
         if len(poc_types) == 1:
             task_name = f"POC Scan ({poc_types[0]}): {request.target}"
-            
+        
+        logger.info(f"[POC扫描] 创建任务 | 目标: {request.target} | POC数量: {len(poc_types)}")
         new_task = await Task.create(
             task_name=task_name,
             task_type="poc_scan",
@@ -188,6 +207,7 @@ async def scan_poc(request: POCScanRequest):
             }),
             result=None
         )
+        logger.info(f"[POC扫描] 任务创建成功 | 任务ID: {new_task.id}")
         
         # 2. 启动异步任务
         asyncio.create_task(task_executor.start_task(
@@ -198,6 +218,7 @@ async def scan_poc(request: POCScanRequest):
                 "timeout": request.timeout
             }
         ))
+        logger.info(f"[POC扫描] 任务已启动执行 | 任务ID: {new_task.id}")
         
         # 3. 返回任务信息
         return APIResponse(
@@ -212,7 +233,7 @@ async def scan_poc(request: POCScanRequest):
         )
         
     except Exception as e:
-        logger.error(f"创建 POC 扫描任务失败: {str(e)}")
+        logger.error(f"[POC扫描] 任务执行失败 | 目标: {request.target} | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=f"创建任务失败: {str(e)}")
 
 

@@ -119,13 +119,15 @@ class TaskExecutor:
             target: 目标地址
             scan_config: 扫描配置
         """
+        logger.info(f"[任务提交] 开始处理 | 任务ID: {task_id} | 目标: {target} | 配置: {scan_config}")
+        
         # 1. 幂等性检查
         if task_id in self.queued_task_ids:
-            logger.warning(f"任务 {task_id} 已在队列中,忽略重复提交")
+            logger.warning(f"[任务提交] 任务已在队列中,忽略重复提交 | 任务ID: {task_id}")
             return
             
         if task_id == self.running_task_id:
-            logger.warning(f"任务 {task_id} 正在执行中,忽略重复提交")
+            logger.warning(f"[任务提交] 任务正在执行中,忽略重复提交 | 任务ID: {task_id}")
             return
 
         # 2. 提交到队列
@@ -137,7 +139,7 @@ class TaskExecutor:
         
         self.queued_task_ids.add(task_id)
         await self.queue.put(task_info)
-        logger.info(f"任务 {task_id} 已添加到执行队列 (当前等待: {self.queue.qsize()})")
+        logger.info(f"[任务提交] 任务已添加到队列 | 任务ID: {task_id} | 队列位置: {self.queue.qsize()}")
         
         # 广播任务入队消息
         await manager.broadcast({
@@ -166,10 +168,13 @@ class TaskExecutor:
                 # 获取任务
                 task_info = await self.queue.get()
                 task_id = task_info['task_id']
+                target = task_info.get('target', 'unknown')
+                
+                logger.info(f"[Worker] 获取到任务 | 任务ID: {task_id} | 目标: {target} | 队列剩余: {self.queue.qsize()}")
                 
                 # 检查是否已取消
                 if task_id in self.cancelled_task_ids:
-                    logger.info(f"任务 {task_id} 已被取消，跳过执行")
+                    logger.info(f"[Worker] 任务已被取消,跳过执行 | 任务ID: {task_id}")
                     self.cancelled_task_ids.discard(task_id)
                     self.queued_task_ids.discard(task_id)
                     self.queue.task_done()
@@ -180,7 +185,7 @@ class TaskExecutor:
                 self.running_task_id = task_id
                 
                 try:
-                    logger.info(f"Worker开始处理任务 {task_id}")
+                    logger.info(f"[Worker] 开始处理任务 | 任务ID: {task_id} | 目标: {target}")
                     
                     # 广播任务开始消息
                     await manager.broadcast({
@@ -205,13 +210,13 @@ class TaskExecutor:
                     )
                     
                 except asyncio.TimeoutError:
-                    logger.error(f"任务 {task_id} 执行超时 (限制: {timeout}s)")
+                    logger.error(f"[Worker] 任务执行超时 | 任务ID: {task_id} | 超时限制: {timeout}s")
                     # 如果超时，也需要确保任务被取消
                     if self.current_execution_task and not self.current_execution_task.done():
                         self.current_execution_task.cancel()
                     await self._handle_task_failure(task_id, f"Task execution timed out after {timeout}s")
                 except asyncio.CancelledError:
-                    logger.warning(f"任务 {task_id} 被取消")
+                    logger.warning(f"[Worker] 任务被取消 | 任务ID: {task_id}")
                     # 不需要抛出，因为这是预期的取消操作
                     # 但如果是Worker本身被取消，则需要抛出?
                     # 这里捕获的是 wait_for 抛出的 CancelledError，通常是因为 current_execution_task.cancel() 被调用
@@ -219,7 +224,7 @@ class TaskExecutor:
                     
                     # 检查是否是我们主动取消的任务
                     if task_id in self.cancelled_task_ids:
-                        logger.info(f"确认任务 {task_id} 已响应取消信号")
+                        logger.info(f"[Worker] 确认任务已响应取消信号 | 任务ID: {task_id}")
                         self.cancelled_task_ids.discard(task_id)
                         # 更新数据库状态为已取消 (如果 _execute_wrapper 没来得及做)
                         try:
@@ -234,10 +239,11 @@ class TaskExecutor:
                         raise
                         
                 except Exception as e:
-                    logger.error(f"任务 {task_id} 执行发生未捕获异常: {e}", exc_info=True)
+                    logger.error(f"[Worker] 任务执行发生未捕获异常 | 任务ID: {task_id} | 错误: {e}", exc_info=True)
                     await self._handle_task_failure(task_id, f"System Error: {str(e)}")
                 finally:
                     # 状态清理
+                    logger.info(f"[Worker] 任务处理完成,清理状态 | 任务ID: {task_id}")
                     self.running_task_id = None
                     self.current_execution_task = None
                     self.queue.task_done()

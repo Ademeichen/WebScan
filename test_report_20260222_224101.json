@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-02-22T22:41:01.902454",
+  "execution_time": 125.697611,
+  "summary": {
+    "total_modules": 3,
+    "successful_modules": 1,
+    "failed_modules": 2,
+    "total_tests": 140,
+    "total_passed": 70,
+    "total_failed": 70,
+    "success_rate": "50.00%"
+  },
+  "modules": [
+    {
+      "module": "后端测试",
+      "total_tests": 0,
+      "passed": 0,
+      "failed": 0,
+      "success_rate": 0,
+      "status": "success"
+    },
+    {
+      "module": "前端测试",
+      "status": "error",
+      "error": "[WinError 2] 系统找不到指定的文件。"
+    },
+    {
+      "module": "API集成测试",
+      "total_tests": 140,
+      "passed": 70,
+      "failed": 70,
+      "success_rate": 50.0,
+      "failed_tests": [
+        "test_user_notification",
+        "test_tasks",
+        "test_scan",
+        "test_poc",
+        "test_awvs",
+        "test_reports",
+        "test_agent",
+        "test_dashboard",
+        "test_ai_chat",
+        "test_poc_verification",
+        "test_poc_files",
+        "test_seebug_agent",
+        "test_ai_agents",
+        "test_kb"
+      ],
+      "status": "failed"
+    }
+  ]
+}

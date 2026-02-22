@@ -166,6 +166,8 @@
         </div>
       </div>
     </el-popover>
+
+    <AIChatFloater />
   </div>
 </template>
 
@@ -173,13 +175,15 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/common/AppIcon.vue'
+import AIChatFloater from '@/components/common/AIChatFloater.vue'
 import { userApi, notificationsApi } from '@/utils/api'
 import { formatDate } from '@/utils/date'
 
 export default {
   name: 'AppLayout',
   components: {
-    AppIcon
+    AppIcon,
+    AIChatFloater
   },
   setup() {
     const route = useRoute()

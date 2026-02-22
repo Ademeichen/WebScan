@@ -142,6 +142,64 @@ class FinishRequest(BaseModel):
     stdout: str
     stderr: str
 
+@router.get("/tasks", response_model=APIResponse)
+async def get_agent_tasks(
+    status: Optional[str] = None,
+    task_type: Optional[str] = None,
+    limit: int = 20,
+    offset: int = 0
+):
+    """
+    获取Agent任务列表
+    
+    Args:
+        status: 可选的状态过滤
+        task_type: 可选的任务类型过滤
+        limit: 返回数量限制
+        offset: 偏移量
+        
+    Returns:
+        APIResponse: 包含任务列表
+    """
+    try:
+        query = Task.filter(task_type__in=['ai_agent_scan', 'agent_scan'])
+        
+        if status:
+            query = query.filter(status=status)
+        if task_type:
+            query = query.filter(task_type=task_type)
+            
+        total = await query.count()
+        tasks = await query.order_by('-created_at').offset(offset).limit(limit).all()
+        
+        task_list = []
+        for task in tasks:
+            task_list.append({
+                "id": task.id,
+                "task_name": task.task_name,
+                "task_type": task.task_type,
+                "target": task.target,
+                "status": task.status,
+                "progress": task.progress,
+                "created_at": task.created_at.isoformat() if task.created_at else None,
+                "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+                "error_message": task.error_message
+            })
+            
+        return APIResponse(
+            code=200, 
+            message="获取成功", 
+            data={
+                "total": total,
+                "tasks": task_list,
+                "limit": limit,
+                "offset": offset
+            }
+        )
+    except Exception as e:
+        logger.error(f"获取Agent任务列表失败: {e}")
+        return APIResponse(code=500, message=f"获取任务列表失败: {str(e)}")
+
 @router.delete("/task/{task_id}", response_model=APIResponse)
 async def delete_task(task_id: int):
     """
@@ -154,21 +212,24 @@ async def delete_task(task_id: int):
     from backend.task_executor import task_executor
     
     try:
+        logger.info(f"[删除任务] 开始处理 | 任务ID: {task_id}")
         task = await Task.get_or_none(id=task_id)
         if not task:
+            logger.info(f"[删除任务] 任务不存在或已删除 | 任务ID: {task_id}")
             return APIResponse(code=200, message="任务不存在或已删除")
         
         # 如果正在运行，先中止
         if task.status == 'running':
+            logger.info(f"[删除任务] 任务正在运行,先中止 | 任务ID: {task_id}")
             task_executor.abort_task(task_id)
             # 等待一小会儿让进程清理? 这里的逻辑主要是触发abort
         
         await task.delete()
-        logger.info(f"任务 {task_id} 已删除")
+        logger.info(f"[删除任务] 任务删除成功 | 任务ID: {task_id}")
         
         return APIResponse(code=200, message="任务删除成功")
     except Exception as e:
-        logger.error(f"删除任务失败: {e}")
+        logger.error(f"[删除任务] 删除失败 | 任务ID: {task_id} | 错误: {e}")
         return APIResponse(code=500, message=f"删除任务失败: {str(e)}")
 
 @router.post("/task/{task_id}/abort", response_model=APIResponse)
@@ -182,22 +243,27 @@ async def abort_task_endpoint(task_id: int):
     from backend.task_executor import task_executor
     
     try:
+        logger.info(f"[中止任务] 开始处理 | 任务ID: {task_id}")
         task = await Task.get_or_none(id=task_id)
         if not task:
+            logger.warning(f"[中止任务] 任务不存在 | 任务ID: {task_id}")
             return APIResponse(code=404, message="任务不存在")
             
         if task.status not in ['running', 'pending', 'queued']:
-             return APIResponse(code=200, message=f"任务当前状态({task.status})无需中止")
+            logger.info(f"[中止任务] 任务当前状态无需中止 | 任务ID: {task_id} | 状态: {task.status}")
+            return APIResponse(code=200, message=f"任务当前状态({task.status})无需中止")
 
+        logger.info(f"[中止任务] 发送中止指令 | 任务ID: {task_id}")
         task_executor.abort_task(task_id)
         
         # 更新状态为 aborted (task_executor 也会做，但这里立即响应)
         task.status = 'aborted'
         await task.save()
         
+        logger.info(f"[中止任务] 任务已中止 | 任务ID: {task_id}")
         return APIResponse(code=200, message="中止指令已发送")
     except Exception as e:
-        logger.error(f"中止任务失败: {e}")
+        logger.error(f"[中止任务] 中止失败 | 任务ID: {task_id} | 错误: {e}")
         return APIResponse(code=500, message=f"中止任务失败: {str(e)}")
 
 @router.put("/task/{task_id}/plugin/{plugin_id}/heartbeat", response_model=APIResponse)
@@ -222,11 +288,14 @@ async def finish_plugin(task_id: int, plugin_id: str, request: FinishRequest):
     插件执行完成回调
     """
     try:
+        logger.info(f"[插件完成] 收到完成回调 | 任务ID: {task_id} | 插件: {plugin_id} | 退出码: {request.exitCode}")
         task = await Task.get_or_none(id=task_id)
         if not task:
+            logger.warning(f"[插件完成] 任务不存在 | 任务ID: {task_id}")
             return APIResponse(code=404, message="Task not found")
         
         if request.exitCode == 0:
+            logger.info(f"[插件完成] 执行成功 | 任务ID: {task_id} | 插件: {plugin_id}")
             task.status = 'completed'
             task.progress = 100
             # 尝试解析 stdout 为 JSON 结果
@@ -235,10 +304,12 @@ async def finish_plugin(task_id: int, plugin_id: str, request: FinishRequest):
             except:
                 task.result = json.dumps({"raw_output": request.stdout})
         else:
+            logger.warning(f"[插件完成] 执行失败 | 任务ID: {task_id} | 插件: {plugin_id} | 退出码: {request.exitCode} | 错误: {request.stderr}")
             task.status = 'failed'
             task.result = json.dumps({"error": request.stderr or "Unknown error", "exit_code": request.exitCode})
             
         await task.save()
+        logger.info(f"[插件完成] 任务状态已更新 | 任务ID: {task_id} | 状态: {task.status}")
         logger.info(f"任务 {task_id} 回调完成: {task.status}")
         return APIResponse(code=200, message="Finish processed")
     except Exception as e:

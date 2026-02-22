@@ -51,25 +51,31 @@ async def port_scan(request: PortScanRequest):
     端口扫描 (异步)
     """
     try:
+        logger.info(f"[端口扫描] 开始处理请求 | IP: {request.ip} | 端口范围: {request.ports}")
+        
         if not validate_ip(request.ip):
+            logger.warning(f"[端口扫描] IP验证失败 | IP: {request.ip}")
             raise HTTPException(status_code=400, detail="请填写正确的IP地址")
         
+        logger.info(f"[端口扫描] 创建任务 | 目标: {request.ip}")
         new_task = await create_scan_task(
             task_name=f"Port Scan: {request.ip}",
             task_type='scan_port',
             target=request.ip,
             config={'ports': request.ports}
         )
+        logger.info(f"[端口扫描] 任务创建成功 | 任务ID: {new_task.id}")
         
         await start_task_execution(
             task_id=new_task.id,
             target=request.ip,
             scan_config={'ports': request.ports}
         )
+        logger.info(f"[端口扫描] 任务已启动执行 | 任务ID: {new_task.id}")
         
         return APIResponse(code=200, message="端口扫描任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(handle_task_error(e, "端口扫描启动"))
+        logger.error(f"[端口扫描] 任务执行失败 | IP: {request.ip} | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -80,24 +86,30 @@ async def info_leak(request: URLRequest):
     信息泄露检测 (异步)
     """
     try:
+        logger.info(f"[信息泄露检测] 开始处理请求 | URL: {request.url}")
+        
         url = validate_url(request.url)
         if not url:
+            logger.warning(f"[信息泄露检测] URL验证失败 | URL: {request.url}")
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
+        logger.info(f"[信息泄露检测] 创建任务 | 目标: {url}")
         new_task = await create_scan_task(
             task_name=f"Info Leak: {url}",
             task_type='scan_infoleak',
             target=url
         )
+        logger.info(f"[信息泄露检测] 任务创建成功 | 任务ID: {new_task.id}")
         
         await start_task_execution(
             task_id=new_task.id,
             target=url
         )
+        logger.info(f"[信息泄露检测] 任务已启动执行 | 任务ID: {new_task.id}")
         
         return APIResponse(code=200, message="信息泄露检测任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(handle_task_error(e, "信息泄露检测启动"))
+        logger.error(f"[信息泄露检测] 任务执行失败 | URL: {request.url} | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -108,23 +120,29 @@ async def web_side_scan(request: IPRequest):
     获取旁站信息 (异步)
     """
     try:
+        logger.info(f"[旁站扫描] 开始处理请求 | IP: {request.ip}")
+        
         if not validate_ip(request.ip):
+            logger.warning(f"[旁站扫描] IP验证失败 | IP: {request.ip}")
             raise HTTPException(status_code=400, detail="请填写正确的IP地址")
         
+        logger.info(f"[旁站扫描] 创建任务 | 目标: {request.ip}")
         new_task = await create_scan_task(
             task_name=f"Web Side: {request.ip}",
             task_type='scan_webside',
             target=request.ip
         )
+        logger.info(f"[旁站扫描] 任务创建成功 | 任务ID: {new_task.id}")
         
         await start_task_execution(
             task_id=new_task.id,
             target=request.ip
         )
+        logger.info(f"[旁站扫描] 任务已启动执行 | 任务ID: {new_task.id}")
         
         return APIResponse(code=200, message="旁站扫描任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(handle_task_error(e, "旁站扫描启动"))
+        logger.error(f"[旁站扫描] 任务执行失败 | IP: {request.ip} | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -135,24 +153,30 @@ async def get_base_info(request: URLRequest):
     获取网站基本信息 (异步)
     """
     try:
+        logger.info(f"[网站基本信息] 开始处理请求 | URL: {request.url}")
+        
         url = validate_url(request.url)
         if not url:
+            logger.warning(f"[网站基本信息] URL验证失败 | URL: {request.url}")
             raise HTTPException(status_code=400, detail="请填写正确的URL地址")
         
+        logger.info(f"[网站基本信息] 创建任务 | 目标: {url}")
         new_task = await create_scan_task(
             task_name=f"Base Info: {url}",
             task_type='scan_baseinfo',
             target=url
         )
+        logger.info(f"[网站基本信息] 任务创建成功 | 任务ID: {new_task.id}")
         
         await start_task_execution(
             task_id=new_task.id,
             target=url
         )
+        logger.info(f"[网站基本信息] 任务已启动执行 | 任务ID: {new_task.id}")
         
         return APIResponse(code=200, message="网站基本信息获取任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(handle_task_error(e, "获取网站基本信息启动"))
+        logger.error(f"[网站基本信息] 任务执行失败 | URL: {request.url} | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -302,25 +326,31 @@ async def subdomain_scan(request: SubdomainRequest):
     子域名扫描 (异步)
     """
     try:
+        logger.info(f"[子域名扫描] 开始处理请求 | 域名: {request.domain} | 深度扫描: {request.deep_scan}")
+        
         if not request.domain:
+            logger.warning(f"[子域名扫描] 域名验证失败 | 域名为空")
             raise HTTPException(status_code=400, detail="请填写正确的域名")
         
+        logger.info(f"[子域名扫描] 创建任务 | 目标: {request.domain}")
         new_task = await create_scan_task(
             task_name=f"Subdomain: {request.domain}",
             task_type='scan_subdomain',
             target=request.domain,
             config={'deep_scan': request.deep_scan}
         )
+        logger.info(f"[子域名扫描] 任务创建成功 | 任务ID: {new_task.id}")
         
         await start_task_execution(
             task_id=new_task.id,
             target=request.domain,
             scan_config={'deep_scan': request.deep_scan}
         )
+        logger.info(f"[子域名扫描] 任务已启动执行 | 任务ID: {new_task.id}")
         
         return APIResponse(code=200, message="子域名扫描任务已启动", data={"task_id": new_task.id})
     except Exception as e:
-        logger.error(handle_task_error(e, "子域名扫描启动"))
+        logger.error(f"[子域名扫描] 任务执行失败 | 域名: {request.domain} | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

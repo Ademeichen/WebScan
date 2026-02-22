@@ -47,13 +47,16 @@ def test_notification_api(tester: APITester):
     tester.put("/notifications/1/read")
 
     # 测试标记所有通知为已读
+    print("\n9. 测试标记所有通知为已读")
     tester.put("/notifications/read-all")
 
     # 测试删除通知
-    # tester.delete("/notifications/1")
+    print("\n6. 测试删除通知")
+    tester.delete("/notifications/1")
 
     # 测试删除所有已读通知
-    # tester.delete("/notifications/")
+    print("\n7. 测试删除所有已读通知")
+    tester.delete("/notifications/")
 
 
 if __name__ == "__main__":

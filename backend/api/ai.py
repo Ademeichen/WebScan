@@ -21,6 +21,7 @@ import logging
 
 from backend.models import AIChatInstance, AIChatMessage
 from backend.config import settings
+from backend.api.common import APIResponse
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.chat_history import InMemoryChatMessageHistory
@@ -121,7 +122,7 @@ async def clear_history(chat_instance_id: UUID):
         logger.info(f"✅ 清除对话历史: {chat_id}")
 
 
-@router.post("/chat/instances", response_model=Dict[str, Any])
+@router.post("/chat/instances", response_model=APIResponse)
 async def create_chat_instance(
     chat_name: Optional[str] = None,
     chat_type: Optional[str] = "general",
@@ -193,7 +194,7 @@ async def create_chat_instance(
         raise HTTPException(status_code=500, detail=f"创建对话实例失败: {str(e)}")
 
 
-@router.get("/chat/instances", response_model=Dict[str, Any])
+@router.get("/chat/instances", response_model=APIResponse)
 async def list_chat_instances(
     user_id: Optional[str] = None,
     status: Optional[str] = "active",
@@ -283,7 +284,7 @@ async def list_chat_instances(
         raise HTTPException(status_code=500, detail=f"查询对话实例失败: {str(e)}")
 
 
-@router.get("/chat/instances/{chat_instance_id}", response_model=Dict[str, Any])
+@router.get("/chat/instances/{chat_instance_id}", response_model=APIResponse)
 async def get_chat_instance(chat_instance_id: UUID):
     """
     获取对话实例详情
@@ -353,7 +354,7 @@ async def get_chat_instance(chat_instance_id: UUID):
         raise HTTPException(status_code=500, detail=f"查询对话实例失败: {str(e)}")
 
 
-@router.delete("/chat/instances/{chat_instance_id}", response_model=Dict[str, Any])
+@router.delete("/chat/instances/{chat_instance_id}", response_model=APIResponse)
 async def delete_chat_instance(chat_instance_id: UUID):
     """
     删除对话实例
@@ -414,7 +415,7 @@ class MessageRequest(BaseModel):
     user_id: Optional[str] = None
 
 
-@router.post("/chat/instances/{chat_instance_id}/messages", response_model=Dict[str, Any])
+@router.post("/chat/instances/{chat_instance_id}/messages", response_model=APIResponse)
 async def send_message(
     chat_instance_id: UUID,
     request: MessageRequest
@@ -535,7 +536,7 @@ async def send_message(
         raise HTTPException(status_code=500, detail=f"发送消息失败: {str(e)}")
 
 
-@router.get("/chat/instances/{chat_instance_id}/messages", response_model=Dict[str, Any])
+@router.get("/chat/instances/{chat_instance_id}/messages", response_model=APIResponse)
 async def get_chat_messages(
     chat_instance_id: UUID,
     page: int = 1,
@@ -613,7 +614,7 @@ async def get_chat_messages(
         raise HTTPException(status_code=500, detail=f"获取消息历史失败: {str(e)}")
 
 
-@router.post("/chat/instances/{chat_instance_id}/close", response_model=Dict[str, Any])
+@router.post("/chat/instances/{chat_instance_id}/close", response_model=APIResponse)
 async def close_chat_instance(chat_instance_id: UUID):
     """
     关闭对话实例
@@ -659,3 +660,83 @@ async def close_chat_instance(chat_instance_id: UUID):
     except Exception as e:
         logger.error(f"❌ 关闭对话实例失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"关闭对话实例失败: {str(e)}")
+
+
+class SimpleChatRequest(BaseModel):
+    """简单聊天请求模型"""
+    message: str
+    context: Optional[Dict[str, Any]] = None
+
+
+@router.post("/chat", response_model=Dict[str, Any])
+async def simple_chat(request: SimpleChatRequest):
+    """
+    简单聊天接口
+    
+    直接发送消息并获取AI响应，不需要创建对话实例。
+    适用于前端悬浮球AI对话功能。
+    
+    Args:
+        request: 聊天请求，包含消息内容和可选的上下文
+        
+    Returns:
+        Dict: 包含AI响应的回复，结构如下:
+            {
+                "code": 200,
+                "message": "对话成功",
+                "data": {
+                    "response": "AI回复内容",
+                    "model": "使用的模型",
+                    "tokens_used": 使用的token数
+                }
+            }
+        
+    Raises:
+        HTTPException: 当API密钥未配置或调用失败时抛出错误
+        
+    Examples:
+        >>> 简单对话
+        >>> POST /chat
+        >>> {
+        ...     "message": "请帮我分析SQL注入漏洞",
+        ...     "context": {}
+        ... }
+    """
+    try:
+        if not settings.OPENAI_API_KEY:
+            raise HTTPException(
+                status_code=500,
+                detail="AI API密钥未配置，请在.env文件中设置OPENAI_API_KEY"
+            )
+        
+        logger.info(f"收到简单聊天请求: {request.message[:50]}...")
+        
+        # 使用LangChain调用AI
+        from langchain_core.messages import HumanMessage
+        
+        messages = [HumanMessage(content=request.message)]
+        
+        response = await llm.ainvoke(messages)
+        
+        ai_response = response.content
+        
+        logger.info(f"✅ AI响应成功: {ai_response[:50]}...")
+        
+        return {
+            "code": 200,
+            "message": "对话成功",
+            "data": {
+                "response": ai_response,
+                "model": settings.MODEL_ID,
+                "tokens_used": getattr(response, 'response_metadata', {}).get('total_tokens', 0)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 简单对话失败: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"AI对话失败: {str(e)}"
+        )

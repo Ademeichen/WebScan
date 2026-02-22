@@ -757,6 +757,7 @@ class User(Model):
     
     class Meta:
         table = "users"
+        app = "models"
         table_description = "用户表"
         ordering = ["-created_at"]
         indexes = [
@@ -828,6 +829,7 @@ class Notification(Model):
     
     class Meta:
         table = "notifications"
+        app = "models"
         table_description = "通知表"
         ordering = ["-created_at"]
         indexes = [

@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from uuid import uuid4
 
-from backend.models import Task, AgentResult
+from backend.models import Task, AgentResult, AgentTask
 from backend.api.common import APIResponse
 from backend.task_executor import task_executor
 from ..core.state import AgentState
@@ -113,10 +113,13 @@ async def start_agent_scan(
     try:
         # 1. 构造扫描配置
         scan_config = request.dict()
+        logger.info(f"[AI_AGENT] [INIT] 构造扫描配置 - 模块: API, 变量: scan_config, 值: {scan_config}")
         
         # 2. 更新全局配置 (如果需要)
         if request.enable_llm_planning is not None:
+            old_value = agent_config.ENABLE_LLM_PLANNING
             agent_config.ENABLE_LLM_PLANNING = request.enable_llm_planning
+            logger.info(f"[AI_AGENT] [CONFIG] 更新LLM规划配置 - 模块: API, 变量: ENABLE_LLM_PLANNING, 旧值: {old_value}, 新值: {request.enable_llm_planning}, 状态: updated")
             
         # 3. 创建任务记录 (Unified Task Model)
         task_obj = await Task.create(
@@ -129,6 +132,7 @@ async def start_agent_scan(
         )
         
         task_id = task_obj.id
+        logger.info(f"[AI_AGENT] [TASK_CREATE] 创建任务记录 - 模块: API, 变量: task_id, 值: {task_id}, 状态: created")
         
         # 4. 提交到任务执行器 (串行队列)
         await task_executor.start_task(
@@ -137,7 +141,7 @@ async def start_agent_scan(
             scan_config=scan_config
         )
         
-        logger.info(f"✅ Agent任务已提交到队列: {task_id} -> {request.target}")
+        logger.info(f"[AI_AGENT] [TASK_SUBMIT] 任务已提交到队列 - 模块: API, 变量: task_id, 值: {task_id}, 目标: {request.target}, 状态: queued")
         
         return AgentScanResponse(
             task_id=str(task_id),
@@ -146,7 +150,7 @@ async def start_agent_scan(
         )
         
     except Exception as e:
-        logger.error(f"❌ 启动Agent任务失败: {str(e)}")
+        logger.error(f"[AI_AGENT] [ERROR] 启动Agent任务失败 - 模块: API, 错误: {str(e)}, 堆栈: {type(e).__name__}")
         raise HTTPException(
             status_code=500,
             detail=f"启动Agent任务失败: {str(e)}"
@@ -221,20 +225,24 @@ async def _run_agent_task(task_id: str, initial_state: AgentState):
             })
 
 
-@router.get("/tasks/{task_id}")
-async def get_agent_task(task_id: str) -> Dict[str, Any]:
+@router.get("/tasks/{task_id}", response_model=APIResponse)
+async def get_agent_task(task_id: str):
     """
     获取Agent任务详情
     """
     try:
+        logger.info(f"[AI_AGENT] [TASK_DETAIL_START] 获取Agent任务详情 - 模块: API, 变量: task_id, 值: {task_id}")
+        
         # 尝试转换为int (兼容 Task ID)
         db_task_id = None
         if task_id.isdigit():
             db_task_id = int(task_id)
+            logger.info(f"[AI_AGENT] [TASK_DETAIL_CONVERT] Task ID转换 - 模块: API, 变量: task_id, 旧值: {task_id}, 新值: {db_task_id}")
             
         # 先从内存中获取
         if task_id in agent_tasks:
             task_info = agent_tasks[task_id]
+            logger.info(f"[AI_AGENT] [TASK_DETAIL_MEMORY] 从内存获取任务信息 - 模块: API, 变量: task_id, 状态: found, 数据: {task_info}")
             return {
                 "task_id": task_id,
                 "target": task_info.get("target"),
@@ -249,15 +257,18 @@ async def get_agent_task(task_id: str) -> Dict[str, Any]:
         # 从数据库获取 (使用 Unified Task Model)
         task = None
         if db_task_id:
+            logger.info(f"[AI_AGENT] [TASK_DETAIL_DB] 从数据库获取任务 - 模块: API, 变量: db_task_id, 状态: querying")
             task = await Task.get_or_none(id=db_task_id)
             
         # 如果找不到且 task_id 是 UUID 格式，尝试查找 AgentTask (兼容旧数据)
         if not task and len(task_id) > 20:
-             task = await AgentTask.get_or_none(task_id=task_id)
-             if task:
-                 # 旧模型适配
-                 result = await AgentResult.get_or_none(task=task)
-                 return {
+            logger.info(f"[AI_AGENT] [TASK_DETAIL_LEGACY] 尝试查找AgentTask - 模块: API, 变量: task_id, 状态: querying")
+            task = await AgentTask.get_or_none(task_id=task_id)
+            if task:
+                logger.info(f"[AI_AGENT] [TASK_DETAIL_LEGACY_FOUND] 找到AgentTask - 模块: API, 变量: task_id, 状态: found")
+                # 旧模型适配
+                result = await AgentResult.get_or_none(task=task)
+                return {
                     "task_id": str(task.task_id),
                     "input_json": task.input_json,
                     "task_type": task.task_type,
@@ -267,10 +278,15 @@ async def get_agent_task(task_id: str) -> Dict[str, Any]:
                     "final_output": result.final_output if result else None,
                     "execution_time": result.execution_time if result else None,
                     "error_message": result.error_message if result else None
-                 }
-
+                }
+            else:
+                logger.info(f"[AI_AGENT] [TASK_DETAIL_LEGACY_NOT_FOUND] AgentTask不存在 - 模块: API, 变量: task_id, 状态: not_found")
+        
         if not task:
+            logger.error(f"[AI_AGENT] [TASK_DETAIL_NOT_FOUND] 任务不存在 - 模块: API, 变量: task_id, 值: {task_id}, 状态: error")
             raise HTTPException(status_code=404, detail="任务不存在")
+        
+        logger.info(f"[AI_AGENT] [TASK_DETAIL_FOUND] 找到任务 - 模块: API, 变量: task_id, 值: {task.id}, 状态: {task.status}")
         
         # 返回 Task 模型数据
         return {
@@ -286,10 +302,11 @@ async def get_agent_task(task_id: str) -> Dict[str, Any]:
             "error_message": task.error_message
         }
         
-    except HTTPException:
+    except HTTPException as http_ex:
+        logger.error(f"[AI_AGENT] [ERROR] 获取Agent任务详情HTTP异常 - 模块: API, 错误: {str(http_ex)}")
         raise
     except Exception as e:
-        logger.error(f"❌ 获取Agent任务详情失败: {str(e)}")
+        logger.error(f"[AI_AGENT] [ERROR] 获取Agent任务详情失败 - 模块: API, 错误: {str(e)}, 堆栈: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -299,22 +316,26 @@ async def list_agent_tasks(
     task_type: Optional[str] = None,
     page: int = 1,
     page_size: int = 20
-) -> Dict[str, Any]:
+):
     """
     获取Agent任务列表
     """
     try:
+        logger.info(f"[AI_AGENT] [TASK_LIST_START] 获取Agent任务列表 - 模块: API, 参数: status={status}, task_type={task_type}, page={page}, page_size={page_size}")
+        
         # 查询 Unified Task Model, 过滤 ai_agent_scan 类型
         query = Task.filter(task_type="ai_agent_scan")
         
         if status:
             query = query.filter(status=status)
+            logger.info(f"[AI_AGENT] [TASK_LIST_FILTER] 应用状态过滤 - 模块: API, 过滤条件: status={status}")
         # 如果指定了 task_type (如 code_generation)，可以在 config 中查找或扩展 Task 字段
         # 目前简单处理: 如果 task_type 不是 ai_agent_scan，可能无法通过 Task.task_type 过滤准确
         # 但 Task.task_type 记录的是 "ai_agent_scan"。
         # 实际 Agent 的具体类型 (code/vuln) 可能存在 config 中。
         
         total = await query.count()
+        logger.info(f"[AI_AGENT] [TASK_LIST_COUNT] 查询结果 - 模块: API, 总数: {total}")
         
         tasks = await query \
             .order_by("-created_at") \
@@ -333,33 +354,42 @@ async def list_agent_tasks(
                 "updated_at": task.updated_at
             })
         
+        logger.info(f"[AI_AGENT] [TASK_LIST_RESULT] 返回任务列表 - 模块: API, 任务数: {len(task_list)}, 页码: {page}")
+        
+        response_data = {
+            "tasks": task_list,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size
+        }
+        
+        logger.info(f"[AI_AGENT] [TASK_LIST_RETURN] 返回响应数据 - 模块: API, 数据: {response_data}")
+        
         return APIResponse(
             code=200,
             message="获取成功",
-            data={
-                "tasks": task_list,
-                "total": total,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": (total + page_size - 1) // page_size
-            }
+            data=response_data
         )
         
     except Exception as e:
-        logger.error(f"❌ 获取Agent任务列表失败: {str(e)}")
+        logger.error(f"[AI_AGENT] [ERROR] 获取Agent任务列表失败 - 模块: API, 错误: {str(e)}, 堆栈: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/tasks/{task_id}/cancel")
-async def cancel_agent_task(task_id: str) -> Dict[str, Any]:
+@router.post("/tasks/{task_id}/cancel", response_model=APIResponse)
+async def cancel_agent_task(task_id: str):
     """
     取消Agent任务
     """
     try:
+        logger.info(f"[AI_AGENT] [TASK_CANCEL_START] 取消Agent任务 - 模块: API, 变量: task_id, 值: {task_id}")
+        
         # 尝试转换为int
         db_task_id = None
         if task_id.isdigit():
             db_task_id = int(task_id)
+            logger.info(f"[AI_AGENT] [TASK_CANCEL_CONVERT] Task ID转换 - 模块: API, 变量: task_id, 旧值: {task_id}, 新值: {db_task_id}")
             
         # 1. 内存清理
         if task_id in agent_tasks:
@@ -368,10 +398,13 @@ async def cancel_agent_task(task_id: str) -> Dict[str, Any]:
         
         # 2. 数据库状态更新 & 任务终止
         if db_task_id:
+            logger.info(f"[AI_AGENT] [TASK_CANCEL_DB] 从数据库获取任务 - 模块: API, 变量: db_task_id, 状态: querying")
             task = await Task.get_or_none(id=db_task_id)
             if task:
+                logger.info(f"[AI_AGENT] [TASK_CANCEL_FOUND] 找到任务 - 模块: API, 变量: task_id, 当前状态: {task.status}")
                 # 调用任务执行器取消任务
                 if task_executor:
+                    logger.info(f"[AI_AGENT] [TASK_CANCEL_STOP] 通知执行器停止任务 - 模块: API, 变量: task_id, 状态: stopping")
                     await task_executor.cancel_task(db_task_id)
                 
                 # 确保数据库状态更新
@@ -379,11 +412,16 @@ async def cancel_agent_task(task_id: str) -> Dict[str, Any]:
                     task.status = "cancelled"
                     await task.save()
                 
-                return {
-                    "task_id": str(task.id),
-                    "status": "cancelled",
-                    "message": "任务已取消"
-                }
+                logger.info(f"[AI_AGENT] [TASK_CANCEL_SUCCESS] 任务已取消 - 模块: API, 变量: task_id, 新状态: {task.status}")
+                
+                return APIResponse(
+                    code=200,
+                    message="任务已取消",
+                    data={
+                        "task_id": str(task.id),
+                        "status": "cancelled"
+                    }
+                )
 
         # 3. 兼容旧AgentTask (UUID)
         if len(task_id) > 20:
@@ -398,69 +436,90 @@ async def cancel_agent_task(task_id: str) -> Dict[str, Any]:
                     "message": "任务已取消"
                 }
 
+        logger.error(f"[AI_AGENT] [TASK_CANCEL_NOT_FOUND] 任务不存在 - 模块: API, 变量: task_id, 值: {task_id}, 状态: error")
         raise HTTPException(status_code=404, detail="任务不存在")
         
-    except HTTPException:
+    except HTTPException as http_ex:
+        logger.error(f"[AI_AGENT] [ERROR] 取消Agent任务HTTP异常 - 模块: API, 错误: {str(http_ex)}")
         raise
     except Exception as e:
-        logger.error(f"❌ 取消Agent任务失败: {str(e)}")
+        logger.error(f"[AI_AGENT] [ERROR] 取消Agent任务失败 - 模块: API, 错误: {str(e)}, 堆栈: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/tasks/{task_id}")
-async def delete_agent_task(task_id: str) -> Dict[str, Any]:
+@router.delete("/tasks/{task_id}", response_model=APIResponse)
+async def delete_agent_task(task_id: str):
     """
     删除Agent任务
     
     删除任务记录。如果任务正在运行，会先取消任务。
     """
     try:
+        logger.info(f"[AI_AGENT] [TASK_DELETE_START] 删除Agent任务 - 模块: API, 变量: task_id, 值: {task_id}")
+        
         # 尝试转换为int
         db_task_id = None
         if task_id.isdigit():
             db_task_id = int(task_id)
+            logger.info(f"[AI_AGENT] [TASK_DELETE_CONVERT] Task ID转换 - 模块: API, 变量: task_id, 旧值: {task_id}, 新值: {db_task_id}")
             
         # 1. 内存清理
         if task_id in agent_tasks:
             del agent_tasks[task_id]
+            logger.info(f"[AI_AGENT] [TASK_DELETE_MEMORY] 任务已从内存中删除 - 模块: API, 变量: task_id, 状态: deleted")
         
         # 2. 删除 Unified Task
         if db_task_id:
+            logger.info(f"[AI_AGENT] [TASK_DELETE_DB] 从数据库获取任务 - 模块: API, 变量: db_task_id, 状态: querying")
             task = await Task.get_or_none(id=db_task_id)
             if task:
+                logger.info(f"[AI_AGENT] [TASK_DELETE_FOUND] 找到任务 - 模块: API, 变量: task_id, 当前状态: {task.status}")
                 # 如果正在运行，先取消
                 if task.status == "running" or task.status == "pending":
                     if task_executor:
+                        logger.info(f"[AI_AGENT] [TASK_DELETE_STOP] 任务正在运行，先取消 - 模块: API, 变量: task_id, 状态: cancelling")
                         await task_executor.cancel_task(db_task_id)
                 
                 # 删除数据库记录
                 await task.delete()
                 
-                return {
-                    "task_id": str(db_task_id),
-                    "status": "deleted",
-                    "message": "任务已删除"
-                }
+                logger.info(f"[AI_AGENT] [TASK_DELETE_SUCCESS] 任务已删除 - 模块: API, 变量: task_id, 状态: deleted")
+                
+                return APIResponse(
+                    code=200,
+                    message="任务已删除",
+                    data={
+                        "task_id": str(db_task_id),
+                        "status": "deleted"
+                    }
+                )
 
         # 3. 删除旧AgentTask
         if len(task_id) > 20:
-             task = await AgentTask.get_or_none(task_id=task_id)
-             if task:
-                 await task.delete()
-                 # 关联的 AgentResult 会因为级联删除吗？ TortoiseORM默认可能不会，手动删除
-                 await AgentResult.filter(task=task).delete()
-                 return {
-                    "task_id": task_id,
-                    "status": "deleted",
-                    "message": "任务已删除"
-                }
+            logger.info(f"[AI_AGENT] [TASK_DELETE_LEGACY] 尝试删除旧AgentTask - 模块: API, 变量: task_id, 状态: querying")
+            task = await AgentTask.get_or_none(task_id=task_id)
+            if task:
+                await task.delete()
+                # 关联的 AgentResult 会因为级联删除吗？ TortoiseORM默认可能不会，手动删除
+                await AgentResult.filter(task=task).delete()
+                logger.info(f"[AI_AGENT] [TASK_DELETE_LEGACY_SUCCESS] 旧AgentTask已删除 - 模块: API, 变量: task_id, 状态: deleted")
+                return APIResponse(
+                    code=200,
+                    message="任务已删除",
+                    data={
+                        "task_id": task_id,
+                        "status": "deleted"
+                    }
+                )
 
+        logger.error(f"[AI_AGENT] [TASK_DELETE_NOT_FOUND] 任务不存在 - 模块: API, 变量: task_id, 值: {task_id}, 状态: error")
         raise HTTPException(status_code=404, detail="任务不存在")
 
-    except HTTPException:
+    except HTTPException as http_ex:
+        logger.error(f"[AI_AGENT] [ERROR] 删除Agent任务HTTP异常 - 模块: API, 错误: {str(http_ex)}")
         raise
     except Exception as e:
-        logger.error(f"❌ 删除Agent任务失败: {str(e)}")
+        logger.error(f"[AI_AGENT] [ERROR] 删除Agent任务失败 - 模块: API, 错误: {str(e)}, 堆栈: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -577,8 +636,8 @@ async def update_config(
     )
 
 
-@router.post("/code/generate")
-async def generate_code(request: CodeGenerationRequest) -> Dict[str, Any]:
+@router.post("/code/generate", response_model=APIResponse)
+async def generate_code(request: CodeGenerationRequest):
     """
     生成扫描代码
     
@@ -611,8 +670,8 @@ async def generate_code(request: CodeGenerationRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/code/execute")
-async def execute_code(request: CodeExecutionRequest) -> Dict[str, Any]:
+@router.post("/code/execute", response_model=APIResponse)
+async def execute_code(request: CodeExecutionRequest):
     """
     执行代码
     
@@ -646,8 +705,8 @@ async def execute_code(request: CodeExecutionRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/code/generate-and-execute")
-async def generate_and_execute_code(request: CodeGenerationRequest) -> Dict[str, Any]:
+@router.post("/code/generate-and-execute", response_model=APIResponse)
+async def generate_and_execute_code(request: CodeGenerationRequest):
     """
     生成并执行代码
     
@@ -683,8 +742,8 @@ async def generate_and_execute_code(request: CodeGenerationRequest) -> Dict[str,
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/capabilities/enhance")
-async def enhance_capability(request: CapabilityEnhancementRequest) -> Dict[str, Any]:
+@router.post("/capabilities/enhance", response_model=APIResponse)
+async def enhance_capability(request: CapabilityEnhancementRequest):
     """
     增强功能
     
@@ -718,8 +777,8 @@ async def enhance_capability(request: CapabilityEnhancementRequest) -> Dict[str,
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/capabilities/list")
-async def list_capabilities() -> Dict[str, Any]:
+@router.get("/capabilities/list", response_model=APIResponse)
+async def list_capabilities():
     """
     列出所有能力
     
@@ -743,8 +802,8 @@ async def list_capabilities() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/capabilities/{capability_name}")
-async def get_capability(capability_name: str) -> Dict[str, Any]:
+@router.get("/capabilities/{capability_name}", response_model=APIResponse)
+async def get_capability(capability_name: str):
     """
     获取能力详情
     
@@ -773,8 +832,8 @@ async def get_capability(capability_name: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/capabilities/{capability_name}")
-async def remove_capability(capability_name: str) -> Dict[str, Any]:
+@router.delete("/capabilities/{capability_name}", response_model=APIResponse)
+async def remove_capability(capability_name: str):
     """
     移除能力
     
@@ -804,8 +863,8 @@ async def remove_capability(capability_name: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/environment/info")
-async def get_environment_info() -> Dict[str, Any]:
+@router.get("/environment/info", response_model=APIResponse)
+async def get_environment_info():
     """
     获取环境信息
     
@@ -826,8 +885,8 @@ async def get_environment_info() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/environment/tools")
-async def get_available_tools() -> Dict[str, Any]:
+@router.get("/environment/tools", response_model=APIResponse)
+async def get_available_tools():
     """
     获取可用工具列表
     

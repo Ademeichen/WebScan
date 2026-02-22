@@ -289,13 +289,13 @@ async def get_all_scans():
     获取所有扫描任务列表 (从数据库获取,并尝试同步)
     """
     try:
+        logger.info("[AWVS扫描列表] 开始获取扫描列表")
         # 异步触发同步,不阻塞返回(或者可以阻塞以保证最新)
         # 为了保证显示最新状态,这里选择阻塞同步
         await sync_scans_from_awvs()
         
         # 从数据库读取
         tasks = await Task.filter(task_type='awvs_scan').order_by('-created_at').all()
-
 
         
         data = []
@@ -460,9 +460,12 @@ async def create_scan(request: AWVSScanRequest):
     创建新的扫描任务
     """
     try:
+        logger.info(f"[AWVS扫描] 开始处理请求 | 目标: {request.url} | 扫描类型: {request.scan_type}")
+        
         client = get_awvs_client()
         
         # 1. 在数据库创建 Pending 任务
+        logger.info(f"[AWVS扫描] 创建任务 | 目标: {request.url}")
         task = await Task.create(
             task_name=f"AWVS Scan: {request.url}",
             task_type='awvs_scan',
@@ -471,17 +474,19 @@ async def create_scan(request: AWVSScanRequest):
             progress=0,
             config=json.dumps({'scan_type': request.scan_type})
         )
+        logger.info(f"[AWVS扫描] 任务创建成功 | 任务ID: {task.id}")
         
         # 2. 提交任务到执行队列
         from backend.task_executor import task_executor
         
         scan_config = {'scan_type': request.scan_type, 'profile': request.scan_type}
         await task_executor.start_task(task.id, request.url, scan_config)
+        logger.info(f"[AWVS扫描] 任务已启动执行 | 任务ID: {task.id}")
         
         return APIResponse(code=200, message="扫描任务已提交到队列", data={"task_id": task.id, "status": "queued"})
             
     except Exception as e:
-        logger.error(f"创建扫描任务失败: {str(e)}")
+        logger.error(f"[AWVS扫描] 任务执行失败 | 目标: {request.url} | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -546,14 +551,15 @@ async def get_all_targets():
     获取所有目标列表
     """
     try:
+        logger.info("[AWVS目标列表] 开始获取目标列表")
         client = get_awvs_client()
         t = Target(client['api_url'], client['api_key'])
         data = t.get_all()
         
-        logger.info(f"获取目标列表成功,共 {len(data) if data else 0} 个目标")
+        logger.info(f"[AWVS目标列表] 获取成功 | 目标数量: {len(data) if data else 0}")
         return APIResponse(code=200, message="获取成功", data=data)
     except Exception as e:
-        logger.error(f"获取目标列表失败: {str(e)}")
+        logger.error(f"[AWVS目标列表] 获取失败 | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

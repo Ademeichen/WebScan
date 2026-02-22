@@ -24,9 +24,12 @@ TEST_DATA = {
     },
     "report": {
         "task_id": 1,
+        "name": "测试报告",
         "format": "html",
-        "content": ["summary", "vulnerabilities"],
-        "name": "测试报告"
+        "content": {
+            "summary": {"critical": 1, "high": 2, "medium": 3, "low": 4, "info": 5},
+            "vulnerabilities": []
+        }
     },
     "settings": {
         "general": {

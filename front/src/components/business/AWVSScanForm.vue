@@ -18,7 +18,7 @@
           clearable
         >
           <template #prepend>
-            <el-icon><Link /></el-icon>
+            <el-icon><LinkIcon /></el-icon>
           </template>
         </el-input>
         <template #help>
@@ -79,13 +79,13 @@
 import { ref, onMounted } from 'vue'
 import { awvsApi } from '@/utils/api'
 import { ElMessage } from 'element-plus'
-import { Setting, Link, RefreshLeft, Position } from '@element-plus/icons-vue'
+import { Setting, Link as LinkIcon, RefreshLeft, Position } from '@element-plus/icons-vue'
 
 export default {
   name: 'AWVSScanForm',
   components: {
     Setting,
-    Link
+    LinkIcon
   },
   emits: ['submit', 'success', 'error'],
   setup(props, { emit }) {

@@ -52,16 +52,8 @@ class EnvironmentAwareness:
     - 避免重复初始化,提升启动速度
     """
     
-    # 单例实例
     _instance = None
     _instance_lock = threading.Lock()
-    
-    # 全局配置
-    MAX_WORKERS = 5  # 最大并发工作线程数
-
-    TOOL_TIMEOUT = 10  # 工具检测超时时间(秒)
-    NETWORK_TIMEOUT = 3  # 网络检测超时时间(秒)
-    GLOBAL_TIMEOUT = 30  # 全局初始化超时时间(秒)
     
     def __new__(cls, *args, **kwargs):
         """
@@ -88,6 +80,11 @@ class EnvironmentAwareness:
         self._init_lock = threading.Lock()
         self._initialized = False
         self._init_error = None
+        
+        self.max_workers = 5
+        self.tool_timeout = 10
+        self.network_timeout = 3
+        self.global_timeout = 30
         
         try:
             logger.info("🚀 开始初始化环境感知模块...")
@@ -186,7 +183,7 @@ class EnvironmentAwareness:
         Returns:
             Tuple: (工具信息, 网络信息, 资源信息)
         """
-        with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # 提交所有检测任务
             future_tools = executor.submit(self._detect_tools)
             future_network = executor.submit(self._detect_network)
@@ -194,9 +191,9 @@ class EnvironmentAwareness:
             
             # 等待所有任务完成,设置超时
             try:
-                tools = future_tools.result(timeout=self.GLOBAL_TIMEOUT)
-                network = future_network.result(timeout=self.GLOBAL_TIMEOUT)
-                resources = future_resources.result(timeout=self.GLOBAL_TIMEOUT)
+                tools = future_tools.result(timeout=self.global_timeout)
+                network = future_network.result(timeout=self.global_timeout)
+                resources = future_resources.result(timeout=self.global_timeout)
             except TimeoutError:
                 logger.warning("⚠️ 并发检测超时,返回部分结果")
                 tools = future_tools.result(timeout=0) or {}
@@ -232,7 +229,7 @@ class EnvironmentAwareness:
         
         results = {}
         
-        with ThreadPoolExecutor(max_workers=min(len(tools_to_check), self.MAX_WORKERS)) as executor:
+        with ThreadPoolExecutor(max_workers=min(len(tools_to_check), self.max_workers)) as executor:
             # 提交所有工具检测任务
             future_to_tool = {
                 executor.submit(self._check_tool, tool_name, version_cmd): tool_name
@@ -243,7 +240,7 @@ class EnvironmentAwareness:
             for future in as_completed(future_to_tool):
                 tool_name = future_to_tool[future]
                 try:
-                    result = future.result(timeout=self.TOOL_TIMEOUT + 2)
+                    result = future.result(timeout=self.tool_timeout + 2)
                     results[tool_name] = result
                 except TimeoutError:
                     logger.warning(f"工具 {tool_name} 检测超时")
@@ -293,7 +290,7 @@ class EnvironmentAwareness:
             )
             
             # 使用communicate(timeout)设置超时
-            stdout, stderr = process.communicate(timeout=self.TOOL_TIMEOUT)
+            stdout, stderr = process.communicate(timeout=self.tool_timeout)
             
             available = process.returncode == 0
             version = stdout.strip() if stdout else "unknown"
@@ -351,9 +348,9 @@ class EnvironmentAwareness:
                 future_internet = executor.submit(self._check_internet)
                 
                 # 收集结果
-                proxy_detected = future_proxy.result(timeout=self.NETWORK_TIMEOUT + 2)
-                firewall_detected = future_firewall.result(timeout=self.NETWORK_TIMEOUT + 2)
-                internet_available = future_internet.result(timeout=self.NETWORK_TIMEOUT + 2)
+                proxy_detected = future_proxy.result(timeout=self.network_timeout + 2)
+                firewall_detected = future_firewall.result(timeout=self.network_timeout + 2)
+                internet_available = future_internet.result(timeout=self.network_timeout + 2)
             
             return {
                 "hostname": hostname,

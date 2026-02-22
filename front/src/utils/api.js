@@ -806,6 +806,241 @@ export const vulnerabilitiesApi = {
   }
 }
 
+export const pocVerificationApi = {
+  createTask: async (data) => {
+    return request({
+      url: '/poc/verification/tasks',
+      method: 'post',
+      data
+    })
+  },
+
+  createBatchTasks: async (data) => {
+    return request({
+      url: '/poc/verification/tasks/batch',
+      method: 'post',
+      data
+    })
+  },
+
+  getTasks: async (params = {}) => {
+    return request({
+      url: '/poc/verification/tasks',
+      method: 'get',
+      params
+    })
+  },
+
+  getTask: async (taskId) => {
+    return request({
+      url: `/poc/verification/tasks/${taskId}`,
+      method: 'get'
+    })
+  },
+
+  pauseTask: async (taskId) => {
+    return request({
+      url: `/poc/verification/tasks/${taskId}/pause`,
+      method: 'post'
+    })
+  },
+
+  resumeTask: async (taskId) => {
+    return request({
+      url: `/poc/verification/tasks/${taskId}/resume`,
+      method: 'post'
+    })
+  },
+
+  cancelTask: async (taskId) => {
+    return request({
+      url: `/poc/verification/tasks/${taskId}/cancel`,
+      method: 'post'
+    })
+  },
+
+  getTaskResults: async (taskId) => {
+    return request({
+      url: `/poc/verification/tasks/${taskId}/results`,
+      method: 'get'
+    })
+  },
+
+  generateReport: async (taskId, format = 'html') => {
+    return request({
+      url: `/poc/verification/tasks/${taskId}/report`,
+      method: 'post',
+      params: { format }
+    })
+  },
+
+  getStatistics: async () => {
+    return request({
+      url: '/poc/verification/statistics',
+      method: 'get'
+    })
+  },
+
+  getPocRegistry: async () => {
+    return request({
+      url: '/poc/verification/poc/registry',
+      method: 'get'
+    })
+  },
+
+  syncPocsFromSeebug: async (params = {}) => {
+    return request({
+      url: '/poc/verification/poc/sync',
+      method: 'post',
+      params
+    })
+  },
+
+  healthCheck: async () => {
+    return request({
+      url: '/poc/verification/health',
+      method: 'get'
+    })
+  }
+}
+
+export const pocFilesApi = {
+  getFiles: async (params = {}) => {
+    return request({
+      url: '/poc/files/list',
+      method: 'get',
+      params
+    })
+  },
+
+  getFileContent: async (filePath) => {
+    return request({
+      url: `/poc/files/content/${filePath}`,
+      method: 'get'
+    })
+  },
+
+  getFileInfo: async (filePath) => {
+    return request({
+      url: `/poc/files/info/${filePath}`,
+      method: 'get'
+    })
+  },
+
+  getDirectories: async () => {
+    return request({
+      url: '/poc/files/directories',
+      method: 'get'
+    })
+  },
+
+  syncFiles: async () => {
+    return request({
+      url: '/poc/files/sync',
+      method: 'post'
+    })
+  },
+
+  getSyncStatus: async () => {
+    return request({
+      url: '/poc/files/sync/status',
+      method: 'get'
+    })
+  }
+}
+
+export const seebugAgentApi = {
+  getStatus: async () => {
+    return request({
+      url: '/seebug/status',
+      method: 'get'
+    })
+  },
+
+  search: async (data) => {
+    return request({
+      url: '/seebug/search',
+      method: 'post',
+      data
+    })
+  },
+
+  getVulnerabilityDetail: async (ssvid) => {
+    return request({
+      url: `/seebug/vulnerability/${ssvid}`,
+      method: 'get'
+    })
+  },
+
+  generatePoc: async (data) => {
+    return request({
+      url: '/seebug/generate-poc',
+      method: 'post',
+      data
+    })
+  },
+
+  generatePocBySsvid: async (ssvid, filename = null) => {
+    return request({
+      url: `/seebug/generate-poc/${ssvid}`,
+      method: 'get',
+      params: filename ? { filename } : {}
+    })
+  },
+
+  testConnection: async () => {
+    return request({
+      url: '/seebug/test-connection',
+      method: 'get'
+    })
+  }
+}
+
+export const aiAgentsApi = {
+  listWorkflows: async () => {
+    return request({
+      url: '/ai-agents/workflows',
+      method: 'get'
+    })
+  },
+
+  getWorkflow: async (workflowId) => {
+    return request({
+      url: `/ai-agents/workflows/${workflowId}`,
+      method: 'get'
+    })
+  },
+
+  executeWorkflow: async (data) => {
+    return request({
+      url: '/ai-agents/execute',
+      method: 'post',
+      data
+    })
+  },
+
+  getExecutionStatus: async (executionId) => {
+    return request({
+      url: `/ai-agents/executions/${executionId}`,
+      method: 'get'
+    })
+  },
+
+  cancelExecution: async (executionId) => {
+    return request({
+      url: `/ai-agents/executions/${executionId}/cancel`,
+      method: 'post'
+    })
+  },
+
+  getExecutionLogs: async (executionId) => {
+    return request({
+      url: `/ai-agents/executions/${executionId}/logs`,
+      method: 'get'
+    })
+  }
+}
+
 export default {
   request,
   scan: scanApi,
@@ -820,5 +1055,9 @@ export default {
   pocGen: pocGenApi,
   user: userApi,
   notifications: notificationsApi,
-  vulnerabilities: vulnerabilitiesApi
+  vulnerabilities: vulnerabilitiesApi,
+  pocVerification: pocVerificationApi,
+  pocFiles: pocFilesApi,
+  seebugAgent: seebugAgentApi,
+  aiAgents: aiAgentsApi
 }

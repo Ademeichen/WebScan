@@ -118,6 +118,47 @@ def validate_vulnerability_consistency(vuln_data: dict) -> List[str]:
         
     return errors
 
+# ====== 业务规则常量 ======
+
+VALID_TASK_STATUSES = ['pending', 'running', 'completed', 'failed', 'cancelled']
+
+VALID_STATUS_TRANSITIONS = {
+    'pending': ['running', 'cancelled', 'failed'],
+    'running': ['completed', 'failed', 'cancelled'],
+    'completed': [],
+    'failed': ['pending'],
+    'cancelled': ['pending']
+}
+
+def validate_status_transition(current_status: str, new_status: str) -> tuple:
+    """
+    验证任务状态转换是否合法
+    
+    Args:
+        current_status: 当前状态
+        new_status: 目标状态
+        
+    Returns:
+        tuple: (is_valid: bool, error_message: str)
+    """
+    logger.info(f"[状态转换验证] 当前状态: {current_status}, 目标状态: {new_status}")
+    
+    if current_status == new_status:
+        logger.info(f"[状态转换验证] 状态未变化: {current_status}")
+        return True, None
+    
+    if new_status not in VALID_TASK_STATUSES:
+        logger.warning(f"[状态转换验证] 无效的目标状态: {new_status}")
+        return False, f"Invalid target status: {new_status}"
+    
+    allowed_transitions = VALID_STATUS_TRANSITIONS.get(current_status, [])
+    if new_status not in allowed_transitions:
+        logger.warning(f"[状态转换验证] 非法状态转换: {current_status} -> {new_status}")
+        return False, f"Invalid state transition: {current_status} -> {new_status}"
+    
+    logger.info(f"[状态转换验证] 状态转换合法: {current_status} -> {new_status}")
+    return True, None
+
 # ====== 请求模型 ======
 
 class CreateTaskRequest(BaseModel):
@@ -445,7 +486,7 @@ async def update_task(task_id: int, task_update: TaskUpdate):
     """
     更新任务状态
     
-    更新任务的状态、进度或结果信息。
+    更新任务的状态、进度或结果信息。包含完整的状态转换验证和业务流程日志。
     
     Args:
         task_id: 任务 ID
@@ -455,33 +496,56 @@ async def update_task(task_id: int, task_update: TaskUpdate):
         APIResponse: 更新成功的响应
         
     Raises:
-        HTTPException: 当任务不存在时抛出 404 错误
+        HTTPException: 当任务不存在或状态转换非法时抛出错误
         
-    Examples:
-        >>> 更新任务状态为完成
-        >>> PUT /tasks/1
-        >>> {
-        ...     "status": "completed",
-        ...     "progress": 100
-        ... }
+    Business Rules:
+        - pending -> running, cancelled, failed
+        - running -> completed, failed, cancelled
+        - completed -> (no transitions allowed)
+        - failed -> pending
+        - cancelled -> pending
     """
     try:
+        logger.info(f"[任务更新] 开始处理任务更新请求 | 任务ID: {task_id}")
+        logger.info(f"[任务更新] 请求参数 | status: {task_update.status}, progress: {task_update.progress}, result: {task_update.result is not None}")
+        
         task = await Task.get_or_none(id=task_id)
         if not task:
+            logger.warning(f"[任务更新] 任务不存在 | 任务ID: {task_id}")
             raise HTTPException(status_code=404, detail="任务不存在")
-            
+        
+        current_status = task.status
+        current_progress = task.progress
+        logger.info(f"[任务更新] 当前任务状态 | status: {current_status}, progress: {current_progress}")
+        
         if task_update.status:
+            is_valid, error_msg = validate_status_transition(current_status, task_update.status)
+            if not is_valid:
+                logger.warning(f"[任务更新] 状态转换验证失败 | {error_msg}")
+                raise HTTPException(status_code=400, detail=error_msg)
             task.status = task_update.status
+            logger.info(f"[任务更新] 状态已更新 | {current_status} -> {task_update.status}")
+        
         if task_update.progress is not None:
+            if not (0 <= task_update.progress <= 100):
+                logger.warning(f"[任务更新] 进度值无效: {task_update.progress}")
+                raise HTTPException(status_code=400, detail="Progress must be between 0 and 100")
+            old_progress = task.progress
             task.progress = task_update.progress
+            logger.info(f"[任务更新] 进度已更新 | {old_progress} -> {task_update.progress}")
+        
         if task_update.result:
             task.result = json.dumps(task_update.result)
+            logger.info(f"[任务更新] 结果已更新 | 数据长度: {len(task.result)}")
             
         await task.save()
+        logger.info(f"[任务更新] 任务保存成功 | 任务ID: {task_id}")
         
         return APIResponse(code=200, message="更新成功")
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"更新任务失败: {str(e)}")
+        logger.error(f"[任务更新] 更新任务失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

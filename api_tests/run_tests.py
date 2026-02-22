@@ -34,8 +34,13 @@ def run_all_tests():
         ("AI Agent", "test_agent", "test_agent_api"),
         ("报告生成", "test_reports", "test_reports_api"),
         ("扫描功能", "test_scan", "test_scan_api"),
-        ("用户和通知", "test_user_notification", "test_user_api"),
-        ("AI对话", "test_ai_chat", "test_ai_chat_api")
+        ("用户和通知", "test_user_notification", "test_user_notification_api"),
+        ("AI对话", "test_ai_chat", "test_ai_chat_api"),
+        ("POC验证", "test_poc_verification", "test_poc_verification_api"),
+        ("POC文件管理", "test_poc_files", "test_poc_files_api"),
+        ("Seebug Agent", "test_seebug_agent", "test_seebug_agent_api"),
+        ("AI Agents", "test_ai_agents", "test_ai_agents_api"),
+        ("漏洞知识库", "test_kb", "test_kb_api"),
     ]
 
     # 运行每个测试模块

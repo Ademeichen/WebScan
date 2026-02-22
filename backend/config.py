@@ -23,6 +23,7 @@ FastAPI 应用配置文件
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict, field_validator
 from typing import Optional
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -200,7 +201,7 @@ class Settings(BaseSettings):
     """
     
     # = API 密钥配置 =
-    OPENAI_API_KEY: str = "341787347bdc5374dc6377f29a192907:Nzk5NTk4OTFkYmE5MTUzODI1YTM0MjNj"
+    OPENAI_API_KEY: Optional[str] = None
     """
     OpenAI API 密钥
     
@@ -257,7 +258,7 @@ class Settings(BaseSettings):
     可以通过环境变量 AWVS_API_URL 覆盖。
     """
     
-    AWVS_API_KEY: str = "1986ad8c0a5b3df4d7028d5f3c06e936c74deac5b05e4406bb3630cb247b0d2d3"
+    AWVS_API_KEY: Optional[str] = None
     """
     AWVS API 密钥
     
@@ -272,7 +273,7 @@ class Settings(BaseSettings):
     """
     
     # = Seebug 配置 =
-    SEEBUG_API_KEY: str = "c2720fbc7a590da49f23a9df64fda1c48d48f077"
+    SEEBUG_API_KEY: Optional[str] = None
     """
     Seebug API 密钥
     
@@ -486,7 +487,7 @@ class Settings(BaseSettings):
         return v.strip()
 
     model_config = ConfigDict(
-        env_file="backend/.env",
+        env_file=str(Path(__file__).parent / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=True
     )
