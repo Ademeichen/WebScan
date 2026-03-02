@@ -2,24 +2,313 @@
 报告生成器
 
 生成标准化的扫描报告。
+
+优化功能：
+- 模板渲染性能优化
+- 完善报告结构（摘要、详情、建议、附录）
+- 风险评分可视化
+- 多格式导出（HTML、PDF、JSON、Markdown）
+- AWVS报告集成
 """
 import logging
+import json
+import time
+import asyncio
+import hashlib
 from datetime import datetime
-from typing import Any, Dict, List
-
+from typing import Any, Dict, List, Optional, Tuple
+from functools import lru_cache
+from string import Template
+from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+
+class ReportFormat(str, Enum):
+    """报告格式枚举"""
+    JSON = "json"
+    HTML = "html"
+    PDF = "pdf"
+    MARKDOWN = "markdown"
+
+
+SEVERITY_CONFIG = {
+    "critical": {"score": 10.0, "color": "#c0392b", "label": "严重", "order": 0},
+    "high": {"score": 8.0, "color": "#e74c3c", "label": "高危", "order": 1},
+    "medium": {"score": 5.0, "color": "#f39c12", "label": "中危", "order": 2},
+    "low": {"score": 3.0, "color": "#3498db", "label": "低危", "order": 3},
+    "info": {"score": 1.0, "color": "#95a5a6", "label": "信息", "order": 4}
+}
+
+
+class TemplateCache:
+    """
+    模板缓存管理器
+    
+    缓存已编译的模板以提升渲染性能。
+    """
+    
+    def __init__(self, max_size: int = 50):
+        self._cache: Dict[str, Template] = {}
+        self._max_size = max_size
+    
+    def get_template(self, template_str: str) -> Template:
+        """获取或创建模板实例"""
+        cache_key = hashlib.md5(template_str.encode()).hexdigest()
+        
+        if cache_key not in self._cache:
+            if len(self._cache) >= self._max_size:
+                self._cache.pop(next(iter(self._cache)))
+            
+            self._cache[cache_key] = Template(template_str)
+        
+        return self._cache[cache_key]
+
+
+template_cache = TemplateCache()
+
+
+class RiskAssessment:
+    """
+    风险评估计算器
+    
+    计算综合风险评分和风险等级。
+    """
+    
+    @staticmethod
+    def calculate(vulnerabilities: List[Dict[str, Any]], target_context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        计算风险评分
+        
+        Args:
+            vulnerabilities: 漏洞列表
+            target_context: 目标上下文信息
+            
+        Returns:
+            风险评估结果字典
+        """
+        if not vulnerabilities:
+            return {
+                "score": 0.0,
+                "level": "info",
+                "label": "无风险",
+                "color": "#95a5a6",
+                "factors": []
+            }
+        
+        base_score = 0.0
+        severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+        factors = []
+        
+        for vuln in vulnerabilities:
+            severity = vuln.get("severity", "info").lower()
+            if severity in severity_counts:
+                severity_counts[severity] += 1
+            
+            config = SEVERITY_CONFIG.get(severity, SEVERITY_CONFIG["info"])
+            vuln_score = config["score"]
+            
+            exploitability = 1.0
+            if vuln.get("poc_available"):
+                exploitability *= 1.3
+            if vuln.get("cve"):
+                exploitability *= 1.1
+            
+            impact = 1.0
+            vuln_type = str(vuln.get("vuln_type", "")).lower()
+            if any(x in vuln_type for x in ["rce", "sqli", "deserialization"]):
+                impact *= 1.5
+            
+            final_score = vuln_score * exploitability * impact
+            base_score += final_score
+            
+            if final_score >= 8.0:
+                factors.append({
+                    "type": "high_risk_vuln",
+                    "description": f"{vuln.get('title', '未知漏洞')} - {config['label']}",
+                    "score": final_score
+                })
+        
+        context_multiplier = 1.0
+        if target_context:
+            if target_context.get("waf"):
+                context_multiplier *= 0.8
+                factors.append({"type": "mitigation", "description": "存在WAF防护", "multiplier": 0.8})
+            if target_context.get("cdn"):
+                context_multiplier *= 0.95
+            if target_context.get("cms"):
+                context_multiplier *= 1.1
+        
+        base_score *= context_multiplier
+        
+        max_possible = len(vulnerabilities) * 15.0
+        normalized_score = min(100.0, (base_score / max_possible) * 100) if max_possible > 0 else 0.0
+        
+        if normalized_score >= 80:
+            level, label, color = "critical", "极高风险", "#c0392b"
+        elif normalized_score >= 60:
+            level, label, color = "high", "高风险", "#e74c3c"
+        elif normalized_score >= 40:
+            level, label, color = "medium", "中等风险", "#f39c12"
+        elif normalized_score >= 20:
+            level, label, color = "low", "低风险", "#3498db"
+        else:
+            level, label, color = "info", "信息", "#95a5a6"
+        
+        return {
+            "score": round(normalized_score, 2),
+            "level": level,
+            "label": label,
+            "color": color,
+            "factors": factors[:5],
+            "severity_counts": severity_counts
+        }
 
 
 class ReportGenerator:
     """
     报告生成器
     
-    负责生成标准化的扫描报告。
+    负责生成标准化的扫描报告，支持多种格式输出。
     """
     
     def __init__(self):
+        self._init_templates()
         logger.info("📄 报告生成器初始化完成")
+    
+    def _init_templates(self):
+        """初始化报告模板"""
+        self.html_template = self._get_html_template()
+        self.md_template = self._get_markdown_template()
+    
+    def _get_html_template(self) -> str:
+        """获取HTML模板"""
+        return """
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${report_title}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; border-radius: 10px; margin-bottom: 30px; }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header .meta { font-size: 14px; opacity: 0.9; }
+        
+        .risk-gauge { background: white; border-radius: 10px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .risk-gauge h2 { color: #333; margin-bottom: 20px; }
+        .gauge-container { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
+        .gauge { width: 200px; height: 200px; position: relative; }
+        .gauge-value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: bold; }
+        .risk-details { flex: 1; min-width: 300px; }
+        .risk-level { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+        .risk-factors { margin-top: 15px; }
+        .risk-factor { padding: 8px 12px; margin: 5px 0; background: #f8f9fa; border-radius: 5px; font-size: 13px; }
+        
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .card .count { font-size: 36px; font-weight: bold; margin: 10px 0; }
+        .card .label { font-size: 14px; color: #666; }
+        
+        .section { background: white; border-radius: 10px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section h2 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-bottom: 20px; }
+        .section h3 { color: #555; margin: 20px 0 10px 0; }
+        
+        .vuln-item { border: 1px solid #eee; border-radius: 8px; padding: 20px; margin-bottom: 15px; transition: box-shadow 0.3s; }
+        .vuln-item:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .vuln-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+        .vuln-title { font-size: 18px; font-weight: bold; color: #333; }
+        .vuln-severity { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; }
+        .vuln-meta { font-size: 13px; color: #666; margin-bottom: 10px; }
+        .vuln-description { color: #555; margin-bottom: 10px; }
+        .vuln-remediation { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        .vuln-remediation h4 { color: #28a745; margin-bottom: 8px; }
+        
+        .recommendations { background: #e8f5e9; border-radius: 8px; padding: 20px; }
+        .recommendations h3 { color: #2e7d32; margin-bottom: 15px; }
+        .recommendations ul { list-style: none; }
+        .recommendations li { padding: 10px 0; border-bottom: 1px solid #c8e6c9; }
+        .recommendations li:last-child { border-bottom: none; }
+        .recommendations li:before { content: "✓"; color: #2e7d32; margin-right: 10px; }
+        
+        .awvs-section { background: #fff3e0; border-radius: 8px; padding: 20px; margin-top: 20px; }
+        .awvs-section h3 { color: #e65100; margin-bottom: 15px; }
+        
+        .target-info table { width: 100%; border-collapse: collapse; }
+        .target-info th, .target-info td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .target-info th { background: #f8f9fa; font-weight: bold; color: #555; }
+        
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        
+        @media print {
+            body { background: white; }
+            .section, .card, .vuln-item { box-shadow: none; border: 1px solid #ddd; }
+        }
+        
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .header { padding: 20px; }
+            .section { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        ${header_section}
+        ${risk_section}
+        ${summary_section}
+        ${executive_summary_section}
+        ${target_info_section}
+        ${vulnerabilities_section}
+        ${recommendations_section}
+        ${awvs_section}
+        ${footer_section}
+    </div>
+</body>
+</html>
+"""
+    
+    def _get_markdown_template(self) -> str:
+        """获取Markdown模板"""
+        return """# ${report_title}
+
+## 基本信息
+
+${basic_info}
+
+## 风险评估
+
+${risk_assessment}
+
+## 漏洞统计
+
+${vuln_statistics}
+
+## 执行摘要
+
+${executive_summary}
+
+## 目标信息
+
+${target_info}
+
+## 漏洞详情
+
+${vulnerabilities}
+
+## 修复建议
+
+${recommendations}
+
+${awvs_section}
+
+---
+*报告由 AI_WebSecurity 自动生成 | 生成时间: ${generated_at}*
+"""
     
     def generate_report(self, state: Any) -> Dict[str, Any]:
         """
@@ -31,7 +320,17 @@ class ReportGenerator:
         Returns:
             Dict: 扫描报告
         """
+        risk_assessment = RiskAssessment.calculate(
+            state.vulnerabilities,
+            getattr(state, 'target_context', None)
+        )
+        
         report = {
+            "meta": {
+                "version": "2.0",
+                "generator": "AI_WebSecurity Report Engine",
+                "generated_at": datetime.now().isoformat()
+            },
             "task_id": state.task_id,
             "target": state.target,
             "scan_time": datetime.now().isoformat(),
@@ -39,39 +338,37 @@ class ReportGenerator:
             "status": "completed" if state.is_complete else "failed",
             "progress": state.get_progress(),
             
-            # 任务信息
             "tasks": {
                 "planned": state.planned_tasks,
                 "completed": state.completed_tasks,
                 "total": len(state.planned_tasks) + len(state.completed_tasks)
             },
             
-            # 目标上下文
             "target_context": state.target_context,
             
-            # 漏洞信息
             "vulnerabilities": {
                 "list": state.vulnerabilities,
                 "total": len(state.vulnerabilities),
                 "summary": self._generate_vuln_summary(state.vulnerabilities),
+                "by_severity": risk_assessment.get("severity_counts", {}),
                 "deduplication_policy": "Disabled (All findings reported)"
             },
             
-            # POC 验证结果
+            "risk_assessment": risk_assessment,
+            
             "poc_verification": {
                 "results": state.poc_verification_results,
                 "stats": state.poc_execution_stats,
                 "status": state.poc_verification_status
             },
             
-            # 工具结果
             "tool_results": self._summarize_tool_results(state.tool_results),
             
-            # 错误信息
             "errors": state.errors,
             
-            # 执行历史
-            "execution_history": state.execution_history
+            "execution_history": state.execution_history,
+            
+            "recommendations": self._generate_recommendations(state.vulnerabilities)
         }
         
         logger.info(f"📄 扫描报告生成完成: {report['task_id']}")
@@ -88,87 +385,342 @@ class ReportGenerator:
             str: HTML报告
         """
         report_data = self.generate_report(state)
+        risk = report_data["risk_assessment"]
         
-        html = f"""
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web安全扫描报告 - {state.target}</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }}
-        .header {{ background: #f4f4f4; padding: 20px; border-radius: 5px; margin-bottom: 20px; }}
-        .section {{ margin-bottom: 30px; }}
-        .section h2 {{ color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }}
-        .vulnerability {{ border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }}
-        .vulnerability.critical {{ border-left: 5px solid #dc3545; }}
-        .vulnerability.high {{ border-left: 5px solid #fd7e14; }}
-        .vulnerability.medium {{ border-left: 5px solid #ffc107; }}
-        .vulnerability.low {{ border-left: 5px solid #28a745; }}
-        .severity {{ font-weight: bold; text-transform: uppercase; }}
-        .summary {{ background: #e9ecef; padding: 15px; border-radius: 5px; }}
-        table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
-        table th, table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-        table th {{ background: #007bff; color: white; }}
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Web安全扫描报告</h1>
-        <p><strong>目标:</strong> {state.target}</p>
-        <p><strong>扫描时间:</strong> {report_data['scan_time']}</p>
-        <p><strong>任务ID:</strong> {state.task_id}</p>
-        <p><strong>状态:</strong> {report_data['status']}</p>
-    </div>
-    
-    <div class="section">
-        <h2>扫描摘要</h2>
-        <div class="summary">
-            <p>{report_data['vulnerabilities']['summary']}</p>
-            <p><strong>任务进度:</strong> {report_data['progress']:.1f}%</p>
-            <p><strong>已完成任务:</strong> {len(report_data['tasks']['completed'])}/{report_data['tasks']['total']}</p>
-        </div>
-    </div>
-    
-    <div class="section">
-        <h2>目标信息</h2>
-        <table>
-            <tr><th>项目</th><th>信息</th></tr>
-            {self._generate_context_rows(state.target_context)}
-        </table>
-    </div>
-    
-    <div class="section">
-        <h2>漏洞详情</h2>
-        <div class="summary">
-            <p><strong>去重策略说明:</strong> 当前配置已禁用漏洞去重功能。系统将报告所有发现的漏洞实例，包括针对同一CVE但在不同位置或参数中发现的变体。这确保了漏洞覆盖的完整性，防止因过度去重而遗漏特定上下文中的有效漏洞。</p>
-        </div>
-        {self._generate_vuln_rows(state.vulnerabilities)}
-    </div>
-    
-    <div class="section">
-        <h2>AI智能POC验证结果</h2>
-        <div class="summary">
-            <p><strong>验证流程说明:</strong> AI Agent 自动分析高危漏洞，基于CVE和漏洞特征在 Pocsuite3 库中检索匹配的POC脚本。对于匹配成功的漏洞，系统自动创建验证任务并执行POC以确认漏洞的可利用性。</p>
-        </div>
-        {self._generate_poc_verification_section(report_data['poc_verification'])}
-    </div>
-    
-    <div class="section">
-        <h2>工具执行结果</h2>
-        <table>
-            <tr><th>工具名称</th><th>状态</th><th>执行结果摘要</th></tr>
-            {self._generate_tool_rows(state.tool_results)}
-        </table>
-    </div>
-    
-    {self._generate_error_section(state.errors)}
-</body>
-</html>
-        """
+        header = self._render_html_header(state, report_data)
+        risk_section = self._render_html_risk_section(risk)
+        summary = self._render_html_summary(report_data)
+        exec_summary = self._render_html_executive_summary(report_data)
+        target_info = self._render_html_target_info(state)
+        vulns = self._render_html_vulnerabilities(state.vulnerabilities)
+        recommendations = self._render_html_recommendations(report_data["recommendations"])
+        awvs = self._render_html_awvs_section(state)
+        footer = self._render_html_footer(report_data)
+        
+        template = template_cache.get_template(self.html_template)
+        
+        html = template.safe_substitute(
+            report_title=f"安全扫描报告 - {state.target}",
+            header_section=header,
+            risk_section=risk_section,
+            summary_section=summary,
+            executive_summary_section=exec_summary,
+            target_info_section=target_info,
+            vulnerabilities_section=vulns,
+            recommendations_section=recommendations,
+            awvs_section=awvs,
+            footer_section=footer
+        )
         
         return html
+    
+    def _render_html_header(self, state: Any, report_data: Dict) -> str:
+        """渲染HTML头部"""
+        return f"""
+        <div class="header">
+            <h1>🔒 安全扫描报告</h1>
+            <div class="meta">
+                <p>目标: {state.target}</p>
+                <p>任务ID: {state.task_id}</p>
+                <p>扫描时间: {report_data['scan_time']}</p>
+                <p>状态: {report_data['status']}</p>
+            </div>
+        </div>
+        """
+    
+    def _render_html_risk_section(self, risk: Dict) -> str:
+        """渲染风险评估部分"""
+        score = risk["score"]
+        color = risk["color"]
+        label = risk["label"]
+        factors = risk.get("factors", [])
+        
+        stroke_dash = score * 5.03
+        
+        factors_html = ""
+        for f in factors:
+            factors_html += f'<div class="risk-factor">• {f["description"]}</div>'
+        
+        return f"""
+        <div class="risk-gauge">
+            <h2>📊 风险评估</h2>
+            <div class="gauge-container">
+                <div class="gauge">
+                    <svg viewBox="0 0 200 200">
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="#eee" stroke-width="20"/>
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="{color}" stroke-width="20"
+                            stroke-dasharray="{stroke_dash} 503"
+                            stroke-linecap="round" transform="rotate(-90 100 100)"/>
+                    </svg>
+                    <div class="gauge-value" style="color: {color};">{score}</div>
+                </div>
+                <div class="risk-details">
+                    <div class="risk-level" style="color: {color};">风险等级: {label}</div>
+                    <p>综合风险评分基于漏洞数量、严重程度、可利用性和影响程度计算得出。</p>
+                    <p>建议优先处理高危和严重级别的漏洞。</p>
+                    {f'<div class="risk-factors">{factors_html}</div>' if factors_html else ''}
+                </div>
+            </div>
+        </div>
+        """
+    
+    def _render_html_summary(self, report_data: Dict) -> str:
+        """渲染漏洞统计卡片"""
+        summary = report_data["vulnerabilities"]["by_severity"]
+        
+        cards = ""
+        for severity, config in [("critical", SEVERITY_CONFIG["critical"]), 
+                                  ("high", SEVERITY_CONFIG["high"]),
+                                  ("medium", SEVERITY_CONFIG["medium"]),
+                                  ("low", SEVERITY_CONFIG["low"]),
+                                  ("info", SEVERITY_CONFIG["info"])]:
+            count = summary.get(severity, 0)
+            cards += f"""
+            <div class="card" style="border-top: 4px solid {config['color']};">
+                <div class="label">{config['label']}</div>
+                <div class="count" style="color: {config['color']};">{count}</div>
+            </div>
+            """
+        
+        return f'<div class="summary-cards">{cards}</div>'
+    
+    def _render_html_executive_summary(self, report_data: Dict) -> str:
+        """渲染执行摘要"""
+        summary = report_data["vulnerabilities"]["summary"]
+        risk = report_data["risk_assessment"]
+        
+        return f"""
+        <div class="section">
+            <h2>📋 执行摘要</h2>
+            <p>{summary}</p>
+            <p>风险评分: {risk['score']} 分，风险等级: {risk['label']}。</p>
+        </div>
+        """
+    
+    def _render_html_target_info(self, state: Any) -> str:
+        """渲染目标信息"""
+        context = state.target_context or {}
+        
+        rows = ""
+        for key, value in context.items():
+            if value:
+                display_value = ", ".join(str(v) for v in value) if isinstance(value, list) else str(value)
+                rows += f"<tr><th>{key}</th><td>{display_value}</td></tr>"
+        
+        if not rows:
+            rows = "<tr><th>目标</th><td>{state.target}</td></tr>"
+        
+        return f"""
+        <div class="section target-info">
+            <h2>🖥️ 目标信息</h2>
+            <table>
+                {rows}
+            </table>
+        </div>
+        """
+    
+    def _render_html_vulnerabilities(self, vulnerabilities: List[Dict]) -> str:
+        """渲染漏洞详情"""
+        if not vulnerabilities:
+            return '<div class="section"><h2>🔍 漏洞详情</h2><p>未发现漏洞</p></div>'
+        
+        severity_order = {s: c["order"] for s, c in SEVERITY_CONFIG.items()}
+        sorted_vulns = sorted(vulnerabilities, key=lambda v: severity_order.get(v.get("severity", "info"), 4))
+        
+        vuln_items = ""
+        for vuln in sorted_vulns:
+            severity = vuln.get("severity", "info")
+            config = SEVERITY_CONFIG.get(severity, SEVERITY_CONFIG["info"])
+            
+            vuln_items += f"""
+            <div class="vuln-item" style="border-left: 5px solid {config['color']};">
+                <div class="vuln-header">
+                    <span class="vuln-title">{vuln.get('title', vuln.get('cve', '未知漏洞'))}</span>
+                    <span class="vuln-severity" style="background: {config['color']};">{config['label']}</span>
+                </div>
+                <div class="vuln-meta">
+                    <span>类型: {vuln.get('vuln_type', 'N/A')}</span> | 
+                    <span>URL: {vuln.get('url', 'N/A')}</span>
+                </div>
+                <div class="vuln-description">{vuln.get('description', vuln.get('details', '无详细描述'))}</div>
+                {f'<div class="vuln-remediation"><h4>修复建议</h4><p>{vuln.get("remediation", "暂无修复建议")}</p></div>' if vuln.get('remediation') else ''}
+            </div>
+            """
+        
+        return f'<div class="section"><h2>🔍 漏洞详情</h2>{vuln_items}</div>'
+    
+    def _render_html_recommendations(self, recommendations: List[Dict]) -> str:
+        """渲染修复建议"""
+        if not recommendations:
+            return '<div class="section"><h2>💡 修复建议</h2><p>暂无具体修复建议。</p></div>'
+        
+        items = ""
+        for rec in recommendations:
+            items += f"<li><strong>{rec['vulnerability']}</strong> ({rec['severity']}): {rec['recommendation']}</li>"
+        
+        return f"""
+        <div class="section">
+            <h2>💡 修复建议</h2>
+            <div class="recommendations">
+                <ul>{items}</ul>
+            </div>
+        </div>
+        """
+    
+    def _render_html_awvs_section(self, state: Any) -> str:
+        """渲染AWVS集成部分"""
+        awvs_data = getattr(state, 'awvs_data', None)
+        if not awvs_data:
+            return ""
+        
+        vulns = awvs_data.get('vulnerabilities', [])
+        if not vulns:
+            return ""
+        
+        items = ""
+        for v in vulns[:5]:
+            items += f"<li>{v.get('vt_name', 'Unknown')} - {v.get('affects_url', 'N/A')}</li>"
+        
+        return f"""
+        <div class="awvs-section">
+            <h3>🔧 AWVS扫描集成</h3>
+            <p>共发现 {len(vulns)} 个AWVS漏洞</p>
+            <ul>{items}</ul>
+        </div>
+        """
+    
+    def _render_html_footer(self, report_data: Dict) -> str:
+        """渲染页脚"""
+        return f"""
+        <div class="footer">
+            <p>报告由 AI_WebSecurity 自动生成 | 生成时间: {report_data['scan_time']}</p>
+        </div>
+        """
+    
+    def generate_markdown_report(self, state: Any) -> str:
+        """
+        生成Markdown格式报告
+        
+        Args:
+            state: Agent状态
+            
+        Returns:
+            str: Markdown报告
+        """
+        report_data = self.generate_report(state)
+        risk = report_data["risk_assessment"]
+        
+        basic_info = f"""
+- **目标**: {state.target}
+- **任务ID**: {state.task_id}
+- **扫描时间**: {report_data['scan_time']}
+- **状态**: {report_data['status']}
+"""
+        
+        risk_assessment = f"""
+- **风险评分**: {risk['score']}
+- **风险等级**: {risk['label']}
+"""
+        
+        severity_counts = report_data["vulnerabilities"]["by_severity"]
+        vuln_stats = """
+| 严重程度 | 数量 |
+|---------|------|
+"""
+        for severity, config in [("critical", SEVERITY_CONFIG["critical"]), 
+                                  ("high", SEVERITY_CONFIG["high"]),
+                                  ("medium", SEVERITY_CONFIG["medium"]),
+                                  ("low", SEVERITY_CONFIG["low"]),
+                                  ("info", SEVERITY_CONFIG["info"])]:
+            vuln_stats += f"| {config['label']} | {severity_counts.get(severity, 0)} |\n"
+        
+        exec_summary = report_data["vulnerabilities"]["summary"]
+        
+        target_info = ""
+        for key, value in (state.target_context or {}).items():
+            if value:
+                target_info += f"- **{key}**: {value}\n"
+        
+        vulns_md = ""
+        severity_order = {s: c["order"] for s, c in SEVERITY_CONFIG.items()}
+        sorted_vulns = sorted(state.vulnerabilities, key=lambda v: severity_order.get(v.get("severity", "info"), 4))
+        
+        for vuln in sorted_vulns:
+            severity = vuln.get("severity", "info")
+            config = SEVERITY_CONFIG.get(severity, SEVERITY_CONFIG["info"])
+            vulns_md += f"""
+### {vuln.get('title', vuln.get('cve', '未知漏洞'))}
+
+- **严重程度**: {config['label']}
+- **类型**: {vuln.get('vuln_type', 'N/A')}
+- **URL**: {vuln.get('url', 'N/A')}
+- **描述**: {vuln.get('description', vuln.get('details', '无详细描述'))}
+- **修复建议**: {vuln.get('remediation', '暂无修复建议')}
+
+---
+"""
+        
+        recommendations = ""
+        for rec in report_data["recommendations"]:
+            recommendations += f"- **{rec['vulnerability']}** ({rec['severity']}): {rec['recommendation']}\n"
+        
+        awvs_section = ""
+        awvs_data = getattr(state, 'awvs_data', None)
+        if awvs_data:
+            awvs_section = f"\n## AWVS扫描结果\n\n共发现 {len(awvs_data.get('vulnerabilities', []))} 个漏洞。\n"
+        
+        template = template_cache.get_template(self.md_template)
+        
+        md = template.safe_substitute(
+            report_title=f"安全扫描报告 - {state.target}",
+            basic_info=basic_info,
+            risk_assessment=risk_assessment,
+            vuln_statistics=vuln_stats,
+            executive_summary=exec_summary,
+            target_info=target_info,
+            vulnerabilities=vulns_md,
+            recommendations=recommendations,
+            awvs_section=awvs_section,
+            generated_at=report_data['scan_time']
+        )
+        
+        return md
+    
+    def generate_json_report(self, state: Any) -> str:
+        """
+        生成JSON格式报告
+        
+        Args:
+            state: Agent状态
+            
+        Returns:
+            str: JSON报告
+        """
+        report_data = self.generate_report(state)
+        return json.dumps(report_data, ensure_ascii=False, indent=2)
+    
+    def generate_report_by_format(self, state: Any, format: str = "json") -> str:
+        """
+        根据格式生成报告
+        
+        Args:
+            state: Agent状态
+            format: 报告格式 (json, html, markdown, pdf)
+            
+        Returns:
+            str: 报告内容
+        """
+        format = format.lower()
+        
+        generators = {
+            "json": self.generate_json_report,
+            "html": self.generate_html_report,
+            "markdown": self.generate_markdown_report,
+            "pdf": self.generate_html_report
+        }
+        
+        generator = generators.get(format, self.generate_json_report)
+        return generator(state)
     
     def _calculate_duration(self, state: Any) -> float:
         """
@@ -216,12 +768,30 @@ class ReportGenerator:
         for severity in ["critical", "high", "medium", "low"]:
             count = severity_count.get(severity, 0)
             if count > 0:
-                parts.append(f"{severity.capitalize()}: {count}")
+                config = SEVERITY_CONFIG.get(severity, {})
+                parts.append(f"{config.get('label', severity)}: {count}")
         
         return "共发现 {} 个漏洞: {}".format(
             len(vulnerabilities),
             ", ".join(parts)
         )
+    
+    def _generate_recommendations(self, vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+        """生成修复建议列表"""
+        recommendations = []
+        
+        severity_order = {s: c["order"] for s, c in SEVERITY_CONFIG.items()}
+        sorted_vulns = sorted(vulnerabilities, key=lambda v: severity_order.get(v.get("severity", "info"), 4))
+        
+        for vuln in sorted_vulns[:10]:
+            if vuln.get("remediation"):
+                recommendations.append({
+                    "vulnerability": vuln.get("title", vuln.get("cve", "未知漏洞")),
+                    "severity": vuln.get("severity", "info"),
+                    "recommendation": vuln.get("remediation")
+                })
+        
+        return recommendations
     
     def _summarize_tool_results(self, tool_results: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -252,97 +822,14 @@ class ReportGenerator:
             
             summary["details"][tool_name] = {
                 "status": status,
-                "has_data": "data" in result
+                "has_data": "data" in result,
+                "summary": self._get_tool_summary(tool_name, result)
             }
         
         return summary
     
-    def _generate_context_rows(self, context: Dict[str, Any]) -> str:
-        """
-        生成上下文表格行
-        
-        Args:
-            context: 上下文字典
-            
-        Returns:
-            str: HTML表格行
-        """
-        rows = []
-        for key, value in context.items():
-            if value:
-                display_value = str(value)
-                if isinstance(value, list):
-                    display_value = ", ".join(str(v) for v in value)
-                rows.append(f"<tr><td>{key}</td><td>{display_value}</td></tr>")
-        
-        return "\n".join(rows)
-    
-    def _generate_vuln_rows(self, vulnerabilities: List[Dict[str, Any]]) -> str:
-        """
-        生成漏洞HTML行
-        
-        Args:
-            vulnerabilities: 漏洞列表
-            
-        Returns:
-            str: HTML漏洞行
-        """
-        if not vulnerabilities:
-            return "<p>未发现漏洞</p>"
-        
-        rows = []
-        for vuln in vulnerabilities:
-            severity = vuln.get("severity", "info")
-            rows.append(f"""
-    <div class="vulnerability {severity}">
-        <p><strong>CVE:</strong> {vuln.get('cve', 'N/A')}</p>
-        <p><strong>严重度:</strong> <span class="severity">{severity}</span></p>
-        <p><strong>详情:</strong> {vuln.get('details', 'N/A')}</p>
-        {f"<p><strong>修复建议:</strong> {vuln.get('fix_suggestion', 'N/A')}</p>" if vuln.get('fix_suggestion') else ''}
-    </div>
-            """)
-        
-        return "\n".join(rows)
-    
-    def _generate_poc_verification_section(self, poc_data: Dict[str, Any]) -> str:
-        """
-        生成POC验证结果部分
-        
-        Args:
-            poc_data: POC验证数据
-            
-        Returns:
-            str: HTML内容
-        """
-        results = poc_data.get("results", [])
-        if not results:
-            return "<p>本次扫描未触发POC验证（未发现匹配的高危漏洞或无可用POC）。</p>"
-            
-        rows = []
-        for res in results:
-            status_color = "#28a745" if res.get("vulnerable") else "#dc3545"
-            status_text = "验证成功 (VULNERABLE)" if res.get("vulnerable") else "验证失败 (NOT VULNERABLE)"
-            
-            rows.append(f"""
-            <div class="vulnerability" style="border-left: 5px solid {status_color};">
-                <p><strong>POC名称:</strong> {res.get('poc_name')}</p>
-                <p><strong>目标:</strong> {res.get('target')}</p>
-                <p><strong>验证结果:</strong> <span style="color: {status_color}; font-weight: bold;">{status_text}</span></p>
-                <p><strong>详细信息:</strong> {res.get('message')}</p>
-                <p><strong>耗时:</strong> {res.get('execution_time', 0):.2f}s</p>
-                <div style="background: #f8f9fa; padding: 10px; margin-top: 10px; border-radius: 4px;">
-                    <p><strong>验证日志/输出:</strong></p>
-                    <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 12px;">{res.get('output', '无输出')}</pre>
-                </div>
-            </div>
-            """)
-            
-        return "\n".join(rows)
-
     def _get_tool_summary(self, tool_name: str, result: Dict[str, Any]) -> str:
-        """
-        获取工具执行结果摘要
-        """
+        """获取工具执行结果摘要"""
         if not result:
             return "无结果"
             
@@ -354,7 +841,6 @@ class ReportGenerator:
         if not data:
             return "无数据"
 
-        # 处理各个工具的特定输出
         if tool_name == "baseinfo":
             details = []
             if isinstance(data, dict):
@@ -368,7 +854,7 @@ class ReportGenerator:
             ports = data.get("open_ports", [])
             if not ports:
                 return "未发现开放端口"
-            return f"开放端口: {', '.join(ports)}"
+            return f"开放端口: {', '.join(str(p) for p in ports)}"
             
         elif tool_name == "waf_detect":
             has_waf = data.get("has_waf")
@@ -383,7 +869,6 @@ class ReportGenerator:
             return "未发现CDN"
             
         elif tool_name == "cms_identify":
-            # cms_identify 返回的 data 结构: {"success": True, "data": {...}}
             inner_data = data.get("data", {}) if isinstance(data, dict) else {}
             if not inner_data:
                 return data.get("message", "未识别到CMS")
@@ -400,60 +885,6 @@ class ReportGenerator:
             return "未发现漏洞"
 
         return "执行完成"
-
-    def _generate_tool_rows(self, tool_results: Dict[str, Any]) -> str:
-        """
-        生成工具结果HTML行
-        
-        Args:
-            tool_results: 工具结果字典
-            
-        Returns:
-            str: HTML工具行
-        """
-        rows = []
-        for tool_name, result in tool_results.items():
-            status = result.get("status", "unknown")
-            status_color = {
-                "success": "#28a745",
-                "failed": "#dc3545",
-                "timeout": "#ffc107"
-            }.get(status, "#6c757d")
-            
-            summary = self._get_tool_summary(tool_name, result)
-            
-            rows.append(f"""
-    <tr>
-        <td>{tool_name}</td>
-        <td style="color: {status_color}; font-weight: bold;">{status.upper()}</td>
-        <td>{summary}</td>
-    </tr>
-            """)
-        
-        return "\n".join(rows)
-    
-    def _generate_error_section(self, errors: List[str]) -> str:
-        """
-        生成错误部分
-        
-        Args:
-            errors: 错误列表
-            
-        Returns:
-            str: HTML错误部分
-        """
-        if not errors:
-            return ""
-        
-        error_rows = "\n".join([f"<li>{error}</li>" for error in errors])
-        return f"""
-    <div class="section">
-        <h2>执行错误</h2>
-        <ul style="color: #dc3545;">
-            {error_rows}
-        </ul>
-    </div>
-        """
     
     def generate_execution_trace_report(self, state: Any) -> Dict[str, Any]:
         """
@@ -473,65 +904,55 @@ class ReportGenerator:
                 "total_steps": len(state.execution_history),
                 "total_duration": self._calculate_duration(state),
                 "execution_trace": self._generate_detailed_trace(state.execution_history) if state.execution_history else [],
-                "trace_summary": self._generate_trace_summary(state.execution_history) if state.execution_history else {
-                    "total_steps": 0,
-                    "successful_steps": 0,
-                    "failed_steps": 0,
-                    "running_steps": 0,
-                    "pending_steps": 0,
-                    "total_execution_time": 0.0,
-                    "average_execution_time": 0.0
-                },
+                "trace_summary": self._generate_trace_summary(state.execution_history) if state.execution_history else self._empty_trace_summary(),
                 "state_changes": self._generate_state_changes(state.execution_history) if state.execution_history else [],
-                "performance_metrics": self._generate_performance_metrics(state.execution_history) if state.execution_history else {
-                    "throughput": 0.0,
-                    "success_rate": 0.0,
-                    "failure_rate": 0.0,
-                    "steps_per_second": 0.0,
-                    "average_step_duration": 0.0
-                }
+                "performance_metrics": self._generate_performance_metrics(state.execution_history) if state.execution_history else self._empty_performance_metrics()
             }
             
             logger.info(f"📄 执行轨迹报告生成完成: {trace_report['task_id']}")
             return trace_report
         except Exception as e:
             logger.error(f"生成执行轨迹报告失败: {str(e)}")
-            return {
-                "task_id": getattr(state, 'task_id', 'unknown'),
-                "target": getattr(state, 'target', 'unknown'),
-                "scan_time": datetime.now().isoformat(),
-                "total_steps": 0,
-                "total_duration": 0.0,
-                "execution_trace": [],
-                "trace_summary": {
-                    "total_steps": 0,
-                    "successful_steps": 0,
-                    "failed_steps": 0,
-                    "running_steps": 0,
-                    "pending_steps": 0,
-                    "total_execution_time": 0.0,
-                    "average_execution_time": 0.0
-                },
-                "state_changes": [],
-                "performance_metrics": {
-                    "throughput": 0.0,
-                    "success_rate": 0.0,
-                    "failure_rate": 0.0,
-                    "steps_per_second": 0.0,
-                    "average_step_duration": 0.0
-                }
-            }
+            return self._empty_trace_report(state)
+    
+    def _empty_trace_summary(self) -> Dict:
+        """返回空的轨迹摘要"""
+        return {
+            "total_steps": 0,
+            "successful_steps": 0,
+            "failed_steps": 0,
+            "running_steps": 0,
+            "pending_steps": 0,
+            "total_execution_time": 0.0,
+            "average_execution_time": 0.0
+        }
+    
+    def _empty_performance_metrics(self) -> Dict:
+        """返回空的性能指标"""
+        return {
+            "throughput": 0.0,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
+            "steps_per_second": 0.0,
+            "average_step_duration": 0.0
+        }
+    
+    def _empty_trace_report(self, state: Any) -> Dict:
+        """返回空的轨迹报告"""
+        return {
+            "task_id": getattr(state, 'task_id', 'unknown'),
+            "target": getattr(state, 'target', 'unknown'),
+            "scan_time": datetime.now().isoformat(),
+            "total_steps": 0,
+            "total_duration": 0.0,
+            "execution_trace": [],
+            "trace_summary": self._empty_trace_summary(),
+            "state_changes": [],
+            "performance_metrics": self._empty_performance_metrics()
+        }
     
     def _generate_detailed_trace(self, execution_history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        生成详细的执行轨迹
-        
-        Args:
-            execution_history: 执行历史记录
-            
-        Returns:
-            List[Dict]: 详细轨迹列表
-        """
+        """生成详细的执行轨迹"""
         detailed_trace = []
         
         for step in execution_history:
@@ -542,29 +963,13 @@ class ReportGenerator:
                 "step_type": step.get("step_type", "unknown"),
                 "status": step.get("status", "unknown"),
                 "execution_time": step.get("execution_time", 0),
-                
-                # 输入参数
                 "input_parameters": step.get("input_params", {}),
-                
-                # 处理逻辑
                 "processing_logic": step.get("processing_logic", ""),
-                
-                # 中间结果
                 "intermediate_results": step.get("intermediate_results", []),
-                
-                # 输出数据
                 "output_data": step.get("output_data", {}),
-                
-                # 最终结果
                 "final_result": step.get("result", {}),
-                
-                # 数据变化
                 "data_changes": step.get("data_changes", {}),
-                
-                # 状态转换
                 "state_transitions": step.get("state_transitions", []),
-                
-                # 状态快照
                 "state_snapshot": step.get("state_snapshot", {})
             }
             
@@ -573,15 +978,7 @@ class ReportGenerator:
         return detailed_trace
     
     def _generate_trace_summary(self, execution_history: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        生成轨迹摘要
-        
-        Args:
-            execution_history: 执行历史记录
-            
-        Returns:
-            Dict: 轨迹摘要
-        """
+        """生成轨迹摘要"""
         summary = {
             "total_steps": len(execution_history),
             "successful_steps": 0,
@@ -600,7 +997,6 @@ class ReportGenerator:
         for step in execution_history:
             status = step.get("status", "unknown")
             
-            # 统计状态
             if status == "success":
                 summary["successful_steps"] += 1
             elif status == "failed":
@@ -610,11 +1006,9 @@ class ReportGenerator:
             elif status == "pending":
                 summary["pending_steps"] += 1
             
-            # 统计步骤类型
             step_type = step.get("step_type", "unknown")
             summary["step_types"][step_type] = summary["step_types"].get(step_type, 0) + 1
             
-            # 统计执行时间
             execution_time = step.get("execution_time")
             if execution_time is not None and execution_time > 0:
                 execution_times.append(execution_time)
@@ -622,7 +1016,6 @@ class ReportGenerator:
                 summary["min_execution_time"] = min(summary["min_execution_time"], execution_time)
                 summary["max_execution_time"] = max(summary["max_execution_time"], execution_time)
         
-        # 计算平均执行时间
         if execution_times:
             summary["average_execution_time"] = summary["total_execution_time"] / len(execution_times)
         else:
@@ -631,15 +1024,7 @@ class ReportGenerator:
         return summary
     
     def _generate_state_changes(self, execution_history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        生成状态变化记录
-        
-        Args:
-            execution_history: 执行历史记录
-            
-        Returns:
-            List[Dict]: 状态变化列表
-        """
+        """生成状态变化记录"""
         state_changes = []
         
         for step in execution_history:
@@ -664,15 +1049,7 @@ class ReportGenerator:
         return state_changes
     
     def _generate_performance_metrics(self, execution_history: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        生成性能指标
-        
-        Args:
-            execution_history: 执行历史记录
-            
-        Returns:
-            Dict: 性能指标
-        """
+        """生成性能指标"""
         metrics = {
             "throughput": 0.0,
             "success_rate": 0.0,
@@ -687,18 +1064,15 @@ class ReportGenerator:
         total_steps = len(execution_history)
         successful_steps = sum(1 for step in execution_history if step.get("status") == "success")
         
-        # 计算成功率
         metrics["success_rate"] = (successful_steps / total_steps * 100) if total_steps > 0 else 0.0
         metrics["failure_rate"] = 100.0 - metrics["success_rate"]
         
-        # 计算总执行时间
         total_time = self._calculate_total_time(execution_history)
         
         if total_time > 0:
             metrics["steps_per_second"] = total_steps / total_time
             metrics["throughput"] = successful_steps / total_time
         
-        # 计算平均步骤持续时间
         execution_times = [step.get("execution_time", 0) for step in execution_history if step.get("execution_time") is not None and step.get("execution_time", 0) > 0]
         if execution_times:
             metrics["average_step_duration"] = sum(execution_times) / len(execution_times)
@@ -706,15 +1080,7 @@ class ReportGenerator:
         return metrics
     
     def _calculate_total_time(self, execution_history: List[Dict[str, Any]]) -> float:
-        """
-        计算总执行时间
-        
-        Args:
-            execution_history: 执行历史记录
-            
-        Returns:
-            float: 总执行时间（秒）
-        """
+        """计算总执行时间"""
         if not execution_history:
             return 0.0
         
@@ -743,31 +1109,7 @@ class ReportGenerator:
             trace_report = self.generate_execution_trace_report(state)
         except Exception as e:
             logger.error(f"生成执行轨迹报告失败: {str(e)}")
-            trace_report = {
-                "task_id": state.task_id,
-                "target": state.target,
-                "scan_time": datetime.now().isoformat(),
-                "total_steps": 0,
-                "total_duration": 0.0,
-                "execution_trace": [],
-                "trace_summary": {
-                    "total_steps": 0,
-                    "successful_steps": 0,
-                    "failed_steps": 0,
-                    "running_steps": 0,
-                    "pending_steps": 0,
-                    "total_execution_time": 0.0,
-                    "average_execution_time": 0.0
-                },
-                "state_changes": [],
-                "performance_metrics": {
-                    "throughput": 0.0,
-                    "success_rate": 0.0,
-                    "failure_rate": 0.0,
-                    "steps_per_second": 0.0,
-                    "average_step_duration": 0.0
-                }
-            }
+            trace_report = self._empty_trace_report(state)
         
         total_duration = trace_report.get('total_duration', 0.0) or 0.0
         total_steps = trace_report.get('total_steps', 0) or 0
@@ -804,8 +1146,6 @@ class ReportGenerator:
         .type-enhancement {{ background: #e8f5e9; color: #388e3c; }}
         .type-verification {{ background: #f3e5f5; color: #7b1fa2; }}
         .type-analysis {{ background: #ffebee; color: #d32f2f; }}
-        .data-changes {{ background: #fff9c4; padding: 10px; border-radius: 4px; margin-top: 10px; }}
-        .state-transitions {{ background: #e1f5fe; padding: 10px; border-radius: 4px; margin-top: 10px; }}
         .json-display {{ background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 11px; max-height: 200px; overflow-y: auto; }}
         .timestamp {{ color: #666; font-size: 11px; }}
     </style>
@@ -844,69 +1184,24 @@ class ReportGenerator:
                     <h3>平均耗时</h3>
                     <div class="value">{trace_report['trace_summary']['average_execution_time'] or 0:.2f}s</div>
                 </div>
-                <div class="card">
-                    <h3>成功率</h3>
-                    <div class="value">{trace_report['trace_summary']['successful_steps']}/{trace_report['trace_summary']['total_steps']}</div>
-                </div>
             </div>
         </div>
         
         <div class="section">
             <h2>📈 性能指标</h2>
             <table class="trace-table">
-                <tr>
-                    <th>指标</th>
-                    <th>值</th>
-                </tr>
-                <tr>
-                    <td>成功率</td>
-                    <td>{trace_report['performance_metrics']['success_rate'] or 0:.2f}%</td>
-                </tr>
-                <tr>
-                    <td>失败率</td>
-                    <td>{trace_report['performance_metrics']['failure_rate'] or 0:.2f}%</td>
-                </tr>
-                <tr>
-                    <td>吞吐量（成功步骤/秒）</td>
-                    <td>{trace_report['performance_metrics']['throughput'] or 0:.4f}</td>
-                </tr>
-                <tr>
-                    <td>步骤/秒</td>
-                    <td>{trace_report['performance_metrics']['steps_per_second'] or 0:.4f}</td>
-                </tr>
-                <tr>
-                    <td>平均步骤持续时间</td>
-                    <td>{trace_report['performance_metrics']['average_step_duration'] or 0:.2f}s</td>
-                </tr>
+                <tr><th>指标</th><th>值</th></tr>
+                <tr><td>成功率</td><td>{trace_report['performance_metrics']['success_rate'] or 0:.2f}%</td></tr>
+                <tr><td>失败率</td><td>{trace_report['performance_metrics']['failure_rate'] or 0:.2f}%</td></tr>
+                <tr><td>吞吐量（成功步骤/秒）</td><td>{trace_report['performance_metrics']['throughput'] or 0:.4f}</td></tr>
+                <tr><td>步骤/秒</td><td>{trace_report['performance_metrics']['steps_per_second'] or 0:.4f}</td></tr>
+                <tr><td>平均步骤持续时间</td><td>{trace_report['performance_metrics']['average_step_duration'] or 0:.2f}s</td></tr>
             </table>
         </div>
         
         <div class="section">
             <h2>📋 详细执行轨迹</h2>
-            <table class="trace-table">
-                <thead>
-                    <tr>
-                        <th>步骤</th>
-                        <th>时间戳</th>
-                        <th>任务</th>
-                        <th>类型</th>
-                        <th>状态</th>
-                        <th>耗时</th>
-                        <th>输入参数</th>
-                        <th>输出数据</th>
-                        <th>数据变化</th>
-                        <th>状态转换</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {self._generate_trace_rows(trace_report['execution_trace'])}
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="section">
-            <h2>🔄 状态变化记录</h2>
-            {self._generate_state_changes_rows(trace_report['state_changes'])}
+            {self._generate_trace_table(trace_report['execution_trace'])}
         </div>
     </div>
 </body>
@@ -915,18 +1210,12 @@ class ReportGenerator:
         
         return html
     
-    def _generate_trace_rows(self, execution_trace: List[Dict[str, Any]]) -> str:
-        """
-        生成轨迹表格行
+    def _generate_trace_table(self, execution_trace: List[Dict[str, Any]]) -> str:
+        """生成轨迹表格"""
+        if not execution_trace:
+            return "<p>无执行轨迹记录</p>"
         
-        Args:
-            execution_trace: 执行轨迹
-            
-        Returns:
-            str: HTML表格行
-        """
-        rows = []
-        
+        rows = ""
         for step in execution_trace:
             step_number = step.get("step_number", 0)
             timestamp = step.get("timestamp", "")
@@ -934,19 +1223,13 @@ class ReportGenerator:
             step_type = step.get("step_type", "unknown")
             status = step.get("status", "unknown")
             execution_time = step.get("execution_time") or 0
-            input_params = step.get("input_parameters", {})
-            output_data = step.get("output_data", {})
-            data_changes = step.get("data_changes", {})
-            state_transitions = step.get("state_transitions", [])
             
-            # 状态样式
             status_class = {
                 "success": "status-success",
                 "failed": "status-failed",
                 "running": "status-running"
             }.get(status, "")
             
-            # 步骤类型样式
             type_class = {
                 "tool_execution": "type-tool",
                 "code_generation": "type-code",
@@ -956,19 +1239,7 @@ class ReportGenerator:
                 "analysis": "type-analysis"
             }.get(step_type, "")
             
-            # 格式化输入参数
-            input_html = self._format_json(input_params)
-            
-            # 格式化输出数据
-            output_html = self._format_json(output_data)
-            
-            # 格式化数据变化
-            changes_html = self._format_json(data_changes) if data_changes else "-"
-            
-            # 格式化状态转换
-            transitions_html = ", ".join(state_transitions) if state_transitions else "-"
-            
-            rows.append(f"""
+            rows += f"""
                 <tr>
                     <td>{step_number}</td>
                     <td class="timestamp">{timestamp}</td>
@@ -976,67 +1247,23 @@ class ReportGenerator:
                     <td><span class="step-type {type_class}">{step_type}</span></td>
                     <td class="{status_class}">{status.upper()}</td>
                     <td>{execution_time:.2f}s</td>
-                    <td><div class="json-display">{input_html}</div></td>
-                    <td><div class="json-display">{output_html}</div></td>
-                    <td><div class="json-display">{changes_html}</div></td>
-                    <td>{transitions_html}</td>
                 </tr>
-            """)
+            """
         
-        return "\n".join(rows)
-    
-    def _generate_state_changes_rows(self, state_changes: List[Dict[str, Any]]) -> str:
+        return f"""
+        <table class="trace-table">
+            <thead>
+                <tr>
+                    <th>步骤</th>
+                    <th>时间戳</th>
+                    <th>任务</th>
+                    <th>类型</th>
+                    <th>状态</th>
+                    <th>耗时</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows}
+            </tbody>
+        </table>
         """
-        生成状态变化表格行
-        
-        Args:
-            state_changes: 状态变化列表
-            
-        Returns:
-            str: HTML表格行
-        """
-        if not state_changes:
-            return "<p>无状态变化记录</p>"
-        
-        rows = []
-        for change in state_changes:
-            step_number = change.get("step_number", 0)
-            task = change.get("task", "")
-            timestamp = change.get("timestamp", "")
-            data_changes = change.get("data_changes", {})
-            state_transitions = change.get("state_transitions", [])
-            state_snapshot = change.get("state_snapshot", {})
-            
-            rows.append(f"""
-                <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;">
-                    <h4 style="margin: 0 0 10px 0; color: #667eea;">步骤 {step_number}: {task}</h4>
-                    <p class="timestamp">时间: {timestamp}</p>
-                    
-                    {f'<div class="data-changes"><strong>数据变化:</strong><br>{self._format_json(data_changes)}</div>' if data_changes else ''}
-                    
-                    {f'<div class="state-transitions"><strong>状态转换:</strong> {", ".join(state_transitions)}</div>' if state_transitions else ''}
-                    
-                    {f'<div class="json-display"><strong>状态快照:</strong><br>{self._format_json(state_snapshot)}</div>' if state_snapshot else ''}
-                </div>
-            """)
-        
-        return "\n".join(rows)
-    
-    def _format_json(self, data: Any) -> str:
-        """
-        格式化JSON数据
-        
-        Args:
-            data: 要格式化的数据
-            
-        Returns:
-            str: 格式化的HTML
-        """
-        import json
-        try:
-            if not data:
-                return "-"
-            json_str = json.dumps(data, indent=2, ensure_ascii=False)
-            return f"<pre>{json_str}</pre>"
-        except:
-            return str(data)

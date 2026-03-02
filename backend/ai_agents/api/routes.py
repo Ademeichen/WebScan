@@ -4,18 +4,15 @@ AI Agents API 路由
 提供Agent扫描任务的API接口。
 """
 import json
-import asyncio
 import logging
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from uuid import uuid4
 
-from backend.models import Task, AgentResult, AgentTask
+from backend.models import Task
 from backend.api.common import APIResponse
 from backend.task_executor import task_executor
 from ..core.state import AgentState
-from ..core.graph import create_agent_graph
 from ..code_execution.executor import UnifiedExecutor
 from ..code_execution.environment import EnvironmentAwareness
 from ..code_execution.code_generator import CodeGenerator
@@ -96,14 +93,9 @@ class CapabilityEnhancementRequest(BaseModel):
     capability_name: Optional[str] = None
 
 
-# 内存级任务存储
-agent_tasks: Dict[str, Dict[str, Any]] = {}
-
-
 @router.post("/scan", response_model=AgentScanResponse)
 async def start_agent_scan(
-    request: AgentScanRequest,
-    background_tasks: BackgroundTasks
+    request: AgentScanRequest
 ):
     """
     启动Agent扫描任务
@@ -157,74 +149,6 @@ async def start_agent_scan(
         )
 
 
-async def _run_agent_task(task_id: str, initial_state: AgentState):
-    """
-    后台执行Agent任务
-    
-    Args:
-        task_id: 任务ID
-        initial_state: 初始状态
-    """
-    try:
-        logger.info(f"🚀 开始执行Agent任务: {task_id}")
-        
-        # 创建Agent图并执行
-        agent_graph = create_agent_graph()
-        final_state = await agent_graph.invoke(initial_state)
-        
-        # 生成最终报告
-        final_report = final_state.tool_results.get("final_report", {})
-        
-        # 保存执行结果到数据库
-        await AgentResult.create(
-            task=await AgentTask.get(task_id=task_id),
-            final_output=json.dumps(final_report, ensure_ascii=False),
-            execution_time=final_report.get("duration", 0)
-        )
-        
-        # 更新任务状态
-        task_obj = await AgentTask.get(task_id=task_id)
-        await task_obj.update_from_dict({"status": "completed"})
-        await task_obj.save()
-        
-        # 更新内存任务状态
-        if task_id in agent_tasks:
-            agent_tasks[task_id].update({
-                "status": "completed",
-                "result": final_report,
-                "completed_at": asyncio.get_event_loop().time(),
-                "progress": 100
-            })
-        
-        logger.info(f"✅ Agent任务执行完成: {task_id}")
-        
-    except Exception as e:
-        logger.error(f"❌ Agent任务执行失败 {task_id}: {str(e)}")
-        
-        # 更新任务状态为失败
-        try:
-            task_obj = await AgentTask.get(task_id=task_id)
-            await task_obj.update_from_dict({"status": "failed"})
-            await task_obj.save()
-            
-            # 保存错误结果
-            await AgentResult.create(
-                task=task_obj,
-                final_output=json.dumps({"error": str(e)}, ensure_ascii=False),
-                error_message=str(e)
-            )
-        except Exception as db_error:
-            logger.error(f"❌ 更新数据库失败: {str(db_error)}")
-        
-        # 更新内存任务状态
-        if task_id in agent_tasks:
-            agent_tasks[task_id].update({
-                "status": "failed",
-                "error": str(e),
-                "completed_at": asyncio.get_event_loop().time()
-            })
-
-
 @router.get("/tasks/{task_id}", response_model=APIResponse)
 async def get_agent_task(task_id: str):
     """
@@ -238,57 +162,12 @@ async def get_agent_task(task_id: str):
         if task_id.isdigit():
             db_task_id = int(task_id)
             logger.info(f"[AI_AGENT] [TASK_DETAIL_CONVERT] Task ID转换 - 模块: API, 变量: task_id, 旧值: {task_id}, 新值: {db_task_id}")
-            
-        # 先从内存中获取
-        if task_id in agent_tasks:
-            task_info = agent_tasks[task_id]
-            logger.info(f"[AI_AGENT] [TASK_DETAIL_MEMORY] 从内存获取任务信息 - 模块: API, 变量: task_id, 状态: found, 数据: {task_info}")
-            return APIResponse(
-                code=200,
-                message="获取成功",
-                data={
-                    "task_id": task_id,
-                    "target": task_info.get("target"),
-                    "status": task_info.get("status"),
-                    "progress": task_info.get("progress", 0),
-                    "created_at": task_info.get("created_at"),
-                    "completed_at": task_info.get("completed_at"),
-                    "result": task_info.get("result"),
-                    "error": task_info.get("error")
-                }
-            )
         
         # 从数据库获取 (使用 Unified Task Model)
         task = None
         if db_task_id:
             logger.info(f"[AI_AGENT] [TASK_DETAIL_DB] 从数据库获取任务 - 模块: API, 变量: db_task_id, 状态: querying")
             task = await Task.get_or_none(id=db_task_id)
-            
-        # 如果找不到且 task_id 是 UUID 格式，尝试查找 AgentTask (兼容旧数据)
-        if not task and len(task_id) > 20:
-            logger.info(f"[AI_AGENT] [TASK_DETAIL_LEGACY] 尝试查找AgentTask - 模块: API, 变量: task_id, 状态: querying")
-            task = await AgentTask.get_or_none(task_id=task_id)
-            if task:
-                logger.info(f"[AI_AGENT] [TASK_DETAIL_LEGACY_FOUND] 找到AgentTask - 模块: API, 变量: task_id, 状态: found")
-                # 旧模型适配
-                result = await AgentResult.get_or_none(task=task)
-                return APIResponse(
-                    code=200,
-                    message="获取成功",
-                    data={
-                        "task_id": str(task.task_id),
-                        "input_json": task.input_json,
-                        "task_type": task.task_type,
-                        "status": task.status,
-                        "created_at": task.created_at,
-                        "updated_at": task.updated_at,
-                        "final_output": result.final_output if result else None,
-                        "execution_time": result.execution_time if result else None,
-                        "error_message": result.error_message if result else None
-                    }
-                )
-            else:
-                logger.info(f"[AI_AGENT] [TASK_DETAIL_LEGACY_NOT_FOUND] AgentTask不存在 - 模块: API, 变量: task_id, 状态: not_found")
         
         if not task:
             logger.error(f"[AI_AGENT] [TASK_DETAIL_NOT_FOUND] 任务不存在 - 模块: API, 变量: task_id, 值: {task_id}, 状态: error")
@@ -402,13 +281,8 @@ async def cancel_agent_task(task_id: str):
         if task_id.isdigit():
             db_task_id = int(task_id)
             logger.info(f"[AI_AGENT] [TASK_CANCEL_CONVERT] Task ID转换 - 模块: API, 变量: task_id, 旧值: {task_id}, 新值: {db_task_id}")
-            
-        # 1. 内存清理
-        if task_id in agent_tasks:
-            del agent_tasks[task_id]
-            logger.info(f"✅ Agent任务已从内存中删除: {task_id}")
         
-        # 2. 数据库状态更新 & 任务终止
+        # 数据库状态更新 & 任务终止
         if db_task_id:
             logger.info(f"[AI_AGENT] [TASK_CANCEL_DB] 从数据库获取任务 - 模块: API, 变量: db_task_id, 状态: querying")
             task = await Task.get_or_none(id=db_task_id)
@@ -434,19 +308,6 @@ async def cancel_agent_task(task_id: str):
                         "status": "cancelled"
                     }
                 )
-
-        # 3. 兼容旧AgentTask (UUID)
-        if len(task_id) > 20:
-            task = await AgentTask.get_or_none(task_id=task_id)
-            if task:
-                if task.status == "running":
-                    await task.update_from_dict({"status": "cancelled"})
-                    await task.save()
-                return {
-                    "task_id": task_id,
-                    "status": "cancelled",
-                    "message": "任务已取消"
-                }
 
         logger.error(f"[AI_AGENT] [TASK_CANCEL_NOT_FOUND] 任务不存在 - 模块: API, 变量: task_id, 值: {task_id}, 状态: error")
         raise HTTPException(status_code=404, detail="任务不存在")
@@ -474,13 +335,8 @@ async def delete_agent_task(task_id: str):
         if task_id.isdigit():
             db_task_id = int(task_id)
             logger.info(f"[AI_AGENT] [TASK_DELETE_CONVERT] Task ID转换 - 模块: API, 变量: task_id, 旧值: {task_id}, 新值: {db_task_id}")
-            
-        # 1. 内存清理
-        if task_id in agent_tasks:
-            del agent_tasks[task_id]
-            logger.info(f"[AI_AGENT] [TASK_DELETE_MEMORY] 任务已从内存中删除 - 模块: API, 变量: task_id, 状态: deleted")
         
-        # 2. 删除 Unified Task
+        # 删除 Unified Task
         if db_task_id:
             logger.info(f"[AI_AGENT] [TASK_DELETE_DB] 从数据库获取任务 - 模块: API, 变量: db_task_id, 状态: querying")
             task = await Task.get_or_none(id=db_task_id)
@@ -502,24 +358,6 @@ async def delete_agent_task(task_id: str):
                     message="任务已删除",
                     data={
                         "task_id": str(db_task_id),
-                        "status": "deleted"
-                    }
-                )
-
-        # 3. 删除旧AgentTask
-        if len(task_id) > 20:
-            logger.info(f"[AI_AGENT] [TASK_DELETE_LEGACY] 尝试删除旧AgentTask - 模块: API, 变量: task_id, 状态: querying")
-            task = await AgentTask.get_or_none(task_id=task_id)
-            if task:
-                await task.delete()
-                # 关联的 AgentResult 会因为级联删除吗？ TortoiseORM默认可能不会，手动删除
-                await AgentResult.filter(task=task).delete()
-                logger.info(f"[AI_AGENT] [TASK_DELETE_LEGACY_SUCCESS] 旧AgentTask已删除 - 模块: API, 变量: task_id, 状态: deleted")
-                return APIResponse(
-                    code=200,
-                    message="任务已删除",
-                    data={
-                        "task_id": task_id,
                         "status": "deleted"
                     }
                 )
@@ -795,19 +633,20 @@ async def list_capabilities():
     列出所有能力
     
     Returns:
-        Dict: 能力列表
+        APIResponse: 能力列表
     """
     try:
         capability_enhancer = CapabilityEnhancer()
         capabilities = capability_enhancer.list_capabilities()
         
-        return {
-            "status": "success",
-            "data": {
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
                 "total": len(capabilities),
                 "capabilities": capabilities
             }
-        }
+        )
         
     except Exception as e:
         logger.error(f"❌ 获取能力列表失败: {str(e)}")
@@ -881,16 +720,17 @@ async def get_environment_info():
     获取环境信息
     
     Returns:
-        Dict: 环境信息
+        APIResponse: 环境信息
     """
     try:
         env_awareness = EnvironmentAwareness()
         env_info = env_awareness.get_environment_report()
         
-        return {
-            "status": "success",
-            "data": env_info
-        }
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data=env_info
+        )
         
     except Exception as e:
         logger.error(f"❌ 获取环境信息失败: {str(e)}")
@@ -903,19 +743,20 @@ async def get_available_tools():
     获取可用工具列表
     
     Returns:
-        Dict: 可用工具列表
+        APIResponse: 可用工具列表
     """
     try:
         env_awareness = EnvironmentAwareness()
         tools = env_awareness.available_tools
         
-        return {
-            "status": "success",
-            "data": {
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
                 "total": len(tools),
                 "tools": tools
             }
-        }
+        )
         
     except Exception as e:
         logger.error(f"❌ 获取可用工具失败: {str(e)}")
@@ -947,4 +788,189 @@ async def check_tool(tool_name: str) -> Dict[str, Any]:
         
     except Exception as e:
         logger.error(f"❌ 检查工具可用性失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ToolRecommendRequest(BaseModel):
+    """工具推荐请求模型"""
+    target: str
+    context: Optional[Dict[str, Any]] = None
+
+
+class PluginMatchRequest(BaseModel):
+    """插件匹配请求模型"""
+    target: str
+    context: Optional[Dict[str, Any]] = None
+
+
+@router.post("/tools/recommend", response_model=APIResponse)
+async def recommend_tools(request: ToolRecommendRequest):
+    """
+    获取工具推荐
+    
+    根据目标特征智能推荐合适的工具
+    
+    Args:
+        request: 工具推荐请求
+        
+    Returns:
+        APIResponse: 推荐的工具列表
+    """
+    try:
+        from ..tools.tool_recommender import ToolRecommender, create_target_profile
+        
+        recommender = ToolRecommender()
+        
+        context = request.context or {}
+        profile = create_target_profile(
+            target=request.target,
+            ports=context.get("ports", []),
+            cms=context.get("cms"),
+            technologies=context.get("technologies", [])
+        )
+        
+        recommendations = recommender.get_top_recommendations(profile, top_n=10)
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "target": request.target,
+                "recommendations": [
+                    {
+                        "tool_name": rec.tool_name,
+                        "priority": rec.priority,
+                        "confidence": rec.confidence,
+                        "reason": rec.reason,
+                        "source": rec.source.value if hasattr(rec.source, 'value') else str(rec.source)
+                    }
+                    for rec in recommendations
+                ]
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ 获取工具推荐失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/plugins/match", response_model=APIResponse)
+async def match_plugins(request: PluginMatchRequest):
+    """
+    匹配插件
+    
+    根据目标特征智能匹配合适的插件
+    
+    Args:
+        request: 插件匹配请求
+        
+    Returns:
+        APIResponse: 匹配的插件列表
+    """
+    try:
+        from ..tools.plugin_matcher import PluginMatcher
+        
+        matcher = PluginMatcher()
+        matches = await matcher.match_by_target(request.target)
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "target": request.target,
+                "matches": [
+                    {
+                        "plugin_name": match.plugin_name,
+                        "match_score": match.match_score,
+                        "match_reasons": match.match_reasons,
+                        "dependencies": match.dependencies
+                    }
+                    for match in matches
+                ]
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ 匹配插件失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/plugins/execution-plan", response_model=APIResponse)
+async def get_execution_plan(request: Dict[str, Any]):
+    """
+    获取插件执行计划
+    
+    根据插件列表生成执行计划
+    
+    Args:
+        request: 包含plugins列表的请求
+        
+    Returns:
+        APIResponse: 执行计划
+    """
+    try:
+        from ..tools.plugin_matcher import PluginMatcher
+        
+        plugins = request.get("plugins", [])
+        matcher = PluginMatcher()
+        plan = await matcher.create_execution_plan(plugins)
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data=plan.to_dict() if hasattr(plan, 'to_dict') else plan
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ 获取执行计划失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/resources/usage", response_model=APIResponse)
+async def get_resource_usage():
+    """
+    获取资源使用情况
+    
+    Returns:
+        APIResponse: 资源使用情况
+    """
+    try:
+        from ..utils.resource_limiter import get_default_limiter
+        
+        limiter = get_default_limiter()
+        usage = await limiter.get_current_usage()
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data=usage.to_dict()
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ 获取资源使用情况失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/resources/statistics", response_model=APIResponse)
+async def get_resource_statistics():
+    """
+    获取资源统计信息
+    
+    Returns:
+        APIResponse: 资源统计信息
+    """
+    try:
+        from ..utils.resource_limiter import get_default_limiter
+        
+        limiter = get_default_limiter()
+        stats = limiter.get_statistics()
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data=stats
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ 获取资源统计信息失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

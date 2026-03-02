@@ -2,7 +2,7 @@
 AI 对话 API 路由
 
 提供 AI 对话功能,支持创建对话实例、发送消息、获取历史等。
-使用 LangChain 和 OpenAI GPT-3.5-turbo 模型实现智能对话。
+使用 LangChain 和 AI模型实现智能对话。
 使用 LangChain 0.3.x 的消息历史管理进行对话记忆。
 
 主要功能:

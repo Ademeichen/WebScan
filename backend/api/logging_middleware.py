@@ -9,6 +9,8 @@ API 日志中间件
 - 处理状态
 - 错误信息
 - 响应耗时
+- 请求ID追踪
+- 结构化JSON日志
 
 日志格式统一规范，便于开发者在开发和调试过程中快速定位问题。
 """
@@ -21,8 +23,36 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 from datetime import datetime
 import uuid
+import traceback
+
+from backend.utils.logging_utils import set_request_id, get_request_id, JsonFormatter
 
 logger = logging.getLogger("api_logger")
+
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """
+    请求ID追踪中间件
+    
+    为每个请求分配唯一的请求ID，用于全链路追踪。
+    请求ID会：
+    - 存储在上下文变量中
+    - 添加到响应头 X-Request-ID
+    - 包含在所有日志中
+    """
+    
+    def __init__(self, app: ASGIApp):
+        super().__init__(app)
+    
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:8])
+        set_request_id(request_id)
+        
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        
+        return response
+
 
 class APILoggingMiddleware(BaseHTTPMiddleware):
     """
@@ -46,9 +76,9 @@ class APILoggingMiddleware(BaseHTTPMiddleware):
         self.sensitive_body_fields = {"password", "token", "secret", "api_key", "apikey"}
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        request_id = str(uuid.uuid4())[:8]
+        request_id = get_request_id()
         start_time = time.time()
-        request_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        request_timestamp = datetime.utcnow().isoformat() + "Z"
         
         request_info = {
             "request_id": request_id,
@@ -79,14 +109,12 @@ class APILoggingMiddleware(BaseHTTPMiddleware):
                 request_info["body"] = f"[Error reading body: {str(e)}]"
         
         logger.info(
-            f"[{request_id}] API请求开始 | {request_info['method']} {request_info['path']} | "
-            f"客户端: {request_info['client_ip']} | 参数: {json.dumps(request_info.get('query_params', {}), ensure_ascii=False)}"
+            f"API请求开始",
+            extra={
+                "event": "request_start",
+                "request": request_info
+            }
         )
-        
-        if request_info.get("body"):
-            logger.debug(
-                f"[{request_id}] 请求体: {json.dumps(request_info.get('body', {}), ensure_ascii=False)}"
-            )
         
         response = None
         error_info = None
@@ -105,8 +133,15 @@ class APILoggingMiddleware(BaseHTTPMiddleware):
             
             logger.log(
                 log_level,
-                f"[{request_id}] API请求完成 | {request_info['method']} {request_info['path']} | "
-                f"状态码: {status_code} | 耗时: {process_time_ms}ms"
+                f"API请求完成",
+                extra={
+                    "event": "request_end",
+                    "request_id": request_id,
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status_code": status_code,
+                    "process_time_ms": process_time_ms
+                }
             )
             
             response.headers["X-Request-ID"] = request_id
@@ -118,13 +153,21 @@ class APILoggingMiddleware(BaseHTTPMiddleware):
             error_info = {
                 "error_type": type(e).__name__,
                 "error_message": str(e),
+                "stack_trace": traceback.format_exc()
             }
             process_time = time.time() - start_time
             process_time_ms = round(process_time * 1000, 2)
             
             logger.error(
-                f"[{request_id}] API请求异常 | {request_info['method']} {request_info['path']} | "
-                f"异常: {error_info['error_type']} - {error_info['error_message']} | 耗时: {process_time_ms}ms",
+                f"API请求异常",
+                extra={
+                    "event": "request_error",
+                    "request_id": request_id,
+                    "method": request.method,
+                    "path": request.url.path,
+                    "error": error_info,
+                    "process_time_ms": process_time_ms
+                },
                 exc_info=True
             )
             raise
@@ -175,6 +218,7 @@ def setup_api_logging(app, log_level: str = "INFO"):
         app: FastAPI应用实例
         log_level: 日志级别，默认为INFO
     """
+    app.add_middleware(RequestIDMiddleware)
     app.add_middleware(APILoggingMiddleware, log_level=log_level)
     logger.info(f"API日志中间件已启用，日志级别: {log_level}")
 
@@ -190,23 +234,41 @@ class APILogger:
     def log_request_start(request_id: str, endpoint: str, method: str, params: dict = None):
         """记录请求开始"""
         logger.info(
-            f"[{request_id}] 请求开始 | {method} {endpoint} | "
-            f"参数: {json.dumps(params or {}, ensure_ascii=False)}"
+            f"请求开始",
+            extra={
+                "event": "business_request_start",
+                "request_id": request_id,
+                "endpoint": endpoint,
+                "method": method,
+                "params": params or {}
+            }
         )
     
     @staticmethod
     def log_request_end(request_id: str, endpoint: str, status: str, duration_ms: float):
         """记录请求结束"""
         logger.info(
-            f"[{request_id}] 请求结束 | {endpoint} | 状态: {status} | 耗时: {duration_ms}ms"
+            f"请求结束",
+            extra={
+                "event": "business_request_end",
+                "request_id": request_id,
+                "endpoint": endpoint,
+                "status": status,
+                "duration_ms": duration_ms
+            }
         )
     
     @staticmethod
     def log_business_logic(request_id: str, step: str, details: dict = None):
         """记录业务逻辑处理步骤"""
         logger.info(
-            f"[{request_id}] 业务处理 | {step} | "
-            f"详情: {json.dumps(details or {}, ensure_ascii=False)}"
+            f"业务处理: {step}",
+            extra={
+                "event": "business_logic",
+                "request_id": request_id,
+                "step": step,
+                "details": details or {}
+            }
         )
     
     @staticmethod
@@ -214,32 +276,57 @@ class APILogger:
         """记录参数验证"""
         status = "通过" if is_valid else "失败"
         logger.debug(
-            f"[{request_id}] 参数验证 | 字段: {field} | 值: {value} | "
-            f"状态: {status}" + (f" | 消息: {message}" if message else "")
+            f"参数验证: {field} - {status}",
+            extra={
+                "event": "validation",
+                "request_id": request_id,
+                "field": field,
+                "is_valid": is_valid,
+                "message": message
+            }
         )
     
     @staticmethod
     def log_db_operation(request_id: str, operation: str, table: str, details: dict = None):
         """记录数据库操作"""
         logger.debug(
-            f"[{request_id}] 数据库操作 | {operation} | 表: {table} | "
-            f"详情: {json.dumps(details or {}, ensure_ascii=False)}"
+            f"数据库操作: {operation} on {table}",
+            extra={
+                "event": "db_operation",
+                "request_id": request_id,
+                "operation": operation,
+                "table": table,
+                "details": details or {}
+            }
         )
     
     @staticmethod
     def log_external_call(request_id: str, service: str, endpoint: str, status: str, duration_ms: float = None):
         """记录外部服务调用"""
-        duration_str = f" | 耗时: {duration_ms}ms" if duration_ms else ""
         logger.info(
-            f"[{request_id}] 外部调用 | 服务: {service} | 端点: {endpoint} | "
-            f"状态: {status}{duration_str}"
+            f"外部调用: {service}",
+            extra={
+                "event": "external_call",
+                "request_id": request_id,
+                "service": service,
+                "endpoint": endpoint,
+                "status": status,
+                "duration_ms": duration_ms
+            }
         )
     
     @staticmethod
     def log_error(request_id: str, error_type: str, error_message: str, stack_trace: str = None):
         """记录错误信息"""
         logger.error(
-            f"[{request_id}] 错误 | 类型: {error_type} | 消息: {error_message}",
+            f"错误: {error_type}",
+            extra={
+                "event": "error",
+                "request_id": request_id,
+                "error_type": error_type,
+                "error_message": error_message,
+                "stack_trace": stack_trace
+            },
             exc_info=True if stack_trace else False
         )
     
@@ -247,8 +334,13 @@ class APILogger:
     def log_warning(request_id: str, message: str, details: dict = None):
         """记录警告信息"""
         logger.warning(
-            f"[{request_id}] 警告 | {message} | "
-            f"详情: {json.dumps(details or {}, ensure_ascii=False)}"
+            f"警告: {message}",
+            extra={
+                "event": "warning",
+                "request_id": request_id,
+                "message": message,
+                "details": details or {}
+            }
         )
 
 

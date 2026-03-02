@@ -688,20 +688,20 @@ SEEBUG_API_KEY=your_seebug_key
 python main.py
 ```
 
-服务将在 `http://127.0.0.1:8888` 启动。
+服务将在 `http://127.0.0.1:3000` 启动。
 
 ### 4. 使用Agent扫描
 
 ```bash
 # 启动Agent扫描
-curl -X POST "http://127.0.0.1:8888/api/ai_agents/scan" \
+curl -X POST "http://127.0.0.1:3000/api/ai_agents/scan" \
   -H "Content-Type: application/json" \
   -d '{
     "target": "https://www.baidu.com"
   }'
 
 # 查询任务状态
-curl "http://127.0.0.1:8888/api/ai_agents/tasks/{task_id}"
+curl "http://127.0.0.1:3000/api/ai_agents/tasks/{task_id}"
 ```
 
 ---
@@ -758,6 +758,46 @@ curl "http://127.0.0.1:8888/api/ai_agents/tasks/{task_id}"
 - `GET /api/ai_agents/tools`：获取可用工具列表
 - `GET /api/ai_agents/config`：获取配置
 - `POST /api/ai_agents/config`：更新配置
+
+---
+
+## 测试
+
+### 测试目录结构
+
+```
+ai_agents/
+├── core/tests/               # 核心模块测试
+│   ├── test_graph.py         # 图构建和执行测试
+│   ├── test_state.py         # 状态管理测试
+│   ├── test_nodes.py         # 节点实现测试
+│   └── test_agent_graph_workflow.py # 工作流测试
+├── tools/tests/              # 工具适配器测试
+│   └── test_adapters.py      # 适配器功能测试
+├── poc_system/tests/         # POC系统测试
+├── analyzers/tests/          # 分析器测试
+└── subgraphs/tests/          # 子图测试
+```
+
+### 运行测试
+
+```bash
+# 运行所有AI Agents测试
+pytest ai_agents/ -v
+
+# 运行特定模块测试
+pytest ai_agents/core/tests/ -v
+pytest ai_agents/tools/tests/ -v
+
+# 运行带覆盖率的测试
+pytest ai_agents/ --cov=ai_agents --cov-report=html
+```
+
+### 测试要求
+
+- 所有新功能必须包含单元测试
+- 测试覆盖率应不低于70%
+- 涉及外部服务的测试使用`@pytest.mark.integration`标记
 
 ---
 

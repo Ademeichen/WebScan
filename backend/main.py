@@ -10,15 +10,16 @@ FastAPI 主应用入口文件
 - 初始化数据库连接
 - 验证外部服务连接(如 AWVS)
 - 启动后台任务
+- 任务恢复功能
 """
 import sys
 import warnings
+import signal
+import asyncio
 from pathlib import Path
 
-# 抑制paramiko的Blowfish弃用警告
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="paramiko")
 
-# 添加项目根目录到 Python 路径
 current_dir = Path(__file__).parent
 project_root = current_dir.parent
 if str(project_root) not in sys.path:
@@ -33,30 +34,37 @@ from backend.config import settings
 from backend.database import init_db, close_db
 import logging
 
-# 创建必要的目录
 Path("logs").mkdir(exist_ok=True)
 Path("data").mkdir(exist_ok=True)
 
-# 配置日志
-logging.basicConfig(
-    level=getattr(logging, settings.LOG_LEVEL),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(settings.LOG_FILE, encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+from backend.utils.logging_utils import (
+    setup_structured_logging,
+    set_request_id,
+    get_request_id,
+    JsonFormatter
 )
+
+setup_structured_logging(
+    log_level=settings.LOG_LEVEL,
+    log_file=settings.LOG_FILE,
+    json_format=True,
+    console_output=True
+)
+
 logger = logging.getLogger(__name__)
 
-# 配置API专用日志器
 api_logger = logging.getLogger("api_logger")
 api_logger.setLevel(getattr(logging, settings.LOG_LEVEL))
 api_file_handler = logging.FileHandler("logs/api.log", encoding='utf-8')
-api_file_handler.setFormatter(logging.Formatter(
-    '%(asctime)s - %(levelname)s - %(message)s'
-))
+api_file_handler.setFormatter(JsonFormatter())
 api_logger.addHandler(api_file_handler)
 
+shutdown_event = asyncio.Event()
+shutdown_timeout = 30
+
+def signal_handler(signum, frame):
+    logger.info(f"收到关闭信号: {signal.Signals(signum).name}")
+    shutdown_event.set()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -68,8 +76,12 @@ async def lifespan(app: FastAPI):
     - 初始化数据库连接
     - 验证 AWVS API 连接
     - 启动后台数据同步任务
+    - 注册信号处理器
+    - 恢复未完成任务
     
     关闭时:
+    - 关闭任务执行器
+    - 关闭WebSocket连接
     - 关闭数据库连接
     - 清理资源
     
@@ -79,13 +91,13 @@ async def lifespan(app: FastAPI):
     Yields:
         None: 控制权交还给应用
     """
-    # 启动时执行
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     logger.info(f"启动 {settings.APP_NAME} v{settings.APP_VERSION}")
     
-    # 初始化数据库
     await init_db()
     
-    # 验证AWVS连接
     try:
         from backend.AVWS.API.Base import Base as AWVSBase
         awvs_base = AWVSBase(settings.AWVS_API_URL, settings.AWVS_API_KEY)
@@ -98,21 +110,66 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"执行 AWVS 连接测试时发生错误: {str(e)}")
 
-    # 启动后台任务执行器
     try:
         from backend.task_executor import task_executor
         task_executor.start_worker()
         logger.info("任务执行器 Worker 已启动")
+        
+        await task_executor.recover_pending_tasks()
+        
     except Exception as e:
         logger.error(f"启动任务执行器失败: {str(e)}")
 
     yield
     
-    # 关闭时执行
-    logger.info("应用关闭")
+    logger.info("=" * 50)
+    logger.info("开始优雅关闭流程...")
+    logger.info("=" * 50)
     
-    # 关闭数据库连接
-    await close_db()
+    shutdown_start_time = asyncio.get_event_loop().time()
+    
+    try:
+        logger.info("[1/3] 正在关闭任务执行器...")
+        from backend.task_executor import task_executor
+        await asyncio.wait_for(
+            task_executor.shutdown(),
+            timeout=shutdown_timeout
+        )
+        logger.info("[1/3] 任务执行器已关闭")
+    except asyncio.TimeoutError:
+        logger.warning(f"[1/3] 任务执行器关闭超时 ({shutdown_timeout}s)")
+    except Exception as e:
+        logger.error(f"[1/3] 关闭任务执行器时发生错误: {e}")
+
+    try:
+        logger.info("[2/3] 正在关闭所有WebSocket连接...")
+        from backend.api.websocket import manager
+        await asyncio.wait_for(
+            manager.close_all(),
+            timeout=10
+        )
+        logger.info("[2/3] WebSocket连接已全部关闭")
+    except asyncio.TimeoutError:
+        logger.warning("[2/3] WebSocket关闭超时")
+    except Exception as e:
+        logger.error(f"[2/3] 关闭WebSocket时发生错误: {e}")
+
+    try:
+        logger.info("[3/3] 正在关闭数据库连接...")
+        await asyncio.wait_for(
+            close_db(),
+            timeout=10
+        )
+        logger.info("[3/3] 数据库连接已关闭")
+    except asyncio.TimeoutError:
+        logger.warning("[3/3] 数据库关闭超时")
+    except Exception as e:
+        logger.error(f"[3/3] 关闭数据库时发生错误: {e}")
+    
+    shutdown_duration = asyncio.get_event_loop().time() - shutdown_start_time
+    logger.info("=" * 50)
+    logger.info(f"优雅关闭完成，耗时: {shutdown_duration:.2f}秒")
+    logger.info("=" * 50)
 
 # 创建 FastAPI 应用实例
 app = FastAPI(
@@ -207,6 +264,10 @@ async def global_exception_handler(request, exc):
 # 注册路由
 from backend.api import api_router
 app.include_router(api_router, prefix="/api")
+
+# 注册子图API路由
+from backend.ai_agents.subgraphs.api import router as subgraphs_router
+app.include_router(subgraphs_router, prefix="/api")
 
 
 if __name__ == "__main__":

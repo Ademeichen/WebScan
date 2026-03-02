@@ -242,13 +242,23 @@ POC_RETRY_MAX_COUNT=3
 
 ```bash
 # 开发模式
+cd backend
 python main.py
 
 # 或使用uvicorn
-uvicorn main:app --host 127.0.0.1 --port 3000 --reload
+uvicorn backend.main:app --host 127.0.0.1 --port 3000 --reload
 ```
 
 后端服务将运行在：http://127.0.0.1:3000
+
+**停止服务：**
+- 按 `Ctrl+C` 可优雅关闭服务
+- 系统会自动完成以下操作：
+  1. 停止接受新任务
+  2. 等待当前任务完成或超时(最多30秒)
+  3. 关闭所有WebSocket连接
+  4. 关闭数据库连接
+  5. 输出正常退出日志
 
 #### 5. 前端安装
 
@@ -507,6 +517,34 @@ VITE_API_BASE_URL=http://127.0.0.1:3000/api
 VITE_REQUEST_TIMEOUT=30000
 ```
 
+### WebSocket配置
+
+系统使用WebSocket实现实时通信：
+
+| 配置项 | 默认值 | 说明 |
+|-------|--------|------|
+| WebSocket URL | `ws://localhost:3000/api/ws` | WebSocket连接地址 |
+| 重连次数 | 5 | 最大自动重连次数 |
+| 重连延迟 | 1-30秒 | 指数退避重连策略 |
+| 心跳间隔 | 30秒 | 心跳检测间隔 |
+
+**前端WebSocket使用：**
+```javascript
+import { useWebSocket } from '@/utils/websocket'
+
+const { connect, on, disconnect } = useWebSocket('ws://localhost:3000/api/ws')
+connect()
+on('task:update', (payload) => { /* 处理任务更新 */ })
+```
+
+### 端口配置
+
+| 服务 | 默认端口 | 配置位置 |
+|-----|---------|---------|
+| 后端API | 3000 | `backend/.env` → `PORT` |
+| 前端开发 | 5173 | `front/vite.config.js` |
+| WebSocket | 3000 | 与后端API共用 |
+
 ---
 
 ## API文档
@@ -675,16 +713,51 @@ const routes = [
 
 #### 后端测试
 
+项目采用模块化的测试结构，测试文件按照功能模块组织：
+
 ```bash
+# 运行所有测试
 cd backend
 pytest
 
-# 运行特定测试
-pytest tests/test_api.py -v
+# 运行特定模块的测试
+pytest ai_agents/core/tests/ -v
+pytest ai_agents/tools/tests/ -v
+pytest api/tests/ -v
 
-# 生成覆盖率报告
-pytest --cov=. --cov-report=html
+# 运行带覆盖率的测试
+pytest --cov=backend --cov-report=html
+
+# 运行集成测试（需要外部服务）
+pytest --run-integration -v
 ```
+
+#### 测试目录结构
+
+```
+backend/
+├── tests/                    # 集成测试
+│   ├── conftest.py          # 测试配置和fixtures
+│   ├── test_integration.py  # 综合集成测试
+│   ├── test_ai_model.py     # AI模型连接测试
+│   └── test_report_generator.py # 报告生成器测试
+├── ai_agents/
+│   ├── core/tests/          # 核心模块测试
+│   ├── tools/tests/         # 工具适配器测试
+│   ├── poc_system/tests/    # POC系统测试
+│   ├── analyzers/tests/     # 分析器测试
+│   └── subgraphs/tests/     # 子图测试
+├── api/tests/               # API模块测试
+└── plugins/tests/           # 插件测试
+```
+
+#### 测试要求
+
+- 所有新功能必须包含单元测试
+- 测试覆盖率应不低于70%
+- 测试应包含正常流程和异常情况
+- 使用pytest和pytest-asyncio进行测试
+- 涉及外部服务的测试使用`@pytest.mark.integration`标记
 
 #### 前端测试
 
@@ -935,6 +1008,35 @@ node -v  # 应该 >= 16.0
 - 配置日志轮转
 - 定期清理旧日志文件
 - 调整日志级别为WARNING或ERROR
+
+### 9. WebSocket连接断开
+
+**问题**: 前端WebSocket连接频繁断开
+
+**解决方案**:
+- 检查网络连接是否稳定
+- 前端会自动重连(最多5次)
+- 查看浏览器控制台的WebSocket错误信息
+- 确认后端服务正常运行
+
+### 10. 任务状态丢失
+
+**问题**: 服务重启后任务状态丢失
+
+**解决方案**:
+- 任务状态会自动持久化到 `data/task_states.json`
+- 服务启动时会自动恢复未完成的任务
+- 如需手动恢复，检查数据库中任务状态
+
+### 11. API端点404错误
+
+**问题**: 前端调用API返回404
+
+**解决方案**:
+- 确认API端点路径正确
+- AI Agent扫描使用 `/api/ai_agents/scan`
+- WebSocket使用 `ws://localhost:3000/api/ws`
+- 查看后端Swagger文档确认端点: http://127.0.0.1:3000/docs
 
 ---
 

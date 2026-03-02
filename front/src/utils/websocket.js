@@ -5,9 +5,11 @@ class WebSocketManager {
     this.url = url
     this.options = {
       reconnect: true,
-      reconnectInterval: 3000,
+      reconnectInterval: 1000,
       maxReconnectAttempts: 5,
       heartbeatInterval: 30000,
+      enableExponentialBackoff: true,
+      maxReconnectDelay: 30000,
       ...options
     }
     
@@ -19,6 +21,9 @@ class WebSocketManager {
     this.eventHandlers = new Map()
     this.isConnected = ref(false)
     this.isConnecting = ref(false)
+    this.isReconnecting = ref(false)
+    this.reconnectStatus = ref('')
+    this.connectionStatus = ref('disconnected')
   }
 
   connect() {
@@ -27,6 +32,7 @@ class WebSocketManager {
     }
 
     this.isConnecting.value = true
+    this.connectionStatus.value = 'connecting'
 
     try {
       this.ws = new WebSocket(this.url)
@@ -42,12 +48,16 @@ class WebSocketManager {
       console.log('WebSocket连接成功')
       this.isConnected.value = true
       this.isConnecting.value = false
+      this.isReconnecting.value = false
       this.reconnectAttempts = 0
+      this.connectionStatus.value = 'connected'
+      this.reconnectStatus.value = ''
       
       this.startHeartbeat()
       this.flushMessageQueue()
       
       this.emit('connected')
+      this.emit('statusChange', this.getStatus())
     }
 
     this.ws.onmessage = (event) => {
@@ -61,16 +71,20 @@ class WebSocketManager {
 
     this.ws.onerror = (error) => {
       console.error('WebSocket错误:', error)
+      this.connectionStatus.value = 'error'
       this.emit('error', error)
+      this.emit('statusChange', this.getStatus())
     }
 
     this.ws.onclose = (event) => {
       console.log('WebSocket连接关闭:', event.code, event.reason)
       this.isConnected.value = false
       this.isConnecting.value = false
+      this.connectionStatus.value = 'disconnected'
       
       this.stopHeartbeat()
       this.emit('disconnected', event)
+      this.emit('statusChange', this.getStatus())
       
       if (this.options.reconnect && !event.wasClean) {
         this.scheduleReconnect()
@@ -177,17 +191,46 @@ class WebSocketManager {
     console.log('收到心跳响应')
   }
 
+  calculateReconnectDelay() {
+    if (!this.options.enableExponentialBackoff) {
+      return this.options.reconnectInterval
+    }
+    
+    const baseDelay = this.options.reconnectInterval
+    const exponentialDelay = baseDelay * Math.pow(2, this.reconnectAttempts)
+    const jitter = Math.random() * 1000
+    
+    return Math.min(exponentialDelay + jitter, this.options.maxReconnectDelay)
+  }
+
   scheduleReconnect() {
     if (this.reconnectAttempts >= this.options.maxReconnectAttempts) {
       console.error('WebSocket重连次数超过最大限制')
-      this.emit('reconnect_failed')
+      this.isReconnecting.value = false
+      this.reconnectStatus.value = `重连失败，已达最大重试次数(${this.options.maxReconnectAttempts}次)`
+      this.connectionStatus.value = 'failed'
+      this.emit('reconnect_failed', { attempts: this.reconnectAttempts })
+      this.emit('statusChange', this.getStatus())
       return
     }
 
     this.reconnectAttempts++
-    const delay = this.options.reconnectInterval * this.reconnectAttempts
+    this.isReconnecting.value = true
     
-    console.log(`WebSocket将在${delay}ms后尝试第${this.reconnectAttempts}次重连`)
+    const delay = this.calculateReconnectDelay()
+    const delayInSeconds = (delay / 1000).toFixed(1)
+    
+    this.reconnectStatus.value = `正在重连... (${this.reconnectAttempts}/${this.options.maxReconnectAttempts})，${delayInSeconds}秒后重试`
+    this.connectionStatus.value = 'reconnecting'
+    
+    console.log(`WebSocket将在${delayInSeconds}秒后尝试第${this.reconnectAttempts}次重连`)
+    
+    this.emit('reconnecting', { 
+      attempt: this.reconnectAttempts, 
+      maxAttempts: this.options.maxReconnectAttempts,
+      delay: delay 
+    })
+    this.emit('statusChange', this.getStatus())
     
     this.reconnectTimer = setTimeout(() => {
       this.connect()
@@ -196,11 +239,31 @@ class WebSocketManager {
 
   handleConnectionError(error) {
     this.isConnecting.value = false
+    this.connectionStatus.value = 'error'
     this.emit('error', error)
+    this.emit('statusChange', this.getStatus())
     
     if (this.options.reconnect) {
       this.scheduleReconnect()
     }
+  }
+
+  manualReconnect() {
+    this.reconnectAttempts = 0
+    this.isReconnecting.value = false
+    this.reconnectStatus.value = ''
+    
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    
+    if (this.ws) {
+      this.ws.close()
+      this.ws = null
+    }
+    
+    this.connect()
   }
 
   disconnect() {
@@ -218,15 +281,35 @@ class WebSocketManager {
     
     this.isConnected.value = false
     this.isConnecting.value = false
+    this.isReconnecting.value = false
+    this.reconnectStatus.value = ''
+    this.connectionStatus.value = 'disconnected'
     this.messageQueue = []
+    this.reconnectAttempts = 0
   }
 
   getStatus() {
     return {
       connected: this.isConnected.value,
       connecting: this.isConnecting.value,
-      reconnectAttempts: this.reconnectAttempts
+      reconnecting: this.isReconnecting.value,
+      reconnectAttempts: this.reconnectAttempts,
+      maxReconnectAttempts: this.options.maxReconnectAttempts,
+      reconnectStatus: this.reconnectStatus.value,
+      connectionStatus: this.connectionStatus.value
     }
+  }
+
+  getConnectionStatusText() {
+    const statusMap = {
+      'connected': '已连接',
+      'connecting': '连接中',
+      'disconnected': '已断开',
+      'reconnecting': '重连中',
+      'error': '连接错误',
+      'failed': '连接失败'
+    }
+    return statusMap[this.connectionStatus.value] || this.connectionStatus.value
   }
 }
 
@@ -244,12 +327,17 @@ export function useWebSocket(url, options = {}) {
   return {
     isConnected: wsManager.isConnected,
     isConnecting: wsManager.isConnecting,
+    isReconnecting: wsManager.isReconnecting,
+    reconnectStatus: wsManager.reconnectStatus,
+    connectionStatus: wsManager.connectionStatus,
     connect: () => wsManager.connect(),
     disconnect: () => wsManager.disconnect(),
+    manualReconnect: () => wsManager.manualReconnect(),
     send: (type, payload) => wsManager.send(type, payload),
     on: (event, handler) => wsManager.on(event, handler),
     off: (event, handler) => wsManager.off(event, handler),
-    getStatus: () => wsManager.getStatus()
+    getStatus: () => wsManager.getStatus(),
+    getConnectionStatusText: () => wsManager.getConnectionStatusText()
   }
 }
 

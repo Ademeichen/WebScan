@@ -1,29 +1,59 @@
 """
 任务执行器 - 负责执行扫描任务并实时更新进度
+
+功能:
+1. 任务队列管理 (串行执行)
+2. 幂等性检查 (防止重复提交)
+3. 全局超时控制
+4. 统一异常处理
+5. 多进程插件执行与管理
+6. 任务状态持久化
+7. 任务恢复功能
+8. 任务超时处理
 """
 import asyncio
 import logging
 import multiprocessing
 import signal
 import time
-from typing import Dict, Any, Set, Optional, Union
+import os
 import json
+from typing import Dict, Any, Set, Optional, Union, List
+from datetime import datetime
+from pathlib import Path
 from tortoise.expressions import Q
 from backend.api.websocket import manager
 from backend.config import settings
 from backend.plugin_executor import run_plugin_process
 from backend.ai_agents.poc_system.dynamic_engine import dynamic_engine
+from backend.utils.logging_utils import (
+    task_state_logger, 
+    get_request_id, 
+    set_request_id,
+    StructuredLogger
+)
 
-# Try to import Kafka
 try:
     from kafka import KafkaProducer
 except ImportError:
     KafkaProducer = None
 
 logger = logging.getLogger(__name__)
+structured_logger = StructuredLogger("task_executor")
 
 
 from backend.utils.serializers import sanitize_json_data
+
+
+TASK_STATE_FILE = "data/task_states.json"
+TASK_TIMEOUT_CONFIG = {
+    "port_scan": 15 * 60,
+    "waf_check": 5 * 60,
+    "awvs_scan": 5 * 60 * 60,
+    "poc_scan": 60 * 60,
+    "ai_agent_scan": 5 * 60 * 60,
+    "default": 30 * 60,
+}
 
 
 class TaskExecutor:
@@ -36,27 +66,33 @@ class TaskExecutor:
     3. 全局超时控制
     4. 统一异常处理
     5. 多进程插件执行与管理
+    6. 任务状态持久化
+    7. 任务恢复功能
+    8. 任务超时处理
     """
     
     def __init__(self):
-        # 任务队列 (串行执行)
         self.queue: asyncio.Queue = asyncio.Queue()
-        # 记录在队列中的任务ID (用于幂等性检查)
         self.queued_task_ids: Set[int] = set()
-        # 已取消的任务ID集合
         self.cancelled_task_ids: Set[int] = set()
-        # 当前正在运行的任务ID
         self.running_task_id: Optional[int] = None
-        # 当前正在执行的任务进程
         self.task_processes: Dict[int, multiprocessing.Process] = {}
-        # 任务心跳时间 (task_id -> timestamp)
         self.task_heartbeats: Dict[int, float] = {}
+        self.task_start_times: Dict[int, float] = {}
+        self.task_timeouts: Dict[int, int] = {}
         
         self.is_running = True
+        self.is_shutting_down = False
         self.worker_task = None
+        self.current_execution_task = None
         
         self.kafka_producer = None
         self._init_kafka()
+        
+        self._ensure_state_dir()
+        self._persisted_tasks: Dict[int, Dict] = self._load_task_states()
+        
+        logger.info(f"TaskExecutor initialized with {len(self._persisted_tasks)} persisted task states")
 
     def _init_kafka(self):
         """初始化Kafka生产者"""
@@ -69,6 +105,103 @@ class TaskExecutor:
                 logger.info(f"Kafka Producer initialized: {settings.KAFKA_BOOTSTRAP_SERVERS}")
         except Exception as e:
             logger.warning(f"Kafka setup failed: {e}")
+
+    def _ensure_state_dir(self):
+        """确保状态目录存在"""
+        state_dir = Path(TASK_STATE_FILE).parent
+        state_dir.mkdir(parents=True, exist_ok=True)
+
+    def _load_task_states(self) -> Dict[int, Dict]:
+        """从文件加载任务状态"""
+        try:
+            if os.path.exists(TASK_STATE_FILE):
+                with open(TASK_STATE_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return {int(k): v for k, v in data.items()}
+        except Exception as e:
+            logger.error(f"Failed to load task states: {e}")
+        return {}
+
+    def _save_task_states(self):
+        """保存任务状态到文件"""
+        try:
+            with open(TASK_STATE_FILE, 'w', encoding='utf-8') as f:
+                json.dump(self._persisted_tasks, f, ensure_ascii=False, default=str)
+        except Exception as e:
+            logger.error(f"Failed to save task states: {e}")
+
+    def _persist_task_state(self, task_id: int, state: Dict):
+        """持久化单个任务状态"""
+        self._persisted_tasks[task_id] = {
+            **state,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        self._save_task_states()
+
+    def _remove_task_state(self, task_id: int):
+        """移除任务状态"""
+        if task_id in self._persisted_tasks:
+            del self._persisted_tasks[task_id]
+            self._save_task_states()
+
+    def _get_task_timeout(self, task_type: str, scan_config: Dict = None) -> int:
+        """获取任务超时时间"""
+        if scan_config and 'timeout' in scan_config:
+            return scan_config['timeout']
+        if scan_config and 'global_timeout' in scan_config:
+            return scan_config['global_timeout']
+        return TASK_TIMEOUT_CONFIG.get(task_type, TASK_TIMEOUT_CONFIG['default'])
+
+    async def recover_pending_tasks(self):
+        """
+        恢复未完成的任务
+        
+        应用重启后，检查数据库中处于 pending/running 状态的任务，
+        将其重新加入执行队列。
+        """
+        from backend.models import Task
+        
+        logger.info("=" * 50)
+        logger.info("开始恢复未完成任务...")
+        
+        try:
+            pending_tasks = await Task.filter(
+                status__in=['pending', 'running', 'queued']
+            ).order_by('created_at')
+            
+            recovered_count = 0
+            for task in pending_tasks:
+                try:
+                    scan_config = json.loads(task.config) if task.config else {}
+                    
+                    task_state_logger.log_task_recovery(
+                        task_id=task.id,
+                        task_type=task.task_type,
+                        status=task.status
+                    )
+                    
+                    if task.status == 'running':
+                        task.status = 'pending'
+                        task.progress = 0
+                        task.error_message = "Task interrupted by system restart, retrying..."
+                        await task.save()
+                    
+                    await self.start_task(task.id, task.target, scan_config)
+                    recovered_count += 1
+                    
+                except Exception as e:
+                    logger.error(f"Failed to recover task {task.id}: {e}")
+                    structured_logger.error(
+                        "Task recovery failed",
+                        task_id=task.id,
+                        exc=e
+                    )
+            
+            logger.info(f"任务恢复完成，共恢复 {recovered_count} 个任务")
+            logger.info("=" * 50)
+            
+        except Exception as e:
+            logger.error(f"任务恢复过程出错: {e}", exc_info=True)
 
     async def _publish_state_change(self, task_id: int, status: str, details: Dict = None):
         """
@@ -121,7 +254,6 @@ class TaskExecutor:
         """
         logger.info(f"[任务提交] 开始处理 | 任务ID: {task_id} | 目标: {target} | 配置: {scan_config}")
         
-        # 1. 幂等性检查
         if task_id in self.queued_task_ids:
             logger.warning(f"[任务提交] 任务已在队列中,忽略重复提交 | 任务ID: {task_id}")
             return
@@ -130,7 +262,6 @@ class TaskExecutor:
             logger.warning(f"[任务提交] 任务正在执行中,忽略重复提交 | 任务ID: {task_id}")
             return
 
-        # 2. 提交到队列
         task_info = {
             'task_id': task_id,
             'target': target,
@@ -139,9 +270,21 @@ class TaskExecutor:
         
         self.queued_task_ids.add(task_id)
         await self.queue.put(task_info)
+        
+        self._persist_task_state(task_id, {
+            "status": "queued",
+            "target": target,
+            "scan_config": scan_config or {}
+        })
+        
+        task_state_logger.log_task_created(
+            task_id=task_id,
+            task_type=scan_config.get('task_type', 'unknown') if scan_config else 'unknown',
+            target=target
+        )
+        
         logger.info(f"[任务提交] 任务已添加到队列 | 任务ID: {task_id} | 队列位置: {self.queue.qsize()}")
         
-        # 广播任务入队消息
         await manager.broadcast({
             "type": "task_update",
             "payload": {
@@ -151,7 +294,6 @@ class TaskExecutor:
             }
         })
         
-        # 确保Worker在运行
         self.start_worker()
 
     async def cancel_task(self, task_id: Union[int, str]) -> bool:
@@ -165,43 +307,64 @@ class TaskExecutor:
         """后台工作协程: 串行消费队列"""
         while self.is_running:
             try:
-                # 获取任务
                 task_info = await self.queue.get()
                 task_id = task_info['task_id']
                 target = task_info.get('target', 'unknown')
+                scan_config = task_info.get('scan_config', {})
                 
                 logger.info(f"[Worker] 获取到任务 | 任务ID: {task_id} | 目标: {target} | 队列剩余: {self.queue.qsize()}")
                 
-                # 检查是否已取消
                 if task_id in self.cancelled_task_ids:
                     logger.info(f"[Worker] 任务已被取消,跳过执行 | 任务ID: {task_id}")
                     self.cancelled_task_ids.discard(task_id)
                     self.queued_task_ids.discard(task_id)
+                    self._remove_task_state(task_id)
                     self.queue.task_done()
                     continue
 
-                # 状态流转: Queued -> Running
                 self.queued_task_ids.discard(task_id)
                 self.running_task_id = task_id
+                self.task_start_times[task_id] = time.time()
                 
                 try:
-                    logger.info(f"[Worker] 开始处理任务 | 任务ID: {task_id} | 目标: {target}")
+                    from backend.models import Task
+                    task = await Task.get(id=task_id)
+                    task_type = task.task_type
+                    timeout = self._get_task_timeout(task_type, scan_config)
+                    self.task_timeouts[task_id] = timeout
+                except:
+                    timeout = self._get_task_timeout('default', scan_config)
+                    self.task_timeouts[task_id] = timeout
+                    task_type = 'unknown'
+                
+                self._persist_task_state(task_id, {
+                    "status": "running",
+                    "target": target,
+                    "task_type": task_type if 'task_type' in dir() else 'unknown',
+                    "timeout": timeout,
+                    "started_at": datetime.utcnow().isoformat()
+                })
+                
+                task_state_logger.log_task_started(
+                    task_id=task_id,
+                    task_type=task_type if 'task_type' in dir() else 'unknown',
+                    target=target,
+                    timeout=timeout
+                )
+                
+                try:
+                    logger.info(f"[Worker] 开始处理任务 | 任务ID: {task_id} | 目标: {target} | 超时: {timeout}s")
                     
-                    # 广播任务开始消息
                     await manager.broadcast({
                         "type": "task_update",
                         "payload": {
                             "task_id": task_id,
                             "status": "running",
-                            "progress": 0
+                            "progress": 0,
+                            "timeout": timeout
                         }
                     })
                     
-                    # 获取全局超时配置 (默认使用 AGENT_MAX_EXECUTION_TIME)
-                    timeout = task_info['scan_config'].get('global_timeout', settings.AGENT_MAX_EXECUTION_TIME)
-                    
-                    # 执行任务 (带超时控制)
-                    # 创建Task对象以便可以被取消
                     self.current_execution_task = asyncio.create_task(self._execute_wrapper(task_info))
                     
                     await asyncio.wait_for(
@@ -209,24 +372,39 @@ class TaskExecutor:
                         timeout=timeout
                     )
                     
+                    duration = time.time() - self.task_start_times.get(task_id, time.time())
+                    task_state_logger.log_task_completed(
+                        task_id=task_id,
+                        duration=duration
+                    )
+                    self._remove_task_state(task_id)
+                    
                 except asyncio.TimeoutError:
-                    logger.error(f"[Worker] 任务执行超时 | 任务ID: {task_id} | 超时限制: {timeout}s")
-                    # 如果超时，也需要确保任务被取消
+                    duration = time.time() - self.task_start_times.get(task_id, time.time())
+                    logger.error(f"[Worker] 任务执行超时 | 任务ID: {task_id} | 超时限制: {timeout}s | 实际耗时: {duration:.2f}s")
+                    
+                    task_state_logger.log_task_timeout(
+                        task_id=task_id,
+                        timeout_seconds=timeout
+                    )
+                    
                     if self.current_execution_task and not self.current_execution_task.done():
                         self.current_execution_task.cancel()
-                    await self._handle_task_failure(task_id, f"Task execution timed out after {timeout}s")
+                        try:
+                            await asyncio.wait_for(self.current_execution_task, timeout=5)
+                        except:
+                            pass
+                    
+                    await self._handle_task_timeout(task_id, timeout)
+                    
                 except asyncio.CancelledError:
                     logger.warning(f"[Worker] 任务被取消 | 任务ID: {task_id}")
-                    # 不需要抛出，因为这是预期的取消操作
-                    # 但如果是Worker本身被取消，则需要抛出?
-                    # 这里捕获的是 wait_for 抛出的 CancelledError，通常是因为 current_execution_task.cancel() 被调用
-                    # 或者 wait_for 自身的 outer task 被取消
                     
-                    # 检查是否是我们主动取消的任务
                     if task_id in self.cancelled_task_ids:
                         logger.info(f"[Worker] 确认任务已响应取消信号 | 任务ID: {task_id}")
                         self.cancelled_task_ids.discard(task_id)
-                        # 更新数据库状态为已取消 (如果 _execute_wrapper 没来得及做)
+                        task_state_logger.log_task_cancelled(task_id=task_id, reason="User requested")
+                        self._remove_task_state(task_id)
                         try:
                             from backend.models import Task
                             task = await Task.get(id=task_id)
@@ -235,17 +413,25 @@ class TaskExecutor:
                         except:
                             pass
                     else:
-                        # 可能是系统关闭导致的取消
                         raise
                         
                 except Exception as e:
                     logger.error(f"[Worker] 任务执行发生未捕获异常 | 任务ID: {task_id} | 错误: {e}", exc_info=True)
+                    structured_logger.error(
+                        "Task execution error",
+                        task_id=task_id,
+                        exc=e
+                    )
                     await self._handle_task_failure(task_id, f"System Error: {str(e)}")
+                    self._remove_task_state(task_id)
                 finally:
-                    # 状态清理
                     logger.info(f"[Worker] 任务处理完成,清理状态 | 任务ID: {task_id}")
                     self.running_task_id = None
                     self.current_execution_task = None
+                    if task_id in self.task_start_times:
+                        del self.task_start_times[task_id]
+                    if task_id in self.task_timeouts:
+                        del self.task_timeouts[task_id]
                     self.queue.task_done()
                     
             except asyncio.CancelledError:
@@ -253,7 +439,39 @@ class TaskExecutor:
                 break
             except Exception as e:
                 logger.error(f"Worker循环异常: {e}", exc_info=True)
-                await asyncio.sleep(1) # 防止死循环
+                await asyncio.sleep(1)
+
+    async def _handle_task_timeout(self, task_id: int, timeout_seconds: int):
+        """处理任务超时"""
+        try:
+            from backend.models import Task
+            task = await Task.get(id=task_id)
+            task.status = 'failed'
+            task.progress = task.progress or 0
+            
+            try:
+                current_result = json.loads(task.result) if task.result else {}
+            except:
+                current_result = {}
+                
+            current_result['error'] = f"Task execution timed out after {timeout_seconds} seconds"
+            current_result['timeout'] = True
+            current_result['timeout_seconds'] = timeout_seconds
+            task.result = json.dumps(current_result)
+            
+            await task.save()
+            
+            await manager.broadcast({
+                "type": "task_completed",
+                "payload": {
+                    "task_id": task_id,
+                    "status": "failed",
+                    "error": f"Task timed out after {timeout_seconds}s",
+                    "timeout": True
+                }
+            })
+        except Exception as e:
+            logger.error(f"更新任务 {task_id} 超时状态出错: {e}")
 
     async def _execute_wrapper(self, task_info: Dict):
         """任务执行分发包装器"""
@@ -278,26 +496,32 @@ class TaskExecutor:
             logger.error(f"任务分发失败: {e}")
             raise
 
-    async def _handle_task_failure(self, task_id: int, error_msg: str):
+    async def _handle_task_failure(self, task_id: int, error_msg: str, exc: Exception = None):
         """统一失败处理"""
         try:
             from backend.models import Task
             task = await Task.get(id=task_id)
             task.status = 'failed'
-            task.progress = 0
+            task.progress = task.progress or 0
             
-            # 尝试保留现有结果或更新错误信息
             try:
                 current_result = json.loads(task.result) if task.result else {}
             except:
                 current_result = {}
                 
             current_result['error'] = error_msg
+            if exc:
+                current_result['error_type'] = type(exc).__name__
             task.result = json.dumps(current_result)
             
             await task.save()
             
-            # 广播任务失败消息
+            task_state_logger.log_task_failed(
+                task_id=task_id,
+                error=error_msg,
+                exc=exc
+            )
+            
             await manager.broadcast({
                 "type": "task_completed",
                 "payload": {
@@ -1148,18 +1372,103 @@ class TaskExecutor:
         self.abort_task(task_id)
 
     async def shutdown(self):
-        """关闭任务执行器"""
+        """
+        关闭任务执行器
+        
+        执行完整的清理流程:
+        1. 标记关闭状态
+        2. 停止接收新任务
+        3. 取消当前运行的任务
+        4. 终止所有子进程
+        5. 关闭Kafka生产者
+        6. 保存任务状态
+        7. 清理资源
+        """
+        if self.is_shutting_down:
+            logger.warning("关闭流程已在进行中，跳过重复调用")
+            return
+        
+        self.is_shutting_down = True
         self.is_running = False
         
-        # 取消Worker
-        if self.worker_task:
+        logger.info("=" * 50)
+        logger.info("开始关闭任务执行器...")
+        logger.info(f"当前队列任务数: {self.queue.qsize()}")
+        logger.info(f"当前运行任务ID: {self.running_task_id}")
+        logger.info(f"当前活跃进程数: {len(self.task_processes)}")
+        logger.info(f"持久化任务状态数: {len(self._persisted_tasks)}")
+        logger.info("=" * 50)
+        
+        if self.worker_task and not self.worker_task.done():
+            logger.info("[1/5] 正在取消Worker任务...")
             self.worker_task.cancel()
             try:
-                await self.worker_task
+                await asyncio.wait_for(self.worker_task, timeout=5)
             except asyncio.CancelledError:
                 pass
+            except asyncio.TimeoutError:
+                logger.warning("[1/5] Worker取消超时")
+            logger.info("[1/5] Worker已取消")
+        else:
+            logger.info("[1/5] Worker未运行，跳过")
         
-        # 清理队列 (可选)
-        logger.info("任务执行器已关闭")
+        if self.current_execution_task and not self.current_execution_task.done():
+            logger.info("[2/5] 正在取消当前执行任务...")
+            self.current_execution_task.cancel()
+            try:
+                await asyncio.wait_for(self.current_execution_task, timeout=5)
+            except asyncio.CancelledError:
+                pass
+            except asyncio.TimeoutError:
+                logger.warning("[2/5] 当前任务取消超时")
+            logger.info("[2/5] 当前任务已取消")
+        else:
+            logger.info("[2/5] 无正在执行的任务，跳过")
+        
+        if self.task_processes:
+            logger.info(f"[3/5] 正在终止 {len(self.task_processes)} 个子进程...")
+            terminated_count = 0
+            for task_id, process in list(self.task_processes.items()):
+                if process.is_alive():
+                    logger.info(f"  终止进程: Task {task_id} (PID: {process.pid})")
+                    process.terminate()
+                    process.join(timeout=3)
+                    if process.is_alive():
+                        logger.warning(f"  进程 {process.pid} 未响应SIGTERM，发送SIGKILL")
+                        process.kill()
+                        process.join(timeout=2)
+                    terminated_count += 1
+            self.task_processes.clear()
+            logger.info(f"[3/5] 已终止 {terminated_count} 个子进程")
+        else:
+            logger.info("[3/5] 无活跃子进程，跳过")
+        
+        if self.kafka_producer:
+            logger.info("[4/5] 正在关闭Kafka生产者...")
+            try:
+                self.kafka_producer.flush(timeout=5)
+                self.kafka_producer.close(timeout=5)
+                logger.info("[4/5] Kafka生产者已关闭")
+            except Exception as e:
+                logger.error(f"[4/5] 关闭Kafka生产者时发生错误: {e}")
+            finally:
+                self.kafka_producer = None
+        else:
+            logger.info("[4/5] Kafka生产者未初始化，跳过")
+        
+        logger.info("[5/5] 正在保存任务状态...")
+        self._save_task_states()
+        logger.info(f"[5/5] 已保存 {len(self._persisted_tasks)} 个任务状态")
+        
+        self.queued_task_ids.clear()
+        self.cancelled_task_ids.clear()
+        self.task_heartbeats.clear()
+        self.task_start_times.clear()
+        self.task_timeouts.clear()
+        self.running_task_id = None
+        
+        logger.info("=" * 50)
+        logger.info("任务执行器关闭完成")
+        logger.info("=" * 50)
 
 task_executor = TaskExecutor()

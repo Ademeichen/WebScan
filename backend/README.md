@@ -511,63 +511,51 @@ python main.py
 #### 测试目录结构
 ```
 backend/
+├── tests/                    # 集成测试
+│   ├── conftest.py          # 测试配置和fixtures
+│   ├── test_integration.py  # 综合集成测试
+│   ├── test_ai_model.py     # AI模型连接测试
+│   └── test_report_generator.py # 报告生成器测试
 ├── ai_agents/
 │   ├── core/tests/          # 核心模块测试
 │   │   ├── test_graph.py     # 图构建和执行测试
 │   │   ├── test_state.py     # 状态管理测试
 │   │   ├── test_nodes.py     # 节点实现测试
-│   │   └── test_e2e.py      # 端到端集成测试
-│   ├── utils/tests/         # 工具模块测试
-│   │   ├── test_retry.py    # 重试机制测试
-│   │   └── test_priority.py # 优先级管理测试
+│   │   └── test_agent_graph_workflow.py # 工作流测试
 │   ├── tools/tests/         # 工具适配器测试
 │   │   └── test_adapters.py # 适配器功能测试
-│   ├── code_execution/tests/# 代码执行模块测试
-│   │   ├── test_environment.py    # 环境感知测试
-│   │   ├── test_executor.py       # 代码执行器测试
-│   │   ├── test_code_generator.py # 代码生成器测试
-│   │   └── test_capability_enhancer.py # 能力增强器测试
-│   └── analyzers/tests/     # 分析器模块测试
-│       ├── test_vuln_analyzer.py # 漏洞分析器测试
-│       └── test_report_gen.py    # 报告生成器测试
-├── api/tests/              # API模块测试
-│   └── test_routes.py      # API路由测试
-└── tests/                 # 集成测试
-    ├── test_api.py         # API集成测试
-    ├── test_api_detail.py  # API详细测试
-    ├── test_poc_files.py  # POC文件测试
-    └── test_poc_verification.py # POC验证测试
+│   ├── poc_system/tests/    # POC系统测试
+│   ├── analyzers/tests/     # 分析器测试
+│   └── subgraphs/tests/     # 子图测试
+├── api/tests/               # API模块测试
+│   ├── test_routes.py       # API路由测试
+│   ├── test_awvs.py         # AWVS API测试
+│   └── test_error_handling.py # 错误处理测试
+└── plugins/tests/           # 插件测试
 ```
 
 #### 运行测试
 
 运行所有测试：
 ```bash
-pytest tests/ -v
+pytest -v
 ```
 
 运行特定模块的测试：
 ```bash
 pytest ai_agents/core/tests/ -v
 pytest ai_agents/tools/tests/ -v
-pytest ai_agents/code_execution/tests/ -v
+pytest api/tests/ -v
 ```
 
-运行特定测试文件：
+运行带覆盖率的测试：
 ```bash
-pytest ai_agents/core/tests/test_state.py -v
+pytest --cov=backend --cov-report=html
 ```
 
-运行特定测试用例：
+运行集成测试（需要外部服务）：
 ```bash
-pytest ai_agents/core/tests/test_state.py::TestAgentState::test_initialization -v
-```
-
-#### 测试覆盖率
-
-查看测试覆盖率：
-```bash
-pytest --cov=ai_agents tests/ --cov-report=html
+pytest --run-integration -v
 ```
 
 #### 测试要求
@@ -576,6 +564,33 @@ pytest --cov=ai_agents tests/ --cov-report=html
 - 测试覆盖率应不低于70%
 - 测试应包含正常流程和异常情况
 - 使用pytest和pytest-asyncio进行测试
+- 涉及外部服务的测试使用`@pytest.mark.integration`标记
+
+#### 稳定性机制
+
+项目提供了稳定性机制模块 (`backend/utils/stability.py`)，包括：
+
+- **重试机制**：`@with_retry` 装饰器，支持指数退避
+- **超时控制**：`@with_timeout` 装饰器，防止长时间阻塞
+- **熔断器**：`CircuitBreaker` 类，防止级联故障
+
+使用示例：
+```python
+from utils.stability import with_retry, with_timeout, CircuitBreaker
+
+# 重试装饰器
+@with_retry(max_retries=3, base_delay=1.0)
+async def my_async_function():
+    pass
+
+# 超时装饰器
+@with_timeout(timeout=30.0)
+async def my_long_running_task():
+    pass
+
+# 熔断器
+breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=60.0)
+```
 
 ## 部署说明
 
