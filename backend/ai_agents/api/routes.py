@@ -243,16 +243,20 @@ async def get_agent_task(task_id: str):
         if task_id in agent_tasks:
             task_info = agent_tasks[task_id]
             logger.info(f"[AI_AGENT] [TASK_DETAIL_MEMORY] 从内存获取任务信息 - 模块: API, 变量: task_id, 状态: found, 数据: {task_info}")
-            return {
-                "task_id": task_id,
-                "target": task_info.get("target"),
-                "status": task_info.get("status"),
-                "progress": task_info.get("progress", 0),
-                "created_at": task_info.get("created_at"),
-                "completed_at": task_info.get("completed_at"),
-                "result": task_info.get("result"),
-                "error": task_info.get("error")
-            }
+            return APIResponse(
+                code=200,
+                message="获取成功",
+                data={
+                    "task_id": task_id,
+                    "target": task_info.get("target"),
+                    "status": task_info.get("status"),
+                    "progress": task_info.get("progress", 0),
+                    "created_at": task_info.get("created_at"),
+                    "completed_at": task_info.get("completed_at"),
+                    "result": task_info.get("result"),
+                    "error": task_info.get("error")
+                }
+            )
         
         # 从数据库获取 (使用 Unified Task Model)
         task = None
@@ -268,17 +272,21 @@ async def get_agent_task(task_id: str):
                 logger.info(f"[AI_AGENT] [TASK_DETAIL_LEGACY_FOUND] 找到AgentTask - 模块: API, 变量: task_id, 状态: found")
                 # 旧模型适配
                 result = await AgentResult.get_or_none(task=task)
-                return {
-                    "task_id": str(task.task_id),
-                    "input_json": task.input_json,
-                    "task_type": task.task_type,
-                    "status": task.status,
-                    "created_at": task.created_at,
-                    "updated_at": task.updated_at,
-                    "final_output": result.final_output if result else None,
-                    "execution_time": result.execution_time if result else None,
-                    "error_message": result.error_message if result else None
-                }
+                return APIResponse(
+                    code=200,
+                    message="获取成功",
+                    data={
+                        "task_id": str(task.task_id),
+                        "input_json": task.input_json,
+                        "task_type": task.task_type,
+                        "status": task.status,
+                        "created_at": task.created_at,
+                        "updated_at": task.updated_at,
+                        "final_output": result.final_output if result else None,
+                        "execution_time": result.execution_time if result else None,
+                        "error_message": result.error_message if result else None
+                    }
+                )
             else:
                 logger.info(f"[AI_AGENT] [TASK_DETAIL_LEGACY_NOT_FOUND] AgentTask不存在 - 模块: API, 变量: task_id, 状态: not_found")
         
@@ -289,18 +297,22 @@ async def get_agent_task(task_id: str):
         logger.info(f"[AI_AGENT] [TASK_DETAIL_FOUND] 找到任务 - 模块: API, 变量: task_id, 值: {task.id}, 状态: {task.status}")
         
         # 返回 Task 模型数据
-        return {
-            "task_id": str(task.id),
-            "task_type": task.task_type,
-            "target": task.target,
-            "status": task.status,
-            "progress": task.progress,
-            "config": task.config,
-            "created_at": task.created_at,
-            "updated_at": task.updated_at,
-            "final_output": task.result,
-            "error_message": task.error_message
-        }
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "task_id": str(task.id),
+                "task_type": task.task_type,
+                "target": task.target,
+                "status": task.status,
+                "progress": task.progress,
+                "config": task.config,
+                "created_at": task.created_at,
+                "updated_at": task.updated_at,
+                "final_output": task.result,
+                "error_message": task.error_message
+            }
+        )
         
     except HTTPException as http_ex:
         logger.error(f"[AI_AGENT] [ERROR] 获取Agent任务详情HTTP异常 - 模块: API, 错误: {str(http_ex)}")

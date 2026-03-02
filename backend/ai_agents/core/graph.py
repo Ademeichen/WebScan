@@ -31,13 +31,13 @@ from .nodes import (
     AWVSScanningNode
 )
 
-# 创建节点实例
-seebug_agent_node = SeebugAgentNode()
-poc_verification_node = POCVerificationNode()
-awvs_scanning_node = AWVSScanningNode()
 from ..agent_config import agent_config
 
 logger = logging.getLogger(__name__)
+
+seebug_agent_node = SeebugAgentNode()
+poc_verification_node = POCVerificationNode()
+awvs_scanning_node = AWVSScanningNode()
 
 
 def _log_node_entry(node_name: str, task_id: str, details: Dict[str, Any] = None):
@@ -279,13 +279,22 @@ class ScanAgentGraph:
         Returns:
             Literal["poc_verification", "report_generation"]: 下一步节点
         """
-        # 检查是否有待验证(pending)的POC任务
+        max_poc_rounds = 3
+        poc_round_key = "_poc_verification_rounds"
+        
+        current_round = state.target_context.get(poc_round_key, 0)
+        
         pending_pocs = [t for t in state.poc_verification_tasks if t.get("status") == "pending"]
-        if pending_pocs:
-            logger.info(f"[{state.task_id}] 🔄 发现 {len(pending_pocs)} 个待验证POC任务,进入POC验证阶段")
+        
+        if pending_pocs and current_round < max_poc_rounds:
+            state.target_context[poc_round_key] = current_round + 1
+            logger.info(f"[{state.task_id}] 🔄 发现 {len(pending_pocs)} 个待验证POC任务,进入POC验证阶段 (轮次 {current_round + 1}/{max_poc_rounds})")
             return "poc_verification"
             
-        logger.info(f"[{state.task_id}] ✅ 漏洞分析完成且无待验证POC,生成报告")
+        if current_round >= max_poc_rounds:
+            logger.warning(f"[{state.task_id}] ⚠️ 已达到POC验证最大轮次({max_poc_rounds}),直接生成报告")
+        else:
+            logger.info(f"[{state.task_id}] ✅ 漏洞分析完成且无待验证POC,生成报告")
         return "report_generation"
 
     def _should_continue_or_verify(self, state: AgentState) -> Literal["continue", "analyze", "poc_verify", "awvs_scan"]:
@@ -298,24 +307,30 @@ class ScanAgentGraph:
         Returns:
             Literal["continue", "analyze", "poc_verify", "awvs_scan"]: 下一步节点名称
         """
-        # 检查是否有待验证的 POC 任务
+        max_tool_rounds = 50
+        tool_round_key = "_tool_execution_rounds"
+        current_round = state.target_context.get(tool_round_key, 0)
+        
+        if current_round >= max_tool_rounds:
+            logger.warning(f"[{state.task_id}] ⚠️ 已达到工具执行最大轮次({max_tool_rounds}),强制进入分析阶段")
+            return "analyze"
+        
+        state.target_context[tool_round_key] = current_round + 1
+        
         if state.poc_verification_tasks and len(state.poc_verification_tasks) > 0:
             logger.info(f"[{state.task_id}] 📋 发现待验证的 POC 任务,进入 POC 验证节点")
             return "poc_verify"
         
-        # 检查是否还有非AWVS的计划任务
         non_awvs_tasks = [t for t in state.planned_tasks if t != 'awvs']
         if non_awvs_tasks:
             logger.info(f"[{state.task_id}] 🔄 继续执行工具: {non_awvs_tasks[0]}")
             return "continue"
 
-        # 检查是否需要执行AWVS扫描
         awvs_status = state.stage_status.get("awvs", {}).get("status")
         if (state.target_context.get("use_awvs") or "awvs" in state.planned_tasks) and awvs_status != "completed":
              logger.info(f"[{state.task_id}] 🔍 启用 AWVS 扫描")
              return "awvs_scan"
         
-        # 所有任务已完成,进入分析阶段
         logger.info(f"[{state.task_id}] 📋 所有任务已完成,进入分析阶段")
         return "analyze"
     
@@ -559,52 +574,57 @@ class ScanAgentGraph:
     
     def get_graph_info(self) -> Dict[str, Any]:
         """
-        获取图信息(包含所有12个节点)
+        获取图信息(包含所有13个节点)
         
         Returns:
             Dict: 图结构信息
         """
         return {
             "nodes": [
-                "environment_awareness",  # 新增
+                "environment_awareness",
                 "task_planning",
-                "intelligent_decision",  # 新增
+                "intelligent_decision",
                 "tool_execution",
-                "code_generation",  # 新增
-                "code_execution",  # 新增
-                "capability_enhancement",  # 新增
+                "code_generation",
+                "code_execution",
+                "capability_enhancement",
                 "result_verification",
-                "poc_verification",  # 新增
-                "seebug_agent",  # 新增
+                "poc_verification",
+                "seebug_agent",
+                "awvs_scanning",
                 "vulnerability_analysis",
                 "report_generation"
             ],
             "edges": [
-                ("environment_awareness", "task_planning"),  # 新增
-                ("task_planning", "intelligent_decision"),  # 新增
+                ("environment_awareness", "task_planning"),
+                ("task_planning", "intelligent_decision"),
                 ("intelligent_decision", "tool_execution"),
-                ("intelligent_decision", "code_generation"),  # 新增
-                ("intelligent_decision", "capability_enhancement"),  # 新增
-                ("intelligent_decision", "poc_verification"),  # 新增
-                ("intelligent_decision", "seebug_agent"),  # 新增
-                ("code_generation", "code_execution"),  # 新增
+                ("intelligent_decision", "code_generation"),
+                ("intelligent_decision", "capability_enhancement"),
+                ("intelligent_decision", "poc_verification"),
+                ("intelligent_decision", "seebug_agent"),
+                ("intelligent_decision", "awvs_scanning"),
+                ("code_generation", "code_execution"),
                 ("code_execution", "result_verification"),
-                ("code_execution", "capability_enhancement"),  # 新增
-                ("capability_enhancement", "code_execution"),  # 新增
+                ("code_execution", "capability_enhancement"),
+                ("capability_enhancement", "code_execution"),
                 ("tool_execution", "result_verification"),
                 ("result_verification", "tool_execution"),
                 ("result_verification", "vulnerability_analysis"),
-                ("result_verification", "poc_verification"),  # 新增
-                ("poc_verification", "vulnerability_analysis"),  # 新增
-                ("seebug_agent", "poc_verification"),  # 新增
+                ("result_verification", "poc_verification"),
+                ("result_verification", "awvs_scanning"),
+                ("poc_verification", "vulnerability_analysis"),
+                ("seebug_agent", "poc_verification"),
+                ("awvs_scanning", "vulnerability_analysis"),
                 ("vulnerability_analysis", "report_generation"),
+                ("vulnerability_analysis", "poc_verification"),
                 ("report_generation", "END")
             ],
-            "entry_point": "environment_awareness",  # 更新为环境感知
+            "entry_point": "environment_awareness",
             "exit_points": ["report_generation"],
-            "total_nodes": 12,  # 更新为12个节点
-            "original_nodes": 5,  # 原有节点数
-            "new_nodes": 7  # 新增节点数
+            "total_nodes": 13,
+            "original_nodes": 5,
+            "new_nodes": 8
         }
     
     def visualize(self) -> str:

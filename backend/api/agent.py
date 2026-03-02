@@ -30,9 +30,29 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["AI Agent"])
 
-# 初始化 Agent 图和工具
-agent_graph = create_agent_graph()
-initialize_tools()
+_agent_graph = None
+_tools_initialized = False
+
+
+def get_agent_graph():
+    """延迟初始化 Agent 图，避免启动时阻塞"""
+    global _agent_graph
+    if _agent_graph is None:
+        logger.info("🔧 延迟初始化 Agent 图...")
+        _agent_graph = create_agent_graph()
+    return _agent_graph
+
+
+def ensure_tools_initialized():
+    """确保工具已初始化"""
+    global _tools_initialized
+    if not _tools_initialized:
+        logger.info("🔧 延迟初始化工具...")
+        initialize_tools()
+        _tools_initialized = True
+
+
+agent_graph = property(lambda self: get_agent_graph())
 
 
 class ToolDef(BaseModel):

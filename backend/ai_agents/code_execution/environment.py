@@ -500,11 +500,11 @@ class EnvironmentAwareness:
             "scan_recommendations": self._generate_scan_recommendations(),
             "performance_metrics": {
                 "initialization_time": getattr(self, '_init_time', None),
-                "concurrent_workers": self.MAX_WORKERS,
+                "concurrent_workers": self.max_workers,
                 "timeout_settings": {
-                    "tool_timeout": self.TOOL_TIMEOUT,
-                    "network_timeout": self.NETWORK_TIMEOUT,
-                    "global_timeout": self.GLOBAL_TIMEOUT
+                    "tool_timeout": self.tool_timeout,
+                    "network_timeout": self.network_timeout,
+                    "global_timeout": self.global_timeout
                 }
             }
         }

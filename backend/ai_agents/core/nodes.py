@@ -649,7 +649,6 @@ class AWVSScanningNode:
                 vulns = await loop.run_in_executor(None, scan_client.get_vulns, scan_id, scan_session_id)
                 if vulns:
                     for vuln in vulns:
-                        # 尝试从 tags 中提取 CVE
                         cve_id = None
                         tags = vuln.get('tags', [])
                         if isinstance(tags, list):
@@ -657,17 +656,31 @@ class AWVSScanningNode:
                                 if isinstance(tag, str) and tag.upper().startswith('CVE-'):
                                     cve_id = tag
                                     break
-
+                        
+                        vt_name = vuln.get('vt_name', '')
+                        if not cve_id and vt_name:
+                            import re
+                            cve_match = re.search(r'CVE-\d{4}-\d{4,}', vt_name, re.IGNORECASE)
+                            if cve_match:
+                                cve_id = cve_match.group(0).upper()
+                            
+                            vuln_id = vuln.get('vuln_id', '')
+                            if not cve_id and vuln_id:
+                                cve_match = re.search(r'CVE-\d{4}-\d{4,}', vuln_id, re.IGNORECASE)
+                                if cve_match:
+                                    cve_id = cve_match.group(0).upper()
+                        
                         vuln_info = {
                             "source": "awvs",
                             "severity": vuln.get('severity'),
                             "title": vuln.get('vt_name'),
-                            "name": vuln.get('vt_name'),  # 添加 name 字段供分析节点使用
-                            "cve": cve_id,  # 添加 CVE 字段
+                            "name": vuln.get('vt_name'),
+                            "cve": cve_id,
                             "description": vuln.get('description', ''),
                             "url": vuln.get('affects_url', ''),
                             "vuln_id": vuln.get('vuln_id'),
-                            "tags": tags
+                            "tags": tags,
+                            "keyword_for_poc": cve_id or vt_name or vuln.get('vuln_id', 'unknown')
                         }
                         state.add_vulnerability(vuln_info)
                     
@@ -807,10 +820,10 @@ class VulnerabilityAnalysisNode:
             for vuln in sorted_vulns:
                 keyword = "unknown"
                 try:
-                    # 优先使用CVE
                     keyword = vuln.get("cve")
                     if not keyword:
-                        # 其次使用漏洞名称或标题
+                        keyword = vuln.get("keyword_for_poc")
+                    if not keyword:
                         keyword = vuln.get("name") or vuln.get("vuln_name") or vuln.get("title")
                     
                     if not keyword:

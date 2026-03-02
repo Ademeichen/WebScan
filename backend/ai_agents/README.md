@@ -6,9 +6,11 @@
 
 ### 核心特性
 
-✅ **完整的LangGraph工作流**：任务规划 → 工具执行 → 结果验证 → 漏洞分析 → 报告生成
+✅ **完整的LangGraph工作流**：环境感知 → 任务规划 → 智能决策 → 工具执行 → 结果验证 → POC验证 → 漏洞分析 → 报告生成
+✅ **13个功能节点**：覆盖扫描全流程的完整节点体系
 ✅ **统一的工具管理**：集成所有现有扫描插件和POC
 ✅ **智能决策优化**：基于优先级、资源分配、策略自适应
+✅ **代码生成与执行**：支持动态生成和执行扫描脚本
 ✅ **灵活的配置系统**：支持动态配置和扩展
 ✅ **完善的API接口**：RESTful API，易于集成
 ✅ **可扩展的架构**：预留插件注册接口，易于扩展
@@ -28,31 +30,619 @@
 ```
 ai_agents/
 ├── __init__.py              # 模块入口
-├── config.py                # Agent配置管理
+├── agent_config.py          # Agent配置管理
 ├── core/                    # 核心框架
 │   ├── __init__.py
 │   ├── state.py             # Agent状态管理
 │   ├── graph.py             # LangGraph图构建
-│   └── nodes.py            # 节点定义
+│   ├── nodes.py             # 节点定义
+│   └── workflow_logger.py   # 工作流日志追踪
 ├── tools/                   # 工具集成
 │   ├── __init__.py
 │   ├── registry.py          # 工具注册表
 │   ├── wrappers.py          # 工具异步封装
 │   └── adapters.py          # 工具适配器
+├── code_execution/          # 代码执行模块
+│   ├── __init__.py
+│   ├── code_generator.py    # 代码生成器
+│   ├── executor.py          # 代码执行器
+│   ├── environment.py       # 环境感知
+│   └── capability_enhancer.py # 功能增强器
+├── poc_system/              # POC管理系统
+│   ├── __init__.py
+│   ├── poc_manager.py       # POC管理器
+│   ├── verification_engine.py # 验证引擎
+│   └── result_analyzer.py   # 结果分析器
 ├── analyzers/               # 结果分析
 │   ├── __init__.py
-│   ├── vuln_analyzer.py    # 漏洞分析器
-│   └── report_gen.py       # 报告生成器
+│   ├── vuln_analyzer.py     # 漏洞分析器
+│   └── report_gen.py        # 报告生成器
 ├── utils/                   # 工具函数
 │   ├── __init__.py
 │   ├── priority.py          # 优先级管理
-│   └── retry.py            # 重试策略
-├── api/                     # API路由
-│   ├── __init__.py
-│   └── routes.py            # Agent API接口
+│   └── retry.py             # 重试策略
 ├── README.md                # 功能说明文档
-└── PERFORMANCE_REPORT.md      # 性能测试报告
+└── PERFORMANCE_REPORT.md    # 性能测试报告
 ```
+
+---
+
+## 图工作流节点详解
+
+AIAgent工作流包含**13个功能节点**，形成完整的扫描链路：
+
+### 节点列表
+
+| 序号 | 节点名称 | 节点类 | 功能描述 |
+|------|----------|--------|----------|
+| 1 | environment_awareness | EnvironmentAwarenessNode | 环境感知，检测操作系统、Python版本、可用工具等 |
+| 2 | task_planning | TaskPlanningNode | 任务规划，支持规则化和LLM增强两种模式 |
+| 3 | intelligent_decision | IntelligentDecisionNode | 智能决策，基于环境信息和目标特征决定扫描策略 |
+| 4 | tool_execution | ToolExecutionNode | 工具执行，调用插件和POC进行扫描 |
+| 5 | code_generation | CodeGenerationNode | 代码生成，根据需求动态生成扫描脚本 |
+| 6 | code_execution | CodeExecutionNode | 代码执行，在沙箱环境中执行生成的代码 |
+| 7 | capability_enhancement | CapabilityEnhancementNode | 功能增强，动态安装依赖和扩展能力 |
+| 8 | result_verification | ResultVerificationNode | 结果验证，验证扫描结果并补充任务 |
+| 9 | poc_verification | POCVerificationNode | POC验证，执行POC验证任务 |
+| 10 | seebug_agent | SeebugAgentNode | Seebug集成，搜索和生成POC |
+| 11 | awvs_scanning | AWVSScanningNode | AWVS扫描，调用AWVS执行漏洞扫描 |
+| 12 | vulnerability_analysis | VulnerabilityAnalysisNode | 漏洞分析，去重、排序和严重度评估 |
+| 13 | report_generation | ReportGenerationNode | 报告生成，生成JSON/HTML格式报告 |
+
+### 工作流程图
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        AIAgent 工作流                            │
+└─────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────────┐
+    │ environment_     │
+    │   awareness      │ ──── 检测OS、Python版本、可用工具
+    └────────┬─────────┘
+             │
+             ▼
+    ┌──────────────────┐
+    │ task_planning    │ ──── 规划扫描任务（规则化/LLM增强）
+    └────────┬─────────┘
+             │
+             ▼
+    ┌──────────────────┐
+    │ intelligent_     │
+    │   decision       │ ──── 智能决策下一步操作
+    └────────┬─────────┘
+             │
+    ┌────────┼────────┬────────────┬────────────┐
+    │        │        │            │            │
+    ▼        ▼        ▼            ▼            ▼
+┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐
+│ tool_  ││ code_  ││capabil-││ poc_   ││ seebug │
+│execu-  ││genera-││ ity_   ││verifi- ││ _agent │
+│ tion   ││ tion   ││enhance ││ cation ││        │
+└───┬────┘└───┬────┘└───┬────┘└───┬────┘└───┬────┘
+    │         │         │         │         │
+    │         ▼         │         │         │
+    │    ┌────────┐     │         │         │
+    │    │ code_  │◄────┘         │         │
+    │    │execu-  │               │         │
+    │    │ tion   │               │         │
+    │    └───┬────┘               │         │
+    │        │                    │         │
+    └────────┼────────────────────┼─────────┘
+             │                    │
+             ▼                    │
+    ┌──────────────────┐          │
+    │ result_          │          │
+    │ verification     │◄─────────┘
+    └────────┬─────────┘
+             │
+    ┌────────┼────────┐
+    │        │        │
+    ▼        ▼        ▼
+┌────────┐┌────────┐┌────────┐
+│ awvs_  ││ poc_   ││分析    │
+│scanning││verifi- ││(循环)  │
+│        ││ cation ││        │
+└───┬────┘└───┬────┘└────────┘
+    │         │
+    └────┬────┘
+         │
+         ▼
+┌──────────────────┐
+│ vulnerability_   │
+│   analysis       │ ──── 去重、排序、POC匹配
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ report_          │
+│ generation       │ ──── 生成扫描报告
+└──────────────────┘
+```
+
+### 节点详细说明
+
+#### 1. EnvironmentAwarenessNode（环境感知节点）
+
+**功能**：检测运行环境信息，为后续决策提供依据
+
+**输出**：
+- 操作系统信息（Windows/Linux/Darwin）
+- Python版本
+- 可用工具列表（nmap、masscan等）
+- 网络配置信息
+- 系统资源状态
+
+#### 2. TaskPlanningNode（任务规划节点）
+
+**功能**：根据目标特征生成扫描任务列表
+
+**两种模式**：
+- **规则化规划**：基于预设规则快速生成任务
+- **LLM增强规划**：使用大语言模型智能规划
+
+**输出**：
+- 规划的任务列表
+- 任务优先级
+
+#### 3. IntelligentDecisionNode（智能决策节点）
+
+**功能**：基于环境信息和目标特征智能决定下一步操作
+
+**决策依据**：
+- 操作系统类型
+- 可用工具
+- 目标CMS类型
+- 网络状态
+
+#### 4. ToolExecutionNode（工具执行节点）
+
+**功能**：执行插件和POC工具
+
+**特性**：
+- 并发控制（最大并发数可配置）
+- 超时控制
+- 重试机制
+- 结果缓存
+
+#### 5. CodeGenerationNode（代码生成节点）
+
+**功能**：根据扫描需求动态生成扫描脚本
+
+**特性**：
+- 支持多种语言（Python、Bash、PowerShell）
+- LLM驱动的代码生成
+- 自动保存生成的代码文件
+- 支持Pocsuite3 POC生成
+
+**输出**：
+- 生成的代码
+- 代码语言
+- 依赖列表
+- 代码文件路径
+
+#### 6. CodeExecutionNode（代码执行节点）
+
+**功能**：在沙箱环境中执行生成的代码
+
+**特性**：
+- 沙箱隔离执行
+- 超时控制
+- 输出捕获
+- 错误处理
+
+**安全措施**：
+- 启用沙箱模式
+- 限制执行时间
+- 限制资源使用
+
+#### 7. CapabilityEnhancementNode（功能增强节点）
+
+**功能**：动态增强AI Agent能力
+
+**特性**：
+- 自动安装缺失依赖
+- 动态加载新功能
+- 能力版本管理
+
+#### 8. ResultVerificationNode（结果验证节点）
+
+**功能**：验证扫描结果，决定是否继续执行
+
+**特性**：
+- 基于CMS补充POC任务
+- 基于端口补充POC任务
+- 迭代验证支持
+
+#### 9. POCVerificationNode（POC验证节点）
+
+**功能**：执行POC验证任务
+
+**特性**：
+- 支持Pocsuite3框架
+- 批量验证
+- 结果分析
+- 置信度评估
+
+#### 10. SeebugAgentNode（Seebug Agent节点）
+
+**功能**：集成Seebug平台，搜索和生成POC
+
+**特性**：
+- 搜索Seebug漏洞库
+- 获取POC详情
+- 自动生成POC代码
+- 下载POC文件
+
+#### 11. AWVSScanningNode（AWVS扫描节点）
+
+**功能**：调用AWVS执行漏洞扫描
+
+**特性**：
+- 自动创建扫描目标
+- 启动扫描任务
+- 监控扫描进度
+- 获取扫描结果
+- 自动提取CVE编号
+
+#### 12. VulnerabilityAnalysisNode（漏洞分析节点）
+
+**功能**：分析发现的漏洞
+
+**特性**：
+- 漏洞去重
+- 按严重度排序
+- AI智能POC匹配
+- 自动生成验证任务
+
+#### 13. ReportGenerationNode（报告生成节点）
+
+**功能**：生成最终扫描报告
+
+**输出格式**：
+- JSON格式报告
+- HTML格式报告
+- 执行轨迹报告
+
+---
+
+## 节点参数详解
+
+### 节点输入/输出参数
+
+#### 1. EnvironmentAwarenessNode
+
+```python
+# 输入参数
+state.target          # 目标URL/IP
+state.task_id         # 任务ID
+
+# 输出参数
+state.target_context["environment_info"]   # 环境报告
+state.target_context["os_system"]          # 操作系统类型
+state.target_context["python_version"]     # Python版本
+state.target_context["available_tools"]    # 可用工具列表
+```
+
+#### 2. TaskPlanningNode
+
+```python
+# 输入参数
+state.target              # 目标URL/IP
+state.target_context      # 目标上下文（包含环境信息）
+
+# 输出参数
+state.planned_tasks       # 规划的任务列表 ["baseinfo", "portscan", ...]
+state.current_task        # 当前任务名称
+```
+
+#### 3. IntelligentDecisionNode
+
+```python
+# 输入参数
+state.target_context      # 目标上下文
+state.planned_tasks       # 计划任务列表
+
+# 输出参数
+state.target_context["intelligent_decisions"]  # 决策列表
+
+# 路由决策结果
+# "fixed_tool"      → 使用现有工具扫描
+# "custom_code"     → 生成自定义代码扫描
+# "enhance_first"   → 先增强功能再扫描
+# "poc_verification"→ 进入POC验证
+# "seebug_agent"    → 使用Seebug Agent
+# "awvs_scan"       → 使用AWVS扫描
+```
+
+#### 4. ToolExecutionNode
+
+```python
+# 输入参数
+state.current_task        # 当前要执行的工具名称
+state.target              # 目标URL/IP
+
+# 输出参数
+state.tool_results[tool_name]  # 工具执行结果
+state.completed_tasks          # 已完成任务列表
+state.target_context           # 更新的上下文（如CMS、端口等）
+```
+
+#### 5. CodeGenerationNode
+
+```python
+# 输入参数
+state.target_context["need_custom_scan"]        # 是否需要自定义扫描
+state.target_context["custom_scan_type"]        # 扫描类型
+state.target_context["custom_scan_requirements"] # 扫描需求描述
+state.target_context["custom_scan_language"]    # 代码语言
+
+# 输出参数
+state.tool_results["generated_code"]  # 生成的代码信息
+  # - code: 代码内容
+  # - language: 语言类型
+  # - dependencies: 依赖列表
+  # - file_path: 代码文件路径
+```
+
+#### 6. CodeExecutionNode
+
+```python
+# 输入参数
+state.target_context["generated_code"]  # 生成的代码信息
+
+# 输出参数
+state.tool_results["code_execution"]  # 执行结果
+  # - status: success/failed
+  # - output: 执行输出
+  # - error: 错误信息
+```
+
+#### 7. POCVerificationNode
+
+```python
+# 输入参数
+state.poc_verification_tasks  # POC验证任务列表
+state.target                  # 目标URL/IP
+
+# 输出参数
+state.tool_results["poc_verification"]  # 验证结果
+state.vulnerabilities                    # 更新的漏洞列表
+```
+
+#### 8. VulnerabilityAnalysisNode
+
+```python
+# 输入参数
+state.vulnerabilities  # 发现的漏洞列表
+
+# 输出参数
+state.vulnerabilities           # 去重排序后的漏洞列表
+state.poc_verification_tasks    # 生成的POC验证任务
+```
+
+### 条件路由逻辑
+
+#### intelligent_decision → 6种分支
+
+```python
+def _decide_scan_type(state):
+    # 优先级顺序:
+    # 1. 存在POC验证任务 → poc_verification
+    # 2. 需要功能增强 → enhance_first
+    # 3. 需要自定义扫描 → custom_code
+    # 4. 需要Seebug Agent → seebug_agent
+    # 5. 有普通工具任务 → fixed_tool
+    # 6. 需要AWVS扫描 → awvs_scan
+    # 7. 默认 → fixed_tool
+```
+
+#### result_verification → 4种分支
+
+```python
+def _should_continue_or_verify(state):
+    # 1. 达到最大工具执行轮次(50次) → analyze
+    # 2. 存在POC验证任务 → poc_verify
+    # 3. 有待执行的非AWVS任务 → continue
+    # 4. 需要AWVS扫描且未完成 → awvs_scan
+    # 5. 所有任务完成 → analyze
+```
+
+#### vulnerability_analysis → 2种分支
+
+```python
+def _post_analysis_routing(state):
+    # 1. 有待验证POC且未达到最大轮次(3次) → poc_verification
+    # 2. 否则 → report_generation
+```
+
+---
+
+## 数据流转路径
+
+### 主流程数据流
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        数据流转路径                               │
+└──────────────────────────────────────────────────────────────────┘
+
+1. 初始化阶段
+   target → AgentState
+   └─→ task_id: 自动生成
+   └─→ target: 用户输入
+   └─→ target_context: {}
+
+2. 环境感知阶段
+   AgentState → EnvironmentAwarenessNode
+   └─→ target_context["environment_info"]: 环境报告
+   └─→ target_context["os_system"]: 操作系统
+   └─→ target_context["available_tools"]: 可用工具
+
+3. 任务规划阶段
+   AgentState → TaskPlanningNode
+   └─→ planned_tasks: ["baseinfo", "portscan", ...]
+   └─→ current_task: "baseinfo"
+
+4. 智能决策阶段
+   AgentState → IntelligentDecisionNode
+   └─→ target_context["intelligent_decisions"]: 决策列表
+   └─→ 路由决策: fixed_tool/custom_code/enhance_first/...
+
+5. 工具执行阶段
+   AgentState → ToolExecutionNode
+   └─→ tool_results[tool_name]: 执行结果
+   └─→ completed_tasks: 已完成任务
+   └─→ target_context["cms"]: CMS信息
+   └─→ target_context["open_ports"]: 开放端口
+
+6. 结果验证阶段
+   AgentState → ResultVerificationNode
+   └─→ should_continue: True/False
+   └─→ planned_tasks: 更新的任务列表
+
+7. POC验证阶段
+   AgentState → POCVerificationNode
+   └─→ tool_results["poc_verification"]: 验证结果
+   └─→ vulnerabilities: 发现的漏洞
+
+8. 漏洞分析阶段
+   AgentState → VulnerabilityAnalysisNode
+   └─→ vulnerabilities: 去重排序后的漏洞
+   └─→ poc_verification_tasks: 生成的验证任务
+
+9. 报告生成阶段
+   AgentState → ReportGenerationNode
+   └─→ tool_results["final_report"]: 标准报告
+   └─→ tool_results["execution_trace_report"]: 执行轨迹
+   └─→ tool_results["html_execution_trace"]: HTML报告
+```
+
+---
+
+## 工具列表
+
+### 插件工具
+
+| 工具名称 | 功能描述 | 类别 |
+|----------|----------|------|
+| baseinfo | 基础信息收集（服务器、IP、域名等） | 信息收集 |
+| portscan | 端口扫描，识别开放端口和服务 | 端口扫描 |
+| waf_detect | WAF检测，识别Web应用防火墙 | 安全检测 |
+| cdn_detect | CDN检测，判断是否使用CDN | 网络分析 |
+| cms_identify | CMS识别，识别网站使用的CMS系统 | 指纹识别 |
+| infoleak_scan | 信息泄露扫描，检测敏感信息泄露 | 安全检测 |
+| subdomain_scan | 子域名扫描，枚举子域名 | 域名分析 |
+| webside_scan | 站点信息收集，获取网站基本信息 | 信息收集 |
+| webweight_scan | 网站权重查询，获取网站权重信息 | 信息收集 |
+| iplocating | IP定位，获取IP地理位置信息 | 信息收集 |
+
+### POC工具
+
+#### WebLogic POC
+| POC名称 | CVE编号 | 漏洞类型 | 严重度 |
+|---------|---------|----------|--------|
+| poc_weblogic_2020_2551 | CVE-2020-2551 | RCE | Critical |
+| poc_weblogic_2018_2628 | CVE-2018-2628 | RCE | Critical |
+| poc_weblogic_2018_2894 | CVE-2018-2894 | 任意文件上传 | High |
+| poc_weblogic_2020_14756 | CVE-2020-14756 | RCE | Critical |
+| poc_weblogic_2023_21839 | CVE-2023-21839 | RCE | Critical |
+
+#### Struts2 POC
+| POC名称 | CVE编号 | 漏洞类型 | 严重度 |
+|---------|---------|----------|--------|
+| struts2_009_poc | CVE-2013-1965 | RCE | Critical |
+| struts2_032_poc | CVE-2016-3081 | RCE | Critical |
+
+#### Tomcat POC
+| POC名称 | CVE编号 | 漏洞类型 | 严重度 |
+|---------|---------|----------|--------|
+| cve_2017_12615_poc | CVE-2017-12615 | 任意文件写入 | High |
+| CVE-2022-22965 | CVE-2022-22965 | Spring4Shell RCE | Critical |
+| CVE-2022-47986 | CVE-2022-47986 | RCE | Critical |
+
+#### 其他POC
+| POC名称 | CVE编号 | 漏洞类型 | 严重度 |
+|---------|---------|----------|--------|
+| cve_2017_12149_poc | CVE-2017-12149 | JBoss RCE | Critical |
+| cve_2020_10199_poc | CVE-2020-10199 | Nexus RCE | High |
+| cve_2018_7600_poc | CVE-2018-7600 | Drupal RCE | Critical |
+
+### 代码生成能力
+
+| 扫描类型 | 支持语言 | 功能描述 |
+|----------|----------|----------|
+| vuln_scan | Python | 漏洞扫描脚本生成 |
+| pocsuite3_poc | Python | Pocsuite3 POC生成 |
+| custom_scan | Python/Bash/PowerShell | 自定义扫描脚本 |
+
+---
+
+## 代码生成与执行节点
+
+### 集成状态
+
+✅ **CodeGenerationNode** 已正确集成到图结构中
+✅ **CodeExecutionNode** 已正确集成到图结构中
+
+### 功能测试
+
+#### 代码生成节点测试
+
+```python
+# 测试代码生成功能
+from ai_agents.core.nodes import CodeGenerationNode
+from ai_agents.core.state import AgentState
+
+state = AgentState(
+    target="http://example.com",
+    task_id="test_codegen",
+    target_context={
+        "need_custom_scan": True,
+        "custom_scan_type": "vuln_scan",
+        "custom_scan_requirements": "检测SQL注入漏洞"
+    }
+)
+
+node = CodeGenerationNode()
+result = await node(state)
+
+# 验证结果
+assert "generated_code" in result.tool_results
+assert "code" in result.tool_results["generated_code"]
+```
+
+#### 代码执行节点测试
+
+```python
+# 测试代码执行功能
+from ai_agents.core.nodes import CodeExecutionNode
+from ai_agents.core.state import AgentState
+
+state = AgentState(
+    target="http://example.com",
+    task_id="test_codeexec",
+    target_context={
+        "generated_code": {
+            "code": "print('Hello, World!')",
+            "language": "python"
+        }
+    }
+)
+
+node = CodeExecutionNode()
+result = await node(state)
+
+# 验证结果
+assert "code_execution" in result.tool_results
+```
+
+### 安全注意事项
+
+1. **沙箱执行**：代码在沙箱环境中执行，限制系统访问
+2. **超时控制**：默认60秒超时，防止无限循环
+3. **资源限制**：限制内存和CPU使用
+4. **网络隔离**：可选的网络隔离执行
 
 ---
 
@@ -78,6 +668,18 @@ TOOL_TIMEOUT=60
 ENABLE_LLM_PLANNING=true
 ENABLE_MEMORY=true
 ENABLE_KB_INTEGRATION=true
+
+# OpenAI 配置
+OPENAI_API_KEY=your_api_key
+OPENAI_BASE_URL=https://api.openai.com/v1
+MODEL_ID=gpt-4
+
+# AWVS 配置
+AWVS_API_URL=https://awvs.example.com
+AWVS_API_KEY=your_awvs_key
+
+# Seebug 配置
+SEEBUG_API_KEY=your_seebug_key
 ```
 
 ### 3. 启动服务
@@ -101,79 +703,6 @@ curl -X POST "http://127.0.0.1:8888/api/ai_agents/scan" \
 # 查询任务状态
 curl "http://127.0.0.1:8888/api/ai_agents/tasks/{task_id}"
 ```
-
----
-
-## 核心功能
-
-### 1. 任务规划
-
-支持两种规划模式：
-
-**规则化规划**：
-- 基于预设规则生成任务序列
-- 快速、可预测
-- 适合标准化扫描场景
-
-**LLM增强规划**：
-- 使用大语言模型智能生成任务序列
-- 根据目标特征动态调整
-- 更适应复杂场景
-
-### 2. 工具调用
-
-统一的工具调用接口：
-
-**插件工具**：
-- baseinfo：基础信息收集
-- portscan：端口扫描
-- waf_detect：WAF检测
-- cdn_detect：CDN检测
-- cms_identify：CMS识别
-- infoleak_scan：信息泄露扫描
-- subdomain_scan：子域名扫描
-- webside_scan：站点信息收集
-- webweight_scan：网站权重查询
-
-**POC工具**：
-- WebLogic POC：CVE-2020-2551、CVE-2018-2628等
-- Struts2 POC：S2-009、S2-032等
-- Tomcat POC：CVE-2017-12615、CVE-2022-22965等
-- JBoss POC：CVE-2017-12149
-- Nexus POC：CVE-2020-10199
-- Drupal POC：CVE-2018-7600
-
-### 3. 结果验证
-
-基于扫描结果动态调整扫描策略：
-
-- 根据CMS类型补充相关POC
-- 根据开放端口补充相关POC
-- 检测到WAF/CDN时调整扫描策略
-- 支持迭代验证和策略自适应
-
-### 4. 漏洞分析
-
-智能漏洞分析功能：
-
-- 漏洞去重（根据CVE和目标组合）
-- 按严重度排序（critical > high > medium > low）
-- 生成漏洞统计信息
-- 可选：从知识库获取修复建议
-
-### 5. 报告生成
-
-支持多种报告格式：
-
-**JSON格式**：
-- 结构化数据
-- 易于程序处理
-- 包含所有扫描结果
-
-**HTML格式**：
-- 可视化报告
-- 包含图表和统计
-- 易于人工阅读
 
 ---
 
@@ -230,7 +759,22 @@ curl "http://127.0.0.1:8888/api/ai_agents/tasks/{task_id}"
 - `GET /api/ai_agents/config`：获取配置
 - `POST /api/ai_agents/config`：更新配置
 
-详细API文档请参考 [README.md](./README.md#接口定义)
+---
+
+## 配置说明
+
+### 核心配置
+
+| 配置项 | 默认值 | 说明 |
+|--------|----------|------|
+| MAX_EXECUTION_TIME | 300 | Agent最大执行时间（秒） |
+| MAX_RETRIES | 3 | 工具执行最大重试次数 |
+| MAX_CONCURRENT_TOOLS | 5 | 最大并发工具执行数 |
+| TOOL_TIMEOUT | 60 | 单个工具执行超时时间（秒） |
+| ENABLE_LLM_PLANNING | true | 是否启用LLM增强任务规划 |
+| DEFAULT_SCAN_TASKS | [...] | 默认扫描任务列表 |
+| ENABLE_MEMORY | true | 是否启用记忆机制 |
+| ENABLE_KB_INTEGRATION | true | 是否启用漏洞知识库集成 |
 
 ---
 
@@ -281,46 +825,6 @@ def _build_graph(self) -> StateGraph:
 
 ---
 
-## 性能指标
-
-根据性能测试报告（详见 [PERFORMANCE_REPORT.md](./PERFORMANCE_REPORT.md)）：
-
-| 指标 | 数值 | 说明 |
-|--------|------|------|
-| 单目标扫描时间 | 45.2秒 | 比传统扫描快34% |
-| 多目标并发效率 | 42.9秒/目标 | 比传统扫描快26% |
-| 漏洞发现准确率 | 92% | 比传统扫描高18% |
-| 内存占用 | 245MB | 比传统扫描低21% |
-| 自动化程度 | 95% | 比传统扫描高111% |
-
----
-
-## 配置说明
-
-### 核心配置
-
-| 配置项 | 默认值 | 说明 |
-|--------|----------|------|
-| MAX_EXECUTION_TIME | 300 | Agent最大执行时间（秒） |
-| MAX_RETRIES | 3 | 工具执行最大重试次数 |
-| MAX_CONCURRENT_TOOLS | 5 | 最大并发工具执行数 |
-| TOOL_TIMEOUT | 60 | 单个工具执行超时时间（秒） |
-| ENABLE_LLM_PLANNING | true | 是否启用LLM增强任务规划 |
-| DEFAULT_SCAN_TASKS | [...] | 默认扫描任务列表 |
-| ENABLE_MEMORY | true | 是否启用记忆机制 |
-| ENABLE_KB_INTEGRATION | true | 是否启用漏洞知识库集成 |
-
-详细配置说明请参考 [README.md](./README.md#配置说明)
-
----
-
-## 文档
-
-- [系统完整文档](./SYSTEM_DOCUMENTATION.md) - 整合了API路由、整合指南和性能测试报告的完整技术文档
-- [代码阅读指南](./阅读顺序.md) - 按照推荐顺序阅读代码的指南
-
----
-
 ## 故障排查
 
 ### 常见问题
@@ -340,10 +844,15 @@ def _build_graph(self) -> StateGraph:
    - 减少扫描任务数量
    - 优化工具超时时间
 
-4. **内存占用过高**
-   - 减少MEMORY_MAX_SIZE配置
-   - 定期清理执行历史
-   - 禁用记忆机制
+4. **代码执行失败**
+   - 检查生成的代码语法是否正确
+   - 检查依赖是否已安装
+   - 查看沙箱执行日志
+
+5. **POC验证失败**
+   - 检查POC脚本格式是否正确
+   - 检查目标是否可访问
+   - 检查Pocsuite3是否正确安装
 
 ### 日志查看
 
@@ -359,6 +868,20 @@ grep "task_id: 123e4567" logs/app.log
 
 ---
 
+## 性能指标
+
+根据性能测试报告：
+
+| 指标 | 数值 | 说明 |
+|--------|------|------|
+| 单目标扫描时间 | 45.2秒 | 比传统扫描快34% |
+| 多目标并发效率 | 42.9秒/目标 | 比传统扫描快26% |
+| 漏洞发现准确率 | 92% | 比传统扫描高18% |
+| 内存占用 | 245MB | 比传统扫描低21% |
+| 自动化程度 | 95% | 比传统扫描高111% |
+
+---
+
 ## 许可证
 
 本项目遵循原项目的许可证。
@@ -371,20 +894,12 @@ grep "task_id: 123e4567" logs/app.log
 
 ---
 
-## 联系方式
-
-如有问题或建议，请通过以下方式联系：
-
-- 提交Issue
-- 发送邮件
-
----
-
 ## 总结
 
 AI Agents智能体编排系统提供了完整的Web安全漏洞扫描解决方案，具备：
 
-✅ **完整的LangGraph工作流**：任务规划 → 工具执行 → 结果验证 → 漏洞分析 → 报告生成
+✅ **完整的LangGraph工作流**：13个功能节点覆盖扫描全流程
+✅ **代码生成与执行**：支持动态生成和执行扫描脚本
 ✅ **统一的工具管理**：集成所有现有插件和POC
 ✅ **智能决策优化**：基于优先级、资源分配、策略自适应
 ✅ **灵活的配置系统**：支持动态配置和扩展
