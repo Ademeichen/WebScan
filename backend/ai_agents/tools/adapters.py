@@ -705,6 +705,83 @@ class PluginAdapter:
         )
 
     @staticmethod
+    @with_timeout_and_error_handling(default_timeout=30.0, plugin_name="loginfo")
+    async def adapt_loginfo(
+        target: str,
+        log_name: str = "default",
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """
+        适配日志处理插件
+        
+        Args:
+            target: 目标地址(用于日志标识)
+            log_name: 日志名称
+            timeout: 超时时间(秒)
+            progress_callback: 进度回调函数
+        
+        Returns:
+            PluginResult: 统一格式的执行结果
+        """
+        reporter = create_progress_callback("loginfo", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "初始化日志处理器")
+        
+        from backend.plugins.loginfo.loginfo import LogHandler
+        
+        if reporter:
+            reporter.report("配置中", 50, "正在配置日志处理器")
+        
+        return PluginResult.success(
+            data={"log_name": log_name, "target": target, "status": "ready"},
+            plugin="loginfo",
+            target=target
+        )
+
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=30.0, plugin_name="randheader")
+    async def adapt_randheader(
+        target: str,
+        conn_type: str = "keep-alive",
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """
+        适配随机请求头生成插件
+        
+        Args:
+            target: 目标地址
+            conn_type: 连接类型(keep-alive/close)
+            timeout: 超时时间(秒)
+            progress_callback: 进度回调函数
+        
+        Returns:
+            PluginResult: 统一格式的执行结果
+        """
+        reporter = create_progress_callback("randheader", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始生成随机请求头")
+        
+        from backend.plugins.randheader.randheader import get_random_headers
+        
+        if reporter:
+            reporter.report("生成中", 50, "正在生成随机请求头")
+        
+        result = await asyncio.to_thread(get_random_headers, conn_type)
+        
+        if reporter:
+            reporter.report("完成", 100, "随机请求头生成完成")
+        
+        return PluginResult.success(
+            data={"headers": result, "target": target},
+            plugin="randheader",
+            target=target
+        )
+
+    @staticmethod
     @with_timeout_and_error_handling(default_timeout=300.0, plugin_name="awvs")
     async def adapt_awvs(
         target: str,
@@ -804,6 +881,8 @@ class PluginAdapter:
             "webside_scan": PluginAdapter.adapt_webside_scan,
             "webweight_scan": PluginAdapter.adapt_webweight_scan,
             "iplocating": PluginAdapter.adapt_iplocating,
+            "loginfo": PluginAdapter.adapt_loginfo,
+            "randheader": PluginAdapter.adapt_randheader,
             "awvs": PluginAdapter.adapt_awvs,
         }
 
@@ -934,20 +1013,29 @@ class POCAdapter:
         """
         from backend.poc import (
             cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
-            struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
-            cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
+            cve_2020_14756_poc, cve_2023_21839_poc,
+            struts2_009_poc, struts2_032_poc,
+            cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc,
+            cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc,
+            poc_99617_ai_poc, poc_manual_thinkphp_ai_poc
         )
         
         return {
             "poc_weblogic_2020_2551": cve_2020_2551_poc,
             "poc_weblogic_2018_2628": cve_2018_2628_poc,
             "poc_weblogic_2018_2894": cve_2018_2894_poc,
+            "poc_weblogic_2020_14756": cve_2020_14756_poc,
+            "poc_weblogic_2023_21839": cve_2023_21839_poc,
             "poc_struts2_009": struts2_009_poc,
             "poc_struts2_032": struts2_032_poc,
             "poc_tomcat_2017_12615": cve_2017_12615_poc,
+            "poc_tomcat_2022_22965": cve_2022_22965_poc,
+            "poc_tomcat_2022_47986": cve_2022_47986_poc,
             "poc_jboss_2017_12149": cve_2017_12149_poc,
             "poc_nexus_2020_10199": cve_2020_10199_poc,
             "poc_drupal_2018_7600": cve_2018_7600_poc,
+            "poc_thinkphp_99617": poc_99617_ai_poc,
+            "poc_thinkphp_manual": poc_manual_thinkphp_ai_poc,
         }
     
     @staticmethod
@@ -970,6 +1058,7 @@ class POCAdapter:
             "jboss": ["poc_jboss_2017_12149"],
             "nexus": ["poc_nexus_2020_10199"],
             "drupal": ["poc_drupal_2018_7600"],
+            "thinkphp": ["poc_thinkphp_99617", "poc_thinkphp_manual"],
         }
         
         for key, pocs in poc_mapping.items():

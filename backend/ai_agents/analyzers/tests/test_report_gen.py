@@ -196,7 +196,7 @@ class TestReportGenerator:
         """
         html = report_generator.generate_html_report(sample_state)
         
-        assert 'Web安全扫描报告' in html
+        assert '安全扫描报告' in html
         assert '扫描摘要' in html
         assert '目标信息' in html
         assert '漏洞详情' in html

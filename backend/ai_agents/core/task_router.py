@@ -46,12 +46,9 @@ class TaskType(Enum):
     """
     INFO_GATHERING = "info_gathering"
     VULNERABILITY_SCAN = "vulnerability_scan"
-    POC_VERIFICATION = "poc_verification"
     CODE_GENERATION = "code_generation"
     CAPABILITY_ENHANCEMENT = "capability_enhancement"
     REPORT_GENERATION = "report_generation"
-    AWVS_SCAN = "awvs_scan"
-    SEEBUG_AGENT = "seebug_agent"
 
 
 @dataclass
@@ -194,8 +191,6 @@ class TaskRouter:
             "subdomain_scan": TaskType.INFO_GATHERING,
             "webside_scan": TaskType.INFO_GATHERING,
             "webweight_scan": TaskType.INFO_GATHERING,
-            "awvs": TaskType.AWVS_SCAN,
-            "seebug_agent": TaskType.SEEBUG_AGENT,
         }
         
         logger.info("🔀 任务路由器初始化完成")
@@ -224,8 +219,6 @@ class TaskRouter:
             task_type = self.task_type_mapping.get(task)
             if task_type:
                 task_types.add(task_type)
-            elif task.startswith("poc_"):
-                task_types.add(TaskType.POC_VERIFICATION)
             else:
                 task_types.add(TaskType.VULNERABILITY_SCAN)
         
@@ -235,9 +228,7 @@ class TaskRouter:
         target_context = state.target_context
         
         factors.requires_ai_decision = bool(
-            target_context.get("need_custom_scan") or
-            target_context.get("need_seebug_agent") or
-            len(state.poc_verification_tasks) > 0
+            target_context.get("need_custom_scan")
         )
         logger.debug(f"[{state.task_id}]   - 需要AI决策: {factors.requires_ai_decision}")
         
@@ -259,8 +250,6 @@ class TaskRouter:
         logger.debug(f"[{state.task_id}]   - 需要功能增强: {factors.requires_capability_enhancement}")
         
         factors.requires_external_api = bool(
-            TaskType.AWVS_SCAN in task_types or
-            TaskType.SEEBUG_AGENT in task_types or
             target_context.get("use_awvs")
         )
         logger.debug(f"[{state.task_id}]   - 需要外部API: {factors.requires_external_api}")
@@ -353,8 +342,6 @@ class TaskRouter:
             count += 1
         if target_context.get("cdn"):
             count += 1
-        
-        count += len(state.poc_verification_tasks)
         
         return count
     

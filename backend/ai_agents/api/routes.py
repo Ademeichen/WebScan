@@ -2,12 +2,19 @@
 AI Agents API 路由
 
 提供Agent扫描任务的API接口。
+
+优化内容:
+- 集成POC搜索、执行和批量执行API
+- 集成工作流执行指标API
+- 添加统一的错误处理和响应格式
+- 增强错误处理和日志记录
 """
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from enum import Enum
 
 from backend.models import Task
 from backend.api.common import APIResponse
@@ -791,141 +798,6 @@ async def check_tool(tool_name: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-class ToolRecommendRequest(BaseModel):
-    """工具推荐请求模型"""
-    target: str
-    context: Optional[Dict[str, Any]] = None
-
-
-class PluginMatchRequest(BaseModel):
-    """插件匹配请求模型"""
-    target: str
-    context: Optional[Dict[str, Any]] = None
-
-
-@router.post("/tools/recommend", response_model=APIResponse)
-async def recommend_tools(request: ToolRecommendRequest):
-    """
-    获取工具推荐
-    
-    根据目标特征智能推荐合适的工具
-    
-    Args:
-        request: 工具推荐请求
-        
-    Returns:
-        APIResponse: 推荐的工具列表
-    """
-    try:
-        from ..tools.tool_recommender import ToolRecommender, create_target_profile
-        
-        recommender = ToolRecommender()
-        
-        context = request.context or {}
-        profile = create_target_profile(
-            target=request.target,
-            ports=context.get("ports", []),
-            cms=context.get("cms"),
-            technologies=context.get("technologies", [])
-        )
-        
-        recommendations = recommender.get_top_recommendations(profile, top_n=10)
-        
-        return APIResponse(
-            code=200,
-            message="获取成功",
-            data={
-                "target": request.target,
-                "recommendations": [
-                    {
-                        "tool_name": rec.tool_name,
-                        "priority": rec.priority,
-                        "confidence": rec.confidence,
-                        "reason": rec.reason,
-                        "source": rec.source.value if hasattr(rec.source, 'value') else str(rec.source)
-                    }
-                    for rec in recommendations
-                ]
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"❌ 获取工具推荐失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/plugins/match", response_model=APIResponse)
-async def match_plugins(request: PluginMatchRequest):
-    """
-    匹配插件
-    
-    根据目标特征智能匹配合适的插件
-    
-    Args:
-        request: 插件匹配请求
-        
-    Returns:
-        APIResponse: 匹配的插件列表
-    """
-    try:
-        from ..tools.plugin_matcher import PluginMatcher
-        
-        matcher = PluginMatcher()
-        matches = await matcher.match_by_target(request.target)
-        
-        return APIResponse(
-            code=200,
-            message="获取成功",
-            data={
-                "target": request.target,
-                "matches": [
-                    {
-                        "plugin_name": match.plugin_name,
-                        "match_score": match.match_score,
-                        "match_reasons": match.match_reasons,
-                        "dependencies": match.dependencies
-                    }
-                    for match in matches
-                ]
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"❌ 匹配插件失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/plugins/execution-plan", response_model=APIResponse)
-async def get_execution_plan(request: Dict[str, Any]):
-    """
-    获取插件执行计划
-    
-    根据插件列表生成执行计划
-    
-    Args:
-        request: 包含plugins列表的请求
-        
-    Returns:
-        APIResponse: 执行计划
-    """
-    try:
-        from ..tools.plugin_matcher import PluginMatcher
-        
-        plugins = request.get("plugins", [])
-        matcher = PluginMatcher()
-        plan = await matcher.create_execution_plan(plugins)
-        
-        return APIResponse(
-            code=200,
-            message="获取成功",
-            data=plan.to_dict() if hasattr(plan, 'to_dict') else plan
-        )
-        
-    except Exception as e:
-        logger.error(f"❌ 获取执行计划失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.get("/resources/usage", response_model=APIResponse)
 async def get_resource_usage():
     """
@@ -974,3 +846,382 @@ async def get_resource_statistics():
     except Exception as e:
         logger.error(f"❌ 获取资源统计信息失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============ 从 agent.py 合并的端点 ============
+
+class HeartbeatRequest(BaseModel):
+    """插件心跳请求模型"""
+    timestamp: float
+
+
+class FinishRequest(BaseModel):
+    """插件完成请求模型"""
+    exitCode: int
+    stdout: str
+    stderr: str
+
+
+@router.put("/tasks/{task_id}/plugin/{plugin_id}/heartbeat", response_model=APIResponse)
+async def plugin_heartbeat(task_id: int, plugin_id: str, request: HeartbeatRequest):
+    """
+    插件心跳上报
+    
+    Args:
+        task_id: 任务ID
+        plugin_id: 插件ID
+        request: 心跳请求
+        
+    Returns:
+        APIResponse: 心跳处理结果
+    """
+    try:
+        task_executor.update_heartbeat(task_id)
+        return APIResponse(code=200, message="Heartbeat received")
+    except Exception as e:
+        logger.warning(f"Heartbeat update failed: {e}")
+        return APIResponse(code=500, message="Heartbeat failed")
+
+
+@router.post("/tasks/{task_id}/plugin/{plugin_id}/finish", response_model=APIResponse)
+async def plugin_finish(task_id: int, plugin_id: str, request: FinishRequest):
+    """
+    插件执行完成回调
+    
+    Args:
+        task_id: 任务ID
+        plugin_id: 插件ID
+        request: 完成请求
+        
+    Returns:
+        APIResponse: 完成处理结果
+    """
+    try:
+        logger.info(f"[插件完成] 收到完成回调 | 任务ID: {task_id} | 插件: {plugin_id} | 退出码: {request.exitCode}")
+        task = await Task.get_or_none(id=task_id)
+        if not task:
+            logger.warning(f"[插件完成] 任务不存在 | 任务ID: {task_id}")
+            return APIResponse(code=404, message="Task not found")
+        
+        if request.exitCode == 0:
+            logger.info(f"[插件完成] 执行成功 | 任务ID: {task_id} | 插件: {plugin_id}")
+            task.status = 'completed'
+            task.progress = 100
+            try:
+                task.result = request.stdout
+            except:
+                task.result = json.dumps({"raw_output": request.stdout})
+        else:
+            logger.warning(f"[插件完成] 执行失败 | 任务ID: {task_id} | 插件: {plugin_id} | 退出码: {request.exitCode} | 错误: {request.stderr}")
+            task.status = 'failed'
+            task.result = json.dumps({"error": request.stderr or "Unknown error", "exit_code": request.exitCode})
+            
+        await task.save()
+        logger.info(f"[插件完成] 任务状态已更新 | 任务ID: {task_id} | 状态: {task.status}")
+        return APIResponse(code=200, message="Finish processed")
+    except Exception as e:
+        logger.error(f"Finish callback failed: {e}")
+        return APIResponse(code=500, message=f"Finish callback failed: {str(e)}")
+
+
+@router.get("/tasks/{task_id}/logs", response_model=APIResponse)
+async def get_task_logs(task_id: int, tail: int = 500, keyword: str = ""):
+    """
+    获取任务的插件日志
+    
+    Args:
+        task_id: 任务ID
+        tail: 返回最后N行日志
+        keyword: 关键词过滤
+        
+    Returns:
+        APIResponse: 日志内容
+    """
+    from pathlib import Path
+    
+    try:
+        task = await Task.get_or_none(id=task_id)
+        if not task:
+            return APIResponse(code=404, message="Task not found")
+        
+        log_date = task.created_at.strftime("%Y-%m-%d")
+        log_file = Path("logs") / "plugins" / log_date / f"{task_id}.log"
+        
+        if not log_file.exists():
+            files = list(Path("logs").glob(f"plugins/*/{task_id}.log"))
+            if files:
+                log_file = files[0]
+            else:
+                return APIResponse(code=200, message="暂无日志", data="")
+
+        try:
+            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()
+                
+            if keyword:
+                lines = [l for l in lines if keyword.lower() in l.lower()]
+                
+            if len(lines) > tail:
+                lines = lines[-tail:]
+                
+            return APIResponse(code=200, message="获取成功", data="".join(lines))
+        except Exception as e:
+            return APIResponse(code=500, message=f"读取日志失败: {e}")
+            
+    except Exception as e:
+        return APIResponse(code=500, message=f"获取日志失败: {str(e)}")
+
+
+@router.get("/tasks/frozen", response_model=APIResponse)
+async def get_frozen_tasks():
+    """
+    获取冻结任务列表
+    
+    冻结定义: 运行中 且 运行时长 > 80% 阈值
+        
+    Returns:
+        APIResponse: 冻结任务列表
+    """
+    import datetime
+    
+    try:
+        running_tasks = await Task.filter(status='running').all()
+        frozen_tasks = []
+        now = datetime.datetime.now(datetime.timezone.utc)
+        
+        TIMEOUTS = {
+            'scan_port': 15,
+            'scan_waf': 5,
+            'awvs_scan': 60,
+            'default': 30
+        }
+        
+        for task in running_tasks:
+            if not task.created_at: continue
+            
+            created_at = task.created_at
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=datetime.timezone.utc)
+                
+            duration_minutes = (now - created_at).total_seconds() / 60
+            threshold = TIMEOUTS.get(task.task_type, TIMEOUTS['default'])
+            
+            if duration_minutes > (threshold * 0.8):
+                frozen_tasks.append({
+                    "id": task.id,
+                    "task_name": task.task_name,
+                    "task_type": task.task_type,
+                    "duration": f"{duration_minutes:.1f}",
+                    "threshold": threshold,
+                    "progress": task.progress
+                })
+                
+        return APIResponse(code=200, message="获取成功", data=frozen_tasks)
+    except Exception as e:
+        logger.error(f"Get frozen tasks error: {e}")
+        return APIResponse(code=500, message=f"获取冻结任务失败: {str(e)}")
+
+
+# ============ POC API 端点 ============
+
+class POCSearchRequest(BaseModel):
+    """POC搜索请求模型"""
+    cve_id: str
+
+
+class POCExecuteRequest(BaseModel):
+    """POC执行请求模型"""
+    target: str
+    cve_id: Optional[str] = None
+    poc_name: Optional[str] = None
+    timeout: Optional[float] = 300.0
+
+
+class POCBatchExecuteRequest(BaseModel):
+    """批量POC执行请求模型"""
+    targets: List[str]
+    cve_ids: List[str]
+
+
+@router.post("/poc/search", response_model=APIResponse)
+async def search_poc(request: POCSearchRequest):
+    """
+    搜索POC
+    
+    通过CVE编号搜索可用的POC。
+    
+    Args:
+        request: 包含CVE编号的搜索请求
+        
+    Returns:
+        APIResponse: POC搜索结果
+    """
+    try:
+        logger.info(f"[POC_SEARCH] 搜索POC - CVE: {request.cve_id}")
+        
+        from backend.ai_agents.poc_system.poc_integration import get_poc_integration_manager
+        
+        manager = get_poc_integration_manager()
+        poc_infos = await manager.search_poc_by_cve(request.cve_id)
+        
+        data = {
+            "cve_id": request.cve_id,
+            "count": len(poc_infos),
+            "results": [
+                {
+                    "title": poc.title,
+                    "description": poc.description,
+                    "severity": poc.severity,
+                    "has_poc": poc.poc_download_url is not None or poc.poc_name is not None
+                }
+                for poc in poc_infos
+            ]
+        }
+        
+        logger.info(f"[POC_SEARCH] 搜索完成 - 找到 {len(poc_infos)} 个POC")
+        return APIResponse(code=200, message=f"找到 {len(poc_infos)} 个POC", data=data)
+        
+    except Exception as e:
+        logger.error(f"[POC_SEARCH_ERROR] 搜索POC失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"搜索POC失败: {str(e)}")
+
+
+@router.post("/poc/execute", response_model=APIResponse)
+async def execute_poc(request: POCExecuteRequest):
+    """
+    执行POC检测
+    
+    执行单个POC漏洞检测。
+    
+    Args:
+        request: 包含目标、CVE编号或POC名称的执行请求
+        
+    Returns:
+        APIResponse: POC执行结果
+    """
+    try:
+        logger.info(f"[POC_EXECUTE] 执行POC - 目标: {request.target}, CVE: {request.cve_id}, POC: {request.poc_name}")
+        
+        from backend.ai_agents.poc_system.poc_integration import get_poc_integration_manager
+        
+        manager = get_poc_integration_manager()
+        result = await manager.execute_poc(
+            target=request.target,
+            cve_id=request.cve_id,
+            poc_name=request.poc_name,
+            timeout=request.timeout
+        )
+        
+        data = {
+            "cve_id": result.cve_id,
+            "target": result.target,
+            "success": result.success,
+            "vulnerable": result.vulnerable,
+            "poc_name": result.poc_name,
+            "execution_time": result.execution_time,
+            "error": result.error,
+            "details": result.details
+        }
+        
+        message = "POC执行完成" if result.vulnerable else "POC执行完成，未发现漏洞"
+        logger.info(f"[POC_EXECUTE] 执行完成 - 成功: {result.success}, 有漏洞: {result.vulnerable}")
+        
+        return APIResponse(code=200, message=message, data=data)
+        
+    except Exception as e:
+        logger.error(f"[POC_EXECUTE_ERROR] 执行POC失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"执行POC失败: {str(e)}")
+
+
+@router.post("/poc/batch-execute", response_model=APIResponse)
+async def batch_execute_poc(request: POCBatchExecuteRequest):
+    """
+    批量执行POC检测
+    
+    对多个目标执行多个CVE的POC检测。
+    
+    Args:
+        request: 包含目标列表和CVE编号列表的批量执行请求
+        
+    Returns:
+        APIResponse: 批量执行结果
+    """
+    try:
+        logger.info(f"[POC_BATCH] 批量执行POC - 目标数: {len(request.targets)}, CVE数: {len(request.cve_ids)}")
+        
+        from backend.ai_agents.poc_system.poc_integration import get_poc_integration_manager
+        
+        manager = get_poc_integration_manager()
+        results = await manager.batch_execute_poc(request.targets, request.cve_ids)
+        
+        data = {
+            "total": len(results),
+            "successful": sum(1 for r in results if r.success),
+            "vulnerable": sum(1 for r in results if r.vulnerable),
+            "results": [
+                {
+                    "cve_id": r.cve_id,
+                    "target": r.target,
+                    "success": r.success,
+                    "vulnerable": r.vulnerable,
+                    "execution_time": r.execution_time
+                }
+                for r in results
+            ]
+        }
+        
+        logger.info(f"[POC_BATCH] 批量执行完成 - 总任务: {len(results)}")
+        return APIResponse(code=200, message=f"批量POC执行完成: {len(results)} 个任务", data=data)
+        
+    except Exception as e:
+        logger.error(f"[POC_BATCH_ERROR] 批量执行POC失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"批量执行POC失败: {str(e)}")
+
+
+# ============ 工作流指标 API 端点 ============
+
+@router.get("/workflow/metrics", response_model=APIResponse)
+async def get_execution_metrics(task_id: Optional[str] = None):
+    """
+    获取工作流执行指标
+    
+    获取节点执行时间、重试次数、跳过状态等指标。
+    
+    Args:
+        task_id: 可选的任务ID，用于过滤特定任务的指标
+        
+    Returns:
+        APIResponse: 执行指标数据
+    """
+    try:
+        logger.info(f"[WORKFLOW_METRICS] 获取执行指标 - 任务ID: {task_id}")
+        
+        from backend.ai_agents.core.execution_optimizer import get_execution_optimizer
+        
+        optimizer = get_execution_optimizer()
+        summary = optimizer.get_execution_summary(task_id)
+        metrics = optimizer.get_execution_metrics(task_id)
+        
+        data = {
+            "summary": summary,
+            "metrics": [
+                {
+                    "node_name": m.node_name,
+                    "task_id": m.task_id,
+                    "duration": m.duration,
+                    "success": m.success,
+                    "retries": m.retries,
+                    "skipped": m.skipped,
+                    "error": m.error,
+                    "timestamp": m.timestamp
+                }
+                for m in metrics
+            ]
+        }
+        
+        logger.info(f"[WORKFLOW_METRICS] 获取完成 - 指标数: {len(metrics)}")
+        return APIResponse(code=200, message="获取执行指标成功", data=data)
+        
+    except Exception as e:
+        logger.error(f"[WORKFLOW_METRICS_ERROR] 获取执行指标失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"获取执行指标失败: {str(e)}")

@@ -228,62 +228,6 @@ class AgentState:
     用于条件分支控制,决定是否继续执行工具还是进入下一阶段。
     """
     
-    # = POC 验证 =
-    poc_verification_tasks: List[Dict[str, Any]] = field(default_factory=list)
-    """
-    待验证的 POC 任务列表
-    
-    包含待执行的 POC 验证任务,每个任务包含:
-    - poc_name: POC 名称
-    - poc_id: POC ID(SSVID)
-    - poc_code: POC 代码
-    - target: 验证目标
-    - priority: 优先级
-    - status: 任务状态(pending/running/completed/failed)
-    """
-    
-    poc_verification_results: List[Dict[str, Any]] = field(default_factory=list)
-    """
-    POC 验证结果列表
-    
-    存储 POC 验证的执行结果,每个结果包含:
-    - poc_name: POC 名称
-    - poc_id: POC ID
-    - target: 验证目标
-    - vulnerable: 是否存在漏洞
-    - message: 结果消息
-    - execution_time: 执行时间
-    - confidence: 结果置信度
-    - severity: 漏洞严重度
-    """
-    
-    poc_execution_stats: Dict[str, Any] = field(default_factory=dict)
-    """
-    POC 执行统计信息
-    
-    包含 POC 验证执行的统计数据:
-    - total_pocs: 总 POC 数量
-    - executed_count: 已执行数量
-    - vulnerable_count: 发现漏洞数量
-    - failed_count: 失败数量
-    - success_rate: 成功率
-    - total_execution_time: 总执行时间
-    - average_execution_time: 平均执行时间
-    """
-    
-    poc_verification_status: str = "pending"
-    """
-    POC 验证状态
-    
-    整体验证流程的状态:
-    - pending: 待执行
-    - running: 执行中
-    - paused: 已暂停
-    - completed: 已完成
-    - failed: 执行失败
-    - cancelled: 已取消
-    """
-    
     # = Seebug Agent =
     seebug_pocs: List[Dict[str, Any]] = field(default_factory=list)
     """
@@ -300,11 +244,11 @@ class AgentState:
     """
     生成的 POC 列表
     
-    存储由Seebug Agent生成的POC代码,每个POC包含:
-    - ssvid: POC ID
+    存储生成的POC代码,每个POC包含:
+    - poc_id: POC ID
     - name: POC 名称
     - code: POC 代码
-    - source: 来源(seebug_agent)
+    - source: 来源
     """
     
     # = Stage Tracking =
@@ -629,9 +573,5 @@ class AgentState:
             "retry_count": self.retry_count,
             "is_complete": self.is_complete,
             "should_continue": self.should_continue,
-            "progress": self.get_progress(),
-            "poc_verification_tasks": self.poc_verification_tasks,
-            "poc_verification_results": self.poc_verification_results,
-            "poc_execution_stats": self.poc_execution_stats,
-            "poc_verification_status": self.poc_verification_status
+            "progress": self.get_progress()
         }

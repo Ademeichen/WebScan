@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 class VulnerabilitySource(Enum):
     """漏洞来源枚举"""
-    POC_VERIFICATION = "poc_verification"
     AWVS_SCAN = "awvs_scan"
     CODE_SCAN = "code_scan"
     PORT_SCAN = "port_scan"
@@ -729,35 +728,6 @@ class ResultAnalyzer:
                 ))
         
         for vuln_type in vuln_types:
-            related_scans = self._get_related_scan_types(vuln_type)
-            for scan_type in related_scans:
-                suggestion_id += 1
-                suggestions.append(FollowUpSuggestion(
-                    suggestion_id=f"follow_up_{suggestion_id}",
-                    title=f"补充扫描: {scan_type}",
-                    description=f"针对 {vuln_type} 类型漏洞的补充 {scan_type} 扫描",
-                    priority="medium",
-                    scan_type=scan_type,
-                    target=",".join(targets),
-                    reason=f"发现 {vuln_type} 类型漏洞，建议进行补充扫描",
-                    parameters={"vuln_type": vuln_type}
-                ))
-        
-        critical_vulns = [v for v in vulnerabilities if v.get("severity") == "critical"]
-        for vuln in critical_vulns:
-            suggestion_id += 1
-            suggestions.append(FollowUpSuggestion(
-                suggestion_id=f"follow_up_{suggestion_id}",
-                title=f"深度验证: {vuln.get('name', '未知漏洞')}",
-                description=f"对严重漏洞进行深度验证和影响评估",
-                priority="critical",
-                scan_type="poc_verification",
-                target=vuln.get("target", ""),
-                reason="发现严重漏洞，需要深度验证",
-                parameters={"vuln_id": vuln.get("id"), "cve": vuln.get("cve")}
-            ))
-        
-        if len(targets) > 0 and not self._has_subdomain_scan(list(targets), scan_history):
             suggestion_id += 1
             suggestions.append(FollowUpSuggestion(
                 suggestion_id=f"follow_up_{suggestion_id}",

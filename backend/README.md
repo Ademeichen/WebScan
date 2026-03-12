@@ -271,9 +271,9 @@ Seebug Agent 已完整集成到后端系统中，包括：
    - 代码自动生成
 
 2. **AI Agents 集成** (`ai_agents/core/nodes.py`)
-   - SeebugAgentNode 节点
-   - 自动搜索 Seebug POC
-   - 智能生成 POC 代码
+   - 智能决策节点
+   - 工具执行节点
+   - 代码生成与执行节点
    - 集成到 LangGraph 工作流
 
 3. **工具层集成** (`api/seebug_client.py`)
@@ -501,7 +501,7 @@ python main.py
 
 ### Seebug Agent 集成开发
 1. 修改 `api/seebug_client.py` 中的接口
-2. 在 `ai_agents/core/nodes.py` 中优化 SeebugAgentNode
+2. 在 `ai_agents/core/nodes.py` 中优化智能决策和工具执行节点
 3. 更新 `api/poc_gen.py` 中的 POC 生成逻辑
 
 ### 测试
@@ -525,8 +525,7 @@ backend/
 │   ├── tools/tests/         # 工具适配器测试
 │   │   └── test_adapters.py # 适配器功能测试
 │   ├── poc_system/tests/    # POC系统测试
-│   ├── analyzers/tests/     # 分析器测试
-│   └── subgraphs/tests/     # 子图测试
+│   └── analyzers/tests/     # 分析器测试
 ├── api/tests/               # API模块测试
 │   ├── test_routes.py       # API路由测试
 │   ├── test_awvs.py         # AWVS API测试

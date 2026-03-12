@@ -229,6 +229,7 @@ async def create_task(request: CreateTaskRequest):
         if request.task_type not in valid_types:
             logger.warning(f"无效的任务类型: {request.task_type}")
             # 暂时不强制验证,允许插件扩展
+            # TODO: 未来考虑添加任务类型验证
             pass
 
         # 1.1 POC 任务参数校验
@@ -239,6 +240,7 @@ async def create_task(request: CreateTaskRequest):
 
             # 简单的 POC 类型验证
             # 这里不强制失败,只是记录日志
+            # TODO: 未来考虑添加更严格的 POC 类型验证
             pass
 
         # 2. 创建 Task 记录

@@ -9,6 +9,7 @@ from .Drupal import cve_2018_7600_poc
 from .struts2 import struts2_009_poc, struts2_032_poc
 from .tomcat import cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc
 from .weblogic import cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc, cve_2020_14756_poc, cve_2023_21839_poc
+from .thinkphp import poc_99617_ai_poc, poc_manual_thinkphp_ai_poc
 
 __all__ = [
     'cve_2020_2551_poc',
@@ -23,5 +24,7 @@ __all__ = [
     'cve_2022_47986_poc',
     'cve_2017_12149_poc',
     'cve_2020_10199_poc',
-    'cve_2018_7600_poc'
+    'cve_2018_7600_poc',
+    'poc_99617_ai_poc',
+    'poc_manual_thinkphp_ai_poc'
 ]

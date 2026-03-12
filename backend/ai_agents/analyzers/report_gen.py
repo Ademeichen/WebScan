@@ -356,12 +356,6 @@ ${awvs_section}
             
             "risk_assessment": risk_assessment,
             
-            "poc_verification": {
-                "results": state.poc_verification_results,
-                "stats": state.poc_execution_stats,
-                "status": state.poc_verification_status
-            },
-            
             "tool_results": self._summarize_tool_results(state.tool_results),
             
             "errors": state.errors,
@@ -878,11 +872,6 @@ ${awvs_section}
                  app_names = [app.get("name") for app in apps if app.get("name")]
                  return f"识别组件: {', '.join(app_names)}"
             return "未识别到CMS"
-
-        elif tool_name.startswith("poc_"):
-            if data.get("vulnerable"):
-                return "发现漏洞"
-            return "未发现漏洞"
 
         return "执行完成"
     

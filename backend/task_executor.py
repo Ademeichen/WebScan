@@ -152,6 +152,71 @@ class TaskExecutor:
             return scan_config['global_timeout']
         return TASK_TIMEOUT_CONFIG.get(task_type, TASK_TIMEOUT_CONFIG['default'])
 
+    async def reset_scan_data(self):
+        """
+        重置扫描数据 - 项目启动时清空所有扫描相关数据
+        
+        清空内容:
+        - 所有任务记录
+        - 所有扫描结果
+        - 所有漏洞记录
+        - 所有POC扫描结果
+        - 所有报告记录
+        """
+        from backend.models import Task, ScanResult, Vulnerability, POCScanResult, Report
+        
+        logger.info("=" * 50)
+        logger.info("开始重置扫描数据...")
+        
+        try:
+            task_count = await Task.all().count()
+            scan_result_count = await ScanResult.all().count()
+            vuln_count = await Vulnerability.all().count()
+            poc_count = await POCScanResult.all().count()
+            report_count = await Report.all().count()
+            
+            logger.info(f"当前数据统计: 任务={task_count}, 扫描结果={scan_result_count}, 漏洞={vuln_count}, POC结果={poc_count}, 报告={report_count}")
+            
+            await POCScanResult.all().delete()
+            logger.info("已清空 POC 扫描结果表")
+            
+            await Vulnerability.all().delete()
+            logger.info("已清空漏洞表")
+            
+            await ScanResult.all().delete()
+            logger.info("已清空扫描结果表")
+            
+            await Report.all().delete()
+            logger.info("已清空报告表")
+            
+            await Task.all().delete()
+            logger.info("已清空任务表")
+            
+            self.queued_task_ids.clear()
+            self.cancelled_task_ids.clear()
+            self.running_task_id = None
+            self.task_processes.clear()
+            self.task_heartbeats.clear()
+            self.task_start_times.clear()
+            self.task_timeouts.clear()
+            self._persisted_tasks.clear()
+            self._save_task_states()
+            logger.info("已清空内存中的任务状态")
+            
+            while not self.queue.empty():
+                try:
+                    self.queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+            logger.info("已清空任务队列")
+            
+            logger.info("扫描数据重置完成")
+            logger.info("=" * 50)
+            
+        except Exception as e:
+            logger.error(f"重置扫描数据失败: {e}", exc_info=True)
+            raise
+
     async def recover_pending_tasks(self):
         """
         恢复未完成的任务
@@ -963,6 +1028,7 @@ class TaskExecutor:
         else:
             return 20
 
+    # INSPECTION:检查扫描结果是否完整
     async def _save_scan_results(self, task_id: int, scan_id: str, scan_client):
         try:
             from backend.models import Task, Vulnerability
@@ -1400,65 +1466,72 @@ class TaskExecutor:
         logger.info("=" * 50)
         
         if self.worker_task and not self.worker_task.done():
-            logger.info("[1/5] 正在取消Worker任务...")
+            logger.info("[1/6] 正在取消Worker任务...")
             self.worker_task.cancel()
             try:
                 await asyncio.wait_for(self.worker_task, timeout=5)
             except asyncio.CancelledError:
                 pass
             except asyncio.TimeoutError:
-                logger.warning("[1/5] Worker取消超时")
-            logger.info("[1/5] Worker已取消")
+                logger.warning("[1/6] Worker取消超时")
+            logger.info("[1/6] Worker已取消")
         else:
-            logger.info("[1/5] Worker未运行，跳过")
+            logger.info("[1/6] Worker未运行，跳过")
         
         if self.current_execution_task and not self.current_execution_task.done():
-            logger.info("[2/5] 正在取消当前执行任务...")
+            logger.info("[2/6] 正在取消当前执行任务...")
             self.current_execution_task.cancel()
             try:
                 await asyncio.wait_for(self.current_execution_task, timeout=5)
             except asyncio.CancelledError:
                 pass
             except asyncio.TimeoutError:
-                logger.warning("[2/5] 当前任务取消超时")
-            logger.info("[2/5] 当前任务已取消")
+                logger.warning("[2/6] 当前任务取消超时")
+            logger.info("[2/6] 当前任务已取消")
         else:
-            logger.info("[2/5] 无正在执行的任务，跳过")
+            logger.info("[2/6] 无正在执行的任务，跳过")
         
         if self.task_processes:
-            logger.info(f"[3/5] 正在终止 {len(self.task_processes)} 个子进程...")
+            logger.info(f"[3/6] 正在终止 {len(self.task_processes)} 个子进程...")
             terminated_count = 0
             for task_id, process in list(self.task_processes.items()):
                 if process.is_alive():
                     logger.info(f"  终止进程: Task {task_id} (PID: {process.pid})")
-                    process.terminate()
-                    process.join(timeout=3)
-                    if process.is_alive():
-                        logger.warning(f"  进程 {process.pid} 未响应SIGTERM，发送SIGKILL")
-                        process.kill()
-                        process.join(timeout=2)
-                    terminated_count += 1
+                    try:
+                        process.terminate()
+                        process.join(timeout=3)
+                        if process.is_alive():
+                            logger.warning(f"  进程 {process.pid} 未响应SIGTERM，发送SIGKILL")
+                            process.kill()
+                            process.join(timeout=2)
+                            if process.is_alive():
+                                logger.error(f"  进程 {process.pid} 仍然存活，强制关闭")
+                                process.terminate()
+                                process.join(timeout=1)
+                        terminated_count += 1
+                    except Exception as e:
+                        logger.error(f"  终止进程 {process.pid} 时出错: {e}")
             self.task_processes.clear()
-            logger.info(f"[3/5] 已终止 {terminated_count} 个子进程")
+            logger.info(f"[3/6] 已终止 {terminated_count} 个子进程")
         else:
-            logger.info("[3/5] 无活跃子进程，跳过")
+            logger.info("[3/6] 无活跃子进程，跳过")
         
         if self.kafka_producer:
-            logger.info("[4/5] 正在关闭Kafka生产者...")
+            logger.info("[4/6] 正在关闭Kafka生产者...")
             try:
                 self.kafka_producer.flush(timeout=5)
                 self.kafka_producer.close(timeout=5)
-                logger.info("[4/5] Kafka生产者已关闭")
+                logger.info("[4/6] Kafka生产者已关闭")
             except Exception as e:
-                logger.error(f"[4/5] 关闭Kafka生产者时发生错误: {e}")
+                logger.error(f"[4/6] 关闭Kafka生产者时发生错误: {e}")
             finally:
                 self.kafka_producer = None
         else:
-            logger.info("[4/5] Kafka生产者未初始化，跳过")
+            logger.info("[4/6] Kafka生产者未初始化，跳过")
         
-        logger.info("[5/5] 正在保存任务状态...")
+        logger.info("[5/6] 正在保存任务状态...")
         self._save_task_states()
-        logger.info(f"[5/5] 已保存 {len(self._persisted_tasks)} 个任务状态")
+        logger.info(f"[5/6] 已保存 {len(self._persisted_tasks)} 个任务状态")
         
         self.queued_task_ids.clear()
         self.cancelled_task_ids.clear()
@@ -1466,6 +1539,14 @@ class TaskExecutor:
         self.task_start_times.clear()
         self.task_timeouts.clear()
         self.running_task_id = None
+        
+        logger.info("[6/6] 正在清空任务队列...")
+        while not self.queue.empty():
+            try:
+                self.queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+        logger.info("[6/6] 任务队列已清空")
         
         logger.info("=" * 50)
         logger.info("任务执行器关闭完成")

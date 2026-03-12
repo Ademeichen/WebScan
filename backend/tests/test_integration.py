@@ -186,88 +186,6 @@ class IntegrationTestRunner:
                 error=str(e)
             )
     
-    async def test_subgraph_health(self) -> IntegrationTestResult:
-        """测试子图服务健康状态"""
-        start_time = time.time()
-        try:
-            status, data, duration = await self._make_request("GET", "/api/subgraphs/health")
-            
-            if data.get("status") == "healthy":
-                return IntegrationTestResult(
-                    name="子图服务健康检查",
-                    status="passed",
-                    duration=duration,
-                    message=f"子图服务正常，包含{len(data.get('graphs', []))}个子图",
-                    response_data=data
-                )
-            else:
-                return IntegrationTestResult(
-                    name="子图服务健康检查",
-                    status="failed",
-                    duration=duration,
-                    message="子图服务状态异常",
-                    response_data=data
-                )
-        except TimeoutError as e:
-            return IntegrationTestResult(
-                name="子图服务健康检查",
-                status="skipped",
-                duration=time.time() - start_time,
-                message=str(e)
-            )
-        except Exception as e:
-            return IntegrationTestResult(
-                name="子图服务健康检查",
-                status="failed",
-                duration=time.time() - start_time,
-                message=str(e),
-                error=str(e)
-            )
-    
-    async def test_subgraph_planning(self, target: str = "https://example.com") -> IntegrationTestResult:
-        """测试子图规划功能（真实AI分析）"""
-        start_time = time.time()
-        try:
-            status, data, duration = await self._make_request(
-                "POST",
-                "/api/subgraphs/planning",
-                {"target": target, "task_id": f"real-test-{int(time.time())}"},
-                timeout=60.0
-            )
-            
-            if data.get("success"):
-                plan_data = data.get("data", {})
-                return IntegrationTestResult(
-                    name="子图规划测试",
-                    status="passed",
-                    duration=duration,
-                    message=f"规划完成，决策: {plan_data.get('decision', 'unknown')}",
-                    response_data=plan_data
-                )
-            else:
-                return IntegrationTestResult(
-                    name="子图规划测试",
-                    status="failed",
-                    duration=duration,
-                    message=f"规划失败: {data.get('message', 'Unknown')}",
-                    response_data=data
-                )
-        except TimeoutError as e:
-            return IntegrationTestResult(
-                name="子图规划测试",
-                status="skipped",
-                duration=time.time() - start_time,
-                message=str(e)
-            )
-        except Exception as e:
-            return IntegrationTestResult(
-                name="子图规划测试",
-                status="failed",
-                duration=time.time() - start_time,
-                message=str(e),
-                error=str(e)
-            )
-    
     async def test_awvs_targets(self) -> IntegrationTestResult:
         """测试AWVS目标列表获取"""
         start_time = time.time()
@@ -356,8 +274,6 @@ class IntegrationTestRunner:
         self.results.append(await self.test_server_health())
         self.results.append(await self.test_awvs_connection())
         self.results.append(await self.test_ai_model_connection())
-        self.results.append(await self.test_subgraph_health())
-        self.results.append(await self.test_subgraph_planning())
         self.results.append(await self.test_awvs_targets())
         self.results.append(await self.test_awvs_scans())
         
@@ -426,24 +342,6 @@ class TestIntegration:
         if result.status == "failed" and "连接错误" in result.message:
             pytest.skip(f"后端服务未启动: {result.message}")
         assert result.status in ["passed", "skipped"], f"AI模型连接测试失败: {result.message}"
-    
-    @pytest.mark.asyncio
-    @pytest.mark.integration
-    async def test_subgraph_health(self, test_runner):
-        """测试子图服务健康状态"""
-        result = await test_runner.test_subgraph_health()
-        if result.status == "failed" and "连接错误" in result.message:
-            pytest.skip(f"后端服务未启动: {result.message}")
-        assert result.status in ["passed", "skipped"], f"子图服务健康检查失败: {result.message}"
-    
-    @pytest.mark.asyncio
-    @pytest.mark.integration
-    async def test_subgraph_planning(self, test_runner):
-        """测试子图规划功能"""
-        result = await test_runner.test_subgraph_planning()
-        if result.status == "failed" and "连接错误" in result.message:
-            pytest.skip(f"后端服务未启动: {result.message}")
-        assert result.status in ["passed", "skipped"], f"子图规划测试失败: {result.message}"
     
     @pytest.mark.asyncio
     @pytest.mark.integration

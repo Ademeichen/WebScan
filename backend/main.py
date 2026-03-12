@@ -14,7 +14,6 @@ FastAPI 主应用入口文件
 """
 import sys
 import warnings
-import signal
 import asyncio
 from pathlib import Path
 
@@ -59,12 +58,7 @@ api_file_handler = logging.FileHandler("logs/api.log", encoding='utf-8')
 api_file_handler.setFormatter(JsonFormatter())
 api_logger.addHandler(api_file_handler)
 
-shutdown_event = asyncio.Event()
 shutdown_timeout = 30
-
-def signal_handler(signum, frame):
-    logger.info(f"收到关闭信号: {signal.Signals(signum).name}")
-    shutdown_event.set()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -91,8 +85,6 @@ async def lifespan(app: FastAPI):
     Yields:
         None: 控制权交还给应用
     """
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
     
     logger.info(f"启动 {settings.APP_NAME} v{settings.APP_VERSION}")
     
@@ -112,9 +104,13 @@ async def lifespan(app: FastAPI):
 
     try:
         from backend.task_executor import task_executor
+        
+        await task_executor.reset_scan_data()
+        
         task_executor.start_worker()
         logger.info("任务执行器 Worker 已启动")
         
+        # TODO: 从配置中读取是否启用任务恢复
         await task_executor.recover_pending_tasks()
         
     except Exception as e:
@@ -265,10 +261,6 @@ async def global_exception_handler(request, exc):
 from backend.api import api_router
 app.include_router(api_router, prefix="/api")
 
-# 注册子图API路由
-from backend.ai_agents.subgraphs.api import router as subgraphs_router
-app.include_router(subgraphs_router, prefix="/api")
-
 
 if __name__ == "__main__":
     """
@@ -281,5 +273,8 @@ if __name__ == "__main__":
         host=settings.HOST,
         port=settings.PORT,
         reload=False,
-        log_level=settings.LOG_LEVEL.lower()
+        log_level=settings.LOG_LEVEL.lower(),
+        access_log=True,
+        use_colors=True,
+        loop="asyncio"
     )

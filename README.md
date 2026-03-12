@@ -745,8 +745,7 @@ backend/
 │   ├── core/tests/          # 核心模块测试
 │   ├── tools/tests/         # 工具适配器测试
 │   ├── poc_system/tests/    # POC系统测试
-│   ├── analyzers/tests/     # 分析器测试
-│   └── subgraphs/tests/     # 子图测试
+│   └── analyzers/tests/     # 分析器测试
 ├── api/tests/               # API模块测试
 └── plugins/tests/           # 插件测试
 ```

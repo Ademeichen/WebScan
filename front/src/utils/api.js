@@ -199,7 +199,7 @@ export const tasksApi = {
 
   getFrozenTasks: async () => {
     return request({
-      url: `/agent/tasks/frozen`,
+      url: `/ai_agents/tasks/frozen`,
       method: 'get'
     })
   },
@@ -997,45 +997,158 @@ export const seebugAgentApi = {
 }
 
 export const aiAgentsApi = {
-  listWorkflows: async () => {
+  startScan: async (data) => {
     return request({
-      url: '/ai-agents/workflows',
-      method: 'get'
-    })
-  },
-
-  getWorkflow: async (workflowId) => {
-    return request({
-      url: `/ai-agents/workflows/${workflowId}`,
-      method: 'get'
-    })
-  },
-
-  executeWorkflow: async (data) => {
-    return request({
-      url: '/ai-agents/execute',
+      url: '/ai_agents/scan',
       method: 'post',
       data
     })
   },
 
-  getExecutionStatus: async (executionId) => {
+  scan: async (data) => {
     return request({
-      url: `/ai-agents/executions/${executionId}`,
+      url: '/ai_agents/scan',
+      method: 'post',
+      data
+    })
+  },
+
+  getTask: async (taskId) => {
+    return request({
+      url: `/ai_agents/tasks/${taskId}`,
       method: 'get'
     })
   },
 
-  cancelExecution: async (executionId) => {
+  getTasks: async (params = {}) => {
     return request({
-      url: `/ai-agents/executions/${executionId}/cancel`,
+      url: '/ai_agents/tasks',
+      method: 'get',
+      params
+    })
+  },
+
+  cancelTask: async (taskId) => {
+    return request({
+      url: `/ai_agents/tasks/${taskId}/cancel`,
       method: 'post'
     })
   },
 
-  getExecutionLogs: async (executionId) => {
+  deleteTask: async (taskId) => {
     return request({
-      url: `/ai-agents/executions/${executionId}/logs`,
+      url: `/ai_agents/tasks/${taskId}`,
+      method: 'delete'
+    })
+  },
+
+  getTools: async (category) => {
+    return request({
+      url: '/ai_agents/tools',
+      method: 'get',
+      params: category ? { category } : {}
+    })
+  },
+
+  getConfig: async () => {
+    return request({
+      url: '/ai_agents/config',
+      method: 'get'
+    })
+  },
+
+  updateConfig: async (data) => {
+    return request({
+      url: '/ai_agents/config',
+      method: 'post',
+      data
+    })
+  },
+
+  generateCode: async (data) => {
+    return request({
+      url: '/ai_agents/code/generate',
+      method: 'post',
+      data
+    })
+  },
+
+  executeCode: async (data) => {
+    return request({
+      url: '/ai_agents/code/execute',
+      method: 'post',
+      data
+    })
+  },
+
+  generateAndExecuteCode: async (data) => {
+    return request({
+      url: '/ai_agents/code/generate-and-execute',
+      method: 'post',
+      data
+    })
+  },
+
+  enhanceCapability: async (data) => {
+    return request({
+      url: '/ai_agents/capabilities/enhance',
+      method: 'post',
+      data
+    })
+  },
+
+  listCapabilities: async () => {
+    return request({
+      url: '/ai_agents/capabilities/list',
+      method: 'get'
+    })
+  },
+
+  getCapability: async (capabilityName) => {
+    return request({
+      url: `/ai_agents/capabilities/${capabilityName}`,
+      method: 'get'
+    })
+  },
+
+  deleteCapability: async (capabilityName) => {
+    return request({
+      url: `/ai_agents/capabilities/${capabilityName}`,
+      method: 'delete'
+    })
+  },
+
+  getEnvironmentInfo: async () => {
+    return request({
+      url: '/ai_agents/environment/info',
+      method: 'get'
+    })
+  },
+
+  getEnvironmentTools: async () => {
+    return request({
+      url: '/ai_agents/environment/tools',
+      method: 'get'
+    })
+  },
+
+  getToolDetail: async (toolName) => {
+    return request({
+      url: `/ai_agents/environment/tools/${toolName}`,
+      method: 'get'
+    })
+  },
+
+  getResourceUsage: async () => {
+    return request({
+      url: '/ai_agents/resources/usage',
+      method: 'get'
+    })
+  },
+
+  getResourceStatistics: async () => {
+    return request({
+      url: '/ai_agents/resources/statistics',
       method: 'get'
     })
   }
