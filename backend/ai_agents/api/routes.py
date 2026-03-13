@@ -111,7 +111,7 @@ async def start_agent_scan(
     """
     try:
         # 1. 构造扫描配置
-        scan_config = request.dict()
+        scan_config = request.model_dump()
         logger.info(f"[AI_AGENT] [INIT] 构造扫描配置 - 模块: API, 变量: scan_config, 值: {scan_config}")
         
         # 2. 更新全局配置 (如果需要)
@@ -1059,20 +1059,20 @@ async def search_poc(request: POCSearchRequest):
     try:
         logger.info(f"[POC_SEARCH] 搜索POC - CVE: {request.cve_id}")
         
-        from backend.ai_agents.poc_system.poc_integration import get_poc_integration_manager
+        from backend.ai_agents.poc_system.poc_manager import poc_manager
         
-        manager = get_poc_integration_manager()
-        poc_infos = await manager.search_poc_by_cve(request.cve_id)
+        poc_infos = await poc_manager.sync_from_seebug(keyword=request.cve_id, limit=10)
         
         data = {
             "cve_id": request.cve_id,
             "count": len(poc_infos),
             "results": [
                 {
-                    "title": poc.title,
+                    "title": poc.poc_name,
                     "description": poc.description,
                     "severity": poc.severity,
-                    "has_poc": poc.poc_download_url is not None or poc.poc_name is not None
+                    "poc_id": poc.poc_id,
+                    "source": poc.source
                 }
                 for poc in poc_infos
             ]
@@ -1102,29 +1102,33 @@ async def execute_poc(request: POCExecuteRequest):
     try:
         logger.info(f"[POC_EXECUTE] 执行POC - 目标: {request.target}, CVE: {request.cve_id}, POC: {request.poc_name}")
         
-        from backend.ai_agents.poc_system.poc_integration import get_poc_integration_manager
+        from backend.ai_agents.poc_system.poc_manager import poc_manager
+        from backend.ai_agents.poc_system.verification_engine import verification_engine
         
-        manager = get_poc_integration_manager()
-        result = await manager.execute_poc(
-            target=request.target,
-            cve_id=request.cve_id,
-            poc_name=request.poc_name,
-            timeout=request.timeout
+        poc_id = request.poc_name or request.cve_id
+        if not poc_id:
+            return APIResponse(code=400, message="必须提供 cve_id 或 poc_name")
+        
+        verification_task = await poc_manager.create_verification_task(
+            poc_id=poc_id,
+            target=request.target
         )
         
+        result = await verification_engine.execute_verification_task(verification_task)
+        
         data = {
-            "cve_id": result.cve_id,
+            "cve_id": request.cve_id,
             "target": result.target,
-            "success": result.success,
+            "success": result.error is None,
             "vulnerable": result.vulnerable,
             "poc_name": result.poc_name,
             "execution_time": result.execution_time,
             "error": result.error,
-            "details": result.details
+            "message": result.message
         }
         
         message = "POC执行完成" if result.vulnerable else "POC执行完成，未发现漏洞"
-        logger.info(f"[POC_EXECUTE] 执行完成 - 成功: {result.success}, 有漏洞: {result.vulnerable}")
+        logger.info(f"[POC_EXECUTE] 执行完成 - 成功: {result.error is None}, 有漏洞: {result.vulnerable}")
         
         return APIResponse(code=200, message=message, data=data)
         
@@ -1149,20 +1153,32 @@ async def batch_execute_poc(request: POCBatchExecuteRequest):
     try:
         logger.info(f"[POC_BATCH] 批量执行POC - 目标数: {len(request.targets)}, CVE数: {len(request.cve_ids)}")
         
-        from backend.ai_agents.poc_system.poc_integration import get_poc_integration_manager
+        from backend.ai_agents.poc_system.poc_manager import poc_manager
+        from backend.ai_agents.poc_system.verification_engine import verification_engine
         
-        manager = get_poc_integration_manager()
-        results = await manager.batch_execute_poc(request.targets, request.cve_ids)
+        verification_tasks = []
+        for target in request.targets:
+            for cve_id in request.cve_ids:
+                try:
+                    task = await poc_manager.create_verification_task(
+                        poc_id=cve_id,
+                        target=target
+                    )
+                    verification_tasks.append(task)
+                except Exception as e:
+                    logger.warning(f"[POC_BATCH] 创建任务失败: {cve_id} -> {target}, 错误: {str(e)}")
+        
+        results = await verification_engine.execute_batch_verification(verification_tasks)
         
         data = {
             "total": len(results),
-            "successful": sum(1 for r in results if r.success),
+            "successful": sum(1 for r in results if r.error is None),
             "vulnerable": sum(1 for r in results if r.vulnerable),
             "results": [
                 {
-                    "cve_id": r.cve_id,
+                    "cve_id": r.poc_id,
                     "target": r.target,
-                    "success": r.success,
+                    "success": r.error is None,
                     "vulnerable": r.vulnerable,
                     "execution_time": r.execution_time
                 }

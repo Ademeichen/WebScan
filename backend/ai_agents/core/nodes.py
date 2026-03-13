@@ -14,7 +14,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel
 
-from ..core.state import AgentState
+from .state import AgentState
 from ..tools.registry import registry
 from ..tools.adapters import PluginAdapter, POCAdapter
 from ..agent_config import agent_config
@@ -156,27 +156,38 @@ class TaskPlanningNode:
         
         context_info = ""
         if state.target_context:
-            # 使用双花括号来转义花括号，避免被ChatPromptTemplate错误解析
-            context_info = f"\n目标上下文: {str(state.target_context).replace('{', '{{').replace('}', '}}')}"
+            context_info = f"\n目标上下文: {str(state.target_context)}"
         
-        system_prompt = """
-        你是Web安全扫描专家,需要为目标规划扫描任务。
-        
-        可用工具列表:
-        {tools}
-        
-        规划规则:
-        1. 先执行基础信息收集类任务(baseinfo、portscan、waf_detect、cdn_detect、cms_identify)
-        2. 根据基础信息结果选择POC验证任务(如CMS为WordPress则跳过WebLogic POC)
-        3. 避免无意义的POC扫描
-        4. 为了确保全面性，请默认包含 'awvs' 任务，除非用户明确要求"快速扫描"或"轻量级扫描"
-        5. 返回格式为JSON数组,仅包含任务名称
-        6. 任务优先级:AWVS > POC验证 > 端口扫描 > 基础信息收集
-        """
+        system_prompt = """你是Web安全扫描专家，负责为目标规划扫描任务。
+
+可用工具列表:
+{tools}
+
+任务规划流程:
+1. 信息收集阶段: baseinfo、portscan、waf_detect、cdn_detect、cms_identify
+2. 漏洞扫描阶段: awvs、POC验证（weblogic、struts2、tomcat等）
+3. 结果分析阶段: vulnerability_analysis、report_generation
+
+规划规则:
+1. 优先执行信息收集任务，获取目标基础信息
+2. 根据CMS类型选择相关POC，避免无关POC扫描
+3. 默认包含awvs任务，除非用户明确要求快速扫描
+4. 返回JSON格式，包含plan（任务列表）和reasoning（规划理由）两个字段
+
+输出格式:
+{{
+  "plan": ["baseinfo", "portscan", "awvs", "weblogic"],
+  "reasoning": "规划理由说明"
+}}"""
         
         user_prompt = f"目标: {state.target}{context_info}"
         
         try:
+            logger.info(f"[{state.task_id}] 📝 LLM规划输入 - 目标: {state.target}")
+            logger.info(f"[{state.task_id}] 📝 LLM规划输入 - 可用工具: {tools_desc}")
+            if context_info:
+                logger.info(f"[{state.task_id}] 📝 LLM规划输入 - 上下文: {context_info}")
+            
             prompt = ChatPromptTemplate.from_messages([
                 ("system", system_prompt),
                 ("human", user_prompt)
@@ -185,17 +196,21 @@ class TaskPlanningNode:
             chain = prompt | self.llm | JsonOutputParser(pydantic_object=PlanningResponse)
             result = await chain.ainvoke({"tools": tools_desc})
             
-            # 检查result的类型并提取任务列表
+            logger.info(f"[{state.task_id}] 📝 LLM规划原始结果: {result}")
+            
             tasks = self._extract_tasks_from_result(result)
             
             if tasks:
-                logger.info(f"LLM规划结果: {tasks}")
+                logger.info(f"[{state.task_id}] ✅ LLM规划成功 - 任务列表: {tasks}")
+                if isinstance(result, dict) and 'reasoning' in result:
+                    logger.info(f"[{state.task_id}] 📝 LLM规划理由: {result['reasoning']}")
                 return tasks
             else:
+                logger.warning(f"[{state.task_id}] ⚠️ LLM规划结果无效，切换到规则化规划")
                 raise ValueError("无法从LLM规划结果中提取有效任务列表")
                 
         except Exception as e:
-            logger.error(f"LLM规划失败,使用规则化规划: {str(e)}")
+            logger.error(f"[{state.task_id}] ❌ LLM规划失败: {str(e)}，切换到规则化规划")
             return await self._rule_based_planning(state)
     
     def _extract_tasks_from_result(self, result: Any) -> List[str]:

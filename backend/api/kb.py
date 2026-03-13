@@ -84,8 +84,16 @@ class SeebugPOCDownloadRequest(BaseModel):
     
     Attributes:
         ssvid: POC 的 SSVID
+        save_to_local: 是否保存到本地目录
+        category: POC 分类目录
+        cve_id: CVE 编号
+        vuln_name: 漏洞名称
     """
     ssvid: int
+    save_to_local: bool = False
+    category: str = "seebug"
+    cve_id: Optional[str] = None
+    vuln_name: Optional[str] = None
 
 class SeebugAPIResponse(BaseModel):
     """
@@ -236,7 +244,7 @@ async def search_seebug_poc(keyword: str, page: int = 1, page_size: int = 10) ->
     response = await global_seebug_client.search_poc(keyword, page, page_size)
     
     if response.success and response.data:
-        pocs = response.data.get('data', [])
+        pocs = response.data.get('list', [])
         logger.info(f"从 Seebug 搜索到 {len(pocs)} 个POC")
         return pocs
     else:
@@ -344,7 +352,12 @@ async def download_poc(request: SeebugPOCDownloadRequest):
     下载 Seebug POC 代码
     
     Args:
-        request: 下载请求参数
+        request: 下载请求参数，包含:
+            - ssvid: POC 的 SSVID
+            - save_to_local: 是否保存到本地目录（默认 False）
+            - category: POC 分类目录（默认 seebug）
+            - cve_id: CVE 编号（可选）
+            - vuln_name: 漏洞名称（可选）
         
     Returns:
         Dict: 包含 POC 代码的响应
@@ -352,11 +365,13 @@ async def download_poc(request: SeebugPOCDownloadRequest):
     Examples:
         >>> POST /kb/seebug/poc/download
         >>> {
-        ...     "ssvid": 97343
+        ...     "ssvid": 97343,
+        ...     "save_to_local": true,
+        ...     "category": "weblogic",
+        ...     "cve_id": "CVE-2020-2551"
         ... }
     """
     try:
-        # 验证 API Key
         if not await validate_seebug_apikey(settings.SEEBUG_API_KEY):
             return {
                 "code": 401,
@@ -364,7 +379,6 @@ async def download_poc(request: SeebugPOCDownloadRequest):
                 "data": None
             }
         
-        # 下载 POC
         poc_code = await download_seebug_poc(request.ssvid)
         
         if poc_code is None:
@@ -374,15 +388,35 @@ async def download_poc(request: SeebugPOCDownloadRequest):
                 "data": None
             }
         
+        response_data = {
+            "ssvid": request.ssvid,
+            "poc_code": poc_code
+        }
+        
+        if request.save_to_local:
+            from backend.ai_agents.poc_system.poc_manager import poc_manager
+            
+            save_result = await poc_manager.save_poc_to_local(
+                ssvid=request.ssvid,
+                poc_code=poc_code,
+                category=request.category,
+                cve_id=request.cve_id,
+                vuln_name=request.vuln_name
+            )
+            
+            if save_result.get("success"):
+                response_data["saved_to"] = save_result.get("file_path")
+                response_data["poc_id"] = save_result.get("poc_id")
+                logger.info(f"POC 已保存到本地: {save_result.get('file_path')}")
+            else:
+                logger.warning(f"POC 保存失败: {save_result.get('error')}")
+        
         logger.info(f"下载 Seebug POC 成功: SSVID={request.ssvid}")
         
         return {
             "code": 200,
             "message": "下载成功",
-            "data": {
-                "ssvid": request.ssvid,
-                "poc_code": poc_code
-            }
+            "data": response_data
         }
     except Exception as e:
         logger.error(f"下载 Seebug POC 失败: {e}")

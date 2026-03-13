@@ -50,35 +50,6 @@ export function request(config) {
 }
 
 export const scanApi = {
-  startScan: async (data) => {
-    return request({
-      url: '/scan/start',
-      method: 'post',
-      data
-    })
-  },
-
-  getScanStatus: async (scanId) => {
-    return request({
-      url: `/scan/status/${scanId}`,
-      method: 'get'
-    })
-  },
-
-  getScanResults: async (scanId) => {
-    return request({
-      url: `/scan/results/${scanId}`,
-      method: 'get'
-    })
-  },
-
-  stopScan: async (scanId) => {
-    return request({
-      url: `/scan/stop/${scanId}`,
-      method: 'post'
-    })
-  },
-
   portScan: async (data) => {
     return request({
       url: '/scan/port-scan',
@@ -133,6 +104,46 @@ export const scanApi = {
       method: 'post',
       data
     })
+  },
+
+  webWeight: async (data) => {
+    return request({
+      url: '/scan/web-weight',
+      method: 'post',
+      data
+    })
+  },
+
+  ipLocating: async (data) => {
+    return request({
+      url: '/scan/ip-locating',
+      method: 'post',
+      data
+    })
+  },
+
+  cdnCheck: async (data) => {
+    return request({
+      url: '/scan/cdn-check',
+      method: 'post',
+      data
+    })
+  },
+
+  wafCheck: async (data) => {
+    return request({
+      url: '/scan/waf-check',
+      method: 'post',
+      data
+    })
+  },
+
+  whatCms: async (data) => {
+    return request({
+      url: '/scan/what-cms',
+      method: 'post',
+      data
+    })
   }
 }
 
@@ -170,7 +181,7 @@ export const tasksApi = {
 
   deleteTask: async (taskId) => {
     return request({
-      url: `/agent/task/${taskId}`,
+      url: `/tasks/${taskId}`,
       method: 'delete'
     })
   },
@@ -184,23 +195,16 @@ export const tasksApi = {
 
   cancelTask: async (taskId) => {
     return request({
-      url: `/agent/task/${taskId}/abort`,
+      url: `/tasks/${taskId}/cancel`,
       method: 'post'
     })
   },
 
   getTaskLogs: async (taskId, params = {}) => {
     return request({
-      url: `/agent/task/${taskId}/logs`,
+      url: `/tasks/${taskId}/logs`,
       method: 'get',
       params
-    })
-  },
-
-  getFrozenTasks: async () => {
-    return request({
-      url: `/ai_agents/tasks/frozen`,
-      method: 'get'
     })
   },
 
@@ -215,6 +219,13 @@ export const tasksApi = {
   getStatisticsOverview: async () => {
     return request({
       url: '/tasks/statistics/overview',
+      method: 'get'
+    })
+  },
+
+  getFrozenTasks: async () => {
+    return request({
+      url: '/tasks/frozen',
       method: 'get'
     })
   }
@@ -244,13 +255,6 @@ export const reportsApi = {
     })
   },
 
-  getReportDetail: async (reportId) => {
-    return request({
-      url: `/reports/${reportId}`,
-      method: 'get'
-    })
-  },
-
   updateReport: async (reportId, data) => {
     return request({
       url: `/reports/${reportId}`,
@@ -259,7 +263,7 @@ export const reportsApi = {
     })
   },
 
-  delete: async (reportId) => {
+  deleteReport: async (reportId) => {
     return request({
       url: `/reports/${reportId}`,
       method: 'delete'
@@ -270,8 +274,29 @@ export const reportsApi = {
     return request({
       url: `/reports/${reportId}/export`,
       method: 'get',
-      params: { format },
-      responseType: format === 'html' ? 'blob' : 'json'
+      params: { format }
+    })
+  },
+
+  regenerateReport: async (reportId) => {
+    return request({
+      url: `/reports/${reportId}/regenerate`,
+      method: 'post'
+    })
+  },
+
+  previewReport: async (reportId) => {
+    return request({
+      url: `/reports/${reportId}/preview`,
+      method: 'get'
+    })
+  },
+
+  compareReports: async (data) => {
+    return request({
+      url: '/reports/compare',
+      method: 'post',
+      data
     })
   }
 }
@@ -403,13 +428,6 @@ export const pocApi = {
     })
   },
 
-  getPOCResults: async (taskId) => {
-    return request({
-      url: `/tasks/${taskId}/results`,
-      method: 'get'
-    })
-  },
-
   getPOCInfo: async (pocType) => {
     return request({
       url: `/poc/info/${pocType}`,
@@ -417,11 +435,10 @@ export const pocApi = {
     })
   },
 
-  scanSinglePOC: async (pocType, target, timeout = 10) => {
+  downloadPOC: async (pocType) => {
     return request({
-      url: `/poc/scan/${pocType}`,
-      method: 'post',
-      params: { target, timeout }
+      url: `/poc/download/${pocType}`,
+      method: 'get'
     })
   }
 }
@@ -453,7 +470,7 @@ export const awvsApi = {
     return request({
       url: '/awvs/scans',
       method: 'get',
-      params: { target_id: targetId }
+      params: targetId ? { target_id: targetId } : {}
     })
   },
 
@@ -465,31 +482,60 @@ export const awvsApi = {
     })
   },
 
-  getScanStatus: async (scanId) => {
+  getVulnerabilityDetail: async (vulnId) => {
     return request({
-      url: `/awvs/scans/${scanId}`,
+      url: `/awvs/vulnerability/${vulnId}`,
       method: 'get'
     })
   },
 
-  stopScan: async (scanId) => {
+  getVulnerabilitiesRank: async () => {
     return request({
-      url: `/awvs/scans/${scanId}/stop`,
-      method: 'post'
+      url: '/awvs/vulnerabilities/rank',
+      method: 'get'
     })
   },
 
-  getVulnerabilities: async (params = {}) => {
+  getVulnerabilitiesStats: async () => {
     return request({
-      url: '/awvs/vulnerabilities',
-      method: 'get',
-      params
+      url: '/awvs/vulnerabilities/stats',
+      method: 'get'
     })
   },
 
-  getVulnerabilityDetail: async (vulnId) => {
+  getMiddlewarePOCList: async () => {
     return request({
-      url: `/awvs/vulnerability/${vulnId}`,
+      url: '/awvs/middleware/poc-list',
+      method: 'get'
+    })
+  },
+
+  getMiddlewareScans: async () => {
+    return request({
+      url: '/awvs/middleware/scans',
+      method: 'get'
+    })
+  },
+
+  middlewareScan: async (data) => {
+    return request({
+      url: '/awvs/middleware/scan',
+      method: 'post',
+      data
+    })
+  },
+
+  middlewareScanStart: async (data) => {
+    return request({
+      url: '/awvs/middleware/scan/start',
+      method: 'post',
+      data
+    })
+  },
+
+  healthCheck: async () => {
+    return request({
+      url: '/awvs/health',
       method: 'get'
     })
   }
@@ -504,86 +550,60 @@ export const aiApi = {
     })
   },
 
-  analyzeVulnerability: async (data) => {
+  getChatInstances: async () => {
     return request({
-      url: '/ai/analyze',
+      url: '/ai/chat/instances',
+      method: 'get'
+    })
+  },
+
+  createChatInstance: async (data) => {
+    return request({
+      url: '/ai/chat/instances',
       method: 'post',
       data
     })
   },
 
-  generatePOC: async (data) => {
+  getChatInstance: async (instanceId) => {
     return request({
-      url: '/ai/poc/generate',
-      method: 'post',
-      data
-    })
-  }
-}
-
-export const agentApi = {
-  listAgents: async () => {
-    return request({
-      url: '/agent/list',
+      url: `/ai/chat/instances/${instanceId}`,
       method: 'get'
     })
   },
 
-  getAgentStatus: async (agentId) => {
+  deleteChatInstance: async (instanceId) => {
     return request({
-      url: `/agent/${agentId}/status`,
-      method: 'get'
-    })
-  },
-
-  executeAgent: async (data) => {
-    return request({
-      url: '/agent/execute',
-      method: 'post',
-      data
-    })
-  },
-
-  getAgentTypes: async () => {
-    return request({
-      url: '/agent/types',
-      method: 'get'
-    })
-  },
-
-  getAgentDetail: async (agentId) => {
-    return request({
-      url: `/agent/${agentId}`,
-      method: 'get'
-    })
-  },
-
-  createAgent: async (data) => {
-    return request({
-      url: '/agent/create',
-      method: 'post',
-      data
-    })
-  },
-
-  updateAgent: async (agentId, data) => {
-    return request({
-      url: `/agent/${agentId}`,
-      method: 'put',
-      data
-    })
-  },
-
-  deleteAgent: async (agentId) => {
-    return request({
-      url: `/agent/${agentId}`,
+      url: `/ai/chat/instances/${instanceId}`,
       method: 'delete'
+    })
+  },
+
+  getChatMessages: async (instanceId) => {
+    return request({
+      url: `/ai/chat/instances/${instanceId}/messages`,
+      method: 'get'
+    })
+  },
+
+  sendChatMessage: async (instanceId, data) => {
+    return request({
+      url: `/ai/chat/instances/${instanceId}/messages`,
+      method: 'post',
+      data
+    })
+  },
+
+  closeChatInstance: async (instanceId) => {
+    return request({
+      url: `/ai/chat/instances/${instanceId}/close`,
+      method: 'post'
     })
   }
 }
 
 export const kbApi = {
-  search: async (params) => {
+  getVulnerabilities: async (params) => {
     return request({
       url: '/kb/vulnerabilities',
       method: 'get',
@@ -591,34 +611,10 @@ export const kbApi = {
     })
   },
 
-  addKnowledge: async (data) => {
-    return request({
-      url: '/kb/vulnerabilities',
-      method: 'post',
-      data
-    })
-  },
-
   getKnowledge: async (knowledgeId) => {
-    const response = await request({
+    return request({
       url: `/kb/vulnerabilities/${knowledgeId}`,
       method: 'get'
-    })
-    return { success: true, data: response, message: '获取成功' }
-  },
-
-  updateKnowledge: async (knowledgeId, data) => {
-    return request({
-      url: `/kb/vulnerabilities/${knowledgeId}`,
-      method: 'put',
-      data
-    })
-  },
-
-  deleteKnowledge: async (knowledgeId) => {
-    return request({
-      url: `/kb/vulnerabilities/${knowledgeId}`,
-      method: 'delete'
     })
   },
 
@@ -637,11 +633,17 @@ export const kbApi = {
     })
   },
 
-  downloadPOC: async (ssvid) => {
+  downloadPOC: async (ssvid, options = {}) => {
     return request({
       url: '/kb/seebug/poc/download',
       method: 'post',
-      data: { ssvid }
+      data: { 
+        ssvid,
+        save_to_local: options.save_to_local || false,
+        category: options.category || 'seebug',
+        cve_id: options.cve_id || null,
+        vuln_name: options.vuln_name || null
+      }
     })
   },
 
@@ -649,24 +651,6 @@ export const kbApi = {
     return request({
       url: `/kb/seebug/poc/${ssvid}/detail`,
       method: 'get'
-    })
-  }
-}
-
-export const pocGenApi = {
-  generate: async (data) => {
-    return request({
-      url: '/poc_gen/generate',
-      method: 'post',
-      data
-    })
-  },
-
-  validate: async (data) => {
-    return request({
-      url: '/poc_gen/validate',
-      method: 'post',
-      data
     })
   }
 }
@@ -766,45 +750,7 @@ export const notificationsApi = {
   }
 }
 
-export const vulnerabilitiesApi = {
-  getVulnerabilities: async (params = {}) => {
-    return request({
-      url: '/vulnerabilities/',
-      method: 'get',
-      params
-    })
-  },
 
-  getVulnerability: async (vulnId) => {
-    return request({
-      url: `/vulnerabilities/${vulnId}`,
-      method: 'get'
-    })
-  },
-
-  updateVulnerability: async (vulnId, data) => {
-    return request({
-      url: `/vulnerabilities/${vulnId}`,
-      method: 'put',
-      data
-    })
-  },
-
-  deleteVulnerability: async (vulnId) => {
-    return request({
-      url: `/vulnerabilities/${vulnId}`,
-      method: 'delete'
-    })
-  },
-
-  getStatistics: async (params = {}) => {
-    return request({
-      url: '/vulnerabilities/statistics',
-      method: 'get',
-      params
-    })
-  }
-}
 
 export const pocVerificationApi = {
   createTask: async (data) => {
@@ -967,24 +913,8 @@ export const seebugAgentApi = {
 
   getVulnerabilityDetail: async (ssvid) => {
     return request({
-      url: `/seebug/vulnerability/${ssvid}`,
+      url: `/seebug/poc/${ssvid}/detail`,
       method: 'get'
-    })
-  },
-
-  generatePoc: async (data) => {
-    return request({
-      url: '/seebug/generate-poc',
-      method: 'post',
-      data
-    })
-  },
-
-  generatePocBySsvid: async (ssvid, filename = null) => {
-    return request({
-      url: `/seebug/generate-poc/${ssvid}`,
-      method: 'get',
-      params: filename ? { filename } : {}
     })
   },
 
@@ -1025,6 +955,13 @@ export const aiAgentsApi = {
       url: '/ai_agents/tasks',
       method: 'get',
       params
+    })
+  },
+
+  getFrozenTasks: async () => {
+    return request({
+      url: '/ai_agents/tasks/frozen',
+      method: 'get'
     })
   },
 
@@ -1151,6 +1088,51 @@ export const aiAgentsApi = {
       url: '/ai_agents/resources/statistics',
       method: 'get'
     })
+  },
+
+  getWorkflowMetrics: async () => {
+    return request({
+      url: '/ai_agents/workflow/metrics',
+      method: 'get'
+    })
+  },
+
+  executePOC: async (data) => {
+    return request({
+      url: '/ai_agents/poc/execute',
+      method: 'post',
+      data
+    })
+  },
+
+  batchExecutePOC: async (data) => {
+    return request({
+      url: '/ai_agents/poc/batch-execute',
+      method: 'post',
+      data
+    })
+  },
+
+  searchPOC: async (data) => {
+    return request({
+      url: '/ai_agents/poc/search',
+      method: 'post',
+      data
+    })
+  },
+
+  updateTaskPluginHeartbeat: async (taskId, pluginId) => {
+    return request({
+      url: `/ai_agents/tasks/${taskId}/plugin/${pluginId}/heartbeat`,
+      method: 'put'
+    })
+  },
+
+  finishTaskPlugin: async (taskId, pluginId) => {
+    return request({
+      url: `/ai_agents/tasks/${taskId}/plugin/${pluginId}/finish`,
+      method: 'post'
+    })
   }
 }
 
@@ -1163,12 +1145,9 @@ export default {
   poc: pocApi,
   awvs: awvsApi,
   ai: aiApi,
-  agent: agentApi,
   kb: kbApi,
-  pocGen: pocGenApi,
   user: userApi,
   notifications: notificationsApi,
-  vulnerabilities: vulnerabilitiesApi,
   pocVerification: pocVerificationApi,
   pocFiles: pocFilesApi,
   seebugAgent: seebugAgentApi,

@@ -139,7 +139,9 @@ class SeebugAPIClient:
             page_size: 每页数量
 
         Returns:
-            APIResponse: 搜索结果
+            APIResponse: 搜索结果，data字段包含:
+            - list: POC列表
+            - total: 总数
         """
         cache_key = f"search_poc_{keyword}_{page}_{page_size}"
 
@@ -154,8 +156,23 @@ class SeebugAPIClient:
         try:
             result = self.seebug_client.search_poc(keyword, page, page_size)
             success = result.get("status") == "success"
-            data = result.get("data", {})
+            raw_data = result.get("data", {})
             message = result.get("msg", "")
+            
+            if isinstance(raw_data, dict):
+                poc_list = raw_data.get("list", [])
+                total = raw_data.get("total", len(poc_list))
+            elif isinstance(raw_data, list):
+                poc_list = raw_data
+                total = len(poc_list)
+            else:
+                poc_list = []
+                total = 0
+            
+            data = {
+                "list": poc_list,
+                "total": total
+            }
 
             response = APIResponse(
                 success=success,
@@ -166,7 +183,7 @@ class SeebugAPIClient:
             )
 
             if success:
-                logger.info(f"✅ POC搜索成功: 找到{data.get('total', 0)}个结果")
+                logger.info(f"✅ POC搜索成功: 找到{total}个结果")
                 if self.enable_cache:
                     import copy
                     self.cache[cache_key] = (copy.deepcopy(response), datetime.now())
@@ -274,7 +291,9 @@ class SeebugAPIClient:
             ssvid: POC的SSVID
 
         Returns:
-            APIResponse: 下载结果
+            APIResponse: 下载结果，data字段包含:
+            - code: POC代码
+            - ssvid: SSVID
         """
         cache_key = f"download_poc_{ssvid}"
 
@@ -289,8 +308,17 @@ class SeebugAPIClient:
         try:
             result = self.seebug_client.download_poc(ssvid)
             success = result.get("status") == "success"
-            data = result.get("data", {})
+            raw_data = result.get("data", {})
             message = result.get("msg", "")
+            
+            poc_code = None
+            if isinstance(raw_data, dict):
+                poc_code = raw_data.get("poc") or raw_data.get("code", "")
+            
+            data = {
+                "code": poc_code,
+                "ssvid": ssvid
+            }
 
             response = APIResponse(
                 success=success,
@@ -410,145 +438,5 @@ class SeebugAPIClient:
             "cache_stats": self.get_cache_stats(),
             "seebug_agent_available": bool(self.seebug_client)
         }
-    
-    async def generate_poc_from_seebug(
-        self,
-        ssvid: str
-    ) -> APIResponse:
-        """
-        从Seebug生成POC代码
-
-        Args:
-            ssvid: 漏洞的SSVID
-
-        Returns:
-            APIResponse: 生成结果
-        """
-        logger.info(f"🤖 开始从Seebug生成POC,SSVID: {ssvid}")
-
-        try:
-            # 检查Seebug Agent是否可用
-            if not self.seebug_client:
-                return APIResponse(
-                    success=False,
-                    message="Seebug Agent不可用",
-                    status_code=503
-                )
-            
-            # 获取漏洞详情
-            detail_result = self.seebug_client.get_poc_detail(ssvid)
-            
-            if detail_result.get("status") != "success":
-                return APIResponse(
-                    success=False,
-                    message=detail_result.get("msg", "获取漏洞详情失败"),
-                    status_code=404
-                )
-            
-            vul_data = detail_result.get("data", {})
-            
-            # 生成POC代码
-            from backend.utils.seebug_utils import seebug_utils
-            generator = seebug_utils.get_generator()
-            
-            if not generator:
-                return APIResponse(
-                    success=False,
-                    message="POC生成器不可用",
-                    status_code=503
-                )
-            
-            poc_code = generator.generate_poc(vul_data)
-            
-            if not poc_code:
-                return APIResponse(
-                    success=False,
-                    message="POC生成失败",
-                    status_code=500
-                )
-            
-            logger.info(f"✅ POC生成成功,代码长度: {len(poc_code)}")
-            
-            return APIResponse(
-                success=True,
-                data={
-                    "poc_code": poc_code,
-                    "vulnerability": vul_data
-                },
-                message="POC生成成功"
-            )
-
-        except Exception as e:
-            logger.error(f"❌ 从Seebug生成POC异常: {str(e)}")
-            return APIResponse(
-                success=False,
-                message=f"生成POC异常: {str(e)}",
-                status_code=500
-            )
-    
-    async def search_and_generate(
-        self,
-        keyword: str,
-        selection: int = 0
-    ) -> APIResponse:
-        """
-        搜索漏洞并生成POC
-
-        Args:
-            keyword: 搜索关键词
-            selection: 选择的结果索引
-
-        Returns:
-            APIResponse: 生成结果
-        """
-        logger.info(f"🔍 开始搜索并生成POC,关键词: {keyword}, 选择: {selection}")
-
-        try:
-            # 检查Seebug Agent是否可用
-            if not self.seebug_client:
-                return APIResponse(
-                    success=False,
-                    message="Seebug Agent不可用",
-                    status_code=503
-                )
-            
-            # 使用Seebug Agent搜索并生成
-            from backend.utils.seebug_utils import seebug_utils
-            agent = seebug_utils.get_agent()
-            
-            if not agent:
-                return APIResponse(
-                    success=False,
-                    message="Seebug Agent不可用",
-                    status_code=503
-                )
-            
-            result = agent.search_and_generate(keyword, selection)
-            
-            success = result.get("success", False)
-            
-            if success:
-                logger.info(f"✅ 搜索并生成POC成功,路径: {result.get('poc_path')}")
-                return APIResponse(
-                    success=True,
-                    data=result,
-                    message="搜索并生成POC成功"
-                )
-            else:
-                message = result.get("message", "操作失败")
-                logger.warning(f"⚠️ 搜索并生成POC失败: {message}")
-                return APIResponse(
-                    success=False,
-                    message=message,
-                    status_code=404
-                )
-
-        except Exception as e:
-            logger.error(f"❌ 搜索并生成POC异常: {str(e)}")
-            return APIResponse(
-                success=False,
-                message=f"操作异常: {str(e)}",
-                status_code=500
-            )
 
 global_seebug_client = SeebugAPIClient()

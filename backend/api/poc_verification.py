@@ -13,7 +13,6 @@ from pydantic import BaseModel, Field
 from backend.models import POCVerificationTask, POCVerificationResult
 from backend.ai_agents.poc_system import (
     poc_manager,
-
     verification_engine,
     result_analyzer,
     report_generator

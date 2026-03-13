@@ -200,10 +200,13 @@ class ScanAgentGraph:
         self.analysis_node = VulnerabilityAnalysisNode()
         self.report_node = ReportGenerationNode()
         
-        # 构建图
+        # 构建图（保留用于兼容性，但默认使用子图顺序执行）
         self.graph = self._build_graph()
         
-        logger.info("✅ 扫描Agent图构建完成")
+        # 设置默认执行模式：子图顺序执行（更灵活、更易调试）
+        self.use_subgraph_execution = True
+        
+        logger.info("✅ 扫描Agent图构建完成（默认使用子图顺序执行模式）")
     
     def _build_graph(self) -> StateGraph:
         """
@@ -322,227 +325,7 @@ class ScanAgentGraph:
             reason="所有任务已完成"
         )
         return "analyze"
-    
-    def _should_continue(self, state: AgentState) -> Literal["continue", "analyze"]:
-        """
-        判断是否继续执行工具
-        
-        Args:
-            state: Agent当前状态
-            
-        Returns:
-            Literal["continue", "analyze"]: 下一步节点名称
-        """
-        if state.is_complete or not state.planned_tasks:
-            logger.info(f"[{state.task_id}] 📋 所有任务已完成,进入分析阶段")
-            return "analyze"
-        else:
-            logger.info(f"[{state.task_id}] 🔄 继续执行工具: {state.current_task}")
-            return "continue"
-    
-    def _decide_scan_type(self, state: AgentState) -> Literal["fixed_tool", "custom_code", "enhance_first"]:
-        """
-        智能决策:选择扫描类型(核心分支逻辑)
 
-        根据环境信息和目标特征,智能决定使用固定工具扫描、
-        生成自定义代码扫描,还是先增强功能再扫描。
-
-        Args:
-            state: Agent当前状态
-
-        Returns:
-            Literal["fixed_tool", "custom_code", "enhance_first"]: 扫描类型
-        """
-        target_context = state.target_context
-
-        _log_variable_value(state.task_id, "_decide_scan_type", "target_context_keys", list(target_context.keys()))
-        _log_variable_value(state.task_id, "_decide_scan_type", "planned_tasks", state.planned_tasks)
-
-        # 1. 需要功能增强(比如依赖缺失)→先增强
-        if target_context.get("need_capability_enhancement"):
-            logger.info(f"[{state.task_id}] 🚀 需要功能增强,优先执行增强节点")
-            _log_edge_traversal(
-                task_id=state.task_id,
-                from_node="intelligent_decision",
-                to_node="capability_enhancement",
-                condition="need_capability_enhancement=True"
-            )
-            _log_decision(
-                task_id=state.task_id,
-                decision_type="SCAN_TYPE",
-                decision="enhance_first",
-                reason="需要功能增强"
-            )
-            return "enhance_first"
-
-        # 2. 需要自定义扫描→生成代码
-        elif target_context.get("need_custom_scan"):
-            logger.info(f"[{state.task_id}] 🔧 需要自定义扫描,执行代码生成")
-            _log_edge_traversal(
-                task_id=state.task_id,
-                from_node="intelligent_decision",
-                to_node="code_generation",
-                condition="need_custom_scan=True"
-            )
-            _log_decision(
-                task_id=state.task_id,
-                decision_type="SCAN_TYPE",
-                decision="custom_code",
-                reason="需要自定义扫描"
-            )
-            return "custom_code"
-
-        # 3. 默认使用现有工具
-        else:
-            logger.info(f"[{state.task_id}] 🛠️ 使用现有工具执行扫描")
-            _log_edge_traversal(
-                task_id=state.task_id,
-                from_node="intelligent_decision",
-                to_node="tool_execution",
-                condition="default"
-            )
-            _log_decision(
-                task_id=state.task_id,
-                decision_type="SCAN_TYPE",
-                decision="fixed_tool",
-                reason="使用现有工具"
-            )
-            return "fixed_tool"
-    
-    def _code_execution_result(self, state: AgentState) -> Literal["success", "need_enhance"]:
-        """
-        判断代码执行结果:成功→继续流程,失败→触发功能补充
-        
-        根据代码执行结果决定是继续验证结果还是触发功能补充。
-        
-        Args:
-            state: Agent当前状态
-            
-        Returns:
-            Literal["success", "need_enhance"]: 下一步操作
-        """
-        execution_result = state.tool_results.get("code_execution", {})
-        
-        _log_variable_value(state.task_id, "_code_execution_result", "execution_status", execution_result.get("status"))
-        _log_variable_value(state.task_id, "_code_execution_result", "enhancement_retry_count", state.enhancement_retry_count)
-        _log_data_flow(
-            task_id=state.task_id,
-            flow_type="input",
-            source="code_execution",
-            data=execution_result,
-            description="代码执行结果"
-        )
-        
-        if execution_result.get("status") == "success":
-            logger.info(f"[{state.task_id}] ✅ 代码执行成功,继续验证结果")
-            _log_edge_traversal(
-                task_id=state.task_id,
-                from_node="code_execution",
-                to_node="result_verification",
-                condition="execution_success"
-            )
-            _log_decision(
-                task_id=state.task_id,
-                decision_type="CODE_EXECUTION",
-                decision="success",
-                reason="代码执行成功"
-            )
-            # 重置增强重试计数
-            old_count = state.enhancement_retry_count
-            state.reset_enhancement_retry()
-            _log_state_change(state.task_id, "enhancement_retry_count", old_count, 0)
-            return "success"
-        else:
-            # 检查重试次数,防止无限循环
-            if state.enhancement_retry_count >= 3:
-                logger.error(f"[{state.task_id}] ❌ 代码执行失败且达到最大增强重试次数,停止增强")
-                _log_edge_traversal(
-                    task_id=state.task_id,
-                    from_node="code_execution",
-                    to_node="result_verification",
-                    condition="max_retries_reached"
-                )
-                _log_decision(
-                    task_id=state.task_id,
-                    decision_type="CODE_EXECUTION",
-                    decision="max_retries",
-                    reason=f"达到最大增强重试次数(3), 错误: {execution_result.get('error', 'unknown')}"
-                )
-                return "success"  # 视为"完成"当前阶段，进入结果验证
-            
-            # 执行失败时,标记需要功能增强
-            logger.warning(f"[{state.task_id}] ⚠️ 代码执行失败,需要功能增强 (重试 {state.enhancement_retry_count + 1}/3)")
-            _log_edge_traversal(
-                task_id=state.task_id,
-                from_node="code_execution",
-                to_node="capability_enhancement",
-                condition=f"execution_failed, retry={state.enhancement_retry_count + 1}/3"
-            )
-            _log_decision(
-                task_id=state.task_id,
-                decision_type="CODE_EXECUTION",
-                decision="need_enhance",
-                reason=f"代码执行失败: {execution_result.get('error', 'unknown')}"
-            )
-            state.target_context["need_capability_enhancement"] = True
-            state.target_context["capability_requirement"] = "自动安装代码执行所需依赖"
-            state.increment_enhancement_retry()
-            _log_state_change(state.task_id, "enhancement_retry_count", state.enhancement_retry_count - 1, state.enhancement_retry_count)
-            return "need_enhance"
-    
-    def _capability_enhancement_result(self, state: AgentState) -> Literal["success", "failed"]:
-        """
-        判断功能补充结果:成功→重试代码执行,失败→继续验证结果
-        
-        Args:
-            state: Agent当前状态
-            
-        Returns:
-            Literal["success", "failed"]: 下一步操作
-        """
-        enhancement_result = state.tool_results.get("capability_enhancement", {})
-        
-        _log_variable_value(state.task_id, "_capability_enhancement_result", "enhancement_status", enhancement_result.get("status"))
-        _log_variable_value(state.task_id, "_capability_enhancement_result", "installed_packages", enhancement_result.get("installed_packages", []))
-        _log_data_flow(
-            task_id=state.task_id,
-            flow_type="input",
-            source="capability_enhancement",
-            data=enhancement_result,
-            description="功能增强结果"
-        )
-        
-        if enhancement_result.get("status") == "success":
-            logger.info(f"[{state.task_id}] ✅ 功能补充成功,重试代码执行")
-            _log_edge_traversal(
-                task_id=state.task_id,
-                from_node="capability_enhancement",
-                to_node="code_execution",
-                condition="enhancement_success"
-            )
-            _log_decision(
-                task_id=state.task_id,
-                decision_type="CAPABILITY_ENHANCEMENT",
-                decision="success",
-                reason="功能补充成功"
-            )
-            return "success"
-        else:
-            logger.warning(f"[{state.task_id}] ⚠️ 功能补充失败,继续验证结果")
-            _log_edge_traversal(
-                task_id=state.task_id,
-                from_node="capability_enhancement",
-                to_node="result_verification",
-                condition="enhancement_failed"
-            )
-            _log_decision(
-                task_id=state.task_id,
-                decision_type="CAPABILITY_ENHANCEMENT",
-                decision="failed",
-                reason=f"功能补充失败: {enhancement_result.get('error', 'unknown')}"
-            )
-            return "failed"
-    
     def _build_info_collection_graph(self) -> StateGraph:
         """
         构建信息收集子图
@@ -809,20 +592,31 @@ class ScanAgentGraph:
         """
         执行Agent工作流(增强版)
         
+        根据配置选择执行方式:
+        - 子图顺序执行模式 (默认): 更灵活、更易调试、递归限制更高
+        - 统一图执行模式: 性能更好、单次编译
+        
         Args:
             initial_state: 初始状态
             
         Returns:
             AgentState: 最终状态
         """
-        logger.info(f"🚀 开始执行增强版Agent工作流: {initial_state.task_id}")
-        _log_node_entry("invoke", initial_state.task_id, {"target": initial_state.target})
+        logger.info(f"🚀 开始执行Agent工作流: {initial_state.task_id}, 执行模式: {'子图顺序执行' if self.use_subgraph_execution else '统一图执行'}")
+        _log_node_entry("invoke", initial_state.task_id, {
+            "target": initial_state.target,
+            "execution_mode": "subgraph_sequential" if self.use_subgraph_execution else "unified_graph"
+        })
         
         try:
-            compiled_graph = self.compile()
-            # 设置递归限制以避免无限循环
-            config = {"recursion_limit": 100}
-            final_state = await compiled_graph.ainvoke(initial_state, config=config)
+            if self.use_subgraph_execution:
+                # 使用子图顺序执行模式（默认）
+                final_state = await self.invoke_subgraphs_sequential(initial_state)
+            else:
+                # 使用统一图执行模式
+                compiled_graph = self.compile()
+                config = {"recursion_limit": 25}
+                final_state = await compiled_graph.ainvoke(initial_state, config=config)
             
             # 处理返回的状态对象，可能是字典形式
             task_id = getattr(final_state, 'task_id', initial_state.task_id)
@@ -830,16 +624,17 @@ class ScanAgentGraph:
             vulnerabilities = getattr(final_state, 'vulnerabilities', [])
             errors = getattr(final_state, 'errors', [])
             
-            logger.info(f"✅ 增强版Agent工作流执行完成: {task_id}")
+            logger.info(f"✅ Agent工作流执行完成: {task_id}, 执行模式: {'子图顺序执行' if self.use_subgraph_execution else '统一图执行'}")
             _log_node_exit("invoke", initial_state.task_id, "success", {
                 "completed_tasks": len(completed_tasks),
                 "vulnerabilities_found": len(vulnerabilities),
-                "errors_count": len(errors)
+                "errors_count": len(errors),
+                "execution_mode": "subgraph_sequential" if self.use_subgraph_execution else "unified_graph"
             })
             
             return final_state
         except Exception as e:
-            logger.error(f"❌ 增强版Agent工作流执行失败: {initial_state.task_id}, 错误: {str(e)}")
+            logger.error(f"❌ Agent工作流执行失败: {initial_state.task_id}, 错误: {str(e)}")
             _log_error(initial_state.task_id, "invoke", e, {"target": initial_state.target})
             raise
     

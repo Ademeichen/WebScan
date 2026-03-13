@@ -49,6 +49,22 @@ def pytest_configure(config):
     )
 
 
+def pytest_addoption(parser):
+    """添加自定义命令行选项"""
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run integration tests that require external services"
+    )
+    parser.addoption(
+        "--run-slow",
+        action="store_true",
+        default=False,
+        help="Run slow tests"
+    )
+
+
 def pytest_collection_modifyitems(config, items):
     """根据标记修改测试收集"""
     skip_integration = pytest.mark.skip(reason="需要外部服务，使用 --run-integration 运行")

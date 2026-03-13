@@ -407,7 +407,7 @@ class TaskExecutor:
                     "target": target,
                     "task_type": task_type if 'task_type' in dir() else 'unknown',
                     "timeout": timeout,
-                    "started_at": datetime.utcnow().isoformat()
+                    "started_at": datetime.now(datetime.UTC).isoformat()
                 })
                 
                 task_state_logger.log_task_started(
@@ -429,7 +429,7 @@ class TaskExecutor:
                             "timeout": timeout
                         }
                     })
-                    
+                    logger.info(f"[Worker] 任务开始执行 | 任务ID: {task_id} | 目标: {target} | 超时: {timeout}s")
                     self.current_execution_task = asyncio.create_task(self._execute_wrapper(task_info))
                     
                     await asyncio.wait_for(
@@ -438,6 +438,7 @@ class TaskExecutor:
                     )
                     
                     duration = time.time() - self.task_start_times.get(task_id, time.time())
+                    logger.info(f"[Worker] 任务执行成功 | 任务ID: {task_id} | 目标: {target} | 耗时: {duration:.2f}s")
                     task_state_logger.log_task_completed(
                         task_id=task_id,
                         duration=duration
@@ -556,6 +557,8 @@ class TaskExecutor:
             elif task_type == 'ai_agent_scan':
                 await self.execute_agent_task(task_id, target, scan_config)
             else:
+                logger.warning(f"未知任务类型 {task_type}, 任务ID: {task_id}")
+                # TODO：解决未知任务类型的问题
                 await self.execute_plugin_task(task_id, target, scan_config, task_type)
         except Exception as e:
             logger.error(f"任务分发失败: {e}")
@@ -869,72 +872,6 @@ class TaskExecutor:
                     await task.save()
                     logger.info(f"任务 {task_id} 扫描完成")
                     await self._save_scan_results(task_id, scan_id, scan_client)
-                    
-                    # ---------------------------------------------------------
-                    # 自动触发 POC 验证 (集成 DynamicVerificationEngine)
-                    # ---------------------------------------------------------
-                    try:
-                        # 重新加载任务获取最新配置
-                        task = await Task.get(id=task_id)
-                        current_config = json.loads(task.config) if task.config else {}
-                        
-                        # 检查是否开启自动验证 (默认开启或由 Agent 指定)
-                        # 这里我们默认开启对高危漏洞的验证，除非明确禁用
-                        auto_verify = current_config.get('auto_verify_poc', True)
-                        
-                        if auto_verify:
-                            from backend.models import Vulnerability
-                            
-                            # 获取高危漏洞
-                            high_risk_vulns = await Vulnerability.filter(
-                                task_id=task_id,
-                                severity__in=['Critical', 'High']
-                            ).all()
-                            
-                            if high_risk_vulns:
-                                logger.info(f"Task {task_id}: Found {len(high_risk_vulns)} high-risk vulnerabilities. Triggering POC verification...")
-                                
-                                vuln_list = []
-                                for v in high_risk_vulns:
-                                    vuln_list.append({
-                                        "title": v.title,
-                                        "description": v.description,
-                                        "severity": v.severity,
-                                        "url": v.url,
-                                        "cve_id": None # AWVS 可能未提供 CVE，由动态引擎后续匹配
-                                    })
-                                
-                                # 创建 POC 验证任务
-                                new_task = await Task.create(
-                                    task_name=f"Auto POC Verification for Task {task_id}",
-                                    task_type="poc_scan",
-                                    target=task.target,
-                                    status="queued",
-                                    progress=0,
-                                    config=json.dumps({
-                                        "vulnerabilities": vuln_list,
-                                        "parent_task_id": task_id,
-                                        "source": "auto_trigger_awvs",
-                                        "timeout": 3600 # 1 hour timeout for batch verification
-                                    })
-                                )
-                                
-                                # 提交到执行队列
-                                await self.start_task(new_task.id, task.target, {
-                                    "vulnerabilities": vuln_list,
-                                    "parent_task_id": task_id,
-                                    "source": "auto_trigger_awvs",
-                                    "timeout": 3600
-                                })
-                                logger.info(f"Successfully triggered POC Task {new_task.id}")
-                            else:
-                                logger.info(f"Task {task_id}: No high-risk vulnerabilities found for POC verification")
-                        else:
-                            logger.info(f"Task {task_id}: Auto POC verification disabled")
-                            
-                    except Exception as e:
-                        logger.error(f"Failed to auto-trigger POC verification: {e}", exc_info=True)
-                    # ---------------------------------------------------------
 
                     # 广播任务完成
                     await manager.broadcast({

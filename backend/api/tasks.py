@@ -821,6 +821,65 @@ async def cancel_task(task_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/{task_id}/logs", response_model=APIResponse)
+async def get_task_logs(
+    task_id: int,
+    skip: int = 0,
+    limit: int = 100
+):
+    """
+    获取任务日志
+    
+    获取指定任务的执行日志记录。
+    
+    Args:
+        task_id: 任务 ID
+        skip: 跳过的记录数,用于分页
+        limit: 返回的最大记录数
+        
+    Returns:
+        APIResponse: 包含日志列表的响应
+        
+    Raises:
+        HTTPException: 当任务不存在时抛出 404 错误
+        
+    Examples:
+        >>> 获取任务 1 的日志
+        >>> GET /tasks/1/logs
+    """
+    try:
+        task = await Task.get_or_none(id=task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        
+        logs = []
+        if task.result:
+            try:
+                result = json.loads(task.result)
+                if isinstance(result, dict):
+                    execution_history = result.get('execution_history', [])
+                    if isinstance(execution_history, list):
+                        logs = execution_history[skip:skip+limit]
+            except:
+                pass
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "logs": logs,
+                "total": len(logs),
+                "skip": skip,
+                "limit": limit
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取任务日志失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{task_id}/vulnerabilities", response_model=APIResponse)
 async def get_task_vulnerabilities(
     task_id: int,
@@ -913,6 +972,58 @@ async def get_task_vulnerabilities(
         raise
     except Exception as e:
         logger.error(f"获取任务漏洞列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/frozen", response_model=APIResponse)
+async def get_frozen_tasks():
+    """
+    获取冻结任务列表
+    
+    获取运行时间超过预设阈值的80%的任务，这些任务可能已卡死。
+    
+    Returns:
+        APIResponse: 包含冻结任务列表的响应
+        
+    Examples:
+        >>> 获取冻结任务
+        >>> GET /tasks/frozen
+    """
+    try:
+        # 获取所有运行中的任务
+        running_tasks = await Task.filter(status='running').all()
+        
+        frozen_tasks = []
+        for task in running_tasks:
+            # 计算运行时长（分钟）
+            if task.created_at:
+                now = datetime.now(timezone.utc)
+                created_at = task.created_at
+                if created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=timezone.utc)
+                duration = (now - created_at).total_seconds() / 60
+                
+                # 预设阈值（默认30分钟）
+                threshold = 30
+                
+                # 如果运行时长超过阈值的80%，视为可能冻结
+                if duration > threshold * 0.8:
+                    frozen_tasks.append({
+                        "id": task.id,
+                        "task_name": task.task_name,
+                        "task_type": task.task_type,
+                        "duration": round(duration, 1),
+                        "threshold": threshold,
+                        "progress": task.progress or 0
+                    })
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data=frozen_tasks
+        )
+    except Exception as e:
+        logger.error(f"获取冻结任务失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

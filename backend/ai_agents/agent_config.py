@@ -4,7 +4,11 @@ Agent 配置文件
 定义Agent相关的配置参数。
 """
 from typing import Dict, List
-from backend.config import settings
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from config import settings
 
 class AgentConfig:
     """

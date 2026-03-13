@@ -140,9 +140,8 @@ class TestPOCIntegration:
     def test_poc_manager_initialization(self):
         """测试POC管理器初始化"""
         try:
-            from backend.ai_agents.poc_system.poc_integration import get_poc_integration_manager
-            manager = get_poc_integration_manager()
-            assert manager is not None, "POC管理器应该能初始化"
+            from backend.ai_agents.poc_system.poc_manager import poc_manager
+            assert poc_manager is not None, "POC管理器应该能初始化"
         except Exception as e:
             pytest.skip(f"POC管理器初始化跳过: {e}")
 

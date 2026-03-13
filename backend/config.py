@@ -503,23 +503,23 @@ settings = Settings()
 """
 
 # = Tortoise-ORM 配置 =
+"""
+Tortoise-ORM 配置字典
+
+定义数据库连接和模型注册信息。
+用于初始化 Tortoise-ORM 和数据库迁移工具 Aerich。
+
+配置结构:
+- connections: 数据库连接配置
+  - default: 默认连接,使用 settings.DATABASE_URL
+- apps: 应用和模型注册
+  - models: 模型应用
+    - models: 模型模块列表
+      - models: 自定义模型模块
+      - aerich.models: Aerich 迁移模型
+    - default_connection: 使用的连接名称
+"""
 TORTOISE_ORM = {
-    """
-    Tortoise-ORM 配置字典
-    
-    定义数据库连接和模型注册信息。
-    用于初始化 Tortoise-ORM 和数据库迁移工具 Aerich。
-    
-    配置结构:
-    - connections: 数据库连接配置
-      - default: 默认连接,使用 settings.DATABASE_URL
-    - apps: 应用和模型注册
-      - models: 模型应用
-        - models: 模型模块列表
-          - models: 自定义模型模块
-          - aerich.models: Aerich 迁移模型
-        - default_connection: 使用的连接名称
-    """
     "connections": {
         "default": settings.DATABASE_URL
     },

@@ -1,46 +1,146 @@
 """
-POC Confidence Scoring System
+POC Confidence Scoring Module
 """
-from typing import Dict, Any
+import logging
+from typing import Dict, Any, Optional
+from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ConfidenceScore:
+    total_score: float
+    match_score: float
+    execution_score: float
+    output_score: float
+    details: Dict[str, Any]
+
 
 class ConfidenceScorer:
     """
     Calculates confidence scores for POC verification results
     """
     
-    @staticmethod
-    def calculate_score(match_result: Any, execution_result: Dict[str, Any]) -> float:
+    def __init__(self):
+        self.weights = {
+            "match_score": 0.3,
+            "execution_score": 0.4,
+            "output_score": 0.3
+        }
+    
+    def calculate_score(
+        self, 
+        match_result: Optional[Any], 
+        execution_result: Dict[str, Any]
+    ) -> float:
         """
-        Calculate final confidence score (0-100)
+        Calculate overall confidence score
         
         Args:
-            match_result: Result from POCMatcher (has initial match_score)
-            execution_result: Result from execution engine (vulnerable, output, etc.)
+            match_result: POC match result from matcher
+            execution_result: Execution result from verification engine
+            
+        Returns:
+            float: Confidence score (0.0 - 1.0)
         """
-        base_score = 0.0
+        try:
+            match_score = self._calculate_match_score(match_result)
+            execution_score = self._calculate_execution_score(execution_result)
+            output_score = self._calculate_output_score(execution_result)
+            
+            total_score = (
+                match_score * self.weights["match_score"] +
+                execution_score * self.weights["execution_score"] +
+                output_score * self.weights["output_score"]
+            )
+            
+            logger.debug(
+                f"Confidence scores - match: {match_score:.2f}, "
+                f"execution: {execution_score:.2f}, output: {output_score:.2f}, "
+                f"total: {total_score:.2f}"
+            )
+            
+            return round(total_score, 3)
+            
+        except Exception as e:
+            logger.error(f"Error calculating confidence score: {e}")
+            return 0.0
+    
+    def _calculate_match_score(self, match_result: Optional[Any]) -> float:
+        """Calculate score based on POC match quality"""
+        if match_result is None:
+            return 0.0
         
-        # 1. Start with match quality
-        # match_score is 0.0-1.0
         if hasattr(match_result, 'match_score'):
-            base_score = match_result.match_score * 50  # Max 50 points from matching
-        else:
-            base_score = 50.0 # Default if no match info
-            
-        # 2. Add points for execution success
+            return match_result.match_score
+        
+        return 0.5
+    
+    def _calculate_execution_score(self, execution_result: Dict[str, Any]) -> float:
+        """Calculate score based on execution success"""
+        if not execution_result:
+            return 0.0
+        
+        score = 0.5
+        
         if execution_result.get("vulnerable"):
-            base_score += 40
+            score += 0.3
+        
+        if not execution_result.get("error"):
+            score += 0.2
+        
+        return min(score, 1.0)
+    
+    def _calculate_output_score(self, execution_result: Dict[str, Any]) -> float:
+        """Calculate score based on output quality"""
+        if not execution_result:
+            return 0.0
+        
+        score = 0.3
+        
+        output = execution_result.get("output", "")
+        if output:
+            score += min(len(output) / 1000, 0.4)
+        
+        if execution_result.get("vulnerable"):
+            score += 0.3
+        
+        return min(score, 1.0)
+    
+    def get_detailed_score(
+        self, 
+        match_result: Optional[Any], 
+        execution_result: Dict[str, Any]
+    ) -> ConfidenceScore:
+        """
+        Get detailed confidence score breakdown
+        
+        Args:
+            match_result: POC match result
+            execution_result: Execution result
             
-            # Bonus for strong evidence
-            output = execution_result.get("output", "")
-            if "uid=0(root)" in output or "nt authority" in output.lower():
-                base_score += 10 # High certainty evidence
-            elif "syntax error" in output.lower():
-                base_score += 5  # Medium certainty
-        else:
-            # Penalty for failure, but keep some score if match was high (false negative potential)
-            base_score -= 20
-            
-        # Clamp 0-100
-        return max(0.0, min(100.0, base_score))
+        Returns:
+            ConfidenceScore: Detailed score breakdown
+        """
+        match_score = self._calculate_match_score(match_result)
+        execution_score = self._calculate_execution_score(execution_result)
+        output_score = self._calculate_output_score(execution_result)
+        
+        total_score = self.calculate_score(match_result, execution_result)
+        
+        return ConfidenceScore(
+            total_score=total_score,
+            match_score=match_score,
+            execution_score=execution_score,
+            output_score=output_score,
+            details={
+                "weights": self.weights,
+                "vulnerable": execution_result.get("vulnerable", False),
+                "has_error": bool(execution_result.get("error")),
+                "output_length": len(execution_result.get("output", ""))
+            }
+        )
+
 
 confidence_scorer = ConfidenceScorer()

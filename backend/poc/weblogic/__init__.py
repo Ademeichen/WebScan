@@ -7,7 +7,7 @@ def cve_2020_14756_poc(url, timeout=10):
     WebLogic CVE-2020-14756 POC 适配器
     """
     try:
-        from .CVE_2020_14756 import TestPOC
+        from .cve_2020_14756_poc import TestPOC
         from urllib.parse import urlparse
         
         poc = TestPOC()
@@ -26,7 +26,7 @@ def cve_2023_21839_poc(url, timeout=10):
     WebLogic CVE-2023-21839 POC 适配器
     """
     try:
-        from .CVE_2023_21839 import POC
+        from .cve_2023_21839_poc import POC
         from urllib.parse import urlparse
         
         parsed = urlparse(url)

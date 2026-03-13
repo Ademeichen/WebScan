@@ -662,14 +662,24 @@ class POCVerificationTask(Model):
         target: 验证目标
         status: 状态
         poc_name: POC名称
+        priority: 优先级
+        progress: 进度
+        config: 配置信息
         created_at: 创建时间
+        updated_at: 更新时间
     """
     id = fields.UUIDField(pk=True, description="任务ID")
     poc_id = fields.CharField(max_length=100, description="POC ID")
     target = fields.CharField(max_length=500, description="验证目标")
     status = fields.CharField(max_length=50, default="pending", description="状态")
     poc_name = fields.CharField(max_length=255, description="POC名称")
+    priority = fields.IntField(default=5, description="优先级(1-10)")
+    progress = fields.FloatField(default=0.0, description="进度(0-100)")
+    config = fields.JSONField(null=True, default=dict, description="配置信息")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
+    
+    results: fields.ReverseRelation["POCVerificationResult"]
     
     class Meta:
         table = "poc_verification_tasks"
@@ -681,19 +691,35 @@ class POCVerificationResult(Model):
     
     Attributes:
         id: 结果唯一标识（UUID）
-        task: 关联的验证任务
+        verification_task: 关联的验证任务
+        poc_name: POC名称
+        poc_id: POC ID
+        target: 验证目标
         vulnerable: 是否存在漏洞
+        message: 结果消息
         output: 验证输出
         error: 错误信息
+        execution_time: 执行时间
+        confidence: 置信度
+        severity: 严重程度
+        cvss_score: CVSS评分
         created_at: 创建时间
     """
     id = fields.UUIDField(pk=True, description="结果ID")
-    task: fields.ForeignKeyRelation[POCVerificationTask] = fields.ForeignKeyField(
-        "models.POCVerificationTask", related_name="results", description="关联验证任务"
+    verification_task: fields.ForeignKeyRelation[POCVerificationTask] = fields.ForeignKeyField(
+        "models.POCVerificationTask", related_name="verification_results", description="关联验证任务"
     )
+    poc_name = fields.CharField(max_length=255, description="POC名称")
+    poc_id = fields.CharField(max_length=100, description="POC ID")
+    target = fields.CharField(max_length=500, description="验证目标")
     vulnerable = fields.BooleanField(default=False, description="是否存在漏洞")
+    message = fields.TextField(null=True, description="结果消息")
     output = fields.TextField(null=True, description="验证输出")
     error = fields.TextField(null=True, description="错误信息")
+    execution_time = fields.FloatField(default=0.0, description="执行时间(秒)")
+    confidence = fields.FloatField(default=0.0, description="置信度(0-1)")
+    severity = fields.CharField(max_length=20, null=True, description="严重程度")
+    cvss_score = fields.FloatField(default=0.0, description="CVSS评分")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     
     class Meta:

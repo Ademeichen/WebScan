@@ -3,7 +3,6 @@
 
 负责分析 POC 验证结果,包括漏洞验证状态判定、漏洞等级评估、误报检测、结果置信度计算等。
 """
-import asyncio
 import json
 import logging
 import re
@@ -1143,7 +1142,7 @@ class ResultAnalyzer:
         logger.info(f"开始分析结果: {result.poc_name if hasattr(result, 'poc_name') else result.id}")
         
         logs = await POCExecutionLog.filter(
-            task_id=str(result.task_id) if hasattr(result, "task_id") else str(result.id)
+            task_id=str(result.verification_task_id) if hasattr(result, "verification_task_id") else str(result.id)
         ).order_by("created_at")
         
         is_false_positive, fp_score, fp_details = await self._detect_false_positive(

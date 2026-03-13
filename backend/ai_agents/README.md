@@ -374,17 +374,6 @@ state.poc_verification_tasks    # 生成的POC验证任务
 
 ### 条件路由逻辑
 
-#### intelligent_decision → 5种分支
-
-```python
-def _decide_scan_type(state):
-    # 优先级顺序:
-    # 1. 需要功能增强 → enhance_first
-    # 2. 需要自定义扫描 → custom_code
-    # 3. 有普通工具任务 → fixed_tool
-    # 4. 默认 → fixed_tool
-```
-
 #### result_verification → 3种分支
 
 ```python

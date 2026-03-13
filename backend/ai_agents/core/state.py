@@ -9,15 +9,22 @@ from datetime import datetime
 import asyncio
 import logging
 import json
-from backend.utils.serializers import sanitize_json_data
 
 logger = logging.getLogger(__name__)
+
+try:
+    from backend.utils.serializers import sanitize_json_data
+except ImportError:
+    from utils.serializers import sanitize_json_data
 
 
 async def persist_task_state(task_id: str, stage_status: Dict, progress: int):
     """Persist task state to database"""
     try:
-        from backend.models import Task
+        try:
+            from backend.models import Task
+        except ImportError:
+            from models import Task
         
         try:
             tid = int(task_id)
@@ -269,7 +276,10 @@ class AgentState:
         Update stage status and broadcast via WebSocket
         """
         # Import here to avoid circular dependency
-        from backend.api.websocket import manager
+        try:
+            from backend.api.websocket import manager
+        except ImportError:
+            from api.websocket import manager
 
         if stage in self.stage_status:
             if status:

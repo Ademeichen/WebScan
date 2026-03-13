@@ -35,16 +35,6 @@ class POCSource(Enum):
     SEEBUG_AI = "seebug_ai"
 
 
-class POCSeverity(Enum):
-    """POC 严重程度枚举."""
-
-    CRITICAL = "critical"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-    INFO = "info"
-
-
 @dataclass
 class POCVersion:
     """POC 版本信息.
@@ -564,6 +554,77 @@ class POCManager:
         except Exception as e:
             self._handle_error("download_poc_from_seebug", e, {"ssvid": ssvid})
             return None
+
+    async def save_poc_to_local(
+        self,
+        ssvid: int,
+        poc_code: str,
+        category: str = "seebug",
+        cve_id: Optional[str] = None,
+        vuln_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """将 POC 保存到本地目录.
+
+        Args:
+            ssvid: Seebug 漏洞 ID.
+            poc_code: POC 代码.
+            category: POC 分类目录.
+            cve_id: CVE 编号.
+            vuln_name: 漏洞名称.
+
+        Returns:
+            Dict[str, Any]: 保存结果.
+        """
+        try:
+            self._log_operation("save_poc_to_local", {"ssvid": ssvid, "category": category})
+
+            base_dir = Path(__file__).parent.parent.parent
+            poc_dir = base_dir / "poc" / category
+            
+            poc_dir.mkdir(parents=True, exist_ok=True)
+
+            if cve_id:
+                filename = f"{cve_id}_poc.py"
+            elif vuln_name:
+                safe_name = re.sub(r'[^\w\-]', '_', vuln_name)[:50]
+                filename = f"{safe_name}_ssvid_{ssvid}.py"
+            else:
+                filename = f"ssvid_{ssvid}_poc.py"
+
+            file_path = poc_dir / filename
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(poc_code)
+
+            poc_id = f"seebug_{ssvid}"
+            metadata = POCMetadata(
+                poc_name=vuln_name or f"Seebug POC {ssvid}",
+                poc_id=poc_id,
+                poc_type="web",
+                severity="high",
+                description=f"从 Seebug 下载的 POC (SSVID: {ssvid})",
+                source=POCSource.SEEBUG.value,
+                version="1.0",
+                tags=["seebug", "downloaded"],
+            )
+
+            with self._lock:
+                self.poc_registry[poc_id] = metadata
+                self.generated_poc_codes[poc_id] = poc_code
+
+            self.poc_cache.set(f"poc_code_{poc_id}", poc_code)
+
+            logger.info(f"✅ POC 保存成功: {file_path}")
+            return {
+                "success": True,
+                "file_path": str(file_path),
+                "poc_id": poc_id,
+                "message": f"POC 已保存到 {file_path}"
+            }
+
+        except Exception as e:
+            return self._handle_error("save_poc_to_local", e, {"ssvid": ssvid})
+
 
     async def load_local_poc(self, poc_path: str) -> Optional[POCMetadata]:
         """加载本地 POC.
@@ -1388,69 +1449,6 @@ class POCManager:
         except Exception as e:
             self._handle_error("search_seebug_pocs", e, {"keyword": keyword})
             return []
-
-    async def generate_poc_from_seebug(
-        self,
-        ssvid: str,
-        save: bool = True,
-    ) -> Dict[str, Any]:
-        """从 Seebug 生成 POC.
-
-        Args:
-            ssvid: Seebug 漏洞 ID.
-            save: 是否保存.
-
-        Returns:
-            Dict[str, Any]: 生成结果.
-        """
-        try:
-            self._log_operation("generate_poc_from_seebug", {"ssvid": ssvid})
-
-            result = self.seebug_agent.generate_and_save_poc(ssvid)
-
-            if result.get("success"):
-                poc_path = result.get("poc_path")
-                vulnerability = result.get("vulnerability", {})
-
-                with open(poc_path, "r", encoding="utf-8") as f:
-                    poc_code = f.read()
-
-                metadata = POCMetadata(
-                    poc_name=vulnerability.get("name", f"SSVID-{ssvid}"),
-                    poc_id=f"seebug_{ssvid}",
-                    poc_type=vulnerability.get("type", "web"),
-                    severity=vulnerability.get("severity", "medium"),
-                    cvss_score=vulnerability.get("cvss_score"),
-                    description=vulnerability.get("description"),
-                    author="AI Generated",
-                    source=POCSource.SEEBUG_AI.value,
-                    version="1.0",
-                    tags=["ai_generated", "seebug"],
-                )
-
-                with self._lock:
-                    self.poc_registry[metadata.poc_id] = metadata
-
-                cache_key = f"poc_code_seebug_{ssvid}"
-                self.poc_cache.set(cache_key, poc_code)
-
-                logger.info(f"✅ POC生成成功,保存路径: {poc_path}")
-                return {
-                    "success": True,
-                    "poc_code": poc_code,
-                    "poc_path": poc_path,
-                    "metadata": metadata.to_dict(),
-                }
-            else:
-                error_msg = result.get("message", "生成失败")
-                logger.warning(f"⚠️ POC生成失败: {error_msg}")
-                return {
-                    "success": False,
-                    "message": error_msg,
-                }
-
-        except Exception as e:
-            return self._handle_error("generate_poc_from_seebug", e, {"ssvid": ssvid})
 
     async def batch_sync_from_seebug(
         self,
