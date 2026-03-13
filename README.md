@@ -193,7 +193,7 @@ APP_NAME=WebScan AI Security Platform
 APP_VERSION=1.0.0
 DEBUG=False
 HOST=127.0.0.1
-PORT=3000
+:8888
 
 # 数据库配置
 DATABASE_URL=sqlite://./data/webscan.db
@@ -246,10 +246,10 @@ cd backend
 python main.py
 
 # 或使用uvicorn
-uvicorn backend.main:app --host 127.0.0.1 --port 3000 --reload
+uvicorn backend.main:app --host 127.0.0.1 --:8888 --reload
 ```
 
-后端服务将运行在：http://127.0.0.1:3000
+后端服务将运行在：http://127.0.0.1:8888
 
 **停止服务：**
 - 按 `Ctrl+C` 可优雅关闭服务
@@ -275,8 +275,8 @@ npm install
 编辑 `front/.env.development` 文件：
 
 ```env
-VITE_API_BASE_URL=http://127.0.0.1:3000/api
-VITE_REQUEST_TIMEOUT=30000
+VITE_API_BASE_URL=http://127.0.0.1:8888/api
+VITE_REQUEST_TIMEOUT=:88880
 ```
 
 #### 7. 启动前端服务
@@ -445,7 +445,7 @@ class Settings(BaseSettings):
     
     # 服务器配置
     HOST: str = "127.0.0.1"
-    PORT: int = 3000
+    PORT: int =:8888
     
     # CORS配置
     CORS_ORIGINS: list = ["http://localhost:5173", "http://127.0.0.1:5173"]
@@ -501,7 +501,7 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3000',
+        target: 'http://127.0.0.1:8888',
         changeOrigin: true,
         secure: false
       }
@@ -513,8 +513,8 @@ export default defineConfig({
 环境变量配置：`front/.env.development`
 
 ```env
-VITE_API_BASE_URL=http://127.0.0.1:3000/api
-VITE_REQUEST_TIMEOUT=30000
+VITE_API_BASE_URL=http://127.0.0.1:8888/api
+VITE_REQUEST_TIMEOUT=:88880
 ```
 
 ### WebSocket配置
@@ -523,7 +523,7 @@ VITE_REQUEST_TIMEOUT=30000
 
 | 配置项 | 默认值 | 说明 |
 |-------|--------|------|
-| WebSocket URL | `ws://localhost:3000/api/ws` | WebSocket连接地址 |
+| WebSocket URL | `ws://localhost:8888/api/ws` | WebSocket连接地址 |
 | 重连次数 | 5 | 最大自动重连次数 |
 | 重连延迟 | 1-30秒 | 指数退避重连策略 |
 | 心跳间隔 | 30秒 | 心跳检测间隔 |
@@ -532,7 +532,7 @@ VITE_REQUEST_TIMEOUT=30000
 ```javascript
 import { useWebSocket } from '@/utils/websocket'
 
-const { connect, on, disconnect } = useWebSocket('ws://localhost:3000/api/ws')
+const { connect, on, disconnect } = useWebSocket('ws://localhost:8888/api/ws')
 connect()
 on('task:update', (payload) => { /* 处理任务更新 */ })
 ```
@@ -541,9 +541,9 @@ on('task:update', (payload) => { /* 处理任务更新 */ })
 
 | 服务 | 默认端口 | 配置位置 |
 |-----|---------|---------|
-| 后端API | 3000 | `backend/.env` → `PORT` |
+| 后端API |:8888 | `backend/.env` → `PORT` |
 | 前端开发 | 5173 | `front/vite.config.js` |
-| WebSocket | 3000 | 与后端API共用 |
+| WebSocket |:8888 | 与后端API共用 |
 
 ---
 
@@ -553,8 +553,8 @@ on('task:update', (payload) => { /* 处理任务更新 */ })
 
 启动后端服务后，访问以下地址查看自动生成的API文档：
 
-- **Swagger UI**: http://127.0.0.1:3000/docs
-- **ReDoc**: http://127.0.0.1:3000/redoc
+- **Swagger UI**: http://127.0.0.1:8888/docs
+- **ReDoc**: http://127.0.0.1:8888/redoc
 
 ### 主要API端点
 
@@ -752,7 +752,7 @@ GET /api/vulnerabilities
 - 所有前端API调用都经过严格测试，确保与后端接口完全兼容
 - 前端API定义文件：`front/src/utils/api.js`
 - 后端API路由文件：`backend/api/` 目录
-- API文档自动生成：访问 http://127.0.0.1:3000/docs
+- API文档自动生成：访问 http://127.0.0.1:8888/docs
 
 ### API分析工具
 项目提供了完整的API分析工具：
@@ -935,7 +935,7 @@ python run_tests.py test_tasks
 pip install gunicorn
 
 # 启动服务
-gunicorn backend.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:3000
+gunicorn backend.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8888
 ```
 
 2. **使用Nginx反向代理**
@@ -946,7 +946,7 @@ server {
     server_name your-domain.com;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:8888;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -966,7 +966,7 @@ server {
     ssl_certificate_key /path/to/key.pem;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:8888;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -997,7 +997,7 @@ server {
     }
 
     location /api {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:8888;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -1046,7 +1046,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "3000:3000"
+      - ":8888:8888"
     environment:
       - DATABASE_URL=sqlite:///data/webscan.db
     volumes:
@@ -1072,7 +1072,7 @@ services:
 **解决方案**:
 ```bash
 # 检查端口占用
-netstat -ano | findstr :3000
+netstat -ano | findstr :8888
 
 # 更改端口或终止占用进程
 ```
@@ -1173,8 +1173,8 @@ node -v  # 应该 >= 16.0
 **解决方案**:
 - 确认API端点路径正确
 - AI Agent扫描使用 `/api/ai_agents/scan`
-- WebSocket使用 `ws://localhost:3000/api/ws`
-- 查看后端Swagger文档确认端点: http://127.0.0.1:3000/docs
+- WebSocket使用 `ws://localhost:8888/api/ws`
+- 查看后端Swagger文档确认端点: http://127.0.0.1:8888/docs
 
 ---
 

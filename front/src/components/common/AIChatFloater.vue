@@ -179,7 +179,7 @@ const connectWebSocket = () => {
   isLoading.value = true
 
   const token = localStorage.getItem('token')
-  const wsUrl = `ws://localhost:3000/api/ws?token=${token}`
+  const wsUrl = `ws://localhost:8888/api/ws?token=${token}`
 
   try {
     ws.value = new WebSocket(wsUrl)
@@ -281,7 +281,7 @@ const sendMessage = async () => {
 
 const sendViaAPI = async (message, token) => {
   try {
-    const response = await fetch('http://127.0.0.1:3000/api/ai/chat', {
+    const response = await fetch('http://127.0.0.1:8888/api/ai/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -184,3 +184,30 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
         manager.disconnect(websocket)
+
+@router.websocket("/ws/progress")
+async def websocket_progress_endpoint(websocket: WebSocket):
+    """
+    WebSocket进度更新端点
+    
+    用于实时推送任务进度更新。
+    前端可以通过此端点接收扫描任务的实时进度信息。
+    """
+    client_host = websocket.client.host if websocket.client else None
+    
+    connected = await manager.connect(websocket, client_host)
+    if not connected:
+        return
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
+            elif data == "subscribe":
+                await websocket.send_json({"type": "subscribed", "message": "已订阅进度更新"})
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket progress error: {e}")
+        manager.disconnect(websocket)

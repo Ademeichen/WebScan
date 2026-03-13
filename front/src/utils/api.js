@@ -2,7 +2,7 @@ import axios from 'axios'
 import { errorHandler } from './errorHandler'
 import { handleResponse, handleApiError } from './apiResponse'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
 const REQUEST_TIMEOUT = parseInt(import.meta.env.VITE_REQUEST_TIMEOUT) || 30000
 
 const instance = axios.create({
@@ -604,6 +604,14 @@ export const aiApi = {
 
 export const kbApi = {
   getVulnerabilities: async (params) => {
+    return request({
+      url: '/kb/vulnerabilities',
+      method: 'get',
+      params
+    })
+  },
+
+  search: async (params) => {
     return request({
       url: '/kb/vulnerabilities',
       method: 'get',

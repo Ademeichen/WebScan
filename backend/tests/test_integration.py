@@ -31,7 +31,7 @@ class IntegrationTestResult:
 class IntegrationTestRunner:
     """综合集成测试运行器"""
     
-    def __init__(self, base_url: str = "http://127.0.0.1:3000", timeout: float = 30.0):
+    def __init__(self, base_url: str = "http://127.0.0.1:8888", timeout: float = 30.0):
         self.base_url = base_url
         self.timeout = timeout
         self.results: List[IntegrationTestResult] = []
@@ -310,7 +310,7 @@ class IntegrationTestRunner:
 @pytest.fixture
 def test_runner():
     """测试运行器fixture"""
-    return IntegrationTestRunner(base_url="http://127.0.0.1:3000")
+    return IntegrationTestRunner(base_url="http://127.0.0.1:8888")
 
 
 class TestIntegration:

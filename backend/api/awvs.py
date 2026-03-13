@@ -156,12 +156,24 @@ async def sync_vulnerabilities(scan_id: str, scan_session_id: str, task_id: int)
                 existing_vuln.severity = severity
                 existing_vuln.description = description
                 existing_vuln.remediation = remediation
+                # 更新漏洞类型（如果需要）
+                vuln_type = v.get('vt_name', 'Unknown')
+                if len(vuln_type) > 255:
+                    vuln_type = vuln_type[:252] + "..."
+                    logger.warning(f"漏洞类型名称过长，已截断: {v.get('vt_name', '')[:50]}...")
+                existing_vuln.vuln_type = vuln_type
                 await existing_vuln.save()
             else:
                 # 创建新漏洞
+                vuln_type = v.get('vt_name', 'Unknown')
+                # 截断过长的漏洞类型名称（避免超过数据库字段限制）
+                if len(vuln_type) > 255:
+                    vuln_type = vuln_type[:252] + "..."
+                    logger.warning(f"漏洞类型名称过长，已截断: {v.get('vt_name', '')[:50]}...")
+                
                 await Vulnerability.create(
                     task_id=task_id,
-                    vuln_type=v.get('vt_name', 'Unknown'),
+                    vuln_type=vuln_type,
                     severity=severity,
                     title=v.get('vt_name', 'Unknown'),
                     description=description,

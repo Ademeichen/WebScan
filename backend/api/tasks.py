@@ -435,6 +435,119 @@ async def list_tasks(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/frozen", response_model=APIResponse)
+async def get_frozen_tasks():
+    """
+    获取冻结任务列表
+    
+    获取运行时间超过预设阈值的80%的任务，这些任务可能已卡死。
+    
+    Returns:
+        APIResponse: 包含冻结任务列表的响应
+        
+    Examples:
+        >>> 获取冻结任务
+        >>> GET /tasks/frozen
+    """
+    try:
+        # 获取所有运行中的任务
+        running_tasks = await Task.filter(status='running').all()
+        
+        frozen_tasks = []
+        for task in running_tasks:
+            # 计算运行时长（分钟）
+            if task.created_at:
+                now = datetime.now(timezone.utc)
+                created_at = task.created_at
+                if created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=timezone.utc)
+                duration = (now - created_at).total_seconds() / 60
+                
+                # 预设阈值（默认30分钟）
+                threshold = 30
+                
+                # 如果运行时长超过阈值的80%，视为可能冻结
+                if duration > threshold * 0.8:
+                    frozen_tasks.append({
+                        "id": task.id,
+                        "task_name": task.task_name,
+                        "task_type": task.task_type,
+                        "duration": round(duration, 1),
+                        "threshold": threshold,
+                        "progress": task.progress or 0
+                    })
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data=frozen_tasks
+        )
+    except Exception as e:
+        logger.error(f"获取冻结任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/statistics/overview", response_model=APIResponse)
+async def get_statistics_overview():
+    """
+    获取任务统计概览
+    
+    获取所有任务的统计信息,包括:
+    - 总任务数
+    - 各状态任务数
+    - 各类型任务数
+    - 总漏洞数
+    - 各严重程度漏洞数
+    
+    Returns:
+        APIResponse: 包含统计概览数据的响应
+        
+    Examples:
+        >>> 获取统计概览
+        >>> GET /tasks/statistics/overview
+    """
+    try:
+        from backend.models import Task, Vulnerability
+        from tortoise.functions import Count
+        
+        # 任务统计
+        total_tasks = await Task.all().count()
+        
+        # 按状态统计
+        status_stats = await Task.all().group_by('status').annotate(count=Count('id')).values('status', 'count')
+        status_counts = {item['status']: item['count'] for item in status_stats}
+        
+        # 按类型统计
+        type_stats = await Task.all().group_by('task_type').annotate(count=Count('id')).values('task_type', 'count')
+        type_counts = {item['task_type']: item['count'] for item in type_stats}
+        
+        # 漏洞统计
+        total_vulns = await Vulnerability.all().count()
+        
+        # 按严重程度统计
+        severity_stats = await Vulnerability.all().group_by('severity').annotate(count=Count('id')).values('severity', 'count')
+        severity_counts = {item['severity']: item['count'] for item in severity_stats}
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "tasks": {
+                    "total": total_tasks,
+                    "by_status": status_counts,
+                    "by_type": type_counts
+                },
+                "vulnerabilities": {
+                    "total": total_vulns,
+                    "by_severity": severity_counts
+                }
+            }
+        )
+    except Exception as e:
+        logger.error(f"获取统计概览失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{task_id}", response_model=APIResponse)
 async def get_task(task_id: int):
     """
@@ -974,115 +1087,3 @@ async def get_task_vulnerabilities(
         logger.error(f"获取任务漏洞列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.get("/frozen", response_model=APIResponse)
-async def get_frozen_tasks():
-    """
-    获取冻结任务列表
-    
-    获取运行时间超过预设阈值的80%的任务，这些任务可能已卡死。
-    
-    Returns:
-        APIResponse: 包含冻结任务列表的响应
-        
-    Examples:
-        >>> 获取冻结任务
-        >>> GET /tasks/frozen
-    """
-    try:
-        # 获取所有运行中的任务
-        running_tasks = await Task.filter(status='running').all()
-        
-        frozen_tasks = []
-        for task in running_tasks:
-            # 计算运行时长（分钟）
-            if task.created_at:
-                now = datetime.now(timezone.utc)
-                created_at = task.created_at
-                if created_at.tzinfo is None:
-                    created_at = created_at.replace(tzinfo=timezone.utc)
-                duration = (now - created_at).total_seconds() / 60
-                
-                # 预设阈值（默认30分钟）
-                threshold = 30
-                
-                # 如果运行时长超过阈值的80%，视为可能冻结
-                if duration > threshold * 0.8:
-                    frozen_tasks.append({
-                        "id": task.id,
-                        "task_name": task.task_name,
-                        "task_type": task.task_type,
-                        "duration": round(duration, 1),
-                        "threshold": threshold,
-                        "progress": task.progress or 0
-                    })
-        
-        return APIResponse(
-            code=200,
-            message="获取成功",
-            data=frozen_tasks
-        )
-    except Exception as e:
-        logger.error(f"获取冻结任务失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/statistics/overview", response_model=APIResponse)
-async def get_statistics_overview():
-    """
-    获取任务统计概览
-    
-    获取所有任务的统计信息,包括:
-    - 总任务数
-    - 各状态任务数
-    - 各类型任务数
-    - 总漏洞数
-    - 各严重程度漏洞数
-    
-    Returns:
-        APIResponse: 包含统计概览数据的响应
-        
-    Examples:
-        >>> 获取统计概览
-        >>> GET /tasks/statistics/overview
-    """
-    try:
-        from backend.models import Task, Vulnerability
-        from tortoise.functions import Count
-        
-        # 任务统计
-        total_tasks = await Task.all().count()
-        
-        # 按状态统计
-        status_stats = await Task.all().group_by('status').annotate(count=Count('id')).values('status', 'count')
-        status_counts = {item['status']: item['count'] for item in status_stats}
-        
-        # 按类型统计
-        type_stats = await Task.all().group_by('task_type').annotate(count=Count('id')).values('task_type', 'count')
-        type_counts = {item['task_type']: item['count'] for item in type_stats}
-        
-        # 漏洞统计
-        total_vulns = await Vulnerability.all().count()
-        
-        # 按严重程度统计
-        severity_stats = await Vulnerability.all().group_by('severity').annotate(count=Count('id')).values('severity', 'count')
-        severity_counts = {item['severity']: item['count'] for item in severity_stats}
-        
-        return APIResponse(
-            code=200,
-            message="获取成功",
-            data={
-                "tasks": {
-                    "total": total_tasks,
-                    "by_status": status_counts,
-                    "by_type": type_counts
-                },
-                "vulnerabilities": {
-                    "total": total_vulns,
-                    "by_severity": severity_counts
-                }
-            }
-        )
-    except Exception as e:
-        logger.error(f"获取统计概览失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))

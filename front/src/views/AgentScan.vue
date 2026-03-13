@@ -280,7 +280,7 @@ export default {
       { type: 'report', name: '报告生成' }
     ]
 
-    const { connect, on, disconnect } = useWebSocket('ws://localhost:3000/api/ws')
+    const { connect, on, disconnect } = useWebSocket('ws://localhost:8888/api/ws')
     
     let progressWatcher = null
 
@@ -605,7 +605,7 @@ export default {
         updateToolExecution(payload)
       })
       
-      progressWatcher = new ProgressWatcher('ws://localhost:3000/api/ws/progress')
+      progressWatcher = new ProgressWatcher('ws://localhost:8888/api/ws/progress')
       progressWatcher.connect()
     })
     

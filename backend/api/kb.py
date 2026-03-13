@@ -160,10 +160,10 @@ async def list_kb_vulnerabilities(
         total = await query.count()
         items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-updated_at")
         
-        # 格式化日期
         formatted_items = []
         for item in items:
             item_dict = dict(item)
+            item_dict['id'] = str(item.id)
             item_dict['created_at'] = item.created_at.strftime("%Y-%m-%d %H:%M:%S")
             item_dict['updated_at'] = item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
             formatted_items.append(item_dict)
@@ -187,14 +187,14 @@ async def list_kb_vulnerabilities(
         }
 
 @router.get("/vulnerabilities/{kb_id}", response_model=Dict[str, Any])
-async def get_kb_vulnerability(kb_id: int):
+async def get_kb_vulnerability(kb_id: str):
     """
     获取漏洞知识库详情
     
     根据漏洞 ID 获取详细的漏洞信息。
     
     Args:
-        kb_id: 漏洞知识库 ID
+        kb_id: 漏洞知识库 ID（字符串格式，避免前端大整数精度丢失）
         
     Returns:
         Dict: 包含漏洞详细信息的响应
@@ -206,11 +206,17 @@ async def get_kb_vulnerability(kb_id: int):
         >>> 获取漏洞详情
         >>> GET /kb/vulnerabilities/1
     """
-    item = await VulnerabilityKB.get_or_none(id=kb_id)
+    try:
+        kb_id_int = int(kb_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid vulnerability ID format")
+    
+    item = await VulnerabilityKB.get_or_none(id=kb_id_int)
     if not item:
         raise HTTPException(status_code=404, detail="Vulnerability not found")
     
     item_dict = dict(item)
+    item_dict['id'] = str(item.id)
     item_dict['created_at'] = item.created_at.strftime("%Y-%m-%d %H:%M:%S")
     item_dict['updated_at'] = item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
     

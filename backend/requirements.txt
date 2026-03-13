@@ -3,6 +3,7 @@ uvicorn[standard]
 websockets
 pydantic-settings
 tortoise-orm
+aerich
 requests
 openai
 paramiko

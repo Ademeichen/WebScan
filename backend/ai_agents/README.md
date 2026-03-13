@@ -618,20 +618,20 @@ SEEBUG_API_KEY=your_seebug_key
 python main.py
 ```
 
-服务将在 `http://127.0.0.1:3000` 启动。
+服务将在 `http://127.0.0.1:8888` 启动。
 
 ### 4. 使用Agent扫描
 
 ```bash
 # 启动Agent扫描
-curl -X POST "http://127.0.0.1:3000/api/ai_agents/scan" \
+curl -X POST "http://127.0.0.1:8888/api/ai_agents/scan" \
   -H "Content-Type: application/json" \
   -d '{
     "target": "https://www.baidu.com"
   }'
 
 # 查询任务状态
-curl "http://127.0.0.1:3000/api/ai_agents/tasks/{task_id}"
+curl "http://127.0.0.1:8888/api/ai_agents/tasks/{task_id}"
 ```
 
 ---

@@ -18,6 +18,6 @@ markers = [
 ]
 
 [tool.aerich]
-tortoise_orm = "config.TORTOISE_ORM"
+tortoise_orm = "backend.config.TORTOISE_ORM"
 location = "./migrations"
 src_folder = "./."

@@ -170,7 +170,7 @@ class Vulnerability(Model):
     task: fields.ForeignKeyRelation[Task] = fields.ForeignKeyField(
         "models.Task", related_name="vulnerabilities", description="关联任务"
     )
-    vuln_type = fields.CharField(max_length=100, description="漏洞类型：XSS, SQLInjection, CSRF, RCE, SSRF, etc.")
+    vuln_type = fields.CharField(max_length=255, description="漏洞类型：XSS, SQLInjection, CSRF, RCE, SSRF, etc.")
     severity = fields.CharField(max_length=20, description="严重程度：critical, high, medium, low, info")
     title = fields.CharField(max_length=255, description="漏洞标题")
     description = fields.TextField(null=True, description="漏洞详细描述")

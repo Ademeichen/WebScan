@@ -175,7 +175,9 @@ class WebSocketManager {
   startHeartbeat() {
     if (this.options.heartbeatInterval > 0) {
       this.heartbeatTimer = setInterval(() => {
-        this.send('heartbeat')
+        if (this.isConnected.value && this.ws) {
+          this.ws.send('ping')
+        }
       }, this.options.heartbeatInterval)
     }
   }
