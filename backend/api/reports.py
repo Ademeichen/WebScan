@@ -1339,19 +1339,59 @@ async def regenerate_report(report_id: int, background_tasks: BackgroundTasks):
             if s in stats:
                 stats[s] += 1
         
+        ai_analysis_result = None
+        try:
+            from backend.ai_agents.analyzers.ai_analyzer import AIAnalyzer
+            analyzer = AIAnalyzer()
+            ai_analysis = await analyzer.analyze_scan_results(
+                vuln_list,
+                {},
+                {"target": task.target, "task_name": task.task_name}
+            )
+            ai_analysis_result = ai_analysis.to_dict() if hasattr(ai_analysis, 'to_dict') else None
+            logger.info(f"[重新生成] AI分析完成 | 结果: {ai_analysis_result.get('summary', 'N/A') if ai_analysis_result else 'N/A'}")
+        except Exception as ai_error:
+            logger.warning(f"[重新生成] AI分析跳过 | 原因: {str(ai_error)}")
+        
+        existing_content = {}
+        try:
+            existing_content = json.loads(report.content) if report.content else {}
+        except:
+            existing_content = {}
+        
+        execution_history = existing_content.get('execution_history', [])
+        target_context = existing_content.get('target_context', {})
+        tool_results = existing_content.get('tool_results', {})
+        
         report_content = {
             "task_name": task.task_name,
             "target": task.target,
             "scan_time": str(task.created_at),
+            "task_type": task.task_type,
+            "task_status": task.status,
             "summary": stats,
             "vulnerabilities": vuln_list,
+            "vulnerabilities_by_severity": {
+                "critical": [v for v in vuln_list if v["severity"] == "critical"],
+                "high": [v for v in vuln_list if v["severity"] == "high"],
+                "medium": [v for v in vuln_list if v["severity"] == "medium"],
+                "low": [v for v in vuln_list if v["severity"] == "low"],
+                "info": [v for v in vuln_list if v["severity"] == "info"]
+            },
+            "execution_history": execution_history,
+            "target_context": target_context,
+            "tool_results": tool_results,
             "regenerated_at": datetime.now().isoformat()
         }
         
+        risk = calculate_risk_score(vuln_list)
+        report_content["risk_assessment"] = risk
+        
+        if ai_analysis_result:
+            report_content["ai_analysis"] = ai_analysis_result
+        
         report.content = json.dumps(report_content)
         await report.save()
-        
-        risk = calculate_risk_score(vuln_list)
         
         logger.info(f"[重新生成] 完成 | 报告ID: {report_id}")
         
@@ -1361,7 +1401,9 @@ async def regenerate_report(report_id: int, background_tasks: BackgroundTasks):
             data={
                 "report_id": report.id,
                 "total_vulnerabilities": len(vuln_list),
-                "risk_assessment": risk
+                "risk_assessment": risk,
+                "has_ai_analysis": ai_analysis_result is not None,
+                "has_execution_history": len(execution_history) > 0
             }
         )
     except HTTPException:

@@ -167,12 +167,25 @@ async def scan_poc(request: POCScanRequest):
         ... }
     """
     try:
+        if not request.target or not request.target.strip():
+            raise HTTPException(status_code=400, detail="扫描目标不能为空")
+        
+        if not request.target.startswith(('http://', 'https://')):
+            raise HTTPException(status_code=400, detail="扫描目标必须是有效的URL格式(以http://或https://开头)")
+        
+        if request.timeout < 1 or request.timeout > 300:
+            raise HTTPException(status_code=400, detail="超时时间必须在1-300秒之间")
+        
+        if request.poc_types:
+            invalid_types = [t for t in request.poc_types if t not in POC_FUNCTIONS]
+            if invalid_types:
+                raise HTTPException(status_code=400, detail=f"无效的POC类型: {', '.join(invalid_types)}")
+        
         logger.info(f"[POC扫描] 开始处理请求 | 目标: {request.target} | POC类型: {request.poc_types}")
         
         from backend.models import Task
         from task_executor import task_executor
         
-        # 1. 创建任务记录
         poc_types = request.poc_types if request.poc_types else list(POC_FUNCTIONS.keys())
         task_name = f"POC Scan: {request.target}"
         if len(poc_types) == 1:
@@ -193,7 +206,6 @@ async def scan_poc(request: POCScanRequest):
         )
         logger.info(f"[POC扫描] 任务创建成功 | 任务ID: {new_task.id}")
         
-        # 2. 启动异步任务
         asyncio.create_task(task_executor.start_task(
             task_id=new_task.id,
             target=request.target,
@@ -204,7 +216,6 @@ async def scan_poc(request: POCScanRequest):
         ))
         logger.info(f"[POC扫描] 任务已启动执行 | 任务ID: {new_task.id}")
         
-        # 3. 返回任务信息
         return APIResponse(
             code=200,
             message="POC 扫描任务已创建",
@@ -216,6 +227,8 @@ async def scan_poc(request: POCScanRequest):
             }
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[POC扫描] 任务执行失败 | 目标: {request.target} | 错误: {str(e)}")
         raise HTTPException(status_code=500, detail=f"创建任务失败: {str(e)}")
