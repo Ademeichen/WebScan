@@ -243,8 +243,7 @@
 
 <script>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { tasksApi, pocApi } from '@/utils/api'
+import { tasksApi } from '@/utils/api'
 import POCScanForm from '@/components/business/POCScanForm.vue'
 import Alert from '@/components/common/Alert.vue'
 import { formatDate } from '@/utils/date'
@@ -256,7 +255,6 @@ export default {
     Alert
   },
   setup() {
-    const router = useRouter()
     const errorMessage = ref('')
     const successMessage = ref('')
     const recentScans = ref([])
@@ -503,13 +501,19 @@ export default {
   flex-direction: column;
   align-items: center;
   padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--bg-secondary);
+  background-color: var(--el-fill-color-light);
   border-radius: var(--border-radius-lg);
   min-width: 80px;
+  transition: all var(--transition-base);
+}
+
+.stat-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-badge.success {
-  background-color: var(--color-success-bg);
+  background-color: var(--el-color-success-light-9);
 }
 
 .stat-value {
@@ -519,7 +523,7 @@ export default {
 }
 
 .stat-badge.success .stat-value {
-  color: var(--color-success);
+  color: var(--el-color-success);
 }
 
 .stat-label {
@@ -531,7 +535,7 @@ export default {
 
 .main-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
   gap: var(--spacing-xl);
   align-items: start;
 }
@@ -540,6 +544,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
+  min-width: 0;
 }
 
 .card {
@@ -547,6 +552,11 @@ export default {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .card-header {
@@ -570,7 +580,7 @@ export default {
 .card-header .icon {
   width: 20px;
   height: 20px;
-  color: var(--color-primary);
+  color: var(--el-color-primary);
 }
 
 .card-body {
@@ -578,7 +588,7 @@ export default {
 }
 
 .form-card {
-  background: linear-gradient(135deg, var(--card-background) 0%, rgba(64, 158, 255, 0.02) 100%);
+  background: linear-gradient(135deg, var(--card-background) 0%, var(--el-color-primary-light-9) 100%);
 }
 
 .results-card {
@@ -599,25 +609,25 @@ export default {
 }
 
 .status-pending {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning);
+  background-color: var(--el-color-warning-light-9);
+  color: var(--el-color-warning);
 }
 
 .status-running {
-  background-color: var(--color-info-bg);
-  color: var(--color-info);
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
   animation: pulse 2s ease-in-out infinite;
 }
 
 .status-completed {
-  background-color: var(--color-success-bg);
-  color: var(--color-success);
+  background-color: var(--el-color-success-light-9);
+  color: var(--el-color-success);
 }
 
 .status-failed,
 .status-cancelled {
-  background-color: var(--color-error-bg);
-  color: var(--color-error);
+  background-color: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
 }
 
 @keyframes pulse {
@@ -630,7 +640,7 @@ export default {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--spacing-md);
   padding: var(--spacing-md);
-  background-color: var(--bg-secondary);
+  background-color: var(--el-fill-color-light);
   border-radius: var(--border-radius);
   margin-bottom: var(--spacing-lg);
 }
@@ -657,7 +667,7 @@ export default {
 .progress-section {
   margin-bottom: var(--spacing-lg);
   padding: var(--spacing-md);
-  background-color: var(--bg-secondary);
+  background-color: var(--el-fill-color-light);
   border-radius: var(--border-radius);
 }
 
@@ -672,7 +682,7 @@ export default {
 
 .progress-percent {
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--el-color-primary);
 }
 
 .progress-bar {
@@ -684,7 +694,7 @@ export default {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light-3) 100%);
+  background: linear-gradient(90deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
   border-radius: var(--border-radius-full);
   transition: width 0.3s ease;
 }
@@ -720,53 +730,73 @@ export default {
 
 .stat-card {
   padding: var(--spacing-md);
-  border-radius: var(--border-radius);
+  border-radius: var(--border-radius-lg);
   text-align: center;
-  background-color: var(--bg-secondary);
+  background-color: var(--el-fill-color-light);
   border-left: 4px solid transparent;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.3;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-card.critical {
   border-left-color: var(--critical-risk);
-  background-color: rgba(192, 57, 43, 0.1);
+  background: linear-gradient(135deg, rgba(192, 57, 43, 0.08) 0%, rgba(192, 57, 43, 0.03) 100%);
+  color: var(--critical-risk);
 }
 
 .stat-card.high {
   border-left-color: var(--high-risk);
-  background-color: rgba(231, 76, 60, 0.1);
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.08) 0%, rgba(231, 76, 60, 0.03) 100%);
+  color: var(--high-risk);
 }
 
 .stat-card.medium {
   border-left-color: var(--medium-risk);
-  background-color: rgba(243, 156, 18, 0.1);
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.08) 0%, rgba(243, 156, 18, 0.03) 100%);
+  color: var(--medium-risk);
 }
 
 .stat-card.low {
   border-left-color: var(--low-risk);
-  background-color: rgba(52, 152, 219, 0.1);
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.08) 0%, rgba(52, 152, 219, 0.03) 100%);
+  color: var(--low-risk);
 }
 
 .stat-card.info {
   border-left-color: var(--info-risk);
-  background-color: rgba(149, 165, 166, 0.1);
+  background: linear-gradient(135deg, rgba(149, 165, 166, 0.08) 0%, rgba(149, 165, 166, 0.03) 100%);
+  color: var(--info-risk);
 }
 
 .stat-number {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: currentColor;
+  line-height: 1.2;
 }
-
-.stat-card.critical .stat-number { color: var(--critical-risk); }
-.stat-card.high .stat-number { color: var(--high-risk); }
-.stat-card.medium .stat-number { color: var(--medium-risk); }
-.stat-card.low .stat-number { color: var(--low-risk); }
-.stat-card.info .stat-number { color: var(--info-risk); }
 
 .stat-title {
   font-size: 0.8rem;
   color: var(--text-secondary);
   margin-top: var(--spacing-xs);
+  font-weight: 500;
 }
 
 .poc-results {
@@ -789,15 +819,20 @@ export default {
 
 .result-item {
   padding: var(--spacing-md);
-  background-color: var(--bg-secondary);
+  background-color: var(--el-fill-color-light);
   border-radius: var(--border-radius);
-  border-left: 3px solid var(--color-success);
+  border-left: 3px solid var(--el-color-success);
   transition: all var(--transition-base);
+}
+
+.result-item:hover {
+  background-color: var(--el-fill-color);
+  transform: translateX(4px);
 }
 
 .result-item.has-vuln {
   border-left-color: var(--high-risk);
-  background-color: rgba(231, 76, 60, 0.05);
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.05) 0%, rgba(231, 76, 60, 0.02) 100%);
 }
 
 .result-header {
@@ -820,18 +855,18 @@ export default {
 }
 
 .result-status.safe {
-  background-color: var(--color-success-bg);
-  color: var(--color-success);
+  background-color: var(--el-color-success-light-9);
+  color: var(--el-color-success);
 }
 
 .result-status.vulnerable {
-  background-color: var(--color-error-bg);
-  color: var(--color-error);
+  background-color: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
 }
 
 .result-details {
   padding: var(--spacing-sm);
-  background-color: var(--bg-primary);
+  background-color: var(--card-background);
   border-radius: var(--border-radius-sm);
   margin-bottom: var(--spacing-sm);
 }
@@ -876,7 +911,7 @@ export default {
   align-items: center;
   justify-content: center;
   padding: var(--spacing-2xl);
-  color: var(--color-success);
+  color: var(--el-color-success);
 }
 
 .empty-icon {
@@ -894,10 +929,68 @@ export default {
 .sidebar {
   position: sticky;
   top: var(--spacing-lg);
+  height: fit-content;
+  max-height: calc(100vh - var(--spacing-xl) * 2);
+  min-height: 400px;
 }
 
 .sidebar-card {
   position: relative;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: inherit;
+}
+
+.sidebar-card .card-header {
+  background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
+  padding: var(--spacing-md) var(--spacing-lg);
+  flex-shrink: 0;
+}
+
+.sidebar-card .card-header h2 {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0;
+}
+
+.sidebar-card .card-header h2 .icon {
+  width: 20px;
+  height: 20px;
+  stroke: #fff;
+}
+
+.sidebar-card .card-body {
+  padding: var(--spacing-md);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.sidebar-card .card-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-card .card-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-card .card-body::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.sidebar-card .card-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }
 
 .refresh-btn {
@@ -908,16 +1001,15 @@ export default {
   height: 32px;
   padding: 0;
   border: none;
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.2);
   border-radius: var(--border-radius);
   cursor: pointer;
-  color: var(--text-secondary);
+  color: #fff;
   transition: all var(--transition-base);
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background-color: var(--bg-secondary);
-  color: var(--color-primary);
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 .refresh-btn:disabled {
@@ -958,7 +1050,7 @@ export default {
   width: 20px;
   height: 20px;
   border: 2px solid var(--border-color);
-  border-top-color: var(--color-primary);
+  border-top-color: var(--el-color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -979,27 +1071,48 @@ export default {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  max-height: calc(100vh - 300px);
-  overflow-y: auto;
 }
 
 .history-item {
   padding: var(--spacing-md);
-  background-color: var(--bg-secondary);
+  background: var(--card-background);
   border-radius: var(--border-radius);
   cursor: pointer;
   transition: all var(--transition-base);
-  border: 2px solid transparent;
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.history-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--el-color-primary);
+  opacity: 0;
+  transition: opacity var(--transition-base);
 }
 
 .history-item:hover {
-  background-color: var(--color-primary-bg);
+  background: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary-light-5);
   transform: translateX(4px);
 }
 
+.history-item:hover::before {
+  opacity: 1;
+}
+
 .history-item.active {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary-bg);
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-8);
+}
+
+.history-item.active::before {
+  opacity: 1;
 }
 
 .history-header {
@@ -1022,10 +1135,12 @@ export default {
 
 .history-status {
   padding: 2px var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-full);
   font-size: 0.7rem;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .history-target {
@@ -1075,28 +1190,36 @@ export default {
 }
 
 .vuln-badge.critical {
-  background-color: rgba(192, 57, 43, 0.2);
+  background-color: var(--el-color-danger-light-8);
   color: var(--critical-risk);
 }
 
 .vuln-badge.high {
-  background-color: rgba(231, 76, 60, 0.2);
+  background-color: var(--el-color-danger-light-9);
   color: var(--high-risk);
 }
 
 .vuln-badge.medium {
-  background-color: rgba(243, 156, 18, 0.2);
+  background-color: var(--el-color-warning-light-9);
   color: var(--medium-risk);
 }
 
 .vuln-badge.low {
-  background-color: rgba(52, 152, 219, 0.2);
+  background-color: var(--el-color-primary-light-9);
   color: var(--low-risk);
+}
+
+@media (max-width: 1400px) {
+  .main-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    gap: var(--spacing-lg);
+  }
 }
 
 @media (max-width: 1200px) {
   .main-layout {
-    grid-template-columns: 1fr 280px;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+    gap: var(--spacing-md);
   }
 }
 
@@ -1107,10 +1230,12 @@ export default {
 
   .sidebar {
     position: static;
+    max-height: 500px;
+    min-height: 300px;
   }
 
-  .history-list {
-    max-height: 400px;
+  .sidebar-card {
+    max-height: 500px;
   }
 }
 
@@ -1135,6 +1260,80 @@ export default {
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-number {
+    font-size: 1.75rem;
+  }
+
+  .sidebar {
+    max-height: 400px;
+    min-height: 250px;
+  }
+
+  .sidebar-card {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .poc-scan-page {
+    padding: var(--spacing-sm);
+  }
+
+  .page-header {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+  }
+
+  .header-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .header-stats {
+    flex-wrap: wrap;
+  }
+
+  .stat-badge {
+    min-width: 70px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .card-header {
+    padding: var(--spacing-md);
+  }
+
+  .card-body {
+    padding: var(--spacing-md);
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .stat-card {
+    padding: var(--spacing-sm);
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+  }
+
+  .results-list {
+    max-height: 300px;
+  }
+
+  .sidebar {
+    max-height: 350px;
+    min-height: 200px;
+  }
+
+  .sidebar-card {
+    max-height: 350px;
   }
 }
 </style>

@@ -1,6 +1,19 @@
 # Changelog
 All notable changes to the WebScan AI Security Platform will be documented in this file.
 
+## [1.0.1] - 2026-03-14
+
+### Fixed
+#### 文档修复
+- **README.md格式修复**: 修复了多处端口号显示格式错误
+  - 修复配置示例中 `PORT=:8888` 为 `PORT=8888`
+  - 修复uvicorn命令中 `--:8888` 为 `--port 8888`
+  - 修复环境变量中 `VITE_REQUEST_TIMEOUT=:88880` 为 `VITE_REQUEST_TIMEOUT=8880`
+  - 修复Docker Compose端口映射格式
+  - 修复端口配置表格中的显示格式
+
+---
+
 ## [1.0.0] - 2026-03-13
 
 ### Added

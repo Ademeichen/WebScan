@@ -407,7 +407,7 @@ class TaskExecutor:
                     "target": target,
                     "task_type": task_type if 'task_type' in dir() else 'unknown',
                     "timeout": timeout,
-                    "started_at": datetime.now(datetime.UTC).isoformat()
+                    "started_at": datetime.utcnow().isoformat()
                 })
                 
                 task_state_logger.log_task_started(
@@ -615,39 +615,124 @@ class TaskExecutor:
         await task.save()
         
         logger.info(f"AI Agent任务 {task_id} 开始执行: {target}")
+
+        async def broadcast_subgraph_progress(subgraph_type: str, status: str, progress: int, execution_time: float = 0):
+            """广播子图进度更新"""
+            await manager.broadcast({
+                "type": "subgraph:progress",
+                "payload": {
+                    "task_id": task_id,
+                    "subgraph_type": subgraph_type,
+                    "status": status,
+                    "progress": progress,
+                    "execution_time": execution_time
+                }
+            })
         
-        # 1. 初始化状态
-        # 从 scan_config 中提取参数
         user_tools = scan_config.get('user_tools', [])
         user_requirement = scan_config.get('user_requirement', '')
         memory_info = scan_config.get('memory_info', '')
+        strategy = scan_config.get('strategy', 'standard')
+        concurrency = scan_config.get('concurrency', 5)
+        timeout = scan_config.get('timeout', 300)
+        selected_tools = scan_config.get('selected_tools', [])
+        
+        strategy_config = {
+            'quick': {'max_depth': 2, 'timeout_per_stage': 60, 'max_tools': 3},
+            'standard': {'max_depth': 3, 'timeout_per_stage': 120, 'max_tools': 5},
+            'deep': {'max_depth': 5, 'timeout_per_stage': 300, 'max_tools': 10}
+        }
+        
+        scan_params = strategy_config.get(strategy, strategy_config['standard'])
+        logger.info(f"扫描策略: {strategy}, 并发数: {concurrency}, 超时: {timeout}s, 参数: {scan_params}")
         
         initial_state = AgentState(
             target=target,
-            task_id=str(task_id),  # 传递任务ID用于WebSocket广播
-            target_context=scan_config or {},
-            user_tools=user_tools,
+            task_id=str(task_id),
+            target_context={
+                **scan_config,
+                'strategy': strategy,
+                'concurrency': concurrency,
+                'timeout': timeout,
+                'selected_tools': selected_tools,
+                **scan_params
+            },
+            user_tools=user_tools or selected_tools,
             user_requirement=user_requirement,
             memory_info=memory_info
         )
         
-        # 从配置中提取特定字段到状态属性
         if scan_config and "custom_tasks" in scan_config and scan_config["custom_tasks"]:
             initial_state.planned_tasks = scan_config["custom_tasks"]
         
-        # 2. 构建并编译图
         agent_graph = ScanAgentGraph()
-        app = agent_graph.graph.compile()
         
-        # 3. 执行工作流
-        # 使用 ainvoke 异步执行
-        final_state = await app.ainvoke(initial_state)
+        await broadcast_subgraph_progress('planning', 'running', 0, 0)
         
-        # 4. 处理结果
+        try:
+            import time
+            start_time = time.time()
+            
+            await broadcast_subgraph_progress('planning', 'running', 10, 0)
+            
+            state1 = await agent_graph.invoke_info_collection(initial_state)
+            planning_time = time.time() - start_time
+            await broadcast_subgraph_progress('planning', 'completed', 100, planning_time)
+            logger.info(f"[Task {task_id}] 信息收集子图完成, 耗时: {planning_time:.2f}s")
+            
+            task.progress = 30
+            await task.save()
+            await manager.broadcast({
+                "type": "task_progress",
+                "payload": {"task_id": task_id, "progress": 30, "status": "running"}
+            })
+            
+            await broadcast_subgraph_progress('tool_execution', 'running', 0, 0)
+            vuln_scan_start = time.time()
+            
+            state2 = await agent_graph.invoke_vuln_scan(state1)
+            vuln_scan_time = time.time() - vuln_scan_start
+            await broadcast_subgraph_progress('tool_execution', 'completed', 100, vuln_scan_time)
+            logger.info(f"[Task {task_id}] 漏洞扫描子图完成, 耗时: {vuln_scan_time:.2f}s")
+            
+            task.progress = 60
+            await task.save()
+            await manager.broadcast({
+                "type": "task_progress",
+                "payload": {"task_id": task_id, "progress": 60, "status": "running"}
+            })
+            
+            await broadcast_subgraph_progress('poc_verification', 'running', 0, 0)
+            poc_start = time.time()
+            
+            state3 = await agent_graph.invoke_poc_verification(state2)
+            poc_time = time.time() - poc_start
+            await broadcast_subgraph_progress('poc_verification', 'completed', 100, poc_time)
+            logger.info(f"[Task {task_id}] POC验证子图完成, 耗时: {poc_time:.2f}s")
+            
+            task.progress = 80
+            await task.save()
+            await manager.broadcast({
+                "type": "task_progress",
+                "payload": {"task_id": task_id, "progress": 80, "status": "running"}
+            })
+            
+            await broadcast_subgraph_progress('report', 'running', 0, 0)
+            report_start = time.time()
+            
+            final_state = await agent_graph.invoke_result_analysis(state3)
+            report_time = time.time() - report_start
+            await broadcast_subgraph_progress('report', 'completed', 100, report_time)
+            logger.info(f"[Task {task_id}] 报告生成子图完成, 耗时: {report_time:.2f}s")
+            
+        except Exception as e:
+            logger.error(f"[Task {task_id}] Agent执行失败: {e}", exc_info=True)
+            await broadcast_subgraph_progress('planning', 'failed', 0, 0)
+            raise
+        
         task.status = 'completed'
         task.progress = 100
         
-        # 提取结果（兼容对象和字典模式）
         def get_state_value(state, key, default):
             if state is None:
                 return default
@@ -679,13 +764,11 @@ class TaskExecutor:
             "stages": stage_status
         }
         
-        # Sanitize entire result data to ensure no circular references exist in any field
         result_data = sanitize_json_data(result_data)
         
         task.result = json.dumps(result_data, default=str)
         await task.save()
         
-        # 5. 持久化漏洞信息
         for vuln in vulnerabilities:
             try:
                 await Vulnerability.create(
@@ -703,7 +786,6 @@ class TaskExecutor:
             except Exception as e:
                 logger.error(f"Failed to save vulnerability: {e}")
 
-        # 6. 生成/保存报告
         if report_content:
             try:
                 await Report.create(
@@ -717,7 +799,15 @@ class TaskExecutor:
         
         logger.info(f"AI Agent任务 {task_id} 执行完成")
         
-        # 广播任务完成
+        await self._create_task_notification(
+            task_id=task_id,
+            task_name=task.task_name,
+            task_type='ai_agent_scan',
+            status='completed',
+            target=target,
+            vuln_count=len(vulnerabilities)
+        )
+        
         await manager.broadcast({
             "type": "task_completed",
             "payload": {
@@ -748,6 +838,44 @@ class TaskExecutor:
         
         return 'Info'
     
+    async def _create_task_notification(self, task_id: int, task_name: str, task_type: str, status: str, target: str = '', vuln_count: int = 0, error: str = ''):
+        """创建任务完成/失败通知"""
+        try:
+            from backend.models import Notification, User
+            
+            default_user = await User.get_or_none(id=1)
+            if not default_user:
+                logger.warning(f"无法创建通知: 默认用户不存在")
+                return
+            
+            if status == 'completed':
+                title = f"任务完成: {task_name}"
+                if vuln_count > 0:
+                    message = f"扫描任务 {task_name} 已完成，目标: {target}，发现 {vuln_count} 个漏洞。"
+                    notif_type = 'scan-complete'
+                else:
+                    message = f"扫描任务 {task_name} 已完成，目标: {target}，未发现漏洞。"
+                    notif_type = 'scan-complete'
+            elif status == 'failed':
+                title = f"任务失败: {task_name}"
+                message = f"扫描任务 {task_name} 执行失败，目标: {target}。错误: {error}"
+                notif_type = 'scan-failed'
+            else:
+                return
+            
+            await Notification.create(
+                user=default_user,
+                title=title,
+                message=message,
+                type=notif_type,
+                read=False
+            )
+            
+            logger.info(f"已创建任务通知: {title}")
+            
+        except Exception as e:
+            logger.error(f"创建任务通知失败: {e}")
+    
     async def execute_scan_task(self, task_id: int, target: str, scan_config: Dict):
         """
         执行AWVS扫描任务并实时更新进度
@@ -758,20 +886,27 @@ class TaskExecutor:
             from AVWS.API.Scan import Scan
             from backend.config import settings
             
-            # 获取任务
             task = await Task.get(id=task_id)
             
-            # 初始化AWVS客户端
             target_client = Target(settings.AWVS_API_URL, settings.AWVS_API_KEY)
             scan_client = Scan(settings.AWVS_API_URL, settings.AWVS_API_KEY)
             
-            # 更新任务状态为运行中
+            current_config = json.loads(task.config) if task.config else {}
+            existing_scan_id = current_config.get('awvs_scan_id') or current_config.get('scan_id')
+            existing_target_id = current_config.get('awvs_target_id') or current_config.get('target_id')
+            
+            if existing_scan_id:
+                logger.info(f"任务 {task_id} 恢复监控现有AWVS扫描: {existing_scan_id}")
+                task.status = 'running'
+                await task.save()
+                await self._monitor_scan_progress(task_id, existing_scan_id, scan_client)
+                return
+            
             task.status = 'running'
             task.progress = 5
             await task.save()
             logger.info(f"任务 {task_id} 开始执行: {target}")
             
-            # 创建AWVS目标
             target_desc = f"Task {task_id}: {task.task_name}"
             target_id = target_client.add(target, target_desc)
             
@@ -785,15 +920,13 @@ class TaskExecutor:
             
             logger.info(f"任务 {task_id} 创建AWVS目标成功: {target_id}")
             
-            # 更新任务配置,保存target_id
-            current_config = json.loads(task.config) if task.config else {}
             current_config['awvs_target_id'] = target_id
+            current_config['target_id'] = target_id
             task.config = json.dumps(current_config)
             
             task.progress = 10
             await task.save()
             
-            # 启动扫描
             scan_profile = scan_config.get('profile', 'full_scan')
             scan_id = scan_client.add(target_id, scan_profile)
             
@@ -808,12 +941,11 @@ class TaskExecutor:
             
             task.progress = 20
             
-            # 更新任务配置,保存scan_id
             current_config['awvs_scan_id'] = scan_id
+            current_config['scan_id'] = scan_id
             task.config = json.dumps(current_config)
             await task.save()
             
-            # 开始监控扫描进度
             await self._monitor_scan_progress(task_id, scan_id, scan_client)
             
         except Exception as e:
@@ -872,8 +1004,17 @@ class TaskExecutor:
                     await task.save()
                     logger.info(f"任务 {task_id} 扫描完成")
                     await self._save_scan_results(task_id, scan_id, scan_client)
+                    
+                    vuln_count = scan_info.get('vulnerabilities_count', 0)
+                    await self._create_task_notification(
+                        task_id=task_id,
+                        task_name=task.task_name,
+                        task_type='awvs_scan',
+                        status='completed',
+                        target=task.target,
+                        vuln_count=vuln_count
+                    )
 
-                    # 广播任务完成
                     await manager.broadcast({
                         "type": "task_completed",
                         "payload": {
@@ -890,7 +1031,15 @@ class TaskExecutor:
                     await task.save()
                     logger.error(f"任务 {task_id} 扫描失败")
                     
-                    # 广播任务失败
+                    await self._create_task_notification(
+                        task_id=task_id,
+                        task_name=task.task_name,
+                        task_type='awvs_scan',
+                        status='failed',
+                        target=task.target,
+                        error='AWVS扫描失败'
+                    )
+                    
                     await manager.broadcast({
                         "type": "task_completed",
                         "payload": {

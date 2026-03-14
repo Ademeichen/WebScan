@@ -188,6 +188,9 @@ class ScanAgentGraph:
         """
         logger.info("🔧 初始化扫描Agent图")
         
+        # 初始化所有工具
+        initialize_tools()
+        
         # 创建核心节点实例
         self.env_awareness_node = EnvironmentAwarenessNode()
         self.planning_node = TaskPlanningNode()
@@ -330,56 +333,177 @@ class ScanAgentGraph:
         """
         构建信息收集子图
         
-        负责环境感知和任务规划阶段。
+        负责环境感知、任务规划和信息收集工具执行阶段。
+        只执行 backend/plugins 目录下的信息收集工具。
         
         Returns:
             StateGraph: 信息收集子图
         """
-        _log_node_entry("_build_info_collection_graph", "SUBGRAPH_BUILD", {"total_nodes": 2})
+        _log_node_entry("_build_info_collection_graph", "SUBGRAPH_BUILD", {"total_nodes": 4})
+
+        from .nodes import (
+            EnvironmentAwarenessNode,
+            InfoTaskPlanningNode,
+            InfoToolExecutionNode,
+            InfoResultVerificationNode
+        )
 
         workflow = StateGraph(AgentState)
 
-        workflow.add_node("environment_awareness", self.env_awareness_node)
-        workflow.add_node("task_planning", self.planning_node)
+        env_node = EnvironmentAwarenessNode()
+        planning_node = InfoTaskPlanningNode()
+        execution_node = InfoToolExecutionNode()
+        verification_node = InfoResultVerificationNode()
+
+        workflow.add_node("environment_awareness", env_node)
+        workflow.add_node("info_task_planning", planning_node)
+        workflow.add_node("info_tool_execution", execution_node)
+        workflow.add_node("info_result_verification", verification_node)
 
         workflow.set_entry_point("environment_awareness")
-        workflow.add_edge("environment_awareness", "task_planning")
-        workflow.add_edge("task_planning", END)
+        workflow.add_edge("environment_awareness", "info_task_planning")
+        workflow.add_edge("info_task_planning", "info_tool_execution")
+        workflow.add_edge("info_tool_execution", "info_result_verification")
+        workflow.add_conditional_edges(
+            "info_result_verification",
+            self._should_continue_info_collection,
+            {
+                "continue": "info_tool_execution",
+                "complete": END
+            }
+        )
 
-        logger.info("📊 信息收集子图构建完成")
-        _log_node_exit("_build_info_collection_graph", "SUBGRAPH_BUILD", "success", {"nodes_count": 2, "edges_count": 2})
+        logger.info("📊 信息收集子图构建完成 (4节点)")
+        _log_node_exit("_build_info_collection_graph", "SUBGRAPH_BUILD", "success", {"nodes_count": 4, "edges_count": 4})
         return workflow
 
-    def _build_vulnerability_scan_graph(self) -> StateGraph:
+    def _should_continue_info_collection(self, state: AgentState) -> str:
+        """
+        决定是否继续信息收集
+        
+        Args:
+            state: Agent状态
+            
+        Returns:
+            str: "continue" 或 "complete"
+        """
+        if state.planned_tasks and len(state.completed_tasks) < 50:
+            return "continue"
+        return "complete"
+
+    def _build_vuln_scan_graph(self) -> StateGraph:
         """
         构建漏洞扫描子图
         
-        负责工具执行和结果验证阶段，支持循环执行多个工具。
+        负责执行 backend/vulnerability_scan_plugins 目录下的漏洞扫描工具。
         
         Returns:
             StateGraph: 漏洞扫描子图
         """
-        _log_node_entry("_build_vulnerability_scan_graph", "SUBGRAPH_BUILD", {"total_nodes": 2})
+        _log_node_entry("_build_vuln_scan_graph", "SUBGRAPH_BUILD", {"total_nodes": 3})
+
+        from .nodes import (
+            VulnScanPlanningNode,
+            VulnToolExecutionNode,
+            VulnResultAggregationNode
+        )
 
         workflow = StateGraph(AgentState)
 
-        workflow.add_node("tool_execution", self.execution_node)
-        workflow.add_node("result_verification", self.verification_node)
+        planning_node = VulnScanPlanningNode()
+        execution_node = VulnToolExecutionNode()
+        aggregation_node = VulnResultAggregationNode()
 
-        workflow.set_entry_point("tool_execution")
-        workflow.add_edge("tool_execution", "result_verification")
+        workflow.add_node("vuln_scan_planning", planning_node)
+        workflow.add_node("vuln_tool_execution", execution_node)
+        workflow.add_node("vuln_result_aggregation", aggregation_node)
+
+        workflow.set_entry_point("vuln_scan_planning")
+        workflow.add_edge("vuln_scan_planning", "vuln_tool_execution")
         workflow.add_conditional_edges(
-            "result_verification",
-            self._should_continue_or_verify,
+            "vuln_tool_execution",
+            self._should_continue_vuln_scan,
             {
-                "continue": "tool_execution",
-                "analyze": END
+                "continue": "vuln_tool_execution",
+                "aggregate": "vuln_result_aggregation"
+            }
+        )
+        workflow.add_edge("vuln_result_aggregation", END)
+
+        logger.info("📊 漏洞扫描子图构建完成 (3节点)")
+        _log_node_exit("_build_vuln_scan_graph", "SUBGRAPH_BUILD", "success", {"nodes_count": 3, "edges_count": 3})
+        return workflow
+
+    def _should_continue_vuln_scan(self, state: AgentState) -> str:
+        """
+        决定是否继续漏洞扫描
+        
+        Args:
+            state: Agent状态
+            
+        Returns:
+            str: "continue" 或 "aggregate"
+        """
+        if state.planned_tasks and len(state.completed_tasks) < 50:
+            return "continue"
+        return "aggregate"
+
+    def _build_poc_verification_graph(self) -> StateGraph:
+        """
+        构建POC验证子图
+        
+        负责执行POC验证，确认漏洞可利用性。
+        
+        Returns:
+            StateGraph: POC验证子图
+        """
+        _log_node_entry("_build_poc_verification_graph", "SUBGRAPH_BUILD", {"total_nodes": 3})
+
+        from .nodes import (
+            PocTaskPlanningNode,
+            PocExecutionNode,
+            PocResultVerificationNode
+        )
+
+        workflow = StateGraph(AgentState)
+
+        planning_node = PocTaskPlanningNode()
+        execution_node = PocExecutionNode()
+        verification_node = PocResultVerificationNode()
+
+        workflow.add_node("poc_task_planning", planning_node)
+        workflow.add_node("poc_execution", execution_node)
+        workflow.add_node("poc_result_verification", verification_node)
+
+        workflow.set_entry_point("poc_task_planning")
+        workflow.add_edge("poc_task_planning", "poc_execution")
+        workflow.add_edge("poc_execution", "poc_result_verification")
+        workflow.add_conditional_edges(
+            "poc_result_verification",
+            self._should_continue_poc_verification,
+            {
+                "continue": "poc_execution",
+                "complete": END
             }
         )
 
-        logger.info("📊 漏洞扫描子图构建完成")
-        _log_node_exit("_build_vulnerability_scan_graph", "SUBGRAPH_BUILD", "success", {"nodes_count": 2, "edges_count": 3})
+        logger.info("📊 POC验证子图构建完成 (3节点)")
+        _log_node_exit("_build_poc_verification_graph", "SUBGRAPH_BUILD", "success", {"nodes_count": 3, "edges_count": 4})
         return workflow
+
+    def _should_continue_poc_verification(self, state: AgentState) -> str:
+        """
+        决定是否继续POC验证
+        
+        Args:
+            state: Agent状态
+            
+        Returns:
+            str: "continue" 或 "complete"
+        """
+        if state.planned_tasks and len(state.completed_tasks) < 50:
+            return "continue"
+        return "complete"
 
     def _build_result_analysis_graph(self) -> StateGraph:
         """
@@ -477,9 +601,12 @@ class ScanAgentGraph:
             config = {"recursion_limit": 100}
             final_state = await compiled_graph.ainvoke(initial_state, config=config)
             
-            logger.info(f"✅ 信息收集子图执行完成: {getattr(final_state, 'task_id', initial_state.task_id)}")
+            if isinstance(final_state, dict):
+                final_state = AgentState.from_dict(final_state)
+            
+            logger.info(f"✅ 信息收集子图执行完成: {final_state.task_id}")
             _log_node_exit("invoke_info_collection", initial_state.task_id, "success", {
-                "planned_tasks": getattr(final_state, 'planned_tasks', [])
+                "planned_tasks": final_state.planned_tasks
             })
             
             return final_state
@@ -506,16 +633,83 @@ class ScanAgentGraph:
             config = {"recursion_limit": 200}
             final_state = await compiled_graph.ainvoke(initial_state, config=config)
             
-            logger.info(f"✅ 漏洞扫描子图执行完成: {getattr(final_state, 'task_id', initial_state.task_id)}")
+            if isinstance(final_state, dict):
+                final_state = AgentState.from_dict(final_state)
+            
+            logger.info(f"✅ 漏洞扫描子图执行完成: {final_state.task_id}")
             _log_node_exit("invoke_vulnerability_scan", initial_state.task_id, "success", {
-                "completed_tasks": len(getattr(final_state, 'completed_tasks', [])),
-                "vulnerabilities_found": len(getattr(final_state, 'vulnerabilities', []))
+                "completed_tasks": len(final_state.completed_tasks),
+                "vulnerabilities_found": len(final_state.vulnerabilities)
             })
             
             return final_state
         except Exception as e:
             logger.error(f"❌ 漏洞扫描子图执行失败: {initial_state.task_id}, 错误: {str(e)}")
             _log_error(initial_state.task_id, "invoke_vulnerability_scan", e, {"target": initial_state.target})
+            raise
+
+    async def invoke_vuln_scan(self, initial_state: AgentState) -> AgentState:
+        """
+        执行漏洞扫描子图（使用 vulnerability_scan_plugins 工具）
+        
+        Args:
+            initial_state: 初始状态（通常是信息收集子图的输出）
+            
+        Returns:
+            AgentState: 执行后的状态
+        """
+        logger.info(f"🚀 开始执行漏洞扫描子图: {initial_state.task_id}")
+        _log_node_entry("invoke_vuln_scan", initial_state.task_id, {"target": initial_state.target})
+        
+        try:
+            compiled_graph = self._build_vuln_scan_graph().compile()
+            config = {"recursion_limit": 100}
+            final_state = await compiled_graph.ainvoke(initial_state, config=config)
+            
+            if isinstance(final_state, dict):
+                final_state = AgentState.from_dict(final_state)
+            
+            logger.info(f"✅ 漏洞扫描子图执行完成: {final_state.task_id}")
+            _log_node_exit("invoke_vuln_scan", initial_state.task_id, "success", {
+                "vulnerabilities_found": len(final_state.vulnerabilities)
+            })
+            
+            return final_state
+        except Exception as e:
+            logger.error(f"❌ 漏洞扫描子图执行失败: {initial_state.task_id}, 错误: {str(e)}")
+            _log_error(initial_state.task_id, "invoke_vuln_scan", e, {"target": initial_state.target})
+            raise
+
+    async def invoke_poc_verification(self, initial_state: AgentState) -> AgentState:
+        """
+        执行POC验证子图
+        
+        Args:
+            initial_state: 初始状态（通常是漏洞扫描子图的输出）
+            
+        Returns:
+            AgentState: 执行后的状态
+        """
+        logger.info(f"🚀 开始执行POC验证子图: {initial_state.task_id}")
+        _log_node_entry("invoke_poc_verification", initial_state.task_id, {"target": initial_state.target})
+        
+        try:
+            compiled_graph = self._build_poc_verification_graph().compile()
+            config = {"recursion_limit": 200}
+            final_state = await compiled_graph.ainvoke(initial_state, config=config)
+            
+            if isinstance(final_state, dict):
+                final_state = AgentState.from_dict(final_state)
+            
+            logger.info(f"✅ POC验证子图执行完成: {final_state.task_id}")
+            _log_node_exit("invoke_poc_verification", initial_state.task_id, "success", {
+                "completed_tasks": len(final_state.completed_tasks)
+            })
+            
+            return final_state
+        except Exception as e:
+            logger.error(f"❌ POC验证子图执行失败: {initial_state.task_id}, 错误: {str(e)}")
+            _log_error(initial_state.task_id, "invoke_poc_verification", e, {"target": initial_state.target})
             raise
 
     async def invoke_result_analysis(self, initial_state: AgentState) -> AgentState:
@@ -536,9 +730,12 @@ class ScanAgentGraph:
             config = {"recursion_limit": 100}
             final_state = await compiled_graph.ainvoke(initial_state, config=config)
             
-            logger.info(f"✅ 结果分析子图执行完成: {getattr(final_state, 'task_id', initial_state.task_id)}")
+            if isinstance(final_state, dict):
+                final_state = AgentState.from_dict(final_state)
+            
+            logger.info(f"✅ 结果分析子图执行完成: {final_state.task_id}")
             _log_node_exit("invoke_result_analysis", initial_state.task_id, "success", {
-                "vulnerabilities": len(getattr(final_state, 'vulnerabilities', []))
+                "vulnerabilities": len(final_state.vulnerabilities)
             })
             
             return final_state
@@ -551,6 +748,12 @@ class ScanAgentGraph:
         """
         依次执行所有子图（验证子图之间的数据传递）
         
+        执行顺序：
+        1. 信息收集子图 (invoke_info_collection)
+        2. 漏洞扫描子图 (invoke_vuln_scan)
+        3. POC验证子图 (invoke_poc_verification)
+        4. 结果分析子图 (invoke_result_analysis)
+        
         Args:
             initial_state: 初始状态
             
@@ -562,10 +765,15 @@ class ScanAgentGraph:
         
         try:
             state1 = await self.invoke_info_collection(initial_state)
+            logger.info(f"✅ 信息收集子图完成: {len(getattr(state1, 'completed_tasks', []))} 个任务完成")
             
-            state2 = await self.invoke_vulnerability_scan(state1)
+            state2 = await self.invoke_vuln_scan(state1)
+            logger.info(f"✅ 漏洞扫描子图完成: {len(getattr(state2, 'vulnerabilities', []))} 个漏洞发现")
             
-            final_state = await self.invoke_result_analysis(state2)
+            state3 = await self.invoke_poc_verification(state2)
+            logger.info(f"✅ POC验证子图完成")
+            
+            final_state = await self.invoke_result_analysis(state3)
             
             logger.info(f"✅ 所有子图依次执行完成: {getattr(final_state, 'task_id', initial_state.task_id)}")
             _log_node_exit("invoke_subgraphs_sequential", initial_state.task_id, "success", {
@@ -769,6 +977,15 @@ def initialize_tools():
         priority=2
     )
     
+    registry.register(
+        name="dirscan",
+        func=PluginAdapter.adapt_dirscan,
+        description="目录扫描(敏感目录和文件爆破)",
+        category="plugin",
+        timeout=180,
+        priority=5
+    )
+    
     logger.info(f"✅ 工具初始化完成,共注册 {len(registry.tools)} 个工具")
     
     logger.info("🔧 开始注册POC工具...")
@@ -797,3 +1014,105 @@ def initialize_tools():
         )
     
     logger.info(f"✅ POC工具初始化完成,共注册 {len(pocs)} 个POC工具")
+    
+    registry.register(
+        name="sqli_scan",
+        func=PluginAdapter.adapt_sqli_scan,
+        description="SQL注入漏洞扫描(检测基于错误、时间盲注、布尔盲注等SQL注入)",
+        category="vuln_scan",
+        timeout=120,
+        priority=7,
+        tags=["vulnerability", "sqli", "injection", "security"]
+    )
+    
+    registry.register(
+        name="xss_scan",
+        func=PluginAdapter.adapt_xss_scan,
+        description="XSS漏洞扫描(检测反射型、存储型、DOM型XSS)",
+        category="vuln_scan",
+        timeout=120,
+        priority=7,
+        tags=["vulnerability", "xss", "security"]
+    )
+    
+    registry.register(
+        name="csrf_scan",
+        func=PluginAdapter.adapt_csrf_scan,
+        description="CSRF漏洞扫描(检测CSRF令牌缺失、Referer验证缺失)",
+        category="vuln_scan",
+        timeout=60,
+        priority=6,
+        tags=["vulnerability", "csrf", "security"]
+    )
+    
+    registry.register(
+        name="vuln_infoleak_scan",
+        func=PluginAdapter.adapt_vuln_infoleak_scan,
+        description="敏感信息泄露扫描(检测敏感文件、敏感信息模式)",
+        category="vuln_scan",
+        timeout=60,
+        priority=5,
+        tags=["vulnerability", "infoleak", "security"]
+    )
+    
+    registry.register(
+        name="crawler",
+        func=PluginAdapter.adapt_crawler,
+        description="Web爬虫(自动发现页面、链接、表单和参数)",
+        category="plugin",
+        timeout=300,
+        priority=1,
+        tags=["crawler", "spider", "discovery"]
+    )
+    
+    registry.register(
+        name="fileupload_scan",
+        func=PluginAdapter.adapt_fileupload_scan,
+        description="文件上传漏洞扫描(检测上传点、绕过技术)",
+        category="vuln_scan",
+        timeout=120,
+        priority=8,
+        tags=["vulnerability", "fileupload", "rce", "security"]
+    )
+    
+    registry.register(
+        name="cmdi_scan",
+        func=PluginAdapter.adapt_cmdi_scan,
+        description="命令注入漏洞扫描(检测OS命令执行漏洞)",
+        category="vuln_scan",
+        timeout=180,
+        priority=9,
+        tags=["vulnerability", "cmdi", "rce", "security"]
+    )
+    
+    registry.register(
+        name="weakpass_scan",
+        func=PluginAdapter.adapt_weakpass_scan,
+        description="弱口令扫描(检测常见用户名密码组合)",
+        category="vuln_scan",
+        timeout=300,
+        priority=7,
+        tags=["vulnerability", "weakpass", "brute-force", "security"]
+    )
+    
+    registry.register(
+        name="lfi_scan",
+        func=PluginAdapter.adapt_lfi_scan,
+        description="文件包含漏洞扫描(检测LFI/RFI/目录遍历)",
+        category="vuln_scan",
+        timeout=180,
+        priority=8,
+        tags=["vulnerability", "lfi", "rfi", "path-traversal", "security"]
+    )
+    
+    registry.register(
+        name="ssrf_scan",
+        func=PluginAdapter.adapt_ssrf_scan,
+        description="SSRF漏洞扫描(检测服务端请求伪造)",
+        category="vuln_scan",
+        timeout=180,
+        priority=8,
+        tags=["vulnerability", "ssrf", "security"]
+    )
+    
+    logger.info(f"✅ 漏洞扫描工具初始化完成,共注册 10 个漏洞扫描工具")

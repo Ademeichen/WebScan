@@ -177,8 +177,63 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text("pong")
+            
+            try:
+                message = json.loads(data)
+                message_type = message.get("type")
+                
+                if message_type == "ping":
+                    await websocket.send_json({"type": "pong"})
+                
+                elif message_type == "chat_message":
+                    from backend.api.ai import process_chat_message
+                    
+                    chat_instance_id = message.get("chat_instance_id")
+                    user_message = message.get("message")
+                    
+                    response = await process_chat_message(
+                        chat_instance_id=chat_instance_id,
+                        message=user_message
+                    )
+                    
+                    await websocket.send_json({
+                        "type": "chat_response",
+                        "chat_instance_id": chat_instance_id,
+                        "content": response.get("content", response.get("response", "")),
+                        "created_at": datetime.now().isoformat()
+                    })
+                
+                elif message_type == "create_chat_instance":
+                    from backend.api.ai import create_chat_instance
+                    
+                    title = message.get("title", "新对话")
+                    instance = await create_chat_instance(title)
+                    
+                    await websocket.send_json({
+                        "type": "chat_instance_created",
+                        "instance_id": str(instance.get("id", "")),
+                        "title": instance.get("title", title)
+                    })
+                
+                elif message_type == "get_chat_history":
+                    from backend.api.ai import get_chat_history
+                    
+                    instance_id = message.get("chat_instance_id")
+                    history = await get_chat_history(instance_id)
+                    
+                    await websocket.send_json({
+                        "type": "chat_history",
+                        "history": history
+                    })
+                
+                else:
+                    if data == "ping":
+                        await websocket.send_text("pong")
+                    
+            except json.JSONDecodeError:
+                if data == "ping":
+                    await websocket.send_text("pong")
+                    
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:

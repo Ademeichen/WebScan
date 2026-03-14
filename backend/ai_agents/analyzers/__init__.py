@@ -5,9 +5,23 @@ AI Agents 分析器模块
 """
 
 from .vuln_analyzer import VulnerabilityAnalyzer
-from .report_gen import ReportGenerator
+from .enhanced_report_gen import (
+    EnhancedReportGenerator,
+    EnhancedReportData,
+    ReportFormat,
+    ReportGenerator
+)
+from .ai_analyzer import (
+    AIAnalyzer,
+    AIAnalysisResult
+)
 
 __all__ = [
     "VulnerabilityAnalyzer",
-    "ReportGenerator"
+    "ReportGenerator",
+    "EnhancedReportGenerator",
+    "EnhancedReportData",
+    "ReportFormat",
+    "AIAnalyzer",
+    "AIAnalysisResult"
 ]

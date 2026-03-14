@@ -240,6 +240,8 @@ import AgentScanForm from '@/components/business/AgentScanForm.vue'
 import Alert from '@/components/common/Alert.vue'
 import { formatDate } from '@/utils/date'
 import { useWebSocket } from '@/utils/websocket'
+import { useTaskStore } from '@/store/tasks'
+import toast from '@/utils/toast'
 
 export default {
   name: 'AgentScan',
@@ -248,9 +250,10 @@ export default {
     Alert
   },
   setup() {
+    const taskStore = useTaskStore()
     const errorMessage = ref('')
     const successMessage = ref('')
-    const recentTasks = ref([])
+    const recentTasks = computed(() => taskStore.tasks)
     const selectedTask = ref(null)
     const scanStrategy = ref('standard')
     const concurrency = ref(5)
@@ -296,8 +299,9 @@ export default {
           tasks = response
         }
         
-        recentTasks.value = tasks.map(task => ({
+        const normalizedTasks = tasks.map(task => ({
           ...task,
+          id: String(task.task_id || task.id),
           task_id: String(task.task_id || task.id),
           stages: task.stages || {
             openai: { status: 'pending' },
@@ -306,25 +310,14 @@ export default {
             pocsuite3: { status: 'pending' }
           }
         }))
+        
+        taskStore.setTasks(normalizedTasks)
       } catch (error) {
         console.error('加载最近任务失败:', error)
-        recentTasks.value = []
       }
     }
     
-    const loadToolRecommendations = async (target) => {
-      try {
-        const response = await aiAgentsApi.getToolRecommendations(target)
-        if (response && response.recommendations) {
-          toolRecommendations.value = response.recommendations
-          selectedTools.value = response.recommendations
-            .filter(r => r.priority >= 7)
-            .map(r => r.tool_name)
-        }
-      } catch (error) {
-        console.error('加载工具推荐失败:', error)
-      }
-    }
+
     
     const toggleToolSelection = (toolName) => {
       const index = selectedTools.value.indexOf(toolName)
@@ -356,12 +349,33 @@ export default {
           resetSubgraphState()
           retryCount.value = 0
           
+          const newTask = {
+            task_id: String(response.task_id),
+            id: String(response.task_id),
+            target: formData.target,
+            task_name: 'AI Agent 扫描',
+            task_type: 'agent_scan',
+            status: 'queued',
+            progress: 0,
+            created_at: new Date().toISOString(),
+            stages: {
+              openai: { status: 'pending' },
+              plugins: { status: 'pending' },
+              awvs: { status: 'pending' },
+              pocsuite3: { status: 'pending' }
+            }
+          }
+          taskStore.addTask(newTask)
+          
+          toast.success('任务创建成功', `扫描任务 ${String(response.task_id).substring(0, 8)}... 已创建`)
+          
           if (progressWatcher) {
             progressWatcher.subscribeTask(response.task_id)
           }
         }
       } catch (error) {
         errorMessage.value = error.message || '创建扫描任务失败'
+        toast.error('任务创建失败', error.message || '创建扫描任务失败')
         retryCount.value++
       } finally {
         isLoading.value = false
@@ -432,6 +446,34 @@ export default {
       const task = recentTasks.value.find(t => t.task_id === taskId)
       if (task) {
         selectedTask.value = task
+        
+        if (task.stages) {
+          const stageMapping = {
+            openai: 'planning',
+            plugins: 'tool_execution',
+            awvs: 'poc_verification',
+            pocsuite3: 'poc_verification',
+            report: 'report'
+          }
+          
+          Object.keys(task.stages).forEach(backendKey => {
+            const frontendKey = stageMapping[backendKey] || backendKey
+            if (subgraphState[frontendKey]) {
+              subgraphState[frontendKey] = {
+                status: task.stages[backendKey].status || 'pending',
+                progress: task.stages[backendKey].progress || 0,
+                time: task.stages[backendKey].execution_time || 0
+              }
+            }
+          })
+          
+          if (task.status === 'completed') {
+            Object.keys(subgraphState).forEach(key => {
+              subgraphState[key].status = 'completed'
+              subgraphState[key].progress = 100
+            })
+          }
+        }
       }
     }
 
@@ -452,22 +494,23 @@ export default {
         openai: 'AI分析规划',
         plugins: '插件执行',
         awvs: '漏洞扫描',
-        pocsuite3: 'POC验证'
+        pocsuite3: 'POC验证',
+        planning: 'AI分析规划',
+        tool_execution: '工具执行',
+        poc_verification: 'POC验证',
+        report: '报告生成'
       }
       return map[name] || name
     }
 
     const updateTaskStatus = (taskId, payload) => {
       taskId = String(taskId)
-      const taskIndex = recentTasks.value.findIndex(t => t.task_id === taskId)
-      if (taskIndex !== -1) {
-        recentTasks.value[taskIndex] = { ...recentTasks.value[taskIndex], ...payload }
-        if (selectedTask.value && selectedTask.value.task_id === taskId) {
-           selectedTask.value = { ...selectedTask.value, ...payload }
-        }
-      } else if (payload.status === 'queued') {
+      const existingTask = taskStore.getTaskById(taskId)
+      
+      if (!existingTask && payload.status === 'queued') {
         const newTask = {
           task_id: taskId,
+          id: taskId,
           target: payload.target || 'Unknown',
           status: 'queued',
           created_at: new Date().toISOString(),
@@ -479,67 +522,76 @@ export default {
             pocsuite3: { status: 'pending' }
           }
         }
-        recentTasks.value.unshift(newTask)
+        taskStore.addTask(newTask)
+      } else {
+        taskStore.updateTaskStatus(taskId, payload.status, payload)
+      }
+      
+      if (selectedTask.value && String(selectedTask.value.task_id) === taskId) {
+        const updatedTask = taskStore.getTaskById(taskId)
+        if (updatedTask) {
+          selectedTask.value = { ...updatedTask }
+        }
       }
     }
 
     const updateTaskProgress = (taskId, progress) => {
       taskId = String(taskId)
-      const task = recentTasks.value.find(t => t.task_id === taskId)
-      if (task) {
-        task.progress = progress
+      taskStore.updateTaskProgress(taskId, progress)
+      
+      if (selectedTask.value && String(selectedTask.value.task_id) === taskId) {
+        const updatedTask = taskStore.getTaskById(taskId)
+        if (updatedTask) {
+          selectedTask.value = { ...updatedTask }
+        }
       }
     }
 
     const updateTaskCompleted = (taskId, payload) => {
       taskId = String(taskId)
-      const taskIndex = recentTasks.value.findIndex(t => t.task_id === taskId)
-      if (taskIndex !== -1) {
-        const result = payload.result || {}
-        const stages = result.stages || recentTasks.value[taskIndex].stages
-        
-        const updatedTask = {
-            ...recentTasks.value[taskIndex],
-            status: 'completed',
-            progress: 100,
-            result: result,
-            stages: stages,
-            completed_at: payload.completed_at
-        }
-        recentTasks.value[taskIndex] = updatedTask
-        if (selectedTask.value && selectedTask.value.task_id === taskId) {
-            selectedTask.value = updatedTask
+      const result = payload.result || {}
+      
+      taskStore.completeTask(taskId, result)
+      
+      toast.success('任务完成', `扫描任务 ${taskId.substring(0, 8)}... 已完成`)
+      
+      if (selectedTask.value && String(selectedTask.value.task_id) === taskId) {
+        const updatedTask = taskStore.getTaskById(taskId)
+        if (updatedTask) {
+          selectedTask.value = { ...updatedTask }
         }
       }
     }
     
     const updateTaskFailed = (taskId, error) => {
       taskId = String(taskId)
-      const taskIndex = recentTasks.value.findIndex(t => t.task_id === taskId)
-      if (taskIndex !== -1) {
-        const updatedTask = {
-             ...recentTasks.value[taskIndex],
-             status: 'failed',
-             error_message: error
-        }
-        recentTasks.value[taskIndex] = updatedTask
-        if (selectedTask.value && selectedTask.value.task_id === taskId) {
-            selectedTask.value = updatedTask
+      
+      taskStore.failTask(taskId, error)
+      
+      toast.error('任务失败', `扫描任务 ${taskId.substring(0, 8)}... 执行失败`)
+      
+      if (selectedTask.value && String(selectedTask.value.task_id) === taskId) {
+        const updatedTask = taskStore.getTaskById(taskId)
+        if (updatedTask) {
+          selectedTask.value = { ...updatedTask }
         }
       }
     }
 
     const updateTaskStage = (taskId, stage, data) => {
       taskId = String(taskId)
-      const task = recentTasks.value.find(t => t.task_id === taskId)
+      const task = taskStore.getTaskById(taskId)
       if (task) {
-        if (!task.stages) task.stages = {}
-        task.stages[stage] = { ...task.stages[stage], ...data }
+        const newStages = { ...task.stages }
+        if (!newStages[stage]) newStages[stage] = {}
+        newStages[stage] = { ...newStages[stage], ...data }
+        taskStore.updateTask(taskId, { stages: newStages })
         
-        if (selectedTask.value && selectedTask.value.task_id === taskId) {
-           if (!selectedTask.value.stages) selectedTask.value.stages = {}
-           selectedTask.value.stages[stage] = { ...selectedTask.value.stages[stage], ...data }
-           selectedTask.value = { ...selectedTask.value }
+        if (selectedTask.value && String(selectedTask.value.task_id) === taskId) {
+           const updatedTask = taskStore.getTaskById(taskId)
+           if (updatedTask) {
+             selectedTask.value = { ...updatedTask }
+           }
         }
       }
     }
@@ -578,19 +630,23 @@ export default {
       connect()
       
       on('task:update', (payload) => {
-        updateTaskStatus(payload.task_id || payload.payload.task_id, payload.payload || payload)
+        const data = payload.payload || payload
+        updateTaskStatus(data.task_id, data)
       })
       
       on('task:progress', (payload) => {
-        updateTaskProgress(payload.payload.task_id, payload.payload.progress)
+        const data = payload.payload || payload
+        updateTaskProgress(data.task_id, data.progress)
       })
       
       on('task:completed', (payload) => {
-        updateTaskCompleted(payload.payload.task_id, payload.payload)
+        const data = payload.payload || payload
+        updateTaskCompleted(data.task_id, data)
       })
       
       on('task:failed', (payload) => {
-        updateTaskFailed(payload.payload.task_id, payload.payload.error)
+        const data = payload.payload || payload
+        updateTaskFailed(data.task_id, data.error || data.message)
       })
 
       on('stage:update', (payload) => {
@@ -598,7 +654,8 @@ export default {
       })
       
       on('subgraph:progress', (payload) => {
-        updateSubgraphProgress(payload)
+        const data = payload.payload || payload
+        updateSubgraphProgress(data)
       })
       
       on('tool:execution', (payload) => {

@@ -246,8 +246,12 @@ export default {
         const reportData = {
           task_id: task.id,
           format: selectedFormat.value,
-          content: selectedContent.value,
-          name: `${task.task_name}报告`
+          name: `${task.task_name}报告`,
+          include_summary: selectedContent.value.includes('summary'),
+          include_vulnerabilities: selectedContent.value.includes('vulnerabilities'),
+          include_recommendations: selectedContent.value.includes('recommendations'),
+          include_charts: selectedContent.value.includes('charts'),
+          include_appendix: selectedContent.value.includes('appendix')
         }
         
         const response = await reportsApi.createReport(reportData)
@@ -270,24 +274,84 @@ export default {
       
       downloading.value = report.id
       try {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
         const url = `${baseUrl}/reports/${report.id}/export?format=${report.report_type}`
+        const token = localStorage.getItem('token')
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error('下载失败')
+        }
+        
+        const blob = await response.blob()
+        const downloadUrl = URL.createObjectURL(blob)
         
         const link = document.createElement('a')
-        link.href = url
-        link.download = report.report_name || `report.${report.report_type}`
-        link.target = '_blank'
+        link.href = downloadUrl
+        link.download = `${report.report_name || 'report'}.${report.report_type}`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+        URL.revokeObjectURL(downloadUrl)
         
-        setTimeout(() => {
-          downloading.value = null
-        }, 1000)
+        successMessage.value = '报告下载成功'
       } catch (error) {
         console.error('下载报告失败:', error)
-        errorMessage.value = '下载报告失败'
+        errorMessage.value = '下载报告失败: ' + error.message
+      } finally {
         downloading.value = null
+      }
+    }
+
+    const previewReport = async (report) => {
+      if (!report) return
+      
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
+        const token = localStorage.getItem('token')
+        
+        if (report.report_type === 'pdf') {
+          const url = `${baseUrl}/reports/${report.id}/export?format=pdf`
+          const response = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error('预览失败')
+          }
+          
+          const blob = await response.blob()
+          const previewUrl = URL.createObjectURL(blob)
+          window.open(previewUrl, '_blank')
+        } else if (report.report_type === 'html') {
+          const url = `${baseUrl}/reports/${report.id}/export?format=html`
+          const response = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error('预览失败')
+          }
+          
+          const htmlContent = await response.text()
+          const previewWindow = window.open('', '_blank')
+          previewWindow.document.write(htmlContent)
+          previewWindow.document.close()
+        } else {
+          router.push(`/report-detail?report=${report.id}`)
+        }
+      } catch (error) {
+        console.error('预览报告失败:', error)
+        errorMessage.value = '预览报告失败: ' + error.message
       }
     }
 
@@ -348,6 +412,7 @@ export default {
       filteredReports,
       generateReport,
       downloadReport,
+      previewReport,
       viewReport,
       deleteReport,
       formatFileSize,

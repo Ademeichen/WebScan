@@ -98,11 +98,11 @@ export default {
             const target = scan.target || {}
             
             return {
-              id: scan.scan_id,
-              task_name: target.description || target.address || 'AWVS Scan',
-              target: target.address || '',
-              status: currentSession.status || 'unknown',
-              created_at: currentSession.start_date || scan.next_run || new Date().toISOString(),
+              id: scan.scan_id || scan.id,
+              task_name: scan.task_name || target.description || target.address || 'AWVS Scan',
+              target: target.address || scan.target || '',
+              status: currentSession.status || scan.status || 'unknown',
+              created_at: currentSession.start_date || scan.created_at || new Date().toISOString(),
               result: {
                 vulnerabilities: {
                   critical: severityCounts.critical || 0,
@@ -116,6 +116,13 @@ export default {
         }
       } catch (error) {
         console.error('加载最近扫描失败:', error)
+        if (error.message && (error.message.includes('超时') || error.message.includes('timeout'))) {
+          errorMessage.value = 'AWVS服务响应超时，请检查AWVS服务是否正常运行'
+        } else if (error.message && error.message.includes('网络')) {
+          errorMessage.value = '无法连接到服务器，请检查网络连接'
+        } else {
+          errorMessage.value = error.message || '加载扫描列表失败'
+        }
       }
     }
 

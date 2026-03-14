@@ -222,6 +222,8 @@ export class ProgressWatcher {
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = options.maxReconnectAttempts || 5
     this.reconnectDelay = options.reconnectDelay || 1000
+    this.heartbeatInterval = options.heartbeatInterval || 30000
+    this.heartbeatTimer = null
     this.callbacks = new Map()
     this.isConnected = false
   }
@@ -238,10 +240,14 @@ export class ProgressWatcher {
         console.log('WebSocket连接已建立')
         this.isConnected = true
         this.reconnectAttempts = 0
+        this.startHeartbeat()
         this.emit('connected')
       }
 
       this.ws.onmessage = (event) => {
+        if (event.data === 'pong') {
+          return
+        }
         try {
           const data = JSON.parse(event.data)
           this.handleMessage(data)
@@ -253,6 +259,7 @@ export class ProgressWatcher {
       this.ws.onclose = () => {
         console.log('WebSocket连接已关闭')
         this.isConnected = false
+        this.stopHeartbeat()
         this.emit('disconnected')
         this.attemptReconnect()
       }
@@ -355,6 +362,23 @@ export class ProgressWatcher {
     }
   }
 
+  startHeartbeat() {
+    if (this.heartbeatInterval > 0) {
+      this.heartbeatTimer = setInterval(() => {
+        if (this.isConnected && this.ws) {
+          this.ws.send('ping')
+        }
+      }, this.heartbeatInterval)
+    }
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer)
+      this.heartbeatTimer = null
+    }
+  }
+
   subscribeTask(taskId) {
     return this.send('subscribe', { task_id: taskId })
   }
@@ -364,6 +388,7 @@ export class ProgressWatcher {
   }
 
   disconnect() {
+    this.stopHeartbeat()
     if (this.ws) {
       this.ws.close()
       this.ws = null

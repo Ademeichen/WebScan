@@ -632,6 +632,9 @@ class VulnerabilityKB(Model):
     poc_code = fields.TextField(null=True, description="POC代码")
     remediation = fields.TextField(null=True, description="修复建议")
     references = fields.TextField(null=True, description="参考链接（JSON格式）")
+    source = fields.CharField(max_length=50, null=True, description="数据源（seebug, exploit-db等）")
+    has_poc = fields.BooleanField(default=False, description="是否有POC")
+    ssvid = fields.IntField(null=True, description="Seebug SSVID")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
     

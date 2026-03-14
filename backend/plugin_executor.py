@@ -27,11 +27,7 @@ from backend.plugins.cdnexist.cdnexist import iscdn
 from backend.plugins.waf.waf import getwaf
 from backend.plugins.whatcms.whatcms import getwhatcms
 from backend.plugins.subdomain.subdomain import get_subdomain
-
-try:
-    from dirsearcch.dir_scanner import DirScanner
-except ImportError:
-    DirScanner = None
+from backend.plugins.dirscan.dirscan import get_dirscan
 
 # Import POCs
 from backend.poc.weblogic.cve_2020_2551_poc import poc as cve_2020_2551_poc
@@ -201,11 +197,7 @@ class PluginExecutor:
             scanner = ScanPort(target, ports)
             return scanner.scan()
         elif task_type == 'dir_scan':
-            if DirScanner:
-                scanner = DirScanner(target, scan_config)
-                return scanner.scan()
-            else:
-                raise ImportError('DirScanner not available')
+            return get_dirscan(target, scan_config)
         elif task_type == 'info_leak':
             return get_infoleak(target)
         elif task_type == 'web_side':
@@ -224,6 +216,8 @@ class PluginExecutor:
             return getwhatcms(target)
         elif task_type == 'subdomain':
             return get_subdomain(target)
+        elif task_type == 'scan_dir':
+            return get_dirscan(target, scan_config)
         # POCs
         elif task_type in POC_FUNCTIONS:
             return POC_FUNCTIONS[task_type](target)

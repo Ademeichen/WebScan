@@ -45,6 +45,10 @@ class AgentScanRequest(BaseModel):
         custom_scan_language: 自定义扫描语言
         need_capability_enhancement: 是否需要功能补充
         capability_requirement: 功能补充需求
+        strategy: 扫描策略 (quick/standard/deep)
+        concurrency: 并发数
+        timeout: 超时时间(秒)
+        selected_tools: 选定的工具列表
     """
     target: str
     enable_llm_planning: Optional[bool] = None
@@ -55,6 +59,10 @@ class AgentScanRequest(BaseModel):
     custom_scan_language: Optional[str] = "python"
     need_capability_enhancement: Optional[bool] = False
     capability_requirement: Optional[str] = None
+    strategy: Optional[str] = "standard"
+    concurrency: Optional[int] = 5
+    timeout: Optional[int] = 300
+    selected_tools: Optional[list] = None
 
 
 class AgentScanResponse(BaseModel):
@@ -1241,3 +1249,348 @@ async def get_execution_metrics(task_id: Optional[str] = None):
     except Exception as e:
         logger.error(f"[WORKFLOW_METRICS_ERROR] 获取执行指标失败 - 错误: {str(e)}")
         return APIResponse(code=500, message=f"获取执行指标失败: {str(e)}")
+
+
+# ============ 报告生成 API 端点 ============
+
+class ReportGenerateRequest(BaseModel):
+    """报告生成请求模型"""
+    task_id: int
+    format: str = Field(default="json", description="报告格式: json, html, pdf")
+    include_ai_analysis: bool = Field(default=True, description="是否包含AI分析结果")
+
+
+class AIAnalysisRequest(BaseModel):
+    """AI分析请求模型"""
+    task_id: int
+
+
+@router.post("/reports/generate", response_model=APIResponse)
+async def generate_report(request: ReportGenerateRequest):
+    """
+    生成扫描报告
+    
+    根据任务ID生成指定格式的报告，支持JSON、HTML、PDF格式。
+    报告包含完整的子图/节点执行信息和AI分析结果。
+    
+    Args:
+        request: 报告生成请求
+        
+    Returns:
+        APIResponse: 报告生成结果
+    """
+    try:
+        logger.info(f"[REPORT_GENERATE] 生成报告 - 任务ID: {request.task_id}, 格式: {request.format}")
+        
+        from ..analyzers.enhanced_report_gen import EnhancedReportGenerator, ReportFormat
+        
+        task = await Task.get_or_none(id=request.task_id)
+        if not task:
+            return APIResponse(code=404, message="任务不存在")
+        
+        from ..core.state import AgentState
+        state = AgentState(target=task.target, task_id=str(task.id))
+        
+        if task.config:
+            try:
+                config = json.loads(task.config) if isinstance(task.config, str) else task.config
+                state.tool_results = config.get("tool_results", {})
+                state.vulnerabilities = config.get("vulnerabilities", [])
+                state.target_context = config.get("target_context", {})
+                state.execution_history = config.get("execution_history", [])
+            except:
+                pass
+        
+        if task.result:
+            try:
+                result = json.loads(task.result) if isinstance(task.result, str) else task.result
+                if isinstance(result, dict):
+                    state.tool_results.update(result.get("tool_results", {}))
+                    if result.get("vulnerabilities"):
+                        state.vulnerabilities = result["vulnerabilities"]
+            except:
+                pass
+        
+        generator = EnhancedReportGenerator(auto_ai_analysis=request.include_ai_analysis)
+        report_data = generator.generate_from_state_sync(state, task_name=task.task_name)
+        
+        format_map = {
+            "json": ReportFormat.JSON,
+            "html": ReportFormat.HTML,
+            "pdf": ReportFormat.PDF
+        }
+        report_format = format_map.get(request.format.lower(), ReportFormat.JSON)
+        
+        content = ""
+        if report_format == ReportFormat.JSON:
+            content = generator.generate_json_report(report_data)
+        elif report_format == ReportFormat.HTML:
+            content = generator.generate_html_report(report_data)
+        else:
+            content = generator.generate_json_report(report_data)
+        
+        from backend.models import Report
+        report = await Report.create(
+            task_id=task.id,
+            report_name=f"{task.task_name}_report_{request.format}",
+            report_type=request.format,
+            content=json.loads(content) if request.format == "json" else {"raw": content}
+        )
+        
+        logger.info(f"[REPORT_GENERATE] 报告生成完成 - 报告ID: {report.id}")
+        
+        return APIResponse(
+            code=200,
+            message="报告生成成功",
+            data={
+                "report_id": report.id,
+                "task_id": task.id,
+                "format": request.format,
+                "content": json.loads(content) if request.format == "json" else None,
+                "ai_analysis_included": request.include_ai_analysis
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"[REPORT_GENERATE_ERROR] 生成报告失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"生成报告失败: {str(e)}")
+
+
+@router.get("/reports", response_model=APIResponse)
+async def list_reports(
+    task_id: Optional[int] = None,
+    page: int = 1,
+    page_size: int = 20
+):
+    """
+    获取报告列表
+    
+    获取所有报告或指定任务的报告列表。
+    
+    Args:
+        task_id: 可选的任务ID，用于过滤特定任务的报告
+        page: 页码
+        page_size: 每页数量
+        
+    Returns:
+        APIResponse: 报告列表
+    """
+    try:
+        from backend.models import Report
+        
+        query = Report.all()
+        if task_id:
+            query = query.filter(task_id=task_id)
+        
+        total = await query.count()
+        reports = await query.order_by("-created_at").offset((page - 1) * page_size).limit(page_size)
+        
+        report_list = []
+        for report in reports:
+            report_list.append({
+                "id": report.id,
+                "task_id": report.task_id,
+                "report_name": report.report_name,
+                "report_type": report.report_type,
+                "created_at": report.created_at,
+                "updated_at": report.updated_at
+            })
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "reports": report_list,
+                "total": total,
+                "page": page,
+                "page_size": page_size
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"[REPORT_LIST_ERROR] 获取报告列表失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"获取报告列表失败: {str(e)}")
+
+
+@router.get("/reports/{report_id}", response_model=APIResponse)
+async def get_report(report_id: int):
+    """
+    获取报告详情
+    
+    根据报告ID获取完整的报告内容。
+    
+    Args:
+        report_id: 报告ID
+        
+    Returns:
+        APIResponse: 报告详情
+    """
+    try:
+        from backend.models import Report
+        
+        report = await Report.get_or_none(id=report_id)
+        if not report:
+            return APIResponse(code=404, message="报告不存在")
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "id": report.id,
+                "task_id": report.task_id,
+                "report_name": report.report_name,
+                "report_type": report.report_type,
+                "content": report.content,
+                "created_at": report.created_at,
+                "updated_at": report.updated_at
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"[REPORT_DETAIL_ERROR] 获取报告详情失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"获取报告详情失败: {str(e)}")
+
+
+@router.delete("/reports/{report_id}", response_model=APIResponse)
+async def delete_report(report_id: int):
+    """
+    删除报告
+    
+    根据报告ID删除报告。
+    
+    Args:
+        report_id: 报告ID
+        
+    Returns:
+        APIResponse: 删除结果
+    """
+    try:
+        from backend.models import Report
+        
+        report = await Report.get_or_none(id=report_id)
+        if not report:
+            return APIResponse(code=404, message="报告不存在")
+        
+        await report.delete()
+        
+        logger.info(f"[REPORT_DELETE] 报告已删除 - 报告ID: {report_id}")
+        return APIResponse(code=200, message="报告已删除")
+        
+    except Exception as e:
+        logger.error(f"[REPORT_DELETE_ERROR] 删除报告失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"删除报告失败: {str(e)}")
+
+
+@router.get("/tasks/{task_id}/ai-analysis", response_model=APIResponse)
+async def get_ai_analysis(task_id: int):
+    """
+    获取AI分析结果
+    
+    根据任务ID获取AI分析结果，包括漏洞成因、利用风险、修复优先级、业务影响等。
+    
+    Args:
+        task_id: 任务ID
+        
+    Returns:
+        APIResponse: AI分析结果
+    """
+    try:
+        logger.info(f"[AI_ANALYSIS] 获取AI分析结果 - 任务ID: {task_id}")
+        
+        from ..analyzers.ai_analyzer import AIAnalyzer
+        
+        task = await Task.get_or_none(id=task_id)
+        if not task:
+            return APIResponse(code=404, message="任务不存在")
+        
+        from ..core.state import AgentState
+        state = AgentState(target=task.target, task_id=str(task.id))
+        
+        if task.config:
+            try:
+                config = json.loads(task.config) if isinstance(task.config, str) else task.config
+                state.vulnerabilities = config.get("vulnerabilities", [])
+                state.tool_results = config.get("tool_results", {})
+                state.target_context = config.get("target_context", {})
+            except:
+                pass
+        
+        if task.result:
+            try:
+                result = json.loads(task.result) if isinstance(task.result, str) else task.result
+                if isinstance(result, dict):
+                    if result.get("vulnerabilities"):
+                        state.vulnerabilities = result["vulnerabilities"]
+                    if result.get("tool_results"):
+                        state.tool_results.update(result["tool_results"])
+            except:
+                pass
+        
+        ai_analyzer = AIAnalyzer()
+        ai_result = ai_analyzer._analyze_with_rules(
+            state.vulnerabilities,
+            state.tool_results,
+            state.target_context
+        )
+        
+        logger.info(f"[AI_ANALYSIS] AI分析完成 - 任务ID: {task_id}")
+        
+        return APIResponse(
+            code=200,
+            message="AI分析完成",
+            data={
+                "task_id": task_id,
+                "ai_analysis": ai_result.to_dict()
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"[AI_ANALYSIS_ERROR] AI分析失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"AI分析失败: {str(e)}")
+
+
+@router.get("/tasks/{task_id}/execution-details", response_model=APIResponse)
+async def get_execution_details(task_id: int):
+    """
+    获取任务执行详情
+    
+    获取任务的子图和节点执行详情，包括执行时间、状态、结果等。
+    
+    Args:
+        task_id: 任务ID
+        
+    Returns:
+        APIResponse: 执行详情
+    """
+    try:
+        logger.info(f"[EXEC_DETAILS] 获取执行详情 - 任务ID: {task_id}")
+        
+        task = await Task.get_or_none(id=task_id)
+        if not task:
+            return APIResponse(code=404, message="任务不存在")
+        
+        execution_history = []
+        if task.config:
+            try:
+                config = json.loads(task.config) if isinstance(task.config, str) else task.config
+                execution_history = config.get("execution_history", [])
+            except:
+                pass
+        
+        return APIResponse(
+            code=200,
+            message="获取成功",
+            data={
+                "task_id": task_id,
+                "target": task.target,
+                "status": task.status,
+                "progress": task.progress,
+                "execution_history": execution_history,
+                "created_at": task.created_at,
+                "updated_at": task.updated_at
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"[EXEC_DETAILS_ERROR] 获取执行详情失败 - 错误: {str(e)}")
+        return APIResponse(code=500, message=f"获取执行详情失败: {str(e)}")

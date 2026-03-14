@@ -255,6 +255,13 @@ export const reportsApi = {
     })
   },
 
+  getReportDetail: async (reportId) => {
+    return request({
+      url: `/reports/${reportId}`,
+      method: 'get'
+    })
+  },
+
   updateReport: async (reportId, data) => {
     return request({
       url: `/reports/${reportId}`,
@@ -275,6 +282,16 @@ export const reportsApi = {
       url: `/reports/${reportId}/export`,
       method: 'get',
       params: { format }
+    })
+  },
+
+  downloadReport: async (reportId, format = 'json') => {
+    const token = localStorage.getItem('token')
+    const baseUrl = API_BASE_URL
+    return fetch(`${baseUrl}/reports/${reportId}/export?format=${format}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     })
   },
 
@@ -451,6 +468,13 @@ export const awvsApi = {
     })
   },
 
+  getTarget: async (targetId) => {
+    return request({
+      url: `/awvs/target/${targetId}`,
+      method: 'get'
+    })
+  },
+
   createTarget: async (data) => {
     return request({
       url: '/awvs/target',
@@ -479,6 +503,13 @@ export const awvsApi = {
       url: '/awvs/scan',
       method: 'post',
       data
+    })
+  },
+
+  getVulnerabilities: async (targetId) => {
+    return request({
+      url: `/awvs/vulnerabilities/${targetId}`,
+      method: 'get'
     })
   },
 
@@ -1140,6 +1171,50 @@ export const aiAgentsApi = {
     return request({
       url: `/ai_agents/tasks/${taskId}/plugin/${pluginId}/finish`,
       method: 'post'
+    })
+  },
+
+  getAIAnalysis: async (taskId) => {
+    return request({
+      url: `/ai_agents/tasks/${taskId}/ai-analysis`,
+      method: 'get'
+    })
+  },
+
+  getExecutionDetails: async (taskId) => {
+    return request({
+      url: `/ai_agents/tasks/${taskId}/execution-details`,
+      method: 'get'
+    })
+  },
+
+  generateReport: async (data) => {
+    return request({
+      url: '/ai_agents/reports/generate',
+      method: 'post',
+      data
+    })
+  },
+
+  getReports: async (params = {}) => {
+    return request({
+      url: '/ai_agents/reports',
+      method: 'get',
+      params
+    })
+  },
+
+  getReport: async (reportId) => {
+    return request({
+      url: `/ai_agents/reports/${reportId}`,
+      method: 'get'
+    })
+  },
+
+  deleteReport: async (reportId) => {
+    return request({
+      url: `/ai_agents/reports/${reportId}`,
+      method: 'delete'
     })
   }
 }

@@ -995,7 +995,7 @@ async def get_task_logs(
 
 @router.get("/{task_id}/vulnerabilities", response_model=APIResponse)
 async def get_task_vulnerabilities(
-    task_id: int,
+    task_id: str,
     severity: Optional[str] = None,
     type: Optional[str] = None,
     source: Optional[str] = None,
@@ -1007,80 +1007,156 @@ async def get_task_vulnerabilities(
     获取任务的漏洞列表
     
     获取指定任务的所有漏洞,支持按严重程度、类型、来源和状态过滤。
+    支持整数ID和UUID格式的task_id。
     
     Args:
-        task_id: 任务 ID
+        task_id: 任务 ID (整数或UUID字符串)
         severity: 按严重程度过滤,可选值: 'critical', 'high', 'medium', 'low', 'info'
-        type: 按漏洞类型过滤,可选值: 'SQL注入', 'XSS', 'CSRF', '文件包含', '命令注入', 'SSRF'
-        source: 按漏洞来源过滤,可选值: 'awvs', 'poc'
+        type: 按漏洞类型过滤
+        source: 按漏洞来源过滤,可选值: 'awvs', 'poc', 'ai_agent'
         status: 按漏洞状态过滤,可选值: 'open', 'fixed', 'reopened'
-        skip: 跳过的记录数,用于分页
-        limit: 返回的最大记录数
+        skip: 跳过的记录数
+        limit: 返回的记录数
         
     Returns:
-        APIResponse: 包含漏洞列表和总数的响应
-        
-    Raises:
-        HTTPException: 当任务不存在时抛出 404 错误
-        
-    Examples:
-        >>> 获取任务 1 的所有高危漏洞
-        >>> GET /tasks/1/vulnerabilities?severity=high
-        >>> 获取任务 1 的所有AWVS漏洞
-        >>> GET /tasks/1/vulnerabilities?source=awvs
+        APIResponse: 包含漏洞列表的响应
     """
     try:
-        task = await Task.get_or_none(id=task_id)
-        if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
-
-        query = Vulnerability.filter(task=task)
+        import uuid
         
-        # 过滤条件
-        if severity:
-            query = query.filter(severity=severity.lower())
-        if type:
-            query = query.filter(vuln_type=type)
-        if source:
-            query = query.filter(source=source.lower())
-        if status:
-            query = query.filter(status=status.lower())
+        is_uuid = False
+        try:
+            uuid.UUID(str(task_id))
+            is_uuid = True
+        except (ValueError, AttributeError):
+            pass
         
-        # 排序(最新的在前)
-        query = query.order_by('-created_at')
+        if is_uuid:
+            from backend.models import AgentTask, AgentResult
+            
+            agent_task = await AgentTask.get_or_none(task_id=task_id)
+            if agent_task:
+                agent_result = await AgentResult.get_or_none(task=agent_task)
+                if not agent_result or not agent_result.final_output:
+                    return APIResponse(
+                        code=200,
+                        message="获取成功",
+                        data={
+                            "vulnerabilities": [],
+                            "total": 0,
+                            "skip": skip,
+                            "limit": limit
+                        }
+                    )
+                
+                try:
+                    result_data = json.loads(agent_result.final_output)
+                except json.JSONDecodeError:
+                    result_data = {}
+                
+                vulnerabilities = result_data.get('vulnerabilities', [])
+                if not isinstance(vulnerabilities, list):
+                    vulnerabilities = []
+                
+                vuln_list = []
+                for idx, vuln in enumerate(vulnerabilities):
+                    vuln_severity = vuln.get('severity', 'Info')
+                    if severity and vuln_severity.lower() != severity.lower():
+                        continue
+                    if type and vuln.get('type', '').lower() != type.lower():
+                        continue
+                    if source and vuln.get('source', 'ai_agent').lower() != source.lower():
+                        continue
+                    if status and vuln.get('status', 'open').lower() != status.lower():
+                        continue
+                    
+                    vuln_list.append({
+                        "id": vuln.get('id') or f"agent-{task_id[:8]}-{idx}",
+                        "title": vuln.get('title', 'Unknown Vulnerability'),
+                        "severity": standardize_severity(vuln_severity),
+                        "status": vuln.get('status', 'open'),
+                        "type": vuln.get('type', vuln.get('vuln_type', 'Unknown')),
+                        "url": vuln.get('url', ''),
+                        "description": vuln.get('description', ''),
+                        "payload": vuln.get('payload', ''),
+                        "evidence": vuln.get('evidence', ''),
+                        "remediation": vuln.get('remediation', ''),
+                        "created_at": agent_task.created_at.strftime("%Y-%m-%dT%H:%M:%SZ") if agent_task.created_at else None,
+                        "updated_at": agent_task.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ") if agent_task.updated_at else None,
+                        "source": vuln.get('source', 'ai_agent')
+                    })
+                
+                total = len(vuln_list)
+                vuln_list = vuln_list[skip:skip + limit]
+                
+                return APIResponse(
+                    code=200,
+                    message="获取成功",
+                    data={
+                        "vulnerabilities": vuln_list,
+                        "total": total,
+                        "skip": skip,
+                        "limit": limit
+                    }
+                )
+            
+            awvs_task = await Task.filter(config__contains=str(task_id)).first()
+            if awvs_task:
+                task = awvs_task
+            else:
+                raise HTTPException(status_code=404, detail="任务不存在")
+        else:
+            try:
+                task_id_int = int(task_id)
+                task = await Task.get_or_none(id=task_id_int)
+            except ValueError:
+                task = None
+            
+            if not task:
+                raise HTTPException(status_code=404, detail="任务不存在")
         
-        # 获取总数
-        total = await query.count()
-        
-        # 分页查询
-        vulns = await query.offset(skip).limit(limit)
-        
-        # 转换为字典格式
-        vuln_list = []
-        for vuln in vulns:
-            vuln_list.append({
-                "id": vuln.source_id or str(vuln.id),
-                "title": vuln.title,
-                "severity": standardize_severity(vuln.severity),
-                "status": vuln.status,
-                "type": vuln.vuln_type,
-                "url": vuln.url,
-                "description": vuln.description,
-                "created_at": vuln.created_at,
-                "updated_at": vuln.updated_at,
-                "source": vuln.source
-            })
-        
-        return APIResponse(
-            code=200,
-            message="获取成功",
-            data={
-                "vulnerabilities": vuln_list,
-                "total": total,
-                "skip": skip,
-                "limit": limit
-            }
-        )
+        if task:
+            query = Vulnerability.filter(task=task)
+            
+            if severity:
+                query = query.filter(severity=severity.lower())
+            if type:
+                query = query.filter(vuln_type=type)
+            if source:
+                query = query.filter(source=source.lower())
+            if status:
+                query = query.filter(status=status.lower())
+            
+            query = query.order_by('-created_at')
+            
+            total = await query.count()
+            vulns = await query.offset(skip).limit(limit)
+            
+            vuln_list = []
+            for vuln in vulns:
+                vuln_list.append({
+                    "id": vuln.source_id or str(vuln.id),
+                    "title": vuln.title,
+                    "severity": standardize_severity(vuln.severity),
+                    "status": vuln.status,
+                    "type": vuln.vuln_type,
+                    "url": vuln.url,
+                    "description": vuln.description,
+                    "created_at": vuln.created_at.strftime("%Y-%m-%dT%H:%M:%SZ") if vuln.created_at else None,
+                    "updated_at": vuln.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ") if vuln.updated_at else None,
+                    "source": vuln.source
+                })
+            
+            return APIResponse(
+                code=200,
+                message="获取成功",
+                data={
+                    "vulnerabilities": vuln_list,
+                    "total": total,
+                    "skip": skip,
+                    "limit": limit
+                }
+            )
     except HTTPException:
         raise
     except Exception as e:

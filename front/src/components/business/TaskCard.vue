@@ -22,7 +22,7 @@
 
       <div v-if="task.status === 'running' || task.status === 'pending'" class="task-progress">
         <el-progress
-          :percentage="task.progress || 0"
+          :percentage="safeProgress"
           :stroke-width="10"
           :show-text="true"
         />
@@ -166,11 +166,23 @@ export default {
       return typeMap[props.task.task_type] || props.task.task_type
     })
 
+    const safeProgress = computed(() => {
+      let progress = props.task.progress
+      if (progress == null || progress === undefined || isNaN(progress)) {
+        return 0
+      }
+      progress = Number(progress)
+      if (progress < 0) return 0
+      if (progress > 100) return 100
+      return Math.round(progress)
+    })
+
     return {
       statusText,
       statusType,
       taskTypeText,
-      formatDate
+      formatDate,
+      safeProgress
     }
   }
 }

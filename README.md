@@ -193,7 +193,7 @@ APP_NAME=WebScan AI Security Platform
 APP_VERSION=1.0.0
 DEBUG=False
 HOST=127.0.0.1
-:8888
+PORT=8888
 
 # 数据库配置
 DATABASE_URL=sqlite://./data/webscan.db
@@ -246,7 +246,7 @@ cd backend
 python main.py
 
 # 或使用uvicorn
-uvicorn backend.main:app --host 127.0.0.1 --:8888 --reload
+uvicorn backend.main:app --host 127.0.0.1 --port 8888 --reload
 ```
 
 后端服务将运行在：http://127.0.0.1:8888
@@ -276,7 +276,7 @@ npm install
 
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:8888/api
-VITE_REQUEST_TIMEOUT=:88880
+VITE_REQUEST_TIMEOUT=8880
 ```
 
 #### 7. 启动前端服务
@@ -445,7 +445,7 @@ class Settings(BaseSettings):
     
     # 服务器配置
     HOST: str = "127.0.0.1"
-    PORT: int =:8888
+    PORT: int = 8888
     
     # CORS配置
     CORS_ORIGINS: list = ["http://localhost:5173", "http://127.0.0.1:5173"]
@@ -514,7 +514,7 @@ export default defineConfig({
 
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:8888/api
-VITE_REQUEST_TIMEOUT=:88880
+VITE_REQUEST_TIMEOUT=8880
 ```
 
 ### WebSocket配置
@@ -541,9 +541,9 @@ on('task:update', (payload) => { /* 处理任务更新 */ })
 
 | 服务 | 默认端口 | 配置位置 |
 |-----|---------|---------|
-| 后端API |:8888 | `backend/.env` → `PORT` |
+| 后端API | 8888 | `backend/.env` → `PORT` |
 | 前端开发 | 5173 | `front/vite.config.js` |
-| WebSocket |:8888 | 与后端API共用 |
+| WebSocket | 8888 | 与后端API共用 |
 
 ---
 
@@ -1046,7 +1046,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - ":8888:8888"
+      - "8888:8888"
     environment:
       - DATABASE_URL=sqlite:///data/webscan.db
     volumes:

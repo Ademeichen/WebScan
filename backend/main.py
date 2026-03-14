@@ -103,6 +103,18 @@ async def lifespan(app: FastAPI):
         logger.error(f"执行 AWVS 连接测试时发生错误: {str(e)}")
 
     try:
+        from backend.api.awvs import sync_scans_from_awvs
+        
+        if success:
+            logger.info("AWVS API 连接成功，开始自动同步数据...")
+            await sync_scans_from_awvs()
+            logger.info("AWVS 数据自动同步完成")
+        else:
+            logger.warning("AWVS API 未连接，跳过自动同步")
+    except Exception as e:
+        logger.error(f"自动同步AWVS数据失败: {str(e)}")
+    
+    try:
         from backend.task_executor import task_executor
         
 

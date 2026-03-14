@@ -263,8 +263,15 @@ class AgentState:
         "openai": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
         "plugins": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
         "awvs": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
-        "pocsuite3": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None}
+        "pocsuite3": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "vuln_scan": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None}
     })
+    
+    # = Vulnerability Scan =
+    vuln_scan_results: Dict[str, Any] = field(default_factory=dict)
+    vuln_scan_plugins_loaded: List[str] = field(default_factory=list)
+    vuln_scan_progress: int = 0
+    vuln_scan_metadata: Dict[str, Any] = field(default_factory=dict)
     """
     Stage Tracking
     
@@ -583,5 +590,40 @@ class AgentState:
             "retry_count": self.retry_count,
             "is_complete": self.is_complete,
             "should_continue": self.should_continue,
-            "progress": self.get_progress()
+            "progress": self.get_progress(),
+            "vuln_scan_results": self.vuln_scan_results,
+            "vuln_scan_plugins_loaded": self.vuln_scan_plugins_loaded,
+            "vuln_scan_progress": self.vuln_scan_progress,
+            "vuln_scan_metadata": self.vuln_scan_metadata
         }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "AgentState":
+        """
+        从字典创建AgentState实例
+        
+        Args:
+            data: 包含状态信息的字典
+            
+        Returns:
+            AgentState: 新的AgentState实例
+        """
+        return cls(
+            target=data.get("target", ""),
+            task_id=data.get("task_id", ""),
+            planned_tasks=data.get("planned_tasks", []),
+            current_task=data.get("current_task"),
+            completed_tasks=data.get("completed_tasks", []),
+            tool_results=data.get("tool_results", {}),
+            vulnerabilities=data.get("vulnerabilities", []),
+            target_context=data.get("target_context", {}),
+            execution_history=data.get("execution_history", []),
+            errors=data.get("errors", []),
+            retry_count=data.get("retry_count", 0),
+            is_complete=data.get("is_complete", False),
+            should_continue=data.get("should_continue", True),
+            vuln_scan_results=data.get("vuln_scan_results", {}),
+            vuln_scan_plugins_loaded=data.get("vuln_scan_plugins_loaded", False),
+            vuln_scan_progress=data.get("vuln_scan_progress", {}),
+            vuln_scan_metadata=data.get("vuln_scan_metadata", {})
+        )

@@ -403,12 +403,64 @@ class SeebugAPIClient:
         self.cache.clear()
         logger.info("✅ API缓存已清除")
 
+    async def get_poc_detail(self, ssvid: int) -> APIResponse:
+        """
+        获取POC详情
+
+        Args:
+            ssvid: POC的SSVID
+
+        Returns:
+            APIResponse: POC详情
+        """
+        cache_key = f"poc_detail_{ssvid}"
+
+        if self.enable_cache and cache_key in self.cache:
+            cached_data, timestamp = self.cache[cache_key]
+            if (datetime.now() - timestamp).total_seconds() < 21600:
+                logger.info(f"✅ 使用缓存的POC详情: SSVID={ssvid}")
+                return cached_data
+
+        logger.info(f"🔍 开始获取POC详情: SSVID={ssvid}")
+
+        try:
+            result = self.seebug_client.get_poc_detail(ssvid)
+            success = result.get("status") == "success"
+            data = result.get("data", {})
+            message = result.get("msg", "")
+
+            response = APIResponse(
+                success=success,
+                data=data,
+                message=message,
+                status_code=200 if success else 404,
+                execution_time=0.0
+            )
+
+            if success:
+                logger.info(f"✅ POC详情获取成功: SSVID={ssvid}")
+                if self.enable_cache:
+                    import copy
+                    self.cache[cache_key] = (response, datetime.now())
+            else:
+                logger.warning(f"⚠️ POC详情获取失败: {message}")
+
+            return response
+
+        except Exception as e:
+            logger.error(f"❌ POC详情获取异常: {e}")
+            return APIResponse(
+                success=False,
+                message=f"获取详情异常: {str(e)}",
+                status_code=500
+            )
+
     def get_cache_stats(self) -> Dict[str, Any]:
         """
         获取缓存统计信息
 
         Returns:
-            Dict: 缓存统计
+            Dict: 统计信息
         """
         return {
             "cache_entries": len(self.cache),
@@ -438,5 +490,6 @@ class SeebugAPIClient:
             "cache_stats": self.get_cache_stats(),
             "seebug_agent_available": bool(self.seebug_client)
         }
+
 
 global_seebug_client = SeebugAPIClient()

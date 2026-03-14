@@ -61,6 +61,10 @@ class WebSocketManager {
     }
 
     this.ws.onmessage = (event) => {
+      if (event.data === 'pong') {
+        return
+      }
+      
       try {
         const data = JSON.parse(event.data)
         this.handleMessage(data)

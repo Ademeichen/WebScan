@@ -152,20 +152,40 @@ async def list_kb_vulnerabilities(
             query = query.filter(Q(name__icontains=keyword) | Q(cve_id__icontains=keyword) | Q(description__icontains=keyword))
         
         if source:
-            query = query.filter(source=source)
-            
+            try:
+                query = query.filter(source=source)
+            except Exception:
+                logger.warning("source 字段不存在于当前数据库表中，跳过过滤")
+        
         if has_poc is not None:
-            query = query.filter(has_poc=has_poc)
+            try:
+                query = query.filter(has_poc=has_poc)
+            except Exception:
+                logger.warning("has_poc 字段不存在于当前数据库表中，跳过过滤")
             
         total = await query.count()
         items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-updated_at")
         
         formatted_items = []
         for item in items:
-            item_dict = dict(item)
-            item_dict['id'] = str(item.id)
-            item_dict['created_at'] = item.created_at.strftime("%Y-%m-%d %H:%M:%S")
-            item_dict['updated_at'] = item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+            item_dict = {
+                'id': str(item.id),
+                'cve_id': getattr(item, 'cve_id', None),
+                'name': getattr(item, 'name', ''),
+                'description': getattr(item, 'description', None),
+                'severity': getattr(item, 'severity', None),
+                'cvss_score': getattr(item, 'cvss_score', None),
+                'affected_product': getattr(item, 'affected_product', None),
+                'affected_versions': getattr(item, 'affected_versions', None),
+                'poc_code': getattr(item, 'poc_code', None),
+                'remediation': getattr(item, 'remediation', None),
+                'references': getattr(item, 'references', None),
+                'source': getattr(item, 'source', None),
+                'has_poc': getattr(item, 'has_poc', False),
+                'ssvid': getattr(item, 'ssvid', None),
+                'created_at': item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                'updated_at': item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+            }
             formatted_items.append(item_dict)
             
         return {
@@ -215,10 +235,24 @@ async def get_kb_vulnerability(kb_id: str):
     if not item:
         raise HTTPException(status_code=404, detail="Vulnerability not found")
     
-    item_dict = dict(item)
-    item_dict['id'] = str(item.id)
-    item_dict['created_at'] = item.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    item_dict['updated_at'] = item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+    item_dict = {
+        'id': str(item.id),
+        'cve_id': getattr(item, 'cve_id', None),
+        'name': getattr(item, 'name', ''),
+        'description': getattr(item, 'description', None),
+        'severity': getattr(item, 'severity', None),
+        'cvss_score': getattr(item, 'cvss_score', None),
+        'affected_product': getattr(item, 'affected_product', None),
+        'affected_versions': getattr(item, 'affected_versions', None),
+        'poc_code': getattr(item, 'poc_code', None),
+        'remediation': getattr(item, 'remediation', None),
+        'references': getattr(item, 'references', None),
+        'source': getattr(item, 'source', None),
+        'has_poc': getattr(item, 'has_poc', False),
+        'ssvid': getattr(item, 'ssvid', None),
+        'created_at': item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        'updated_at': item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+    }
     
     return item_dict
 

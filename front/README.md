@@ -297,14 +297,14 @@ front/
 
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:8888/api
-VITE_REQUEST_TIMEOUT=:88880
+VITE_REQUEST_TIMEOUT=8880
 ```
 
 在 `.env.production` 文件中配置生产环境 API 地址：
 
 ```env
 VITE_API_BASE_URL=https://your-api-domain.com/api
-VITE_REQUEST_TIMEOUT=:88880
+VITE_REQUEST_TIMEOUT=8880
 ```
 
 #### 2. 开发模式启动
@@ -611,7 +611,7 @@ AI Agent 扫描页面，功能：
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8888/api'
-const REQUEST_TIMEOUT = parseInt(import.meta.env.VITE_REQUEST_TIMEOUT) ||:88880
+const REQUEST_TIMEOUT = parseInt(import.meta.env.VITE_REQUEST_TIMEOUT) || 8880
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -939,7 +939,7 @@ npm install
 # 修改 vite.config.js 中的端口配置
 export default defineConfig({
   server: {
-    port::8888  // 修改为其他端口
+    port: 8888  // 修改为其他端口
   }
 })
 ```
