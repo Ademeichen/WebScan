@@ -19,6 +19,50 @@ from pathlib import Path
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="paramiko")
 
+import socket
+
+def handle_asyncio_exception(loop, context):
+    """
+    自定义 asyncio 异常处理器
+    
+    处理 Windows 平台上常见的连接重置错误，包括：
+    - ConnectionResetError [WinError 10054]: 远程主机强迫关闭了一个现有的连接
+    - ConnectionAbortedError [WinError 10053]: 你的主机中的软件中止了一个已建立的连接
+    - BrokenPipeError [WinError 10032]: 管道正在关闭
+    """
+    exception = context.get("exception")
+    
+    if exception:
+        if isinstance(exception, (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError)):
+            exception_code = getattr(exception, 'winerror', getattr(exception, 'errno', None))
+            known_codes = [10054, 10053, 10032, 32, 9, 104]
+            if exception_code in known_codes or isinstance(exception, (ConnectionResetError, BrokenPipeError)):
+                return
+    
+    message = context.get("message", "")
+    if "Connection reset" in message or "pipe" in message.lower():
+        return
+    
+    loop.default_exception_handler(context)
+
+def setup_asyncio_exception_handler():
+    if sys.platform == 'win32':
+        try:
+            policy = asyncio.WindowsProactorEventLoopPolicy()
+            asyncio.set_event_loop_policy(policy)
+        except (AttributeError, NotImplementedError):
+            pass
+    
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.set_exception_handler(handle_asyncio_exception)
+        print("asyncio 异常处理器已配置")
+    except Exception as e:
+        print(f"设置 asyncio 异常处理器失败: {e}")
+
+setup_asyncio_exception_handler()
+
 current_dir = Path(__file__).parent
 project_root = current_dir.parent
 if str(project_root) not in sys.path:
@@ -85,6 +129,8 @@ async def lifespan(app: FastAPI):
     Yields:
         None: 控制权交还给应用
     """
+    loop = asyncio.get_running_loop()
+    loop.set_exception_handler(handle_asyncio_exception)
     
     logger.info(f"启动 {settings.APP_NAME} v{settings.APP_VERSION}")
     

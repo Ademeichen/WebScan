@@ -116,15 +116,31 @@ class AgentConfig:
     DEFAULT_SCAN_TASKS: List[str] = [
         "baseinfo",
         "portscan",
+        "cms_identify",
         "waf_detect",
         "cdn_detect",
-        "cms_identify",
-        "infoleak_scan"
+        "iplocating",
+        "subdomain_scan",
+        "webside_scan",
+        "webweight_scan",
+        "infoleak_scan",
+        "dirscan",
+        "crawler",
+        "sqli_scan",
+        "xss_scan",
+        "csrf_scan",
+        "vuln_infoleak_scan",
+        "fileupload_scan",
+        "cmdi_scan",
+        "weakpass_scan",
+        "lfi_scan",
+        "ssrf_scan"
     ]
     """
     默认扫描任务列表
     
     规则化规划器使用的默认任务序列。
+    包含所有信息收集和漏洞扫描工具，确保完整的安全检测。
     """
     
     # = 漏洞分析配置 =

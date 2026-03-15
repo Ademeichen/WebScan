@@ -243,7 +243,8 @@
 
 <script>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { tasksApi } from '@/utils/api'
+import { useRouter } from 'vue-router'
+import { tasksApi, pocApi } from '@/utils/api'
 import POCScanForm from '@/components/business/POCScanForm.vue'
 import Alert from '@/components/common/Alert.vue'
 import { formatDate } from '@/utils/date'
@@ -255,6 +256,7 @@ export default {
     Alert
   },
   setup() {
+    const router = useRouter()
     const errorMessage = ref('')
     const successMessage = ref('')
     const recentScans = ref([])
@@ -501,19 +503,13 @@ export default {
   flex-direction: column;
   align-items: center;
   padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--el-fill-color-light);
+  background-color: var(--bg-secondary);
   border-radius: var(--border-radius-lg);
   min-width: 80px;
-  transition: all var(--transition-base);
-}
-
-.stat-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
 }
 
 .stat-badge.success {
-  background-color: var(--el-color-success-light-9);
+  background-color: var(--color-success-bg);
 }
 
 .stat-value {
@@ -523,7 +519,7 @@ export default {
 }
 
 .stat-badge.success .stat-value {
-  color: var(--el-color-success);
+  color: var(--color-success);
 }
 
 .stat-label {
@@ -535,16 +531,17 @@ export default {
 
 .main-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
   gap: var(--spacing-xl);
   align-items: start;
+  min-height: calc(100vh - 200px);
 }
 
 .content-area {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
-  min-width: 0;
+  max-width: 100%;
 }
 
 .card {
@@ -552,11 +549,6 @@ export default {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
-}
-
-.card:hover {
-  box-shadow: var(--shadow-md);
 }
 
 .card-header {
@@ -580,7 +572,7 @@ export default {
 .card-header .icon {
   width: 20px;
   height: 20px;
-  color: var(--el-color-primary);
+  color: var(--color-primary);
 }
 
 .card-body {
@@ -588,7 +580,7 @@ export default {
 }
 
 .form-card {
-  background: linear-gradient(135deg, var(--card-background) 0%, var(--el-color-primary-light-9) 100%);
+  background: linear-gradient(135deg, var(--card-background) 0%, rgba(64, 158, 255, 0.02) 100%);
 }
 
 .results-card {
@@ -609,25 +601,25 @@ export default {
 }
 
 .status-pending {
-  background-color: var(--el-color-warning-light-9);
-  color: var(--el-color-warning);
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 
 .status-running {
-  background-color: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
   animation: pulse 2s ease-in-out infinite;
 }
 
 .status-completed {
-  background-color: var(--el-color-success-light-9);
-  color: var(--el-color-success);
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .status-failed,
 .status-cancelled {
-  background-color: var(--el-color-danger-light-9);
-  color: var(--el-color-danger);
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 @keyframes pulse {
@@ -640,7 +632,7 @@ export default {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--spacing-md);
   padding: var(--spacing-md);
-  background-color: var(--el-fill-color-light);
+  background-color: var(--bg-secondary);
   border-radius: var(--border-radius);
   margin-bottom: var(--spacing-lg);
 }
@@ -667,7 +659,7 @@ export default {
 .progress-section {
   margin-bottom: var(--spacing-lg);
   padding: var(--spacing-md);
-  background-color: var(--el-fill-color-light);
+  background-color: var(--bg-secondary);
   border-radius: var(--border-radius);
 }
 
@@ -682,7 +674,7 @@ export default {
 
 .progress-percent {
   font-weight: 600;
-  color: var(--el-color-primary);
+  color: var(--color-primary);
 }
 
 .progress-bar {
@@ -694,7 +686,7 @@ export default {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light-3) 100%);
   border-radius: var(--border-radius-full);
   transition: width 0.3s ease;
 }
@@ -730,73 +722,53 @@ export default {
 
 .stat-card {
   padding: var(--spacing-md);
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--border-radius);
   text-align: center;
-  background-color: var(--el-fill-color-light);
+  background-color: var(--bg-secondary);
   border-left: 4px solid transparent;
-  transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: currentColor;
-  opacity: 0.3;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
 }
 
 .stat-card.critical {
   border-left-color: var(--critical-risk);
-  background: linear-gradient(135deg, rgba(192, 57, 43, 0.08) 0%, rgba(192, 57, 43, 0.03) 100%);
-  color: var(--critical-risk);
+  background-color: rgba(192, 57, 43, 0.1);
 }
 
 .stat-card.high {
   border-left-color: var(--high-risk);
-  background: linear-gradient(135deg, rgba(231, 76, 60, 0.08) 0%, rgba(231, 76, 60, 0.03) 100%);
-  color: var(--high-risk);
+  background-color: rgba(231, 76, 60, 0.1);
 }
 
 .stat-card.medium {
   border-left-color: var(--medium-risk);
-  background: linear-gradient(135deg, rgba(243, 156, 18, 0.08) 0%, rgba(243, 156, 18, 0.03) 100%);
-  color: var(--medium-risk);
+  background-color: rgba(243, 156, 18, 0.1);
 }
 
 .stat-card.low {
   border-left-color: var(--low-risk);
-  background: linear-gradient(135deg, rgba(52, 152, 219, 0.08) 0%, rgba(52, 152, 219, 0.03) 100%);
-  color: var(--low-risk);
+  background-color: rgba(52, 152, 219, 0.1);
 }
 
 .stat-card.info {
   border-left-color: var(--info-risk);
-  background: linear-gradient(135deg, rgba(149, 165, 166, 0.08) 0%, rgba(149, 165, 166, 0.03) 100%);
-  color: var(--info-risk);
+  background-color: rgba(149, 165, 166, 0.1);
 }
 
 .stat-number {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: currentColor;
-  line-height: 1.2;
+  color: var(--text-primary);
 }
+
+.stat-card.critical .stat-number { color: var(--critical-risk); }
+.stat-card.high .stat-number { color: var(--high-risk); }
+.stat-card.medium .stat-number { color: var(--medium-risk); }
+.stat-card.low .stat-number { color: var(--low-risk); }
+.stat-card.info .stat-number { color: var(--info-risk); }
 
 .stat-title {
   font-size: 0.8rem;
   color: var(--text-secondary);
   margin-top: var(--spacing-xs);
-  font-weight: 500;
 }
 
 .poc-results {
@@ -819,20 +791,15 @@ export default {
 
 .result-item {
   padding: var(--spacing-md);
-  background-color: var(--el-fill-color-light);
+  background-color: var(--bg-secondary);
   border-radius: var(--border-radius);
-  border-left: 3px solid var(--el-color-success);
+  border-left: 3px solid var(--color-success);
   transition: all var(--transition-base);
-}
-
-.result-item:hover {
-  background-color: var(--el-fill-color);
-  transform: translateX(4px);
 }
 
 .result-item.has-vuln {
   border-left-color: var(--high-risk);
-  background: linear-gradient(135deg, rgba(231, 76, 60, 0.05) 0%, rgba(231, 76, 60, 0.02) 100%);
+  background-color: rgba(231, 76, 60, 0.05);
 }
 
 .result-header {
@@ -855,18 +822,18 @@ export default {
 }
 
 .result-status.safe {
-  background-color: var(--el-color-success-light-9);
-  color: var(--el-color-success);
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .result-status.vulnerable {
-  background-color: var(--el-color-danger-light-9);
-  color: var(--el-color-danger);
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 .result-details {
   padding: var(--spacing-sm);
-  background-color: var(--card-background);
+  background-color: var(--bg-primary);
   border-radius: var(--border-radius-sm);
   margin-bottom: var(--spacing-sm);
 }
@@ -911,7 +878,7 @@ export default {
   align-items: center;
   justify-content: center;
   padding: var(--spacing-2xl);
-  color: var(--el-color-success);
+  color: var(--color-success);
 }
 
 .empty-icon {
@@ -929,37 +896,37 @@ export default {
 .sidebar {
   position: sticky;
   top: var(--spacing-lg);
-  height: fit-content;
-  max-height: calc(100vh - var(--spacing-xl) * 2);
-  min-height: 400px;
+  height: calc(100vh - 160px);
+  max-height: calc(100vh - 120px);
 }
 
 .sidebar-card {
   position: relative;
-  background: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(64, 158, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  max-height: inherit;
 }
 
 .sidebar-card .card-header {
-  background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
-  padding: var(--spacing-md) var(--spacing-lg);
-  flex-shrink: 0;
+  background: linear-gradient(135deg, #409EFF 0%, #66b1ff 100%);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .sidebar-card .card-header h2 {
   color: #fff;
-  font-size: 1rem;
+  font-size: 16px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 8px;
   margin: 0;
 }
 
@@ -973,24 +940,20 @@ export default {
   padding: var(--spacing-md);
   flex: 1;
   overflow-y: auto;
-  min-height: 0;
+  min-height: 100px;
 }
 
 .sidebar-card .card-body::-webkit-scrollbar {
   width: 4px;
 }
 
-.sidebar-card .card-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
 .sidebar-card .card-body::-webkit-scrollbar-thumb {
-  background: var(--border-color);
+  background: #dcdfe6;
   border-radius: 2px;
 }
 
 .sidebar-card .card-body::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: #c0c4cc;
 }
 
 .refresh-btn {
@@ -1001,15 +964,16 @@ export default {
   height: 32px;
   padding: 0;
   border: none;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: transparent;
   border-radius: var(--border-radius);
   cursor: pointer;
-  color: #fff;
+  color: var(--text-secondary);
   transition: all var(--transition-base);
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--bg-secondary);
+  color: var(--color-primary);
 }
 
 .refresh-btn:disabled {
@@ -1050,7 +1014,7 @@ export default {
   width: 20px;
   height: 20px;
   border: 2px solid var(--border-color);
-  border-top-color: var(--el-color-primary);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1071,15 +1035,18 @@ export default {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
 }
 
 .history-item {
-  padding: var(--spacing-md);
-  background: var(--card-background);
-  border-radius: var(--border-radius);
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all var(--transition-base);
-  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  border: 1px solid #ebeef5;
+  margin-bottom: 10px;
   position: relative;
   overflow: hidden;
 }
@@ -1091,15 +1058,15 @@ export default {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: var(--el-color-primary);
+  background: linear-gradient(180deg, #409EFF 0%, #66b1ff 100%);
   opacity: 0;
-  transition: opacity var(--transition-base);
+  transition: opacity 0.3s ease;
 }
 
 .history-item:hover {
-  background: var(--el-color-primary-light-9);
-  border-color: var(--el-color-primary-light-5);
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f1ff 100%);
   transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
 }
 
 .history-item:hover::before {
@@ -1107,8 +1074,9 @@ export default {
 }
 
 .history-item.active {
-  border-color: var(--el-color-primary);
-  background: var(--el-color-primary-light-8);
+  border-color: #409EFF;
+  background: linear-gradient(135deg, #e6f1ff 0%, #d9ecff 100%);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.2);
 }
 
 .history-item.active::before {
@@ -1119,24 +1087,24 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 8px;
 }
 
 .history-name {
   font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.9rem;
+  color: #303133;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  margin-right: var(--spacing-sm);
+  margin-right: 8px;
 }
 
 .history-status {
-  padding: 2px var(--spacing-sm);
-  border-radius: var(--border-radius-full);
-  font-size: 0.7rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   text-transform: uppercase;
@@ -1190,52 +1158,63 @@ export default {
 }
 
 .vuln-badge.critical {
-  background-color: var(--el-color-danger-light-8);
+  background-color: rgba(192, 57, 43, 0.2);
   color: var(--critical-risk);
 }
 
 .vuln-badge.high {
-  background-color: var(--el-color-danger-light-9);
+  background-color: rgba(231, 76, 60, 0.2);
   color: var(--high-risk);
 }
 
 .vuln-badge.medium {
-  background-color: var(--el-color-warning-light-9);
+  background-color: rgba(243, 156, 18, 0.2);
   color: var(--medium-risk);
 }
 
 .vuln-badge.low {
-  background-color: var(--el-color-primary-light-9);
+  background-color: rgba(52, 152, 219, 0.2);
   color: var(--low-risk);
-}
-
-@media (max-width: 1400px) {
-  .main-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
-    gap: var(--spacing-lg);
-  }
 }
 
 @media (max-width: 1200px) {
   .main-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
-    gap: var(--spacing-md);
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 350px);
+    gap: var(--spacing-lg);
+  }
+  
+  .sidebar {
+    height: calc(100vh - 140px);
+  }
+  
+  .sidebar-card .card-body {
+    max-height: none;
   }
 }
 
 @media (max-width: 1024px) {
   .main-layout {
     grid-template-columns: 1fr;
+    min-height: auto;
   }
 
   .sidebar {
     position: static;
+    height: auto;
+    max-height: none;
+  }
+  
+  .sidebar-card {
+    height: auto;
+  }
+  
+  .sidebar-card .card-body {
     max-height: 500px;
-    min-height: 300px;
+    flex: none;
   }
 
-  .sidebar-card {
-    max-height: 500px;
+  .history-list {
+    max-height: 400px;
   }
 }
 
@@ -1260,80 +1239,6 @@ export default {
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .stat-number {
-    font-size: 1.75rem;
-  }
-
-  .sidebar {
-    max-height: 400px;
-    min-height: 250px;
-  }
-
-  .sidebar-card {
-    max-height: 400px;
-  }
-}
-
-@media (max-width: 480px) {
-  .poc-scan-page {
-    padding: var(--spacing-sm);
-  }
-
-  .page-header {
-    margin-bottom: var(--spacing-lg);
-    padding-bottom: var(--spacing-md);
-  }
-
-  .header-content h1 {
-    font-size: 1.5rem;
-  }
-
-  .header-stats {
-    flex-wrap: wrap;
-  }
-
-  .stat-badge {
-    min-width: 70px;
-  }
-
-  .stat-value {
-    font-size: 1.25rem;
-  }
-
-  .card-header {
-    padding: var(--spacing-md);
-  }
-
-  .card-body {
-    padding: var(--spacing-md);
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-sm);
-  }
-
-  .stat-card {
-    padding: var(--spacing-sm);
-  }
-
-  .stat-number {
-    font-size: 1.5rem;
-  }
-
-  .results-list {
-    max-height: 300px;
-  }
-
-  .sidebar {
-    max-height: 350px;
-    min-height: 200px;
-  }
-
-  .sidebar-card {
-    max-height: 350px;
   }
 }
 </style>

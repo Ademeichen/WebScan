@@ -178,14 +178,59 @@
             <h3>执行阶段</h3>
             <div class="stages-container">
               <div v-for="(stageData, stageName) in selectedTask.stages" :key="stageName" class="stage-item" :class="stageData.status">
-                <div class="stage-header">
+                <div class="stage-header" @click="toggleStageDetails(stageName)">
                   <span class="stage-name">{{ formatStageName(stageName) }}</span>
                   <span class="stage-status-text">{{ getStatusText(stageData.status) }}</span>
+                  <span class="stage-progress" v-if="stageData.progress">{{ stageData.progress }}%</span>
+                  <span class="expand-icon">{{ expandedStages[stageName] ? '▼' : '▶' }}</span>
                 </div>
-                <div class="stage-details" v-if="stageData.sub_status || stageData.log">
+                <div class="stage-details" v-if="expandedStages[stageName]">
                    <div v-if="stageData.sub_status" class="sub-status">当前步骤: {{ stageData.sub_status }}</div>
                    <div v-if="stageData.log" class="stage-log">{{ stageData.log }}</div>
+                   <div v-if="stageData.logs && stageData.logs.length" class="stage-logs">
+                     <div v-for="(log, idx) in stageData.logs" :key="idx" class="log-entry">
+                       <span class="log-time">{{ log.timestamp }}</span>
+                       <span class="log-msg">{{ log.message }}</span>
+                     </div>
+                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section" v-if="selectedTask.target_context && Object.keys(selectedTask.target_context).length">
+            <h3>目标上下文</h3>
+            <div class="context-grid">
+              <div v-for="(value, key) in selectedTask.target_context" :key="key" class="context-item">
+                <span class="context-label">{{ formatContextKey(key) }}:</span>
+                <span class="context-value">{{ value || '-' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section" v-if="selectedTask.execution_history && selectedTask.execution_history.length">
+            <h3>执行历史</h3>
+            <div class="history-list">
+              <div v-for="(step, idx) in selectedTask.execution_history" :key="idx" class="history-item">
+                <div class="history-header">
+                  <span class="history-node">{{ step.node || step.task || 'Unknown' }}</span>
+                  <span class="history-status" :class="step.status">{{ step.status }}</span>
+                  <span class="history-time">{{ step.timestamp }}</span>
+                </div>
+                <div class="history-action" v-if="step.action">{{ step.action }}</div>
+                <div class="history-result" v-if="step.result">
+                  <pre>{{ typeof step.result === 'object' ? JSON.stringify(step.result, null, 2) : step.result }}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section" v-if="selectedTask.scan_summary && Object.keys(selectedTask.scan_summary).length">
+            <h3>扫描摘要</h3>
+            <div class="summary-grid">
+              <div v-for="(value, key) in selectedTask.scan_summary" :key="key" class="summary-item">
+                <span class="summary-label">{{ formatSummaryKey(key) }}:</span>
+                <span class="summary-value">{{ value }}</span>
               </div>
             </div>
           </div>
@@ -268,6 +313,7 @@ export default {
     const lastSubmitData = ref(null)
     const retryCount = ref(0)
     const maxRetryCount = 3
+    const expandedStages = ref({})
     
     const subgraphState = reactive({
       planning: { status: 'pending', progress: 0, time: 0 },
@@ -304,10 +350,10 @@ export default {
           id: String(task.task_id || task.id),
           task_id: String(task.task_id || task.id),
           stages: task.stages || {
-            openai: { status: 'pending' },
-            plugins: { status: 'pending' },
-            awvs: { status: 'pending' },
-            pocsuite3: { status: 'pending' }
+            planning: { status: 'pending' },
+            tool_execution: { status: 'pending' },
+            poc_verification: { status: 'pending' },
+            report: { status: 'pending' }
           }
         }))
         
@@ -328,21 +374,37 @@ export default {
       }
     }
 
-    const handleSubmit = async (formData) => {
-      console.log('提交Agent扫描', formData)
+    const handleSubmit = async (eventData) => {
+      console.log('提交Agent扫描', eventData)
+      
+      if (isLoading.value) return
       
       isLoading.value = true
       errorMessage.value = ''
-      lastSubmitData.value = formData
+      
+      const formData = eventData.formData || eventData
+      const scanData = eventData.scanData || {}
+      
+      lastSubmitData.value = { formData, scanData }
       
       try {
-        const response = await aiAgentsApi.startScan({
-          ...formData,
+        const requestData = {
+          target: formData.target || scanData.target,
+          enable_llm_planning: formData.enableLLMPlanning ?? scanData.enable_llm_planning ?? true,
+          custom_tasks: formData.useCustomTasks ? formData.customTasks : null,
+          need_custom_scan: formData.needCustomScan ?? scanData.need_custom_scan ?? false,
+          custom_scan_type: formData.customScanType || scanData.custom_scan_type || 'web',
+          custom_scan_requirements: formData.customScanRequirements || scanData.custom_scan_requirements || '',
+          custom_scan_language: formData.customScanLanguage || scanData.custom_scan_language || 'python',
+          need_capability_enhancement: formData.needCapabilityEnhancement ?? scanData.need_capability_enhancement ?? false,
+          capability_requirement: formData.capabilityRequirement || scanData.capability_requirement || '',
           strategy: scanStrategy.value,
           concurrency: concurrency.value,
           timeout: timeout.value,
           selected_tools: selectedTools.value
-        })
+        }
+        
+        const response = await aiAgentsApi.startScan(requestData)
         
         if (response && response.task_id) {
           currentExecution.value = response
@@ -352,17 +414,17 @@ export default {
           const newTask = {
             task_id: String(response.task_id),
             id: String(response.task_id),
-            target: formData.target,
+            target: requestData.target,
             task_name: 'AI Agent 扫描',
             task_type: 'agent_scan',
             status: 'queued',
             progress: 0,
             created_at: new Date().toISOString(),
             stages: {
-              openai: { status: 'pending' },
-              plugins: { status: 'pending' },
-              awvs: { status: 'pending' },
-              pocsuite3: { status: 'pending' }
+              planning: { status: 'pending' },
+              tool_execution: { status: 'pending' },
+              poc_verification: { status: 'pending' },
+              report: { status: 'pending' }
             }
           }
           taskStore.addTask(newTask)
@@ -453,7 +515,12 @@ export default {
             plugins: 'tool_execution',
             awvs: 'poc_verification',
             pocsuite3: 'poc_verification',
-            report: 'report'
+            planning: 'planning',
+            tool_execution: 'tool_execution',
+            poc_verification: 'poc_verification',
+            report: 'report',
+            info_collection: 'planning',
+            vuln_scan: 'tool_execution'
           }
           
           Object.keys(task.stages).forEach(backendKey => {
@@ -498,9 +565,43 @@ export default {
         planning: 'AI分析规划',
         tool_execution: '工具执行',
         poc_verification: 'POC验证',
-        report: '报告生成'
+        report: '报告生成',
+        info_collection: '信息收集',
+        vuln_scan: '漏洞扫描'
       }
       return map[name] || name
+    }
+
+    const toggleStageDetails = (stageName) => {
+      expandedStages.value[stageName] = !expandedStages.value[stageName]
+    }
+
+    const formatContextKey = (key) => {
+      const map = {
+        cms_type: 'CMS类型',
+        server_type: '服务器类型',
+        waf_detected: 'WAF检测',
+        open_ports: '开放端口',
+        tech_stack: '技术栈',
+        framework: '框架',
+        language: '编程语言',
+        os_info: '操作系统'
+      }
+      return map[key] || key
+    }
+
+    const formatSummaryKey = (key) => {
+      const map = {
+        total_requests: '总请求数',
+        total_vulnerabilities: '发现漏洞数',
+        high_risk_count: '高危漏洞',
+        medium_risk_count: '中危漏洞',
+        low_risk_count: '低危漏洞',
+        execution_time: '执行时间',
+        tools_used: '使用工具数',
+        pocs_executed: 'POC执行数'
+      }
+      return map[key] || key
     }
 
     const updateTaskStatus = (taskId, payload) => {
@@ -516,10 +617,10 @@ export default {
           created_at: new Date().toISOString(),
           progress: 0,
           stages: {
-            openai: { status: 'pending' },
-            plugins: { status: 'pending' },
-            awvs: { status: 'pending' },
-            pocsuite3: { status: 'pending' }
+            planning: { status: 'pending' },
+            tool_execution: { status: 'pending' },
+            poc_verification: { status: 'pending' },
+            report: { status: 'pending' }
           }
         }
         taskStore.addTask(newTask)
@@ -597,12 +698,21 @@ export default {
     }
     
     const updateSubgraphProgress = (payload) => {
-      if (payload.subgraph_type && subgraphState[payload.subgraph_type]) {
-        subgraphState[payload.subgraph_type] = {
+      const subgraphType = payload.subgraph_type || payload.stage
+      if (subgraphType && subgraphState[subgraphType]) {
+        subgraphState[subgraphType] = {
           status: payload.status || 'running',
           progress: payload.progress || 0,
-          time: payload.execution_time || subgraphState[payload.subgraph_type].time
+          time: payload.execution_time || subgraphState[subgraphType].time
         }
+      }
+      
+      if (payload.task_id) {
+        updateTaskStage(payload.task_id, subgraphType, {
+          status: payload.status || 'running',
+          progress: payload.progress || 0,
+          execution_time: payload.execution_time || 0
+        })
       }
     }
     
@@ -688,10 +798,12 @@ export default {
       showPluginResultDialog,
       currentPluginResult,
       subgraphList,
+      subgraphState,
       isLoading,
       retryCount,
       maxRetryCount,
       canRetry,
+      expandedStages,
       handleSubmit,
       handleRetry,
       handleSuccess,
@@ -700,6 +812,9 @@ export default {
       getStatusText,
       formatDate,
       formatStageName,
+      formatContextKey,
+      formatSummaryKey,
+      toggleStageDetails,
       toggleToolSelection,
       getSubgraphStatus,
       getSubgraphStatusText,
@@ -1267,6 +1382,137 @@ export default {
   white-space: pre-wrap;
   max-height: 100px;
   overflow-y: auto;
+}
+
+.stage-progress {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.expand-icon {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.stage-logs {
+  margin-top: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.log-entry {
+  display: flex;
+  gap: 8px;
+  font-size: 0.75rem;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.log-time {
+  color: var(--text-secondary);
+  font-family: monospace;
+  min-width: 60px;
+}
+
+.log-msg {
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.context-grid,
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.context-item,
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+}
+
+.context-label,
+.summary-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.context-value,
+.summary-value {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.history-item {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-sm);
+  background: var(--bg-secondary);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.history-node {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.history-status {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+}
+
+.history-status.completed { background: var(--color-success-bg); color: var(--color-success); }
+.history-status.running { background: var(--color-info-bg); color: var(--color-info); }
+.history-status.failed { background: var(--color-error-bg); color: var(--color-error); }
+
+.history-time {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.history-action {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.history-result {
+  margin-top: 8px;
+}
+
+.history-result pre {
+  margin: 0;
+  padding: var(--spacing-sm);
+  background: var(--bg-primary);
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  overflow-x: auto;
+  max-height: 150px;
 }
 
 .result-content {

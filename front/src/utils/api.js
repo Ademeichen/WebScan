@@ -664,6 +664,14 @@ export const kbApi = {
     })
   },
 
+  searchFromSeebug: async (data) => {
+    return request({
+      url: '/kb/search-from-seebug',
+      method: 'post',
+      data
+    })
+  },
+
   searchPOC: async (data) => {
     return request({
       url: '/kb/seebug/poc/search',

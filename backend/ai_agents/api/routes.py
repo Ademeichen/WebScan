@@ -172,13 +172,11 @@ async def get_agent_task(task_id: str):
     try:
         logger.info(f"[AI_AGENT] [TASK_DETAIL_START] 获取Agent任务详情 - 模块: API, 变量: task_id, 值: {task_id}")
         
-        # 尝试转换为int (兼容 Task ID)
         db_task_id = None
         if task_id.isdigit():
             db_task_id = int(task_id)
             logger.info(f"[AI_AGENT] [TASK_DETAIL_CONVERT] Task ID转换 - 模块: API, 变量: task_id, 旧值: {task_id}, 新值: {db_task_id}")
         
-        # 从数据库获取 (使用 Unified Task Model)
         task = None
         if db_task_id:
             logger.info(f"[AI_AGENT] [TASK_DETAIL_DB] 从数据库获取任务 - 模块: API, 变量: db_task_id, 状态: querying")
@@ -190,7 +188,74 @@ async def get_agent_task(task_id: str):
         
         logger.info(f"[AI_AGENT] [TASK_DETAIL_FOUND] 找到任务 - 模块: API, 变量: task_id, 值: {task.id}, 状态: {task.status}")
         
-        # 返回 Task 模型数据
+        execution_history = []
+        stages = {}
+        graph_flow = None
+        final_output = None
+        
+        if task.result:
+            try:
+                if isinstance(task.result, str):
+                    result_data = json.loads(task.result)
+                else:
+                    result_data = task.result
+                
+                execution_history = result_data.get('execution_history', [])
+                raw_stages = result_data.get('stages', {})
+                graph_flow = result_data.get('graph_flow')
+                final_output = result_data.get('final_output', result_data)
+                target_context = result_data.get('target_context', {})
+                scan_summary = result_data.get('scan_summary', {})
+                
+                if raw_stages:
+                    for stage_name in ['planning', 'tool_execution', 'poc_verification', 'report']:
+                        if stage_name in raw_stages:
+                            stages[stage_name] = raw_stages[stage_name]
+                        elif stage_name not in stages:
+                            stages[stage_name] = {'status': 'pending', 'progress': 0}
+            except Exception as parse_err:
+                logger.warning(f"[AI_AGENT] [TASK_DETAIL_PARSE] 解析任务结果失败: {parse_err}")
+                final_output = task.result
+        
+        all_pending = all(
+            s.get('status') == 'pending' for s in stages.values()
+        ) if stages else True
+        
+        if (not stages or all_pending) and task.status == 'completed':
+            stages = {
+                'planning': {'status': 'completed', 'progress': 100},
+                'tool_execution': {'status': 'completed', 'progress': 100},
+                'poc_verification': {'status': 'completed', 'progress': 100},
+                'report': {'status': 'completed', 'progress': 100}
+            }
+        elif (not stages or all_pending) and task.status == 'running':
+            progress = task.progress or 0
+            stages = {
+                'planning': {
+                    'status': 'running' if progress < 25 else 'completed',
+                    'progress': min(progress, 25)
+                },
+                'tool_execution': {
+                    'status': 'running' if 25 <= progress < 50 else ('completed' if progress >= 50 else 'pending'),
+                    'progress': max(0, min(25, progress - 25))
+                },
+                'poc_verification': {
+                    'status': 'running' if 50 <= progress < 75 else ('completed' if progress >= 75 else 'pending'),
+                    'progress': max(0, min(25, progress - 50))
+                },
+                'report': {
+                    'status': 'running' if 75 <= progress < 100 else ('completed' if progress >= 100 else 'pending'),
+                    'progress': max(0, min(25, progress - 75))
+                }
+            }
+        elif not stages:
+            stages = {
+                'planning': {'status': 'pending', 'progress': 0},
+                'tool_execution': {'status': 'pending', 'progress': 0},
+                'poc_verification': {'status': 'pending', 'progress': 0},
+                'report': {'status': 'pending', 'progress': 0}
+            }
+        
         return APIResponse(
             code=200,
             message="获取成功",
@@ -201,9 +266,14 @@ async def get_agent_task(task_id: str):
                 "status": task.status,
                 "progress": task.progress,
                 "config": task.config,
+                "stages": stages,
+                "execution_history": execution_history,
+                "graph_flow": graph_flow,
+                "target_context": target_context,
+                "scan_summary": scan_summary,
                 "created_at": task.created_at,
                 "updated_at": task.updated_at,
-                "final_output": task.result,
+                "final_output": final_output,
                 "error_message": task.error_message
             }
         )

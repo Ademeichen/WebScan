@@ -334,6 +334,122 @@ async def get_seebug_poc_detail(ssvid: int) -> Optional[Dict[str, Any]]:
 
 
 
+@router.post("/search-from-seebug", response_model=Dict[str, Any])
+async def search_from_seebug(request: SeebugPOCSearchRequest):
+    """
+    从 Seebug 实时搜索漏洞并保存到本地数据库
+    
+    该接口会：
+    1. 调用 Seebug API 进行实时搜索
+    2. 将搜索结果保存到 VulnerabilityKB 表（去重）
+    3. 返回搜索结果
+    
+    Args:
+        request: 搜索请求参数
+            - keyword: 搜索关键词
+            - page: 页码，默认为1
+            - page_size: 每页数量，默认为10
+        
+    Returns:
+        Dict: 包含搜索结果和保存统计的响应
+            - code: 状态码
+            - message: 响应消息
+            - data: 包含 pocs 列表、saved_count、total
+        
+    Examples:
+        >>> POST /kb/search-from-seebug
+        >>> {
+        ...     "keyword": "thinkphp",
+        ...     "page": 1,
+        ...     "page_size": 10
+        ... }
+    """
+    try:
+        if not await validate_seebug_apikey(settings.SEEBUG_API_KEY):
+            return {
+                "code": 401,
+                "message": "Seebug API Key 无效，请检查配置",
+                "data": None
+            }
+        
+        poc_list = await search_seebug_poc(request.keyword, request.page, request.page_size)
+        
+        if not poc_list:
+            return {
+                "code": 200,
+                "message": "未搜索到相关漏洞",
+                "data": {
+                    "pocs": [],
+                    "saved_count": 0,
+                    "total": 0
+                }
+            }
+        
+        saved_count = 0
+        updated_count = 0
+        saved_pocs = []
+        
+        for poc in poc_list:
+            ssvid = poc.get('ssvid') or poc.get('id')
+            if not ssvid:
+                continue
+            
+            existing = await VulnerabilityKB.get_or_none(ssvid=ssvid)
+            
+            vuln_data = {
+                'cve_id': poc.get('cve_id', ''),
+                'name': poc.get('name', poc.get('title', poc.get('vul_name', 'Unknown'))),
+                'description': poc.get('description', poc.get('summary', '')),
+                'severity': poc.get('level', poc.get('severity', 'Unknown')),
+                'cvss_score': float(poc.get('cvss_score', 0.0)) if poc.get('cvss_score') else 0.0,
+                'affected_product': poc.get('product', poc.get('affected', '')),
+                'solution': poc.get('solution', poc.get('patch', '')),
+                'source': 'seebug',
+                'has_poc': True,
+                'ssvid': ssvid
+            }
+            
+            if existing:
+                for key, value in vuln_data.items():
+                    if key not in ['ssvid', 'source']:
+                        setattr(existing, key, value)
+                await existing.save()
+                updated_count += 1
+                saved_pocs.append({
+                    **vuln_data,
+                    'id': str(existing.id),
+                    'is_new': False
+                })
+            else:
+                new_vuln = await VulnerabilityKB.create(**vuln_data)
+                saved_count += 1
+                saved_pocs.append({
+                    **vuln_data,
+                    'id': str(new_vuln.id),
+                    'is_new': True
+                })
+        
+        logger.info(f"从 Seebug 搜索完成: 关键词={request.keyword}, 结果数={len(poc_list)}, 新增={saved_count}, 更新={updated_count}")
+        
+        return {
+            "code": 200,
+            "message": f"搜索成功，新增 {saved_count} 条，更新 {updated_count} 条",
+            "data": {
+                "pocs": saved_pocs,
+                "saved_count": saved_count,
+                "updated_count": updated_count,
+                "total": len(saved_pocs)
+            }
+        }
+    except Exception as e:
+        logger.error(f"从 Seebug 搜索失败: {e}")
+        return {
+            "code": 500,
+            "message": f"搜索失败: {str(e)}",
+            "data": None
+        }
+
+
 @router.post("/seebug/poc/search", response_model=Dict[str, Any])
 async def search_poc(request: SeebugPOCSearchRequest):
     """

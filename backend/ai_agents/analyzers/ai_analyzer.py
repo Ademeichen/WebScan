@@ -316,7 +316,8 @@ class AIAnalyzer:
                     result.risk_level = data["risk_level"]
                     logger.info(f"📊 风险等级: {result.risk_level}")
                 
-                for vuln in data.get("top_vulnerabilities", [])[:3]:
+                top_vulnerabilities = data.get("top_vulnerabilities", [])
+                for vuln in top_vulnerabilities[:3]:
                     result.remediation_priorities.append(RemediationPriority(
                         vulnerability_id=str(vuln.get("id", "")),
                         vulnerability_name=vuln.get("type", ""),
@@ -324,9 +325,10 @@ class AIAnalyzer:
                         reason=vuln.get("severity", ""),
                         estimated_effort="中"
                     ))
-                logger.info(f"📋 添加优先级漏洞: {vuln.get('type', 'Unknown')}")
+                    logger.info(f"📋 添加优先级漏洞: {vuln.get('type', 'Unknown')}")
                 
-                for rec in data.get("recommendations", [])[:3]:
+                recommendations = data.get("recommendations", [])
+                for rec in recommendations[:3]:
                     result.remediation_priorities.append(RemediationPriority(
                         vulnerability_id="",
                         vulnerability_name="通用建议",

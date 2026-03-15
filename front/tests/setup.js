@@ -8,7 +8,6 @@
 import { vi } from 'vitest'
 import { config } from '@vue/test-utils'
 
-// 模拟 window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation(query => ({
@@ -23,25 +22,36 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
-// 模拟 localStorage
+const localStorageStore = {}
 const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+  getItem: vi.fn((key) => localStorageStore[key] || null),
+  setItem: vi.fn((key, value) => {
+    localStorageStore[key] = value
+  }),
+  removeItem: vi.fn((key) => {
+    delete localStorageStore[key]
+  }),
+  clear: vi.fn(() => {
+    Object.keys(localStorageStore).forEach(key => delete localStorageStore[key])
+  }),
 }
 global.localStorage = localStorageMock
 
-// 模拟 sessionStorage
+const sessionStorageStore = {}
 const sessionStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+  getItem: vi.fn((key) => sessionStorageStore[key] || null),
+  setItem: vi.fn((key, value) => {
+    sessionStorageStore[key] = value
+  }),
+  removeItem: vi.fn((key) => {
+    delete sessionStorageStore[key]
+  }),
+  clear: vi.fn(() => {
+    Object.keys(sessionStorageStore).forEach(key => delete sessionStorageStore[key])
+  }),
 }
 global.sessionStorage = sessionStorageMock
 
-// 配置 Vue Test Utils
 config.global.stubs = {
   'el-button': true,
   'el-input': true,
@@ -119,7 +129,6 @@ config.global.stubs = {
   'AppIcon': true
 }
 
-// 模拟 Vue Router
 config.global.mocks = {
   $router: {
     push: vi.fn(),
@@ -146,7 +155,6 @@ config.global.mocks = {
   }
 }
 
-// 模拟 API 响应
 global.mockApiResponse = {
   success: (data = {}) => ({
     code: 200,
@@ -160,7 +168,6 @@ global.mockApiResponse = {
   })
 }
 
-// 模拟 fetch
 global.fetch = vi.fn(() =>
   Promise.resolve({
     ok: true,
@@ -169,7 +176,6 @@ global.fetch = vi.fn(() =>
   })
 )
 
-// 模拟 IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
   disconnect() {}
@@ -178,7 +184,6 @@ global.IntersectionObserver = class IntersectionObserver {
   unobserve() {}
 }
 
-// 模拟 ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   constructor() {}
   disconnect() {}
@@ -186,34 +191,21 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
 }
 
-// 模拟 requestAnimationFrame
 global.requestAnimationFrame = (callback) => setTimeout(callback, 0)
 global.cancelAnimationFrame = (id) => clearTimeout(id)
 
-// 模拟 window.confirm
 global.window.confirm = vi.fn(() => true)
 
-// 模拟 window.alert
 global.window.alert = vi.fn()
 
-// 模拟 setTimeout 和 clearTimeout
-global.setTimeout = vi.fn((callback) => {
-  const id = Math.random().toString(36).substring(7)
-  if (typeof callback === 'function') {
-    callback()
-  }
-  return id
-})
-global.clearTimeout = vi.fn()
+global.HTMLElement.prototype.focus = vi.fn()
 
-// 模拟 setInterval 和 clearInterval
-global.setInterval = vi.fn((callback) => {
-  const id = Math.random().toString(36).substring(7)
-  if (typeof callback === 'function') {
-    callback()
-  }
-  return id
-})
-global.clearInterval = vi.fn()
+global.WebSocket = vi.fn(() => ({
+  send: vi.fn(),
+  close: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  readyState: 1,
+}))
 
-console.log('✅ Vitest setup completed')
+console.log('Vitest setup completed')

@@ -260,11 +260,10 @@ class AgentState:
     
     # = Stage Tracking =
     stage_status: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {
-        "openai": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
-        "plugins": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
-        "awvs": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
-        "pocsuite3": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
-        "vuln_scan": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None}
+        "planning": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "tool_execution": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "poc_verification": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "report": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None}
     })
     
     # = Vulnerability Scan =

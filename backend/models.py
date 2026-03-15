@@ -80,14 +80,13 @@ class Task(Model):
                 
                 # 状态未改变，直接跳过检查
                 if old_status != new_status:
-                    # 定义合法流转
                     valid_transitions = {
                         "pending": ["running", "cancelled", "failed", "processing"],
-                        "running": ["completed", "failed", "cancelled", "processing"],
-                        "processing": ["running", "completed", "failed", "cancelled"], # 兼容 AWVS 状态
-                        "completed": ["pending", "running", "processing"], # 允许重试
-                        "failed": ["pending", "running", "processing"],    # 允许重试
-                        "cancelled": ["pending", "running", "processing"]  # 允许重试
+                        "running": ["completed", "failed", "cancelled", "processing", "pending"],
+                        "processing": ["running", "completed", "failed", "cancelled", "pending"],
+                        "completed": ["pending", "running", "processing"],
+                        "failed": ["pending", "running", "processing"],
+                        "cancelled": ["pending", "running", "processing"]
                     }
                     
                     allowed = valid_transitions.get(old_status, [])

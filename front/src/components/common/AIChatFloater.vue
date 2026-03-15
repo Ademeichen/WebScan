@@ -452,7 +452,9 @@ const toggleChat = () => {
     fetchAIConnectionStatus()
     connectWebSocket()
     nextTick(() => {
-      inputRef.value?.focus()
+      if (inputRef.value && typeof inputRef.value.focus === 'function') {
+        inputRef.value.focus()
+      }
     })
   } else {
     disconnectWebSocket()

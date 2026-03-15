@@ -566,43 +566,64 @@ class TaskPlanningNode(BasePlanningNode):
 ## 可用工具
 {tools}
 
-## 规划原则
+## 重要规则 - 必须遵守
 
-### 阶段优先级
-1. **信息收集阶段** (优先级最高)
-   - baseinfo: 获取基础HTTP信息
-   - portscan: 端口扫描
-   - cms_identify: CMS识别
-   - waf_detect: WAF检测
-   - cdn_detect: CDN检测
+### 1. 必须使用所有可用工具
+- 你**必须**在计划中包含所有可用的工具，不能遗漏任何工具
+- 每个工具都有其独特的安全检测价值，必须全部执行
+- 如果某个工具不适用，也应在计划中列出，执行时会自动跳过
 
-2. **深度扫描阶段**
-   - dirscan: 目录扫描
-   - subdomain_scan: 子域名枚举
-   - infoleak_scan: 信息泄露检测
+### 2. 执行顺序原则
 
-3. **漏洞验证阶段** (根据信息收集结果选择)
-   - 根据CMS类型选择对应POC
-   - 根据开放端口选择对应POC
+**第一阶段：基础信息收集（必须全部执行）**
+- baseinfo: 获取基础HTTP信息（必须）
+- portscan: 端口扫描（必须）
+- cms_identify: CMS识别（必须）
+- waf_detect: WAF检测（必须）
+- cdn_detect: CDN检测（必须）
+- iplocating: IP地址定位（必须）
 
-### 决策规则
-- 如果目标有WAF，降低扫描强度
-- 如果检测到CDN，优先子域名枚举
-- 根据CMS智能选择POC，避免无效扫描
-- 端口扫描发现特殊端口(如7001)时，执行对应POC
+**第二阶段：深度信息收集（必须全部执行）**
+- subdomain_scan: 子域名枚举（必须）
+- webside_scan: 站点信息收集（必须）
+- webweight_scan: 网站权重查询（必须）
+- infoleak_scan: 信息泄露检测（必须）
+- dirscan: 目录扫描（必须）
+- crawler: Web爬虫（必须）
 
-## 输出格式
+**第三阶段：漏洞扫描（必须全部执行）**
+- sqli_scan: SQL注入扫描（必须）
+- xss_scan: XSS漏洞扫描（必须）
+- csrf_scan: CSRF漏洞扫描（必须）
+- vuln_infoleak_scan: 敏感信息泄露扫描（必须）
+- fileupload_scan: 文件上传漏洞扫描（必须）
+- cmdi_scan: 命令注入扫描（必须）
+- weakpass_scan: 弱口令扫描（必须）
+- lfi_scan: 文件包含漏洞扫描（必须）
+- ssrf_scan: SSRF漏洞扫描（必须）
+
+**第四阶段：POC验证（根据端口和CMS选择）**
+- 根据开放端口选择对应POC
+- 根据识别的CMS选择对应POC
+
+### 3. 输出格式
 返回JSON格式:
 {{
   "plan": ["task1", "task2", ...],
   "reasoning": "规划理由说明"
 }}
 
+### 4. 示例输出
+{{
+  "plan": ["baseinfo", "portscan", "cms_identify", "waf_detect", "cdn_detect", "iplocating", "subdomain_scan", "webside_scan", "webweight_scan", "infoleak_scan", "dirscan", "crawler", "sqli_scan", "xss_scan", "csrf_scan", "vuln_infoleak_scan", "fileupload_scan", "cmdi_scan", "weakpass_scan", "lfi_scan", "ssrf_scan"],
+  "reasoning": "执行完整的安全扫描流程，包含所有信息收集和漏洞检测工具"
+}}
+
 ## 注意事项
-- 任务列表按优先级排序
-- 信息收集任务必须在前
-- 避免重复任务
-- 考虑目标特征调整策略"""
+- 计划必须包含所有可用工具
+- 按照阶段顺序排列任务
+- 不要遗漏任何安全检测工具
+- 完整性比效率更重要"""
     
     def _extract_tasks_from_result(self, result: Any) -> List[str]:
         """从LLM结果中提取任务列表"""
@@ -873,7 +894,7 @@ class ReportGenerationNode:
         logger.info(f"[{state.task_id}] 📄 生成扫描报告")
         
         try:
-            reports = self._generate_all_reports(state)
+            reports = await self._generate_all_reports_async(state)
             state.tool_results.update(reports)
             state.mark_complete()
             
@@ -890,8 +911,35 @@ class ReportGenerationNode:
         
         return state
     
+    async def _generate_all_reports_async(self, state: AgentState) -> Dict[str, Any]:
+        """异步生成所有报告"""
+        from ..analyzers.enhanced_report_gen import EnhancedReportGenerator
+        
+        enhanced_gen = EnhancedReportGenerator(auto_ai_analysis=False)
+        
+        report_data = await enhanced_gen.generate_from_state(
+            state,
+            task_name=f"安全扫描 - {state.target}"
+        )
+        
+        return {
+            "final_report": self.report_gen.generate_report(state),
+            "execution_trace_report": enhanced_gen.generate_execution_trace_report(state),
+            "html_execution_trace": enhanced_gen.generate_html_execution_trace(state),
+            "enhanced_report": {
+                "task_id": report_data.task_id,
+                "target": report_data.target.url,
+                "vulnerabilities_count": len(report_data.vulnerabilities),
+                "timing": {
+                    "start_time": report_data.timing.start_time,
+                    "end_time": report_data.timing.end_time,
+                    "duration_ms": report_data.timing.total_duration_ms
+                }
+            }
+        }
+    
     def _generate_all_reports(self, state: AgentState) -> Dict[str, Any]:
-        """生成所有报告"""
+        """生成所有报告（同步版本，保留向后兼容）"""
         return {
             "final_report": self.report_gen.generate_report(state),
             "execution_trace_report": self.report_gen.generate_execution_trace_report(state),
@@ -1334,7 +1382,7 @@ class VulnerabilityScanNode:
     async def __call__(self, state: AgentState) -> AgentState:
         """执行漏洞扫描"""
         logger.info(f"[{state.task_id}] 🔍 开始漏洞扫描")
-        state.update_stage_status("vuln_scan", "running", "初始化", 10, "加载漏洞扫描插件")
+        state.update_stage_status("tool_execution", "running", "初始化", 10, "加载漏洞扫描插件")
         
         try:
             self.plugin_manager.load_plugins_from_directory()
@@ -1343,7 +1391,7 @@ class VulnerabilityScanNode:
             state.vuln_scan_plugins_loaded = [p.name for p in loaded_plugins]
             
             logger.info(f"[{state.task_id}] 已加载 {len(loaded_plugins)} 个漏洞扫描插件")
-            state.update_stage_status("vuln_scan", "running", "扫描中", 30, f"使用 {len(loaded_plugins)} 个插件扫描")
+            state.update_stage_status("tool_execution", "running", "扫描中", 30, f"使用 {len(loaded_plugins)} 个插件扫描")
             
             results = await self.plugin_manager.scan_all_async(
                 target=state.target,
@@ -1379,7 +1427,7 @@ class VulnerabilityScanNode:
             state.add_vulnerability(vuln)
         
         state.update_stage_status(
-            "vuln_scan", 
+            "tool_execution", 
             "completed", 
             "完成", 
             100, 
@@ -1400,7 +1448,7 @@ class VulnerabilityScanNode:
         """处理扫描错误"""
         logger.error(f"[{state.task_id}] ❌ 漏洞扫描失败: {str(error)}")
         state.add_error(f"漏洞扫描失败: {str(error)}")
-        state.update_stage_status("vuln_scan", "failed", "失败", 0, str(error))
+        state.update_stage_status("tool_execution", "failed", "失败", 0, str(error))
 
 
 # ============================================================================
@@ -1549,8 +1597,8 @@ class VulnToolExecutionNode(BaseToolExecutionNode):
         if tool_name not in registry.tools:
             raise ValueError(f"工具未注册: {tool_name}")
         
-        tool_info = registry.tools[tool_name]
-        return await tool_info["func"](state.target)
+        tool_wrapper = registry.tools[tool_name]
+        return await tool_wrapper.execute(state.target)
     
     async def _handle_success(self, state: AgentState, tool_name: str, result, step_number: int):
         """处理执行成功"""
@@ -1615,7 +1663,7 @@ class VulnResultAggregationNode:
             "tools_used": [t for t in state.completed_tasks if t in VULN_SCAN_TOOLS]
         }
         
-        state.update_stage_status("vuln_scan", "completed", "完成", 100, f"发现 {total_vulns} 个漏洞")
+        state.update_stage_status("tool_execution", "completed", "完成", 100, f"发现 {total_vulns} 个漏洞")
         
         logger.info(f"[{state.task_id}] ✅ 漏洞扫描结果汇总完成: 发现 {total_vulns} 个漏洞")
         
@@ -1668,8 +1716,8 @@ class PocExecutionNode(BaseToolExecutionNode):
         if tool_name not in registry.tools:
             raise ValueError(f"POC未注册: {tool_name}")
         
-        tool_info = registry.tools[tool_name]
-        return await tool_info["func"](state.target)
+        tool_wrapper = registry.tools[tool_name]
+        return await tool_wrapper.execute(state.target)
     
     async def _handle_success(self, state: AgentState, tool_name: str, result, step_number: int):
         """处理执行成功"""

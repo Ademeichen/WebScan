@@ -11,10 +11,11 @@ describe('API Utility Tests', () => {
   describe('API Structure', () => {
     it('should export scanApi', () => {
       expect(api.scanApi).toBeDefined()
-      expect(typeof api.scanApi.startScan).toBe('function')
-      expect(typeof api.scanApi.getScanStatus).toBe('function')
-      expect(typeof api.scanApi.getScanResults).toBe('function')
-      expect(typeof api.scanApi.stopScan).toBe('function')
+      expect(typeof api.scanApi.portScan).toBe('function')
+      expect(typeof api.scanApi.infoLeak).toBe('function')
+      expect(typeof api.scanApi.dirScan).toBe('function')
+      expect(typeof api.scanApi.subdomainScan).toBe('function')
+      expect(typeof api.scanApi.comprehensiveScan).toBe('function')
     })
 
     it('should export tasksApi', () => {
@@ -34,7 +35,7 @@ describe('API Utility Tests', () => {
       expect(typeof api.reportsApi.getReport).toBe('function')
       expect(typeof api.reportsApi.getReportDetail).toBe('function')
       expect(typeof api.reportsApi.updateReport).toBe('function')
-      expect(typeof api.reportsApi.delete).toBe('function')
+      expect(typeof api.reportsApi.deleteReport).toBe('function')
     })
 
     it('should export notificationsApi', () => {
@@ -44,22 +45,21 @@ describe('API Utility Tests', () => {
       expect(typeof api.notificationsApi.deleteNotification).toBe('function')
     })
 
-    it('should export vulnerabilitiesApi', () => {
-      expect(api.vulnerabilitiesApi).toBeDefined()
-      expect(typeof api.vulnerabilitiesApi.getVulnerabilities).toBe('function')
-      expect(typeof api.vulnerabilitiesApi.getVulnerability).toBe('function')
-      expect(typeof api.vulnerabilitiesApi.updateVulnerability).toBe('function')
-      expect(typeof api.vulnerabilitiesApi.deleteVulnerability).toBe('function')
-      expect(typeof api.vulnerabilitiesApi.getStatistics).toBe('function')
+    it('should export kbApi', () => {
+      expect(api.kbApi).toBeDefined()
+      expect(typeof api.kbApi.search).toBe('function')
+      expect(typeof api.kbApi.getKnowledge).toBe('function')
+      expect(typeof api.kbApi.getVulnerabilities).toBe('function')
+      expect(typeof api.kbApi.sync).toBe('function')
+      expect(typeof api.kbApi.searchPOC).toBe('function')
     })
 
     it('should export pocApi', () => {
       expect(api.pocApi).toBeDefined()
       expect(typeof api.pocApi.getPOCTypes).toBe('function')
       expect(typeof api.pocApi.runPOC).toBe('function')
-      expect(typeof api.pocApi.getPOCResults).toBe('function')
       expect(typeof api.pocApi.getPOCInfo).toBe('function')
-      expect(typeof api.pocApi.scanSinglePOC).toBe('function')
+      expect(typeof api.pocApi.downloadPOC).toBe('function')
     })
 
     it('should export awvsApi', () => {
@@ -71,23 +71,13 @@ describe('API Utility Tests', () => {
       expect(typeof api.awvsApi.startScan).toBe('function')
     })
 
-    it('should export agentApi', () => {
-      expect(api.agentApi).toBeDefined()
-      expect(typeof api.agentApi.listAgents).toBe('function')
-      expect(typeof api.agentApi.getAgentStatus).toBe('function')
-      expect(typeof api.agentApi.executeAgent).toBe('function')
-      expect(typeof api.agentApi.getAgentTypes).toBe('function')
-      expect(typeof api.agentApi.getAgentDetail).toBe('function')
-      expect(typeof api.agentApi.createAgent).toBe('function')
-    })
-
-    it('should export kbApi', () => {
-      expect(api.kbApi).toBeDefined()
-      expect(typeof api.kbApi.search).toBe('function')
-      expect(typeof api.kbApi.addKnowledge).toBe('function')
-      expect(typeof api.kbApi.getKnowledge).toBe('function')
-      expect(typeof api.kbApi.updateKnowledge).toBe('function')
-      expect(typeof api.kbApi.deleteKnowledge).toBe('function')
+    it('should export aiAgentsApi', () => {
+      expect(api.aiAgentsApi).toBeDefined()
+      expect(typeof api.aiAgentsApi.scan).toBe('function')
+      expect(typeof api.aiAgentsApi.getTask).toBe('function')
+      expect(typeof api.aiAgentsApi.getTasks).toBe('function')
+      expect(typeof api.aiAgentsApi.cancelTask).toBe('function')
+      expect(typeof api.aiAgentsApi.deleteTask).toBe('function')
     })
 
     it('should export settingsApi', () => {
@@ -103,11 +93,26 @@ describe('API Utility Tests', () => {
       expect(typeof api.userApi.getPermissions).toBe('function')
       expect(typeof api.userApi.getList).toBe('function')
     })
+
+    it('should export pocVerificationApi', () => {
+      expect(api.pocVerificationApi).toBeDefined()
+      expect(typeof api.pocVerificationApi.createTask).toBe('function')
+      expect(typeof api.pocVerificationApi.getTasks).toBe('function')
+      expect(typeof api.pocVerificationApi.getTask).toBe('function')
+      expect(typeof api.pocVerificationApi.cancelTask).toBe('function')
+    })
+
+    it('should export aiApi', () => {
+      expect(api.aiApi).toBeDefined()
+      expect(typeof api.aiApi.chat).toBe('function')
+      expect(typeof api.aiApi.getChatInstances).toBe('function')
+      expect(typeof api.aiApi.createChatInstance).toBe('function')
+    })
   })
 
   describe('API Method Signatures', () => {
-    it('scanApi.startScan should accept data parameter', async () => {
-      const testFn = api.scanApi.startScan
+    it('scanApi.portScan should accept data parameter', async () => {
+      const testFn = api.scanApi.portScan
       expect(testFn.length).toBeGreaterThanOrEqual(1)
     })
 
@@ -121,8 +126,8 @@ describe('API Utility Tests', () => {
       expect(testFn.length).toBeGreaterThanOrEqual(0)
     })
 
-    it('vulnerabilitiesApi.getVulnerabilities should accept params parameter', async () => {
-      const testFn = api.vulnerabilitiesApi.getVulnerabilities
+    it('kbApi.search should accept params parameter', async () => {
+      const testFn = api.kbApi.search
       expect(testFn.length).toBeGreaterThanOrEqual(0)
     })
   })

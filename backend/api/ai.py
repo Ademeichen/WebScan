@@ -13,7 +13,7 @@ AI 对话 API 路由
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from uuid import UUID, uuid4
 from tortoise.expressions import Q
 from datetime import datetime
@@ -878,3 +878,123 @@ async def test_ai_analysis():
                 "error": str(e)
             }
         }
+
+
+async def process_chat_message(chat_instance_id: str, message: str) -> Dict[str, Any]:
+    """
+    处理 WebSocket 聊天消息
+    
+    Args:
+        chat_instance_id: 对话实例 ID
+        message: 用户消息
+        
+    Returns:
+        Dict: 包含响应内容的字典
+    """
+    try:
+        from uuid import UUID
+        
+        if not chat_instance_id:
+            chat_instance = await AIChatInstance.create(
+                id=uuid4(),
+                chat_name="新对话",
+                chat_type="general",
+                status="active"
+            )
+            chat_instance_id = str(chat_instance.id)
+        else:
+            try:
+                chat_instance = await AIChatInstance.get(id=UUID(chat_instance_id))
+            except:
+                chat_instance = await AIChatInstance.create(
+                    id=uuid4(),
+                    chat_name="新对话",
+                    chat_type="general",
+                    status="active"
+                )
+                chat_instance_id = str(chat_instance.id)
+        
+        user_message = await AIChatMessage.create(
+            chat_instance_id=chat_instance_id,
+            role="user",
+            content=message,
+            message_type="text"
+        )
+        
+        history = await get_or_create_history(UUID(chat_instance_id))
+        history.add_message(HumanMessage(content=message))
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", SYSTEM_PROMPT),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{input}")
+        ])
+        
+        history_messages = await history.aget_messages()
+        
+        chain = prompt | llm
+        response = await chain.ainvoke({
+            "history": history_messages,
+            "input": message
+        })
+        
+        response_content = response.content
+        history.add_message(AIMessage(content=response_content))
+        
+        ai_message = await AIChatMessage.create(
+            chat_instance_id=chat_instance_id,
+            role="assistant",
+            content=response_content,
+            message_type="text"
+        )
+        
+        chat_instance.updated_at = datetime.now()
+        await chat_instance.save()
+        
+        return {
+            "content": response_content,
+            "chat_instance_id": chat_instance_id,
+            "message_id": ai_message.id
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 处理聊天消息失败: {str(e)}")
+        return {
+            "content": f"抱歉，处理消息时发生错误: {str(e)}",
+            "error": str(e)
+        }
+
+
+async def get_chat_history(chat_instance_id: str) -> List[Dict[str, Any]]:
+    """
+    获取聊天历史
+    
+    Args:
+        chat_instance_id: 对话实例 ID
+        
+    Returns:
+        List: 消息历史列表
+    """
+    try:
+        from uuid import UUID
+        
+        if not chat_instance_id:
+            return []
+            
+        messages = await AIChatMessage.filter(
+            chat_instance_id=UUID(chat_instance_id)
+        ).order_by("created_at")
+        
+        return [
+            {
+                "id": msg.id,
+                "role": msg.role,
+                "content": msg.content,
+                "created_at": msg.created_at.isoformat() if msg.created_at else None
+            }
+            for msg in messages
+        ]
+        
+    except Exception as e:
+        logger.error(f"❌ 获取聊天历史失败: {str(e)}")
+        return []
