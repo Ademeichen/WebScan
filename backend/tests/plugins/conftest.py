@@ -4,7 +4,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from vulnerability_scan_plugins.base import BaseScanner
+from vulnerability_scan_plugins.base import VulnerabilityScannerBase
 from vulnerability_scan_plugins.manager import PluginManager
 
 

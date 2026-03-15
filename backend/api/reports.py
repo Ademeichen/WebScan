@@ -353,6 +353,8 @@ def generate_pdf_report(report_data: Dict[str, Any]) -> bytes:
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
         from io import BytesIO
+        import os
+        import sys
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, 
@@ -361,12 +363,45 @@ def generate_pdf_report(report_data: Dict[str, Any]) -> bytes:
         
         styles = getSampleStyleSheet()
         
+        chinese_font_name = 'ChineseFont'
+        font_registered = False
+        
+        try:
+            if sys.platform.startswith('win'):
+                font_paths = [
+                    r'C:\Windows\Fonts\msyh.ttc',
+                    r'C:\Windows\Fonts\simhei.ttf',
+                    r'C:\Windows\Fonts\simsun.ttc',
+                ]
+            elif sys.platform.startswith('darwin'):
+                font_paths = [
+                    '/System/Library/Fonts/PingFang.ttc',
+                    '/System/Library/Fonts/STHeiti Light.ttc',
+                ]
+            else:
+                font_paths = [
+                    '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+                    '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+                ]
+            
+            for font_path in font_paths:
+                if os.path.exists(font_path):
+                    try:
+                        pdfmetrics.registerFont(TTFont(chinese_font_name, font_path))
+                        font_registered = True
+                        break
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+        
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
             fontSize=24,
             spaceAfter=30,
-            alignment=1
+            alignment=1,
+            fontName=chinese_font_name if font_registered else 'Helvetica'
         )
         
         heading_style = ParagraphStyle(
@@ -374,7 +409,8 @@ def generate_pdf_report(report_data: Dict[str, Any]) -> bytes:
             parent=styles['Heading2'],
             fontSize=16,
             spaceBefore=20,
-            spaceAfter=10
+            spaceAfter=10,
+            fontName=chinese_font_name if font_registered else 'Helvetica'
         )
         
         normal_style = ParagraphStyle(
@@ -382,7 +418,8 @@ def generate_pdf_report(report_data: Dict[str, Any]) -> bytes:
             parent=styles['Normal'],
             fontSize=10,
             spaceBefore=6,
-            spaceAfter=6
+            spaceAfter=6,
+            fontName=chinese_font_name if font_registered else 'Helvetica'
         )
         
         story = []
@@ -476,7 +513,7 @@ def generate_pdf_report(report_data: Dict[str, Any]) -> bytes:
                 vuln_table.setStyle(TableStyle([
                     ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                    ('FONTNAME', (0, 0), (-1, -1), chinese_font_name if font_registered else 'Helvetica'),
                     ('FONTSIZE', (0, 0), (-1, -1), 9),
                     ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.grey)

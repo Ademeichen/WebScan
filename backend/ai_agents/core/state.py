@@ -277,6 +277,21 @@ class AgentState:
     Track the progress of 4 stages: openai, plugins, awvs, pocsuite3.
     """
     
+    # = AI Analysis Results =
+    scan_summary: Dict[str, Any] = field(default_factory=dict)
+    """
+    扫描摘要
+    
+    存储AI分析的扫描摘要结果。
+    """
+    
+    report: str = ""
+    """
+    分析报告
+    
+    存储AI生成的完整分析报告。
+    """
+    
     def update_stage_status(self, stage: str, status: str = None, sub_status: str = None, progress: int = None, log: str = None):
         """
         Update stage status and broadcast via WebSocket
@@ -593,7 +608,9 @@ class AgentState:
             "vuln_scan_results": self.vuln_scan_results,
             "vuln_scan_plugins_loaded": self.vuln_scan_plugins_loaded,
             "vuln_scan_progress": self.vuln_scan_progress,
-            "vuln_scan_metadata": self.vuln_scan_metadata
+            "vuln_scan_metadata": self.vuln_scan_metadata,
+            "scan_summary": self.scan_summary,
+            "report": self.report
         }
     
     @classmethod
@@ -624,5 +641,7 @@ class AgentState:
             vuln_scan_results=data.get("vuln_scan_results", {}),
             vuln_scan_plugins_loaded=data.get("vuln_scan_plugins_loaded", False),
             vuln_scan_progress=data.get("vuln_scan_progress", {}),
-            vuln_scan_metadata=data.get("vuln_scan_metadata", {})
+            vuln_scan_metadata=data.get("vuln_scan_metadata", {}),
+            scan_summary=data.get("scan_summary", {}),
+            report=data.get("report", "")
         )

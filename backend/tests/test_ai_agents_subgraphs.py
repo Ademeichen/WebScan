@@ -3,13 +3,13 @@
 AI Agents 子图测试
 
 测试 AI Agents 的各个子图功能是否正常。
+使用真实配置进行测试，不使用 Mock 模拟。
 """
 import pytest
 import asyncio
 import sys
 import os
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
 
 # 添加项目根目录到路径
 project_root = Path(__file__).parent.parent.parent
@@ -62,45 +62,77 @@ class TestAgentState:
 
 
 class TestPlanningNode:
-    """测试规划节点"""
+    """测试规划节点 - 使用真实 AI 配置"""
     
     def test_planning_node_initialization(self):
         """测试规划节点初始化"""
-        try:
-            from backend.ai_agents.core.nodes import PlanningNode
-            node = PlanningNode()
-            assert node is not None
-            print("✅ PlanningNode 初始化成功")
-        except ImportError as e:
-            pytest.skip(f"PlanningNode 导入失败: {e}")
+        from backend.ai_agents.core.nodes import TaskPlanningNode
+        node = TaskPlanningNode()
+        assert node is not None
+        print("✅ TaskPlanningNode 初始化成功")
+    
+    @pytest.mark.asyncio
+    async def test_planning_node_execution_real(self):
+        """测试规划节点执行 - 使用真实 AI"""
+        from backend.ai_agents.core.nodes import TaskPlanningNode
+        node = TaskPlanningNode()
+        state = create_test_state("real-planning-test", "https://www.example.com")
+        
+        result = await node(state)
+        
+        assert result is not None
+        assert result.task_id == "real-planning-test"
+        assert len(result.execution_history) > 0
+        print(f"✅ TaskPlanningNode 真实执行成功，执行历史: {len(result.execution_history)} 条")
 
 
 class TestVulnerabilityScanNode:
-    """测试漏洞扫描节点"""
+    """测试漏洞扫描节点 - 使用真实配置"""
     
     def test_vulnerability_scan_node_initialization(self):
         """测试漏洞扫描节点初始化"""
-        try:
-            from backend.ai_agents.core.nodes import VulnerabilityScanNode
-            node = VulnerabilityScanNode()
-            assert node is not None
-            print("✅ VulnerabilityScanNode 初始化成功")
-        except ImportError as e:
-            pytest.skip(f"VulnerabilityScanNode 导入失败: {e}")
+        from backend.ai_agents.core.nodes import VulnerabilityScanNode
+        node = VulnerabilityScanNode()
+        assert node is not None
+        print("✅ VulnerabilityScanNode 初始化成功")
+    
+    @pytest.mark.asyncio
+    async def test_vulnerability_scan_node_execution_real(self):
+        """测试漏洞扫描节点执行 - 使用真实配置"""
+        from backend.ai_agents.core.nodes import VulnerabilityScanNode
+        node = VulnerabilityScanNode()
+        state = create_test_state("real-vulnscan-test", "https://www.example.com")
+        
+        result = await node(state)
+        
+        assert result is not None
+        assert result.task_id == "real-vulnscan-test"
+        print(f"✅ VulnerabilityScanNode 真实执行成功")
 
 
 class TestReportGenerationNode:
-    """测试报告生成节点"""
+    """测试报告生成节点 - 使用真实配置"""
     
     def test_report_generation_node_initialization(self):
         """测试报告生成节点初始化"""
-        try:
-            from backend.ai_agents.core.nodes import ReportGenerationNode
-            node = ReportGenerationNode()
-            assert node is not None
-            print("✅ ReportGenerationNode 初始化成功")
-        except ImportError as e:
-            pytest.skip(f"ReportGenerationNode 导入失败: {e}")
+        from backend.ai_agents.core.nodes import ReportGenerationNode
+        node = ReportGenerationNode()
+        assert node is not None
+        print("✅ ReportGenerationNode 初始化成功")
+    
+    @pytest.mark.asyncio
+    async def test_report_generation_node_execution_real(self):
+        """测试报告生成节点执行 - 使用真实配置"""
+        from backend.ai_agents.core.nodes import ReportGenerationNode
+        node = ReportGenerationNode()
+        state = create_test_state("real-report-test", "https://www.example.com")
+        
+        result = await node(state)
+        
+        assert result is not None
+        assert result.task_id == "real-report-test"
+        assert result.is_complete == True
+        print(f"✅ ReportGenerationNode 真实执行成功")
 
 
 if __name__ == "__main__":

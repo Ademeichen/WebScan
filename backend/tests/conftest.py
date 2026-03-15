@@ -15,11 +15,17 @@ import json
 import logging
 import sys
 import os
+import warnings
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", message="Blowfish has been deprecated")
+warnings.filterwarnings("ignore", message="Unverified HTTPS request is being made")
 
 current_dir = Path(__file__).parent
 project_root = current_dir.parent.parent

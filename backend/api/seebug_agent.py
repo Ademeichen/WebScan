@@ -39,7 +39,14 @@ class APIStatusResponse(BaseModel):
     message: str = ""
 
 
-@router.get("/status", response_model=APIStatusResponse, tags=["Seebug Agent"])
+class StandardResponse(BaseModel):
+    """标准响应格式（符合前端期望的格式）"""
+    code: int
+    data: Optional[Any]
+    message: str
+
+
+@router.get("/status", tags=["Seebug Agent"])
 async def get_seebug_agent_status():
     """
     获取Seebug Agent状态
@@ -49,26 +56,41 @@ async def get_seebug_agent_status():
     """
     try:
         if not seebug_utils.is_available():
-            return APIStatusResponse(
-                available=False,
-                message="Seebug Agent模块不可用，请检查依赖和配置"
-            )
+            return {
+                "code": 200,
+                "data": {
+                    "available": False,
+                    "message": "Seebug Agent模块不可用，请检查依赖和配置"
+                },
+                "message": "获取状态成功"
+            }
         
         # 测试API连接
         status = seebug_utils.validate_api_key()
-        return APIStatusResponse(
-            available=status.get("status") == "success",
-            message=status.get("msg", "")
-        )
+        available = status.get("status") == "success"
+        message = status.get("msg", "")
+        
+        return {
+            "code": 200,
+            "data": {
+                "available": available,
+                "message": message
+            },
+            "message": "获取状态成功"
+        }
     except Exception as e:
         logger.error(f"获取Seebug Agent状态失败: {e}")
-        return APIStatusResponse(
-            available=False,
-            message=f"获取状态失败: {str(e)}"
-        )
+        return {
+            "code": 500,
+            "data": {
+                "available": False,
+                "message": f"获取状态失败: {str(e)}"
+            },
+            "message": "获取状态失败"
+        }
 
 
-@router.post("/search", response_model=SearchResponse, tags=["Seebug Agent"])
+@router.post("/search", tags=["Seebug Agent"])
 async def search_vulnerabilities(request: SearchRequest):
     """
     搜索Seebug漏洞
@@ -96,12 +118,12 @@ async def search_vulnerabilities(request: SearchRequest):
             request.page_size
         )
         
-        return SearchResponse(
-            success=True,
-            data=result,
-            message="搜索成功",
-            total=result.get("total", 0) if result else 0
-        )
+        return {
+            "code": 200,
+            "data": result,
+            "message": "搜索成功",
+            "total": result.get("total", 0) if result else 0
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -123,8 +145,12 @@ async def test_seebug_connection():
     try:
         if not seebug_utils.is_available():
             return {
-                "success": False,
-                "message": "Seebug Agent模块不可用"
+                "code": 200,
+                "data": {
+                    "success": False,
+                    "message": "Seebug Agent模块不可用"
+                },
+                "message": "测试连接完成"
             }
         
         loop = asyncio.get_event_loop()
@@ -134,13 +160,21 @@ async def test_seebug_connection():
         )
         
         return {
-            "success": status.get("status") == "success",
-            "message": status.get("msg", ""),
-            "data": status
+            "code": 200,
+            "data": {
+                "success": status.get("status") == "success",
+                "message": status.get("msg", ""),
+                "data": status
+            },
+            "message": "测试连接完成"
         }
     except Exception as e:
         logger.error(f"测试Seebug连接失败: {e}")
         return {
-            "success": False,
-            "message": f"测试连接失败: {str(e)}"
+            "code": 500,
+            "data": {
+                "success": False,
+                "message": f"测试连接失败: {str(e)}"
+            },
+            "message": "测试连接失败"
         }

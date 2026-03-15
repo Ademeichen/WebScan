@@ -175,6 +175,12 @@ def with_timeout_and_error_handling(
         ) -> PluginResult:
             actual_timeout = timeout if timeout is not None else default_timeout
             start_time = time.time()
+            target = kwargs.get('target', args[0] if args else 'unknown')
+            
+            logger.info(
+                f"[{plugin_name}] 🚀 开始执行 | 目标: {target} | "
+                f"超时设置: {actual_timeout}s | 函数: {func.__name__}"
+            )
             
             try:
                 result = await asyncio.wait_for(
@@ -185,8 +191,16 @@ def with_timeout_and_error_handling(
                 
                 if isinstance(result, PluginResult):
                     result.execution_time = execution_time
+                    logger.info(
+                        f"[{plugin_name}] ✅ 执行成功 | 目标: {target} | "
+                        f"执行时间: {execution_time:.3f}s | 状态: {result.status}"
+                    )
                     return result
                 
+                logger.info(
+                    f"[{plugin_name}] ✅ 执行成功 | 目标: {target} | "
+                    f"执行时间: {execution_time:.3f}s | 返回类型: {type(result).__name__}"
+                )
                 return PluginResult.success(
                     data=result,
                     execution_time=execution_time,
@@ -195,7 +209,10 @@ def with_timeout_and_error_handling(
                 
             except asyncio.TimeoutError:
                 execution_time = time.time() - start_time
-                logger.error(f"[{plugin_name}] 执行超时,耗时{execution_time:.2f}秒")
+                logger.error(
+                    f"[{plugin_name}] ⏱️ 执行超时 | 目标: {target} | "
+                    f"超时设置: {actual_timeout}s | 实际执行时间: {execution_time:.3f}s"
+                )
                 return PluginResult.timeout(
                     timeout_seconds=actual_timeout,
                     execution_time=execution_time,
@@ -205,7 +222,11 @@ def with_timeout_and_error_handling(
             except Exception as e:
                 execution_time = time.time() - start_time
                 error_msg = f"{type(e).__name__}: {str(e)}"
-                logger.error(f"[{plugin_name}] 执行异常: {error_msg}", exc_info=True)
+                logger.error(
+                    f"[{plugin_name}] ❌ 执行异常 | 目标: {target} | "
+                    f"执行时间: {execution_time:.3f}s | 错误: {error_msg}",
+                    exc_info=True
+                )
                 return PluginResult.failed(
                     error=error_msg,
                     execution_time=execution_time,
@@ -221,6 +242,12 @@ def with_timeout_and_error_handling(
         ) -> PluginResult:
             actual_timeout = timeout if timeout is not None else default_timeout
             start_time = time.time()
+            target = kwargs.get('target', args[0] if args else 'unknown')
+            
+            logger.info(
+                f"[{plugin_name}] 🚀 开始执行 | 目标: {target} | "
+                f"超时设置: {actual_timeout}s | 函数: {func.__name__}"
+            )
             
             try:
                 if asyncio.iscoroutinefunction(func):
@@ -238,8 +265,16 @@ def with_timeout_and_error_handling(
                 
                 if isinstance(result, PluginResult):
                     result.execution_time = execution_time
+                    logger.info(
+                        f"[{plugin_name}] ✅ 执行成功 | 目标: {target} | "
+                        f"执行时间: {execution_time:.3f}s | 状态: {result.status}"
+                    )
                     return result
                 
+                logger.info(
+                    f"[{plugin_name}] ✅ 执行成功 | 目标: {target} | "
+                    f"执行时间: {execution_time:.3f}s | 返回类型: {type(result).__name__}"
+                )
                 return PluginResult.success(
                     data=result,
                     execution_time=execution_time,
@@ -248,7 +283,10 @@ def with_timeout_and_error_handling(
                 
             except asyncio.TimeoutError:
                 execution_time = time.time() - start_time
-                logger.error(f"[{plugin_name}] 执行超时,耗时{execution_time:.2f}秒")
+                logger.error(
+                    f"[{plugin_name}] ⏱️ 执行超时 | 目标: {target} | "
+                    f"超时设置: {actual_timeout}s | 实际执行时间: {execution_time:.3f}s"
+                )
                 return PluginResult.timeout(
                     timeout_seconds=actual_timeout,
                     execution_time=execution_time,
@@ -258,7 +296,11 @@ def with_timeout_and_error_handling(
             except Exception as e:
                 execution_time = time.time() - start_time
                 error_msg = f"{type(e).__name__}: {str(e)}"
-                logger.error(f"[{plugin_name}] 执行异常: {error_msg}", exc_info=True)
+                logger.error(
+                    f"[{plugin_name}] ❌ 执行异常 | 目标: {target} | "
+                    f"执行时间: {execution_time:.3f}s | 错误: {error_msg}",
+                    exc_info=True
+                )
                 return PluginResult.failed(
                     error=error_msg,
                     execution_time=execution_time,
@@ -305,7 +347,7 @@ class PluginAdapter:
     DEFAULT_TIMEOUT = 60.0
     
     @staticmethod
-    @with_timeout_and_error_handling(default_timeout=30.0, plugin_name="baseinfo")
+    @with_timeout_and_error_handling(default_timeout=60.0, plugin_name="baseinfo")
     async def adapt_baseinfo(
         target: str,
         timeout: Optional[float] = None,
@@ -391,7 +433,7 @@ class PluginAdapter:
         )
     
     @staticmethod
-    @with_timeout_and_error_handling(default_timeout=30.0, plugin_name="waf_detect")
+    @with_timeout_and_error_handling(default_timeout=60.0, plugin_name="waf_detect")
     async def adapt_waf_detect(
         target: str,
         timeout: Optional[float] = None,

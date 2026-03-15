@@ -874,7 +874,7 @@ def initialize_tools():
         func=PluginAdapter.adapt_baseinfo,
         description="基础信息收集(域名、IP、服务器、OS等)",
         category="plugin",
-        timeout=10,
+        timeout=60,
         priority=3
     )
     
@@ -892,7 +892,7 @@ def initialize_tools():
         func=PluginAdapter.adapt_waf_detect,
         description="WAF(Web应用防火墙)检测",
         category="plugin",
-        timeout=10,
+        timeout=60,
         priority=4
     )
     
@@ -901,7 +901,7 @@ def initialize_tools():
         func=PluginAdapter.adapt_cdn_detect,
         description="CDN(内容分发网络)检测",
         category="plugin",
-        timeout=10,
+        timeout=30,
         priority=4
     )
     

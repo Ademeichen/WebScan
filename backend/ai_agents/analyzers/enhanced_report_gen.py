@@ -263,10 +263,19 @@ class EnhancedReportGenerator:
             target_context = getattr(state, "target_context", {})
             
             try:
+                import time
+                start_time = time.time()
+                
                 ai_result = await self.ai_analyzer.analyze_scan_results(
                     vulnerabilities, tool_results, target_context
                 )
+                
+                end_time = time.time()
+                elapsed_ms = (end_time - start_time) * 1000
+                
                 report_data.ai_analysis = self._parse_ai_analysis(ai_result.to_dict())
+                report_data.ai_model.call_count += 1
+                report_data.ai_model.total_time_ms += elapsed_ms
                 logger.info("✅ 自动AI分析完成并集成到报告")
             except Exception as e:
                 logger.warning(f"自动AI分析失败: {e}")
@@ -473,10 +482,30 @@ class EnhancedReportGenerator:
         """解析AI分析数据"""
         analysis = AIResultAnalysis()
         
-        analysis.vulnerability_causes = ai_analysis_data.get("causes", [])
-        analysis.exploitation_risks = ai_analysis_data.get("risks", [])
+        causes = ai_analysis_data.get("causes", [])
+        analysis.vulnerability_causes = []
+        for cause in causes:
+            if isinstance(cause, dict) and "description" in cause:
+                analysis.vulnerability_causes.append(cause["description"])
+            elif isinstance(cause, str):
+                analysis.vulnerability_causes.append(cause)
+        
+        risks = ai_analysis_data.get("risks", [])
+        analysis.exploitation_risks = []
+        for risk in risks:
+            if isinstance(risk, dict) and "description" in risk:
+                analysis.exploitation_risks.append(risk["description"])
+            elif isinstance(risk, str):
+                analysis.exploitation_risks.append(risk)
+        
         analysis.remediation_priorities = ai_analysis_data.get("priorities", [])
-        analysis.business_impact = ai_analysis_data.get("business_impact", "")
+        
+        business_impact = ai_analysis_data.get("business_impact", "")
+        if isinstance(business_impact, dict):
+            analysis.business_impact = str(business_impact)
+        else:
+            analysis.business_impact = business_impact
+        
         analysis.analysis_evidence = ai_analysis_data.get("evidence", [])
         
         return analysis
@@ -850,9 +879,9 @@ class ReportGenerator:
     用于确保现有代码无需修改即可继续工作。
     """
     
-    def __init__(self):
+    def __init__(self, auto_ai_analysis: bool = False):
         """初始化兼容适配器"""
-        self.enhanced_generator = EnhancedReportGenerator(auto_ai_analysis=True)
+        self.enhanced_generator = EnhancedReportGenerator(auto_ai_analysis=auto_ai_analysis)
         logger.info("📄 兼容报告生成器初始化完成(使用新版增强版)")
     
     def generate_report(self, state: Any) -> Dict[str, Any]:
@@ -865,85 +894,87 @@ class ReportGenerator:
         Returns:
             Dict: 扫描报告(旧版格式)
         """
-        report_data = self.enhanced_generator.generate_from_state_sync(
-            state,
-            task_name=f"安全扫描 - {state.target}"
-        )
+        vulnerabilities = getattr(state, "vulnerabilities", [])
+        tool_results = getattr(state, "tool_results", {})
+        target_context = getattr(state, "target_context", {})
+        execution_history = getattr(state, "execution_history", [])
         
         severity_counts = {}
-        for vuln in report_data.vulnerabilities:
-            sev = vuln.severity
+        for vuln in vulnerabilities:
+            sev = vuln.get("severity", vuln.get("risk_level", "unknown"))
             severity_counts[sev] = severity_counts.get(sev, 0) + 1
+        
+        target_url = getattr(state, "target", "")
+        target_ip = target_context.get("ip", "") if target_context else ""
+        target_domain = target_context.get("domain", "") if target_context else ""
+        target_ports = target_context.get("open_ports", []) if target_context else []
         
         legacy_report = {
             "meta": {
                 "version": "2.0",
-                "generator": "AI_WebSecurity Report Engine (Enhanced)",
+                "generator": "AI_WebSecurity Report Engine",
                 "generated_at": datetime.now().isoformat()
             },
-            "task_id": report_data.task_id,
-            "target": report_data.target.url,
+            "task_id": getattr(state, "task_id", "unknown"),
+            "target": target_url,
             "scan_time": datetime.now().isoformat(),
-            "duration": report_data.timing.total_duration_ms / 1000.0,
+            "duration": 0,
             "status": "completed",
             "progress": 100,
             
             "tasks": {
-                "planned": [],
-                "completed": [],
-                "total": 0
+                "planned": getattr(state, "planned_tasks", []),
+                "completed": getattr(state, "completed_tasks", []),
+                "total": len(getattr(state, "planned_tasks", []))
             },
             
             "target_context": {
-                "ip": report_data.target.ip,
-                "domain": report_data.target.domain,
-                "open_ports": report_data.target.ports
+                "ip": target_ip,
+                "domain": target_domain,
+                "open_ports": target_ports
             },
             
             "vulnerabilities": {
                 "list": [
                     {
-                        "title": v.vuln_name,
-                        "vuln_type": v.vuln_name,
-                        "severity": v.severity,
-                        "cve": v.cve_id,
-                        "url": v.affected_url,
-                        "description": v.description,
-                        "remediation": v.remediation
+                        "title": vuln.get("title", vuln.get("name", "Unknown")),
+                        "vuln_type": vuln.get("vuln_type", vuln.get("type", "unknown")),
+                        "severity": vuln.get("severity", vuln.get("risk_level", "unknown")),
+                        "cve": vuln.get("cve", ""),
+                        "url": vuln.get("url", vuln.get("affected_url", "")),
+                        "description": vuln.get("description", ""),
+                        "remediation": vuln.get("remediation", vuln.get("solution", ""))
                     }
-                    for v in report_data.vulnerabilities
+                    for vuln in vulnerabilities
                 ],
-                "total": len(report_data.vulnerabilities),
-                "summary": self._generate_vuln_summary_legacy(report_data.vulnerabilities),
+                "total": len(vulnerabilities),
+                "summary": self._generate_vuln_summary_legacy(vulnerabilities) if vulnerabilities else "未发现漏洞",
                 "by_severity": severity_counts,
                 "deduplication_policy": "Disabled (All findings reported)"
             },
             
-            "risk_assessment": self._calculate_risk_assessment_legacy(report_data),
-            "tool_results": self._summarize_tool_results_legacy(report_data),
-            "errors": [],
-            "execution_history": report_data.raw_data.get("execution_history", []),
-            "recommendations": self._generate_recommendations_legacy(report_data.vulnerabilities),
-            "ai_analysis": {
-                "vulnerability_causes": report_data.ai_analysis.vulnerability_causes,
-                "exploitation_risks": report_data.ai_analysis.exploitation_risks,
-                "remediation_priorities": report_data.ai_analysis.remediation_priorities,
-                "business_impact": report_data.ai_analysis.business_impact,
-                "analysis_evidence": report_data.ai_analysis.analysis_evidence
-            }
+            "risk_assessment": self._calculate_risk_assessment(state),
+            "tool_results": self._summarize_tool_results_legacy(tool_results),
+            "errors": getattr(state, "errors", []),
+            "execution_history": execution_history,
+            "recommendations": self._generate_recommendations_legacy(vulnerabilities) if vulnerabilities else [],
+            "ai_analysis": self._extract_ai_analysis_from_state(state)
         }
         
-        logger.info(f"📄 兼容扫描报告生成完成: {report_data.task_id}")
+        logger.info(f"📄 兼容扫描报告生成完成: {getattr(state, 'task_id', 'unknown')}")
         return legacy_report
     
-    def _generate_vuln_summary_legacy(self, vulnerabilities: List[VulnerabilityItem]) -> str:
+    def _generate_vuln_summary_legacy(self, vulnerabilities: List[Any]) -> str:
         """生成漏洞摘要(兼容旧版)"""
         if not vulnerabilities:
             return "未发现漏洞"
         
         severity_count = {}
         for vuln in vulnerabilities:
-            severity = vuln.severity
+            if hasattr(vuln, 'severity'):
+                severity = vuln.severity
+            else:
+                severity = vuln.get("severity", vuln.get("risk_level", "unknown"))
             severity_count[severity] = severity_count.get(severity, 0) + 1
         
         parts = []
@@ -958,9 +989,9 @@ class ReportGenerator:
             ", ".join(parts)
         )
     
-    def _calculate_risk_assessment_legacy(self, report_data: EnhancedReportData) -> Dict[str, Any]:
-        """计算风险评估(兼容旧版)"""
-        vulnerabilities = report_data.vulnerabilities
+    def _calculate_risk_assessment(self, state: Any) -> Dict[str, Any]:
+        """计算风险评估"""
+        vulnerabilities = getattr(state, "vulnerabilities", [])
         
         if not vulnerabilities:
             return {
@@ -975,7 +1006,10 @@ class ReportGenerator:
         severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
         
         for vuln in vulnerabilities:
-            severity = vuln.severity
+            if isinstance(vuln, dict):
+                severity = vuln.get("severity", vuln.get("risk_level", "info"))
+            else:
+                severity = getattr(vuln, "severity", "info")
             config = SEVERITY_CONFIG.get(severity, SEVERITY_CONFIG["info"])
             base_score += config["score"]
             if severity in severity_counts:
@@ -1012,31 +1046,94 @@ class ReportGenerator:
             "severity_counts": severity_counts
         }
     
-    def _summarize_tool_results_legacy(self, report_data: EnhancedReportData) -> Dict[str, Any]:
+    def _summarize_tool_results_legacy(self, tool_results: Dict[str, Any]) -> Dict[str, Any]:
         """汇总工具结果(兼容旧版)"""
         return {
             "info_collection": {
-                "crawler_links_count": report_data.info_collection.crawler_links_count,
-                "dirscan_count": report_data.info_collection.dirscan_count,
-                "cms_identified": report_data.info_collection.cms_identified,
-                "open_ports": report_data.info_collection.open_ports,
-                "waf_detected": report_data.info_collection.waf_detected
+                "crawler_links_count": len(tool_results.get("crawler_links", [])),
+                "dirscan_count": len(tool_results.get("dirscan_results", [])),
+                "cms_identified": tool_results.get("cms", ""),
+                "open_ports": tool_results.get("open_ports", []),
+                "waf_detected": tool_results.get("waf", "")
             }
         }
     
-    def _generate_recommendations_legacy(self, vulnerabilities: List[VulnerabilityItem]) -> List[Dict[str, str]]:
+    def _extract_ai_analysis_from_state(self, state: Any) -> Dict[str, Any]:
+        """从状态中提取AI分析结果"""
+        ai_analysis = getattr(state, "ai_analysis", None)
+        
+        if ai_analysis and isinstance(ai_analysis, dict):
+            return {
+                "vulnerability_causes": ai_analysis.get("vulnerability_causes", ""),
+                "exploitation_risks": ai_analysis.get("exploitation_risks", ""),
+                "remediation_priorities": ai_analysis.get("remediation_priorities", []),
+                "business_impact": ai_analysis.get("business_impact", ""),
+                "analysis_evidence": ai_analysis.get("analysis_evidence", [])
+            }
+        
+        vulnerabilities = getattr(state, "vulnerabilities", [])
+        tool_results = getattr(state, "tool_results", {})
+        target_context = getattr(state, "target_context", {})
+        
+        causes = []
+        risks = []
+        priorities = []
+        
+        for vuln in vulnerabilities:
+            if isinstance(vuln, dict):
+                vuln_type = vuln.get("vuln_type", vuln.get("type", "unknown"))
+                severity = vuln.get("severity", vuln.get("risk_level", "unknown"))
+                title = vuln.get("title", vuln.get("name", "Unknown"))
+                
+                causes.append(f"{title}: 可能存在{vuln_type}漏洞")
+                
+                if severity in ["critical", "high"]:
+                    risks.append(f"{title}: 高风险漏洞，可能被攻击者利用")
+                    priorities.append({"vulnerability": title, "priority": "高", "severity": severity})
+                elif severity == "medium":
+                    risks.append(f"{title}: 中等风险，建议及时修复")
+                    priorities.append({"vulnerability": title, "priority": "中", "severity": severity})
+        
+        return {
+            "vulnerability_causes": "; ".join(causes) if causes else "未发现明显漏洞原因",
+            "exploitation_risks": "; ".join(risks) if risks else "当前未发现高风险漏洞",
+            "remediation_priorities": priorities,
+            "business_impact": "建议根据漏洞严重程度制定修复计划，优先处理高危漏洞" if priorities else "当前安全状况良好",
+            "analysis_evidence": ["基于漏洞扫描结果的规则分析"]
+        }
+    
+
+    
+    def _generate_recommendations_legacy(self, vulnerabilities: List[Any]) -> List[Dict[str, str]]:
         """生成修复建议列表(兼容旧版)"""
         recommendations = []
         
         severity_order = {s: c["order"] for s, c in SEVERITY_CONFIG.items()}
-        sorted_vulns = sorted(vulnerabilities, key=lambda v: severity_order.get(v.severity, 4))
+        
+        def get_severity(vuln):
+            if hasattr(vuln, 'severity'):
+                return vuln.severity
+            return vuln.get("severity", vuln.get("risk_level", "info"))
+        
+        def get_remediation(vuln):
+            if hasattr(vuln, 'remediation'):
+                return vuln.remediation
+            return vuln.get("remediation", vuln.get("solution", ""))
+        
+        def get_vuln_name(vuln):
+            if hasattr(vuln, 'vuln_name'):
+                return vuln.vuln_name
+            return vuln.get("title", vuln.get("name", "Unknown"))
+        
+        sorted_vulns = sorted(vulnerabilities, key=lambda v: severity_order.get(get_severity(v), 4))
         
         for vuln in sorted_vulns[:10]:
-            if vuln.remediation:
+            remediation = get_remediation(vuln)
+            if remediation:
                 recommendations.append({
-                    "vulnerability": vuln.vuln_name,
-                    "severity": vuln.severity,
-                    "recommendation": vuln.remediation
+                    "vulnerability": get_vuln_name(vuln),
+                    "severity": get_severity(vuln),
+                    "recommendation": remediation
                 })
         
         return recommendations

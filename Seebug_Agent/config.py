@@ -35,10 +35,10 @@ class Config:
         self.OUTPUT_DIR = os.environ.get("SEEBUG_OUTPUT_DIR", self.OUTPUT_DIR)
         Path(self.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
-        SEEBUG_API_KEY = os.environ.get("SEEBUG_API_KEY", self.SEEBUG_API_KEY)
-        AI_API_KEY = os.environ.get("SEEBUG_AI_API_KEY", self.AI_API_KEY)
-        AI_BASE_URL = os.environ.get("SEEBUG_AI_BASE_URL", self.AI_BASE_URL)
-        AI_MODEL_ID = os.environ.get("SEEBUG_AI_MODEL_ID", self.AI_MODEL_ID)
+        self.SEEBUG_API_KEY = os.environ.get("SEEBUG_API_KEY", self.SEEBUG_API_KEY)
+        self.AI_API_KEY = os.environ.get("SEEBUG_AI_API_KEY", self.AI_API_KEY)
+        self.AI_BASE_URL = os.environ.get("SEEBUG_AI_BASE_URL", self.AI_BASE_URL)
+        self.AI_MODEL_ID = os.environ.get("SEEBUG_AI_MODEL_ID", self.AI_MODEL_ID)
 
     @classmethod
     def from_env(cls) -> "Config":

@@ -16,7 +16,7 @@ if str(seebug_agent_path) not in sys.path:
 
 # 导入Seebug_Agent模块
 try:
-    from Seebug_Agent import SeebugClient, SeebugAgent, Config as SeebugConfig
+    from Seebug_Agent import SeebugClient, SeebugAgent, Config
     
     SEBUG_AGENT_AVAILABLE = True
 except ImportError as e:
@@ -62,7 +62,7 @@ class SeebugUtils:
         初始化Seebug组件
         """
         # 创建配置
-        self.config = SeebugConfig()
+        self.config = Config()
         
         # 覆盖默认配置
         if hasattr(settings, 'SEEBUG_API_KEY'):

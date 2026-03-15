@@ -294,9 +294,21 @@ export default {
     const checkSeebugStatus = async () => {
       try {
         const response = await seebugAgentApi.getStatus()
-        seebugStatus.value = {
-          available: response.available || false,
-          message: response.message || ''
+        if (response.data && response.data.available !== undefined) {
+          seebugStatus.value = {
+            available: response.data.available || false,
+            message: response.data.message || ''
+          }
+        } else if (response.available !== undefined) {
+          seebugStatus.value = {
+            available: response.available || false,
+            message: response.message || ''
+          }
+        } else {
+          seebugStatus.value = {
+            available: false,
+            message: '无法连接到 Seebug 服务'
+          }
         }
       } catch (error) {
         console.error('检查 Seebug 状态失败:', error)

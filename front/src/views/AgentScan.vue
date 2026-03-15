@@ -302,7 +302,7 @@ export default {
     const selectedTask = ref(null)
     const scanStrategy = ref('standard')
     const concurrency = ref(5)
-    const timeout = ref(120)
+    const timeout = ref(3600)
     const toolRecommendations = ref([])
     const selectedTools = ref([])
     const currentExecution = ref(null)
@@ -509,36 +509,73 @@ export default {
       if (task) {
         selectedTask.value = task
         
+        const stageMapping = {
+          openai: 'planning',
+          plugins: 'tool_execution',
+          awvs: 'poc_verification',
+          pocsuite3: 'poc_verification',
+          planning: 'planning',
+          tool_execution: 'tool_execution',
+          poc_verification: 'poc_verification',
+          report: 'report',
+          info_collection: 'planning',
+          vuln_scan: 'tool_execution'
+        }
+        
+        Object.keys(subgraphState).forEach(key => {
+          subgraphState[key] = { status: 'pending', progress: 0, time: 0 }
+        })
+        
         if (task.stages) {
-          const stageMapping = {
-            openai: 'planning',
-            plugins: 'tool_execution',
-            awvs: 'poc_verification',
-            pocsuite3: 'poc_verification',
-            planning: 'planning',
-            tool_execution: 'tool_execution',
-            poc_verification: 'poc_verification',
-            report: 'report',
-            info_collection: 'planning',
-            vuln_scan: 'tool_execution'
-          }
-          
           Object.keys(task.stages).forEach(backendKey => {
             const frontendKey = stageMapping[backendKey] || backendKey
             if (subgraphState[frontendKey]) {
+              const stageData = task.stages[backendKey]
               subgraphState[frontendKey] = {
-                status: task.stages[backendKey].status || 'pending',
-                progress: task.stages[backendKey].progress || 0,
-                time: task.stages[backendKey].execution_time || 0
+                status: stageData.status || 'pending',
+                progress: stageData.progress || 0,
+                time: stageData.execution_time || stageData.time || 0
               }
             }
           })
-          
-          if (task.status === 'completed') {
-            Object.keys(subgraphState).forEach(key => {
+        }
+        
+        if (task.status === 'completed') {
+          Object.keys(subgraphState).forEach(key => {
+            if (subgraphState[key].status === 'pending') {
               subgraphState[key].status = 'completed'
               subgraphState[key].progress = 100
-            })
+            }
+          })
+        }
+        
+        if (task.result) {
+          if (task.result.scan_summary) {
+            selectedTask.value = {
+              ...selectedTask.value,
+              scan_summary: task.result.scan_summary
+            }
+          }
+          if (task.result.final_output) {
+            selectedTask.value = {
+              ...selectedTask.value,
+              result: {
+                ...selectedTask.value.result,
+                final_output: task.result.final_output
+              }
+            }
+          }
+          if (task.result.vulnerabilities) {
+            selectedTask.value = {
+              ...selectedTask.value,
+              vulnerabilities: task.result.vulnerabilities
+            }
+          }
+          if (task.result.report) {
+            selectedTask.value = {
+              ...selectedTask.value,
+              report: task.result.report
+            }
           }
         }
       }
@@ -652,7 +689,26 @@ export default {
       taskId = String(taskId)
       const result = payload.result || {}
       
-      taskStore.completeTask(taskId, result)
+      if (payload.stages) {
+        Object.keys(payload.stages).forEach(stage => {
+          if (subgraphState[stage]) {
+            subgraphState[stage] = {
+              status: payload.stages[stage].status || 'completed',
+              progress: payload.stages[stage].progress || 100,
+              time: payload.stages[stage].execution_time || 0
+            }
+          }
+        })
+      }
+      
+      taskStore.completeTask(taskId, {
+        ...result,
+        scan_summary: payload.scan_summary,
+        final_output: payload.final_output,
+        vulnerabilities: payload.vulnerabilities,
+        report: payload.report,
+        execution_time: payload.execution_time
+      })
       
       toast.success('任务完成', `扫描任务 ${taskId.substring(0, 8)}... 已完成`)
       
@@ -760,7 +816,16 @@ export default {
       })
 
       on('stage:update', (payload) => {
-         updateTaskStage(payload.task_id, payload.stage, payload.data)
+         const data = payload.payload || payload
+         updateTaskStage(data.task_id, data.stage, data.data)
+         
+         if (data.stage && subgraphState[data.stage]) {
+           subgraphState[data.stage] = {
+             status: data.data?.status || 'running',
+             progress: data.data?.progress || 0,
+             time: data.data?.execution_time || 0
+           }
+         }
       })
       
       on('subgraph:progress', (payload) => {

@@ -16,12 +16,12 @@ class TestAIAnalyzer:
     """AI分析器测试类"""
     
     @pytest.fixture
-    def analyzer():
+    def analyzer(self):
         """创建分析器实例"""
         return AIAnalyzer()
     
     @pytest.fixture
-    def sample_vulnerabilities():
+    def sample_vulnerabilities(self):
         """示例漏洞数据"""
         return [
             {
@@ -50,7 +50,7 @@ class TestAIAnalyzer:
             }
         ]
     @pytest.fixture
-    def sample_tool_results():
+    def sample_tool_results(self):
         """示例工具结果"""
         return {
             "sqlmap": {"found": True, "databases": 2},
@@ -58,7 +58,7 @@ class TestAIAnalyzer:
         }
     
     @pytest.fixture
-    def sample_target_context():
+    def sample_target_context(self):
         """示例目标上下文"""
         return {
             "target": "http://example.com",

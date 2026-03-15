@@ -294,7 +294,7 @@ class AIAnalyzer:
         import re
         
         result = AIAnalysisResult()
-        result.summary = ""
+        result.summary = "分析结果解析失败"
         result.risk_level = "info"
         
         try:
@@ -337,6 +337,20 @@ class AIAnalyzer:
                         estimated_effort="低"
                     ))
                     logger.info(f"💡 添加修复建议: {rec[:50]}...")
+                
+                if result.summary:
+                    result.vulnerability_causes.append(VulnerabilityCause(
+                        description=result.summary,
+                        confidence=0.8,
+                        evidence=["基于AI分析的总结"]
+                    ))
+                
+                result.exploitation_risks.append(ExploitationRisk(
+                    risk_level=result.risk_level,
+                    description=f"风险等级为{result.risk_level}的安全问题",
+                    likelihood=0.7,
+                    impact=result.risk_level
+                ))
                 
                 result.analysis_evidence.append("基于AI的分析")
                 logger.info("✅ LLM响应解析完成")

@@ -186,12 +186,15 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { tasksApi } from '@/utils/api'
 import TaskCard from '@/components/business/TaskCard.vue'
 import Loading from '@/components/common/Loading.vue'
 import Alert from '@/components/common/Alert.vue'
+import { useWebSocket } from '@/utils/websocket'
+import { useTaskStore } from '@/store/tasks'
+import toast from '@/utils/toast'
 
 export default {
   name: 'ScanTasks',
@@ -203,6 +206,7 @@ export default {
   setup() {
     const router = useRouter()
     const route = useRoute()
+    const taskStore = useTaskStore()
     const loading = ref(true)
     const errorMessage = ref('')
     const tasks = ref([])
@@ -212,6 +216,8 @@ export default {
     const showCreateModal = ref(false)
     const isCreating = ref(false)
     const selectedTaskType = ref('poc_scan')
+    
+    const { connect, on, disconnect } = useWebSocket('ws://localhost:8888/api/ws')
 
     const filters = ref({
       status: '',
@@ -343,12 +349,92 @@ export default {
       }
     }
 
+    const updateTaskStatus = (taskId, payload) => {
+      taskId = String(taskId)
+      
+      const index = tasks.value.findIndex(t => 
+        String(t.id) === taskId || String(t.task_id) === taskId
+      )
+      
+      if (index !== -1) {
+        tasks.value[index] = { ...tasks.value[index], ...payload }
+      } else if (payload.status) {
+        loadTasks()
+      }
+    }
+
+    const updateTaskProgress = (taskId, progress) => {
+      taskId = String(taskId)
+      const index = tasks.value.findIndex(t => 
+        String(t.id) === taskId || String(t.task_id) === taskId
+      )
+      if (index !== -1) {
+        tasks.value[index].progress = progress
+      }
+    }
+
+    const updateTaskCompleted = (taskId, payload) => {
+      taskId = String(taskId)
+      const index = tasks.value.findIndex(t => 
+        String(t.id) === taskId || String(t.task_id) === taskId
+      )
+      if (index !== -1) {
+        tasks.value[index].status = 'completed'
+        tasks.value[index].progress = 100
+        tasks.value[index].result = payload.result || {}
+        tasks.value[index].completed_at = new Date().toISOString()
+        toast.success('任务完成', `扫描任务 ${taskId.substring(0, 8)}... 已完成`)
+      } else {
+        loadTasks()
+      }
+    }
+    
+    const updateTaskFailed = (taskId, error) => {
+      taskId = String(taskId)
+      const index = tasks.value.findIndex(t => 
+        String(t.id) === taskId || String(t.task_id) === taskId
+      )
+      if (index !== -1) {
+        tasks.value[index].status = 'failed'
+        tasks.value[index].error_message = error
+        toast.error('任务失败', `扫描任务 ${taskId.substring(0, 8)}... 执行失败`)
+      } else {
+        loadTasks()
+      }
+    }
+
     onMounted(() => {
       loadTasks()
 
       if (route.query.task) {
         handleViewTask(parseInt(route.query.task))
       }
+      
+      connect()
+      
+      on('task:update', (payload) => {
+        const data = payload.payload || payload
+        updateTaskStatus(data.task_id, data)
+      })
+      
+      on('task:progress', (payload) => {
+        const data = payload.payload || payload
+        updateTaskProgress(data.task_id, data.progress)
+      })
+      
+      on('task:completed', (payload) => {
+        const data = payload.payload || payload
+        updateTaskCompleted(data.task_id, data)
+      })
+      
+      on('task:failed', (payload) => {
+        const data = payload.payload || payload
+        updateTaskFailed(data.task_id, data.error || data.message)
+      })
+    })
+    
+    onBeforeUnmount(() => {
+      disconnect()
     })
 
     return {

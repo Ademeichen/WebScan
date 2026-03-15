@@ -52,7 +52,7 @@ TASK_TIMEOUT_CONFIG = {
     "awvs_scan": 5 * 60 * 60,
     "poc_scan": 60 * 60,
     "ai_agent_scan": 5 * 60 * 60,
-    "default": 30 * 60,
+    "default": 60 * 60,
 }
 
 
@@ -145,11 +145,19 @@ class TaskExecutor:
             self._save_task_states()
 
     def _get_task_timeout(self, task_type: str, scan_config: Dict = None) -> int:
-        """获取任务超时时间"""
+        """获取任务超时时间，设置最小超时限制为 300 秒 (5分钟)"""
         if scan_config and 'timeout' in scan_config:
-            return scan_config['timeout']
+            timeout = scan_config['timeout']
+            if timeout < 300:
+                logger.warning(f"[Timeout] 任务配置的超时时间 {timeout}秒太短，自动调整为 300秒")
+                return max(timeout, 300)
+            return timeout
         if scan_config and 'global_timeout' in scan_config:
-            return scan_config['global_timeout']
+            timeout = scan_config['global_timeout']
+            if timeout < 300:
+                logger.warning(f"[Timeout] 任务配置的全局超时时间 {timeout}秒太短，自动调整为 300秒")
+                return max(timeout, 300)
+            return timeout
         return TASK_TIMEOUT_CONFIG.get(task_type, TASK_TIMEOUT_CONFIG['default'])
 
     async def reset_scan_data(self):
@@ -443,6 +451,29 @@ class TaskExecutor:
                         task_id=task_id,
                         duration=duration
                     )
+                    
+                    try:
+                        from backend.models import Task
+                        task = await Task.get(id=task_id)
+                        result_data = {}
+                        try:
+                            result_data = json.loads(task.result) if task.result else {}
+                        except:
+                            pass
+                        
+                        await manager.broadcast({
+                            "type": "task_completed",
+                            "payload": {
+                                "task_id": task_id,
+                                "status": "completed",
+                                "progress": 100,
+                                "result": result_data,
+                                "duration": duration
+                            }
+                        })
+                    except Exception as e:
+                        logger.error(f"Failed to broadcast task completion: {e}")
+                    
                     self._remove_task_state(task_id)
                     
                 except asyncio.TimeoutError:
@@ -499,6 +530,7 @@ class TaskExecutor:
                     if task_id in self.task_timeouts:
                         del self.task_timeouts[task_id]
                     self.queue.task_done()
+                    logger.info(f"[Worker] 任务状态已更新,任务完成 | 任务ID: {task_id} | 状态: completed")
                     
             except asyncio.CancelledError:
                 logger.info("Worker被取消,停止运行")
@@ -808,13 +840,23 @@ class TaskExecutor:
             vuln_count=len(vulnerabilities)
         )
         
+        execution_time = time.time() - start_time
+        
         await manager.broadcast({
             "type": "task_completed",
             "payload": {
                 "task_id": task_id,
                 "status": "completed",
                 "progress": 100,
-                "result": result_data
+                "result": result_data,
+                "stages": stage_status,
+                "scan_summary": scan_summary,
+                "final_output": result_data,
+                "vulnerabilities": vulnerabilities,
+                "report": report_content,
+                "target_context": initial_state.target_context if hasattr(initial_state, 'target_context') else scan_config,
+                "execution_history": execution_history,
+                "execution_time": execution_time
             }
         })
 
@@ -843,9 +885,11 @@ class TaskExecutor:
         try:
             from backend.models import Notification, User
             
+            logger.info(f"[Notification] 开始创建通知: task_id={task_id}, task_name={task_name}, status={status}")
+            
             default_user = await User.get_or_none(id=1)
             if not default_user:
-                logger.warning(f"无法创建通知: 默认用户不存在")
+                logger.warning(f"[Notification] 无法创建通知: 默认用户不存在")
                 return
             
             if status == 'completed':
@@ -861,9 +905,10 @@ class TaskExecutor:
                 message = f"扫描任务 {task_name} 执行失败，目标: {target}。错误: {error}"
                 notif_type = 'scan-failed'
             else:
+                logger.info(f"[Notification] 跳过创建通知: status={status} 不是 completed 或 failed")
                 return
             
-            await Notification.create(
+            notification = await Notification.create(
                 user=default_user,
                 title=title,
                 message=message,
@@ -871,10 +916,24 @@ class TaskExecutor:
                 read=False
             )
             
-            logger.info(f"已创建任务通知: {title}")
+            logger.info(f"[Notification] 通知创建成功: id={notification.id}, title={title}")
+            
+            await manager.broadcast({
+                "type": "new_notification",
+                "payload": {
+                    "id": notification.id,
+                    "title": title,
+                    "message": message,
+                    "type": notif_type,
+                    "created_at": notification.created_at.isoformat() if notification.created_at else None,
+                    "read": False
+                }
+            })
+            
+            logger.info(f"[Notification] 通知已广播到 WebSocket: id={notification.id}")
             
         except Exception as e:
-            logger.error(f"创建任务通知失败: {e}")
+            logger.error(f"[Notification] 创建任务通知失败: {e}", exc_info=True)
     
     async def execute_scan_task(self, task_id: int, target: str, scan_config: Dict):
         """

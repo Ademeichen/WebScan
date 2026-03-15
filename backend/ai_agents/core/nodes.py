@@ -211,7 +211,7 @@ class BasePlanningNode(ABC):
         self.priority_manager = TaskPriorityManager()
         self.stage = stage
         self._init_llm()
-        logger.info(f"📋 {self.__class__.__name__} 初始化完成")
+        logger.info(f"📋 {self.__class__.__name__} 初始化完成 | 阶段: {stage.value}")
     
     def _init_llm(self) -> None:
         """初始化LLM（如果启用）"""
@@ -229,7 +229,10 @@ class BasePlanningNode(ABC):
     
     async def __call__(self, state: AgentState) -> AgentState:
         """执行规划"""
-        logger.info(f"[{state.task_id}] 📋 开始{self.stage.value}任务规划")
+        logger.info(
+            f"[{state.task_id}] 📋 开始{self.stage.value}任务规划 | "
+            f"目标: {state.target} | 当前上下文: {len(state.target_context)} 项"
+        )
         
         state.update_stage_status(
             self.stage.value, 
@@ -240,14 +243,20 @@ class BasePlanningNode(ABC):
         )
         
         try:
+            logger.debug(f"[{state.task_id}] 📝 开始调用 _plan_tasks 方法")
             tasks = await self._plan_tasks(state)
+            logger.debug(f"[{state.task_id}] 📝 原始规划任务: {tasks}")
             
             tasks = self._filter_valid_tasks(tasks)
+            logger.debug(f"[{state.task_id}] 📝 过滤后有效任务: {tasks}")
             
             state.planned_tasks = tasks
             state.current_task = tasks[0] if tasks else None
             
-            logger.info(f"[{state.task_id}] ✅ 任务规划完成: {tasks}")
+            logger.info(
+                f"[{state.task_id}] ✅ 任务规划完成 | 任务数: {len(tasks)} | "
+                f"任务列表: {tasks}"
+            )
             state.update_stage_status(
                 self.stage.value,
                 "running",
@@ -264,12 +273,21 @@ class BasePlanningNode(ABC):
             )
             
         except Exception as e:
-            logger.error(f"[{state.task_id}] ❌ 任务规划失败: {str(e)}")
+            logger.error(
+                f"[{state.task_id}] ❌ 任务规划失败 | 错误类型: {type(e).__name__} | "
+                f"错误信息: {str(e)}",
+                exc_info=True
+            )
             state.add_error(f"任务规划失败: {str(e)}")
             
             fallback_tasks = self._get_fallback_tasks()
             state.planned_tasks = fallback_tasks
             state.current_task = fallback_tasks[0] if fallback_tasks else None
+            
+            logger.warning(
+                f"[{state.task_id}] ⚠️ 使用备用任务列表 | 任务数: {len(fallback_tasks)} | "
+                f"任务列表: {fallback_tasks}"
+            )
             
             state.update_stage_status(
                 self.stage.value,
@@ -326,22 +344,32 @@ class BaseToolExecutionNode(ABC):
         self.semaphore = asyncio.Semaphore(
             max_concurrent or agent_config.MAX_CONCURRENT_TOOLS
         )
-        logger.info(f"🔧 {self.__class__.__name__} 初始化完成")
+        logger.info(
+            f"🔧 {self.__class__.__name__} 初始化完成 | "
+            f"阶段: {stage.value} | 最大并发: {max_concurrent or agent_config.MAX_CONCURRENT_TOOLS}"
+        )
     
     async def __call__(self, state: AgentState) -> AgentState:
         """执行工具"""
         if not state.current_task:
-            logger.info(f"[{state.task_id}] ⏹️ 没有待执行任务")
+            logger.info(
+                f"[{state.task_id}] ⏹️ 没有待执行任务 | "
+                f"已完成: {len(state.completed_tasks)} | 待执行: {len(state.planned_tasks)}"
+            )
             return state
         
         task = state.current_task
-        logger.info(f"[{state.task_id}] 🔧 执行工具: {task}")
+        logger.info(
+            f"[{state.task_id}] 🔧 开始执行工具 | 工具: {task} | "
+            f"目标: {state.target} | 阶段: {self.stage.value}"
+        )
         
         progress = ProgressCalculator.calculate_stage_progress(
             state.completed_tasks,
             state.planned_tasks,
             state.current_task
         )
+        logger.debug(f"[{state.task_id}] 📊 当前进度: {progress}%")
         
         step_number = state.add_execution_step_start(
             task,
@@ -353,10 +381,17 @@ class BaseToolExecutionNode(ABC):
             },
             processing_logic=f"执行{task}工具"
         )
+        logger.debug(f"[{state.task_id}] 📝 创建执行步骤 | 步骤号: {step_number}")
         
         try:
+            logger.debug(f"[{state.task_id}] 🔄 获取信号量锁，准备执行工具")
             async with self.semaphore:
+                logger.debug(f"[{state.task_id}] 🔒 获取信号量锁成功，开始执行工具: {task}")
                 result = await self._execute_tool(state, task)
+                logger.debug(
+                    f"[{state.task_id}] 📦 工具执行返回 | 工具: {task} | "
+                    f"成功: {result.success if hasattr(result, 'success') else 'N/A'}"
+                )
                 
                 if result.success:
                     await self._handle_success(state, task, result, step_number)
@@ -364,10 +399,18 @@ class BaseToolExecutionNode(ABC):
                     await self._handle_failure(state, task, result, step_number)
                     
         except ValueError as e:
+            logger.warning(
+                f"[{state.task_id}] ⚠️ 工具未注册 | 工具: {task} | 错误: {str(e)}"
+            )
             ErrorHandler.handle_tool_not_found(state, task)
             self._mark_task_completed(state, task)
             
         except Exception as e:
+            logger.error(
+                f"[{state.task_id}] ❌ 工具执行异常 | 工具: {task} | "
+                f"错误类型: {type(e).__name__} | 错误: {str(e)}",
+                exc_info=True
+            )
             ErrorHandler.handle_tool_error(state, task, e, step_number)
             self._mark_task_completed(state, task)
         
@@ -429,16 +472,22 @@ class BaseResultVerificationNode(ABC):
     
     def __init__(self, stage: NodeStage = NodeStage.INFO_COLLECTION):
         self.stage = stage
-        logger.info(f"🔍 {self.__class__.__name__} 初始化完成")
+        logger.info(f"🔍 {self.__class__.__name__} 初始化完成 | 阶段: {stage.value}")
     
     async def __call__(self, state: AgentState) -> AgentState:
         """验证结果"""
-        logger.info(f"[{state.task_id}] 🔍 验证{self.stage.value}结果")
+        logger.info(
+            f"[{state.task_id}] 🔍 开始验证{self.stage.value}结果 | "
+            f"已完成任务: {len(state.completed_tasks)} | 待执行任务: {len(state.planned_tasks)}"
+        )
         
         await self._verify_results(state)
         
         if not state.planned_tasks:
-            logger.info(f"[{state.task_id}] ✅ 所有{self.stage.value}任务已完成")
+            logger.info(
+                f"[{state.task_id}] ✅ 所有{self.stage.value}任务已完成 | "
+                f"总计完成: {len(state.completed_tasks)} 个任务"
+            )
             state.update_stage_status(
                 self.stage.value,
                 "completed",
@@ -448,7 +497,10 @@ class BaseResultVerificationNode(ABC):
             )
         else:
             state.current_task = state.planned_tasks[0]
-            logger.info(f"[{state.task_id}] 📋 待执行任务: {state.planned_tasks}")
+            logger.info(
+                f"[{state.task_id}] 📋 待执行任务 | 数量: {len(state.planned_tasks)} | "
+                f"下一个任务: {state.current_task}"
+            )
         
         return state
     
@@ -828,18 +880,36 @@ class VulnerabilityAnalysisNode:
     
     async def __call__(self, state: AgentState) -> AgentState:
         """分析漏洞"""
-        logger.info(f"[{state.task_id}] 🔍 分析漏洞结果,共发现 {len(state.vulnerabilities)} 个漏洞")
+        logger.info(
+            f"[{state.task_id}] 🔍 开始漏洞分析 | "
+            f"发现漏洞数: {len(state.vulnerabilities)} | 目标: {state.target}"
+        )
         
         if not state.vulnerabilities:
             self._log_no_vulnerabilities(state)
             return state
         
         try:
+            logger.debug(f"[{state.task_id}] 📊 开始漏洞去重处理")
             unique_vulns = self.analyzer.deduplicate(state.vulnerabilities)
+            logger.debug(
+                f"[{state.task_id}] 📊 去重完成 | 原始: {len(state.vulnerabilities)} | "
+                f"去重后: {len(unique_vulns)}"
+            )
+            
+            logger.debug(f"[{state.task_id}] 📊 开始按严重度排序")
             sorted_vulns = self.analyzer.sort_by_severity(unique_vulns)
             state.vulnerabilities = sorted_vulns
             
-            logger.info(f"[{state.task_id}] ✅ 漏洞分析完成,去重后: {len(sorted_vulns)} 个")
+            severity_counts = {}
+            for vuln in sorted_vulns:
+                sev = vuln.get('severity', 'unknown')
+                severity_counts[sev] = severity_counts.get(sev, 0) + 1
+            
+            logger.info(
+                f"[{state.task_id}] ✅ 漏洞分析完成 | 总数: {len(sorted_vulns)} | "
+                f"严重度分布: {severity_counts}"
+            )
             state.add_execution_step(
                 "vulnerability_analysis",
                 {"total": len(sorted_vulns), "vulnerabilities": sorted_vulns},
@@ -863,7 +933,11 @@ class VulnerabilityAnalysisNode:
     
     def _handle_analysis_error(self, state: AgentState, error: Exception) -> None:
         """处理分析错误"""
-        logger.error(f"[{state.task_id}] ❌ 漏洞分析失败: {str(error)}")
+        logger.error(
+            f"[{state.task_id}] ❌ 漏洞分析失败 | "
+            f"错误类型: {type(error).__name__} | 错误: {str(error)}",
+            exc_info=True
+        )
         state.add_error(f"漏洞分析失败: {str(error)}")
         state.add_execution_step(
             "vulnerability_analysis",
@@ -891,14 +965,38 @@ class ReportGenerationNode:
     
     async def __call__(self, state: AgentState) -> AgentState:
         """生成报告"""
-        logger.info(f"[{state.task_id}] 📄 生成扫描报告")
+        logger.info(
+            f"[{state.task_id}] 📄 开始生成扫描报告 | "
+            f"目标: {state.target} | 漏洞数: {len(state.vulnerabilities)} | "
+            f"已完成任务: {len(state.completed_tasks)}"
+        )
         
         try:
+            logger.debug(f"[{state.task_id}] 📝 调用报告生成器生成所有报告")
             reports = await self._generate_all_reports_async(state)
+            logger.debug(
+                f"[{state.task_id}] 📝 报告生成完成 | 报告类型: {list(reports.keys())}"
+            )
+            
             state.tool_results.update(reports)
+            
+            state.scan_summary = {
+                "target": state.target,
+                "vulnerabilities_count": len(state.vulnerabilities),
+                "completed_tasks": len(state.completed_tasks),
+                "errors_count": len(state.errors)
+            }
+            
+            if "final_report" in reports:
+                state.report = reports["final_report"].get("summary", "")
+            
             state.mark_complete()
             
-            logger.info(f"[{state.task_id}] ✅ 报告生成完成")
+            logger.info(
+                f"[{state.task_id}] ✅ 报告生成完成 | "
+                f"漏洞数: {len(state.vulnerabilities)} | 任务数: {len(state.completed_tasks)} | "
+                f"错误数: {len(state.errors)}"
+            )
             state.add_execution_step(
                 "report_generation",
                 reports,
@@ -907,36 +1005,33 @@ class ReportGenerationNode:
                 processing_logic="生成标准扫描报告和详细执行轨迹报告"
             )
         except Exception as e:
-            self._handle_report_error(state, e)
+            logger.error(
+                f"[{state.task_id}] ❌ 报告生成失败 | "
+                f"错误类型: {type(e).__name__} | 错误: {str(e)}",
+                exc_info=True
+            )
+            state.add_error(f"报告生成失败: {str(e)}")
+            state.mark_complete()
         
         return state
     
     async def _generate_all_reports_async(self, state: AgentState) -> Dict[str, Any]:
-        """异步生成所有报告"""
-        from ..analyzers.enhanced_report_gen import EnhancedReportGenerator
-        
-        enhanced_gen = EnhancedReportGenerator(auto_ai_analysis=False)
-        
-        report_data = await enhanced_gen.generate_from_state(
-            state,
-            task_name=f"安全扫描 - {state.target}"
-        )
-        
-        return {
-            "final_report": self.report_gen.generate_report(state),
-            "execution_trace_report": enhanced_gen.generate_execution_trace_report(state),
-            "html_execution_trace": enhanced_gen.generate_html_execution_trace(state),
-            "enhanced_report": {
-                "task_id": report_data.task_id,
-                "target": report_data.target.url,
-                "vulnerabilities_count": len(report_data.vulnerabilities),
-                "timing": {
-                    "start_time": report_data.timing.start_time,
-                    "end_time": report_data.timing.end_time,
-                    "duration_ms": report_data.timing.total_duration_ms
+        """异步生成所有报告 - 使用同步版本避免事件循环问题"""
+        try:
+            return self._generate_all_reports(state)
+        except Exception as e:
+            logger.warning(f"报告生成失败: {e}，使用简化报告")
+            return {
+                "final_report": {},
+                "execution_trace_report": {},
+                "html_execution_trace": "",
+                "enhanced_report": {
+                    "task_id": state.task_id,
+                    "target": state.target,
+                    "vulnerabilities_count": len(state.vulnerabilities),
+                    "timing": {}
                 }
             }
-        }
     
     def _generate_all_reports(self, state: AgentState) -> Dict[str, Any]:
         """生成所有报告（同步版本，保留向后兼容）"""
@@ -971,21 +1066,37 @@ class EnvironmentAwarenessNode:
     
     async def __call__(self, state: AgentState) -> AgentState:
         """执行环境感知"""
-        logger.info(f"[{state.task_id}] 🔍 开始环境感知")
+        logger.info(
+            f"[{state.task_id}] 🔍 开始环境感知 | 目标: {state.target}"
+        )
         
         try:
+            logger.debug(f"[{state.task_id}] 🌐 获取环境报告")
             env_report = self.env_awareness.get_environment_report()
+            logger.debug(
+                f"[{state.task_id}] 🌐 环境报告获取成功 | "
+                f"操作系统: {env_report['os_info']['system']} | "
+                f"Python版本: {env_report['python_info']['version']}"
+            )
             
             state.update_context("environment_info", env_report)
             state.update_context("os_system", env_report["os_info"]["system"])
             state.update_context("python_version", env_report["python_info"]["version"])
             state.update_context("available_tools", env_report["available_tools"])
             
-            logger.info(f"[{state.task_id}] ✅ 环境感知完成")
+            logger.info(
+                f"[{state.task_id}] ✅ 环境感知完成 | "
+                f"操作系统: {env_report['os_info']['system']} | "
+                f"可用工具数: {len(env_report['available_tools'])}"
+            )
             state.add_execution_step("environment_awareness", env_report, "success")
             
         except Exception as e:
-            logger.error(f"[{state.task_id}] ❌ 环境感知失败: {str(e)}")
+            logger.error(
+                f"[{state.task_id}] ❌ 环境感知失败 | "
+                f"错误类型: {type(e).__name__} | 错误: {str(e)}",
+                exc_info=True
+            )
             state.add_error(f"环境感知失败: {str(e)}")
         
         return state
@@ -1013,7 +1124,9 @@ class CodeGenerationNode:
     
     async def __call__(self, state: AgentState) -> AgentState:
         """执行代码生成"""
-        logger.info(f"[{state.task_id}] 🔧 开始代码生成")
+        logger.info(
+            f"[{state.task_id}] 🔧 开始代码生成 | 目标: {state.target}"
+        )
         
         step_number = state.add_execution_step_start(
             "code_generation",
@@ -1026,11 +1139,17 @@ class CodeGenerationNode:
             },
             processing_logic="根据扫描需求和目标特征生成自定义扫描代码"
         )
+        logger.debug(f"[{state.task_id}] 📝 创建代码生成步骤 | 步骤号: {step_number}")
         
         try:
             if not state.target_context.get("need_custom_scan"):
                 return self._skip_code_generation(state, step_number)
             
+            logger.debug(
+                f"[{state.task_id}] 📝 开始生成代码 | "
+                f"扫描类型: {state.target_context.get('custom_scan_type', 'vuln_scan')} | "
+                f"语言: {state.target_context.get('custom_scan_language', 'python')}"
+            )
             code_response = await self._generate_code(state)
             self._save_and_update_state(state, code_response, step_number)
             
@@ -1126,7 +1245,11 @@ class CodeGenerationNode:
     
     def _handle_generation_error(self, state: AgentState, error: Exception, step_number: int) -> None:
         """处理代码生成错误"""
-        logger.error(f"[{state.task_id}] ❌ 代码生成失败: {str(error)}")
+        logger.error(
+            f"[{state.task_id}] ❌ 代码生成失败 | "
+            f"错误类型: {type(error).__name__} | 错误: {str(error)}",
+            exc_info=True
+        )
         state.add_error(f"代码生成失败: {str(error)}")
         
         state.update_execution_step(
@@ -1155,7 +1278,9 @@ class CapabilityEnhancementNode:
     
     async def __call__(self, state: AgentState) -> AgentState:
         """执行功能补充"""
-        logger.info(f"[{state.task_id}] 🚀 开始功能补充")
+        logger.info(
+            f"[{state.task_id}] 🚀 开始功能补充 | 目标: {state.target}"
+        )
         
         step_number = state.add_execution_step_start(
             "capability_enhancement",
@@ -1167,6 +1292,7 @@ class CapabilityEnhancementNode:
             },
             processing_logic="根据需求动态增强AI Agent能力"
         )
+        logger.debug(f"[{state.task_id}] 📝 创建功能补充步骤 | 步骤号: {step_number}")
         
         try:
             if not state.target_context.get("need_capability_enhancement"):
@@ -1176,6 +1302,10 @@ class CapabilityEnhancementNode:
             if not requirement:
                 return self._skip_enhancement(state, step_number, "未指定功能需求")
             
+            logger.debug(
+                f"[{state.task_id}] 📝 开始功能增强 | 需求: {requirement} | "
+                f"功能名称: {state.target_context.get('capability_name')}"
+            )
             await self._enhance_capability(state, requirement, step_number)
             
         except Exception as e:
@@ -1222,7 +1352,11 @@ class CapabilityEnhancementNode:
     
     def _handle_enhancement_error(self, state: AgentState, error: Exception, step_number: int) -> None:
         """处理功能增强错误"""
-        logger.error(f"[{state.task_id}] ❌ 功能补充失败: {str(error)}")
+        logger.error(
+            f"[{state.task_id}] ❌ 功能补充失败 | "
+            f"错误类型: {type(error).__name__} | 错误: {str(error)}",
+            exc_info=True
+        )
         state.add_error(f"功能补充失败: {str(error)}")
         
         state.update_execution_step(
@@ -1254,14 +1388,24 @@ class CodeExecutionNode:
     
     async def __call__(self, state: AgentState) -> AgentState:
         """执行代码"""
-        logger.info(f"[{state.task_id}] ⚡ 开始执行代码")
+        logger.info(
+            f"[{state.task_id}] ⚡ 开始执行代码 | 目标: {state.target}"
+        )
         
         try:
             if not state.target_context.get("generated_code"):
-                logger.info(f"[{state.task_id}] ⏭️ 无代码可执行,跳过")
+                logger.info(
+                    f"[{state.task_id}] ⏭️ 无代码可执行,跳过 | "
+                    f"目标: {state.target}"
+                )
                 return state
             
             generated_code = state.target_context["generated_code"]
+            logger.debug(
+                f"[{state.task_id}] 📝 准备执行代码 | "
+                f"语言: {generated_code.get('language', 'unknown')} | "
+                f"代码长度: {len(generated_code.get('code', ''))} 字符"
+            )
             
             execution_result = await self.executor.execute_code(
                 code=generated_code["code"],
@@ -1273,9 +1417,15 @@ class CodeExecutionNode:
             state.update_context("code_execution_result", execution_result.to_dict())
             
             if execution_result.status == "success":
-                logger.info(f"[{state.task_id}] ✅ 代码执行成功")
+                logger.info(
+                    f"[{state.task_id}] ✅ 代码执行成功 | "
+                    f"输出长度: {len(execution_result.output) if execution_result.output else 0}"
+                )
             else:
-                logger.warning(f"[{state.task_id}] ⚠️ 代码执行失败: {execution_result.error}")
+                logger.warning(
+                    f"[{state.task_id}] ⚠️ 代码执行失败 | "
+                    f"错误: {execution_result.error}"
+                )
                 state.target_context["need_capability_enhancement"] = True
                 state.target_context["capability_requirement"] = "自动安装代码执行所需依赖"
             
@@ -1287,7 +1437,11 @@ class CodeExecutionNode:
             )
             
         except Exception as e:
-            logger.error(f"[{state.task_id}] ❌ 代码执行失败: {str(e)}")
+            logger.error(
+                f"[{state.task_id}] ❌ 代码执行失败 | "
+                f"错误类型: {type(e).__name__} | 错误: {str(e)}",
+                exc_info=True
+            )
             state.add_error(f"代码执行失败: {str(e)}")
         
         return state
@@ -1311,19 +1465,35 @@ class IntelligentDecisionNode:
     
     async def __call__(self, state: AgentState) -> AgentState:
         """执行智能决策"""
-        logger.info(f"[{state.task_id}] 🧠 开始智能决策")
+        logger.info(
+            f"[{state.task_id}] 🧠 开始智能决策 | 目标: {state.target}"
+        )
         
         try:
+            logger.debug(f"[{state.task_id}] 🌐 获取环境信息")
             env_info = self.env_awareness.get_environment_report()
+            logger.debug(
+                f"[{state.task_id}] 🌐 环境信息获取成功 | "
+                f"操作系统: {env_info['os_info']['system']}"
+            )
+            
+            logger.debug(f"[{state.task_id}] 🧠 开始制定决策")
             decisions = self._make_decisions(state, env_info)
             
             state.update_context("intelligent_decisions", decisions)
             
-            logger.info(f"[{state.task_id}] ✅ 智能决策完成: {decisions}")
+            logger.info(
+                f"[{state.task_id}] ✅ 智能决策完成 | 决策数: {len(decisions)} | "
+                f"决策列表: {decisions}"
+            )
             state.add_execution_step("intelligent_decision", {"decisions": decisions}, "success")
             
         except Exception as e:
-            logger.error(f"[{state.task_id}] ❌ 智能决策失败: {str(e)}")
+            logger.error(
+                f"[{state.task_id}] ❌ 智能决策失败 | "
+                f"错误类型: {type(e).__name__} | 错误: {str(e)}",
+                exc_info=True
+            )
             state.add_error(f"智能决策失败: {str(e)}")
         
         return state
@@ -1381,31 +1551,40 @@ class VulnerabilityScanNode:
     
     async def __call__(self, state: AgentState) -> AgentState:
         """执行漏洞扫描"""
-        logger.info(f"[{state.task_id}] 🔍 开始漏洞扫描")
+        logger.info(
+            f"[{state.task_id}] 🔍 开始漏洞扫描 | 目标: {state.target}"
+        )
         state.update_stage_status("tool_execution", "running", "初始化", 10, "加载漏洞扫描插件")
         
         try:
+            logger.debug(f"[{state.task_id}] 📦 加载漏洞扫描插件")
             self.plugin_manager.load_plugins_from_directory()
             
             loaded_plugins = self.plugin_manager.list_plugins(enabled_only=True)
             state.vuln_scan_plugins_loaded = [p.name for p in loaded_plugins]
             
-            logger.info(f"[{state.task_id}] 已加载 {len(loaded_plugins)} 个漏洞扫描插件")
+            logger.info(
+                f"[{state.task_id}] 📦 已加载 {len(loaded_plugins)} 个漏洞扫描插件 | "
+                f"插件列表: {state.vuln_scan_plugins_loaded}"
+            )
             state.update_stage_status("tool_execution", "running", "扫描中", 30, f"使用 {len(loaded_plugins)} 个插件扫描")
             
+            logger.debug(f"[{state.task_id}] 🔬 开始执行所有插件扫描")
             results = await self.plugin_manager.scan_all_async(
                 target=state.target,
                 plugin_names=state.vuln_scan_plugins_loaded,
                 max_concurrent=2
             )
+            logger.debug(f"[{state.task_id}] 🔬 扫描完成，开始聚合结果")
             
             aggregated = self.plugin_manager.aggregate_results(results)
             
             self._update_scan_results(state, aggregated)
             
             logger.info(
-                f"[{state.task_id}] ✅ 漏洞扫描完成: "
-                f"发现 {aggregated['total_vulnerabilities']} 个漏洞"
+                f"[{state.task_id}] ✅ 漏洞扫描完成 | "
+                f"发现漏洞: {aggregated['total_vulnerabilities']} 个 | "
+                f"扫描耗时: {aggregated['scan_summary']['total_duration']:.2f}s"
             )
             
         except Exception as e:
@@ -1446,7 +1625,11 @@ class VulnerabilityScanNode:
     
     def _handle_scan_error(self, state: AgentState, error: Exception) -> None:
         """处理扫描错误"""
-        logger.error(f"[{state.task_id}] ❌ 漏洞扫描失败: {str(error)}")
+        logger.error(
+            f"[{state.task_id}] ❌ 漏洞扫描失败 | "
+            f"错误类型: {type(error).__name__} | 错误: {str(error)}",
+            exc_info=True
+        )
         state.add_error(f"漏洞扫描失败: {str(error)}")
         state.update_stage_status("tool_execution", "failed", "失败", 0, str(error))
 
