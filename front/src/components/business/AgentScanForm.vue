@@ -191,8 +191,6 @@ export default {
       errorMessage.value = ''
 
       try {
-        emit('submit', formData.value)
-
         const scanData = {
           target: formData.value.target,
           enable_llm_planning: formData.value.enableLLMPlanning,
@@ -205,18 +203,8 @@ export default {
           capability_requirement: formData.value.capabilityRequirement
         }
 
-        const response = await aiAgentsApi.startScan(scanData)
+        emit('submit', { formData: formData.value, scanData })
 
-        if (response && response.data && response.data.task_id) {
-          emit('success', response.data)
-          handleReset()
-        } else if (response && response.task_id) {
-          emit('success', response)
-          handleReset()
-        } else {
-          errorMessage.value = response?.message || '启动AI Agent失败'
-          emit('error', response)
-        }
       } catch (error) {
         errorMessage.value = error.message || error.response?.data?.message || '网络错误，请稍后重试'
         emit('error', error)

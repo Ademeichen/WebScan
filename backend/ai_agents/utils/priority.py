@@ -90,11 +90,6 @@ class TaskPriorityManager:
         """
         task_lower = task_name.lower()
         
-        # POC验证任务优先级最高
-        if task_lower.startswith("poc_"):
-            return self.priority_weights.get("poc_verification", 0.9)
-        
-        # 基础信息收集任务
         if task_lower == "portscan":
             return self.priority_weights.get("portscan", 0.5)
         elif task_lower == "baseinfo":
@@ -104,7 +99,6 @@ class TaskPriorityManager:
         elif task_lower in ["infoleak_scan", "subdomain_scan"]:
             return 0.35
         
-        # 默认优先级
         return 0.5
     
     def _adjust_by_context(
@@ -126,48 +120,10 @@ class TaskPriorityManager:
         """
         adjusted_priority = base_priority
         
-        # 如果检测到WAF,降低POC优先级(避免被封禁)
-        if context.get("waf") and task_name.startswith("poc_"):
-            adjusted_priority *= 0.5
-            logger.debug(f"检测到WAF,降低POC优先级: {task_name}")
-        
-        # 如果检测到CDN,降低端口扫描优先级
         if context.get("cdn") and task_name == "portscan":
             adjusted_priority *= 0.7
 
-        
-        # 如果CMS已知,提高相关POC优先级
-        cms = context.get("cms", "").lower()
-        if cms and task_name.startswith("poc_"):
-            poc_lower = task_name.lower()
-            if cms in poc_lower:
-                adjusted_priority *= 1.5
-                logger.debug(f"提高相关POC优先级: {task_name}")
-        
-        # 如果开放特定端口,提高相关POC优先级
-        open_ports = context.get("open_ports", [])
-        if task_name.startswith("poc_"):
-            for port in open_ports:
-                port_pocs = self._get_pocs_by_port(port)
-                if task_name in port_pocs:
-                    adjusted_priority *= 1.3
-                    logger.debug(f"提高端口{port}相关POC优先级: {task_name}")
-                    break
-        
         return min(adjusted_priority, 1.0)
-    
-    def _get_pocs_by_port(self, port: int) -> List[str]:
-        """
-        根据端口获取相关POC
-        
-        Args:
-            port: 端口号
-            
-        Returns:
-            List[str]: POC名称列表
-        """
-        from ..tools.adapters import POCAdapter
-        return POCAdapter.get_poc_by_port(port)
     
     def get_critical_tasks(self, tasks: List[str]) -> List[str]:
         """

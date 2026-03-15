@@ -252,10 +252,10 @@ AWVS_API_KEY: str = "your_api_key"
 
 ```powershell
 # 健康检查
-Invoke-WebRequest -Uri "http://127.0.0.1:3000/api/awvs/health" -Method GET -UseBasicParsing
+Invoke-WebRequest -Uri "http://127.0.0.1:8888/api/awvs/health" -Method GET -UseBasicParsing
 
 # 获取所有扫描任务
-Invoke-WebRequest -Uri "http://127.0.0.1:3000/api/awvs/scans" -Method GET -UseBasicParsing
+Invoke-WebRequest -Uri "http://127.0.0.1:8888/api/awvs/scans" -Method GET -UseBasicParsing
 
 # 创建扫描任务
 $body = @{
@@ -263,7 +263,7 @@ $body = @{
     scan_type = "full_scan"
 } | ConvertTo-Json
 
-Invoke-WebRequest -Uri "http://127.0.0.1:3000/api/awvs/scan" -Method POST -Body $body -ContentType "application/json" -UseBasicParsing
+Invoke-WebRequest -Uri "http://127.0.0.1:8888/api/awvs/scan" -Method POST -Body $body -ContentType "application/json" -UseBasicParsing
 ```
 
 ### Python 示例
@@ -271,7 +271,7 @@ Invoke-WebRequest -Uri "http://127.0.0.1:3000/api/awvs/scan" -Method POST -Body 
 ```python
 import requests
 
-BASE_URL = "http://127.0.0.1:3000/api/awvs"
+BASE_URL = "http://127.0.0.1:8888/api/awvs"
 
 # 健康检查
 response = requests.get(f"{BASE_URL}/health")

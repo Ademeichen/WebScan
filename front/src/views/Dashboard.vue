@@ -114,9 +114,9 @@
                {{ row.threshold }} min
              </template>
           </el-table-column>
-          <el-table-column prop="progress" label="进度" width="180">
+ <el-table-column prop="progress" label="进度" width="180">
             <template #default="{row}">
-              <el-progress :percentage="row.progress" status="exception" />
+              <el-progress :percentage="Math.min(100, Math.max(0, row.progress || 0))" status="exception" />
             </template>
           </el-table-column>
           <el-table-column label="操作" width="120">
@@ -204,6 +204,7 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { tasksApi, settingsApi } from '@/utils/api'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { ArrowRight } from '@element-plus/icons-vue'
 import StatCard from '@/components/common/StatCard.vue'
 import TaskCard from '@/components/business/TaskCard.vue'
 import AppIcon from '@/components/common/AppIcon.vue'
@@ -214,7 +215,8 @@ export default {
   components: {
     StatCard,
     TaskCard,
-    AppIcon
+    AppIcon,
+    ArrowRight
   },
   setup() {
     const router = useRouter()
@@ -252,9 +254,28 @@ export default {
 
     const loadFrozenTasks = async () => {
       try {
-        const response = await tasksApi.getFrozenTasks()
+        const response = await tasksApi.getTasks({ status: 'running' })
         if (response.code === 200) {
-          frozenTasks.value = response.data || []
+          const allTasks = response.data.tasks || []
+          const frozen = []
+          const threshold = 30
+          const now = new Date()
+          
+          for (const task of allTasks) {
+            if (task.created_at) {
+              const created = new Date(task.created_at)
+              const duration = (now - created) / 1000 / 60
+              if (duration > threshold * 0.8) {
+                frozen.push({
+                  ...task,
+                  duration: Math.round(duration),
+                  threshold
+                })
+              }
+            }
+          }
+          
+          frozenTasks.value = frozen
         }
       } catch (error) {
         console.error('加载冻结任务失败:', error)

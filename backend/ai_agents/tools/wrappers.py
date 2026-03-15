@@ -22,7 +22,7 @@ class AsyncToolWrapper:
         timeout: 超时时间(秒)
     """
     
-    def __init__(self, func: Callable, timeout: int = 60):
+    def __init__(self, func: Callable, timeout: int = 120):
         """
         初始化工具包装器
         
@@ -92,7 +92,7 @@ class AsyncToolWrapper:
 
 def wrap_async(
     func: Callable,
-    timeout: int = 60
+    timeout: int = 120
 ) -> AsyncToolWrapper:
     """
     工具异步封装函数

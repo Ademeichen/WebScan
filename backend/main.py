@@ -14,11 +14,54 @@ FastAPI 主应用入口文件
 """
 import sys
 import warnings
-import signal
 import asyncio
 from pathlib import Path
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="paramiko")
+
+import socket
+
+def handle_asyncio_exception(loop, context):
+    """
+    自定义 asyncio 异常处理器
+    
+    处理 Windows 平台上常见的连接重置错误，包括：
+    - ConnectionResetError [WinError 10054]: 远程主机强迫关闭了一个现有的连接
+    - ConnectionAbortedError [WinError 10053]: 你的主机中的软件中止了一个已建立的连接
+    - BrokenPipeError [WinError 10032]: 管道正在关闭
+    """
+    exception = context.get("exception")
+    
+    if exception:
+        if isinstance(exception, (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError)):
+            exception_code = getattr(exception, 'winerror', getattr(exception, 'errno', None))
+            known_codes = [10054, 10053, 10032, 32, 9, 104]
+            if exception_code in known_codes or isinstance(exception, (ConnectionResetError, BrokenPipeError)):
+                return
+    
+    message = context.get("message", "")
+    if "Connection reset" in message or "pipe" in message.lower():
+        return
+    
+    loop.default_exception_handler(context)
+
+def setup_asyncio_exception_handler():
+    if sys.platform == 'win32':
+        try:
+            policy = asyncio.WindowsProactorEventLoopPolicy()
+            asyncio.set_event_loop_policy(policy)
+        except (AttributeError, NotImplementedError):
+            pass
+    
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.set_exception_handler(handle_asyncio_exception)
+        print("asyncio 异常处理器已配置")
+    except Exception as e:
+        print(f"设置 asyncio 异常处理器失败: {e}")
+
+setup_asyncio_exception_handler()
 
 current_dir = Path(__file__).parent
 project_root = current_dir.parent
@@ -59,12 +102,7 @@ api_file_handler = logging.FileHandler("logs/api.log", encoding='utf-8')
 api_file_handler.setFormatter(JsonFormatter())
 api_logger.addHandler(api_file_handler)
 
-shutdown_event = asyncio.Event()
 shutdown_timeout = 30
-
-def signal_handler(signum, frame):
-    logger.info(f"收到关闭信号: {signal.Signals(signum).name}")
-    shutdown_event.set()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -91,8 +129,8 @@ async def lifespan(app: FastAPI):
     Yields:
         None: 控制权交还给应用
     """
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+    loop = asyncio.get_running_loop()
+    loop.set_exception_handler(handle_asyncio_exception)
     
     logger.info(f"启动 {settings.APP_NAME} v{settings.APP_VERSION}")
     
@@ -111,10 +149,28 @@ async def lifespan(app: FastAPI):
         logger.error(f"执行 AWVS 连接测试时发生错误: {str(e)}")
 
     try:
+        from backend.api.awvs import sync_scans_from_awvs
+        
+        if success:
+            logger.info("AWVS API 连接成功，开始自动同步数据...")
+            await sync_scans_from_awvs()
+            logger.info("AWVS 数据自动同步完成")
+        else:
+            logger.warning("AWVS API 未连接，跳过自动同步")
+    except Exception as e:
+        logger.error(f"自动同步AWVS数据失败: {str(e)}")
+    
+    try:
         from backend.task_executor import task_executor
+        
+
+        # TODO：是否需要重置扫描数据
+        # await task_executor.reset_scan_data()
+        
         task_executor.start_worker()
         logger.info("任务执行器 Worker 已启动")
         
+        # TODO: 从配置中读取是否启用任务恢复
         await task_executor.recover_pending_tasks()
         
     except Exception as e:
@@ -265,10 +321,6 @@ async def global_exception_handler(request, exc):
 from backend.api import api_router
 app.include_router(api_router, prefix="/api")
 
-# 注册子图API路由
-from backend.ai_agents.subgraphs.api import router as subgraphs_router
-app.include_router(subgraphs_router, prefix="/api")
-
 
 if __name__ == "__main__":
     """
@@ -281,5 +333,8 @@ if __name__ == "__main__":
         host=settings.HOST,
         port=settings.PORT,
         reload=False,
-        log_level=settings.LOG_LEVEL.lower()
+        log_level=settings.LOG_LEVEL.lower(),
+        access_log=True,
+        use_colors=True,
+        loop="asyncio"
     )

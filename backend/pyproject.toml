@@ -7,7 +7,6 @@ filterwarnings = [
     "ignore::DeprecationWarning:requests.utils",
 ]
 asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
 markers = [
     "integration: mark test as integration test (requires external services)",
     "slow: mark test as slow running",
@@ -15,7 +14,10 @@ markers = [
     "ai: mark test as requiring AI model service",
     "seebug: mark test as requiring Seebug service",
     "timeout: mark test with timeout in seconds",
+    "stress: mark test as stress test",
 ]
 
 [tool.aerich]
 tortoise_orm = "backend.config.TORTOISE_ORM"
+location = "./migrations"
+src_folder = "./."

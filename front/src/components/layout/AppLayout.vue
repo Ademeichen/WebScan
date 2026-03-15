@@ -174,6 +174,7 @@
 <script>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Bell, User, Setting, SwitchButton } from '@element-plus/icons-vue'
 import AppIcon from '@/components/common/AppIcon.vue'
 import AIChatFloater from '@/components/common/AIChatFloater.vue'
 import { userApi, notificationsApi } from '@/utils/api'
@@ -183,7 +184,11 @@ export default {
   name: 'AppLayout',
   components: {
     AppIcon,
-    AIChatFloater
+    AIChatFloater,
+    Bell,
+    User,
+    Setting,
+    SwitchButton
   },
   setup() {
     const route = useRoute()
@@ -201,7 +206,7 @@ export default {
       { name: 'AgentScan', path: '/agent-scan', label: 'AI Agent', icon: 'Monitor' },
       { name: 'KnowledgeBase', path: '/knowledge-base', label: '漏洞知识库', icon: 'Reading' },
       { name: 'Reports', path: '/reports', label: '报告', icon: 'Document' },
-      { name: 'Settings', path: '/settings', label: '设置', icon: 'SettingIcon' }
+      { name: 'Settings', path: '/settings', label: '设置', icon: 'Setting' }
     ])
 
     const notifications = ref([])

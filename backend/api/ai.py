@@ -13,7 +13,7 @@ AI 对话 API 路由
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from uuid import UUID, uuid4
 from tortoise.expressions import Q
 from datetime import datetime
@@ -740,3 +740,261 @@ async def simple_chat(request: SimpleChatRequest):
             status_code=500,
             detail=f"AI对话失败: {str(e)}"
         )
+
+
+@router.get("/connection-status", response_model=Dict[str, Any])
+async def get_ai_connection_status():
+    """
+    获取AI连接状态
+    
+    检查AI模型连接配置和连接状态。
+    
+    Returns:
+        Dict: 包含AI连接状态的响应，结构如下:
+            {
+                "code": 200,
+                "message": "获取状态成功",
+                "data": {
+                    "configured": true/false,
+                    "api_key_set": true/false,
+                    "base_url": "API基础URL",
+                    "model_id": "模型ID",
+                    "connection_test": "success/failed",
+                    "error_message": "错误信息（如果有）"
+                }
+            }
+    """
+    status_data = {
+        "configured": False,
+        "api_key_set": False,
+        "base_url": settings.OPENAI_BASE_URL,
+        "model_id": settings.MODEL_ID,
+        "connection_test": "not_tested",
+        "error_message": None
+    }
+    
+    if settings.OPENAI_API_KEY:
+        status_data["api_key_set"] = True
+        status_data["configured"] = True
+        
+        try:
+            logger.info("🔍 测试AI连接...")
+            from langchain_core.messages import HumanMessage
+            
+            test_response = await llm.ainvoke([
+                HumanMessage(content="你好，请回复'连接成功'")
+            ])
+            
+            if test_response and test_response.content:
+                status_data["connection_test"] = "success"
+                status_data["test_response"] = test_response.content[:100]
+                logger.info(f"✅ AI连接测试成功: {test_response.content[:50]}")
+            else:
+                status_data["connection_test"] = "failed"
+                status_data["error_message"] = "AI响应为空"
+                logger.warning("⚠️ AI连接测试失败: 响应为空")
+                
+        except Exception as e:
+            status_data["connection_test"] = "failed"
+            status_data["error_message"] = str(e)
+            logger.error(f"❌ AI连接测试失败: {str(e)}")
+    else:
+        status_data["error_message"] = "OPENAI_API_KEY未配置"
+        logger.warning("⚠️ OPENAI_API_KEY未配置")
+    
+    return {
+        "code": 200,
+        "message": "获取AI连接状态成功",
+        "data": status_data
+    }
+
+
+@router.post("/test-analysis", response_model=Dict[str, Any])
+async def test_ai_analysis():
+    """
+    测试AI分析功能
+    
+    执行一个简单的AI分析测试，验证分析流程是否正常工作。
+    
+    Returns:
+        Dict: 包含测试结果的响应
+    """
+    try:
+        from backend.ai_agents.analyzers.ai_analyzer import AIAnalyzer
+        
+        logger.info("🧪 开始测试AI分析功能...")
+        
+        analyzer = AIAnalyzer()
+        
+        test_vulnerabilities = [
+            {
+                "id": "test-001",
+                "title": "测试SQL注入漏洞",
+                "vuln_type": "SQLInjection",
+                "severity": "high",
+                "url": "https://test.example.com/api/users?id=1",
+                "description": "测试描述"
+            }
+        ]
+        
+        test_tool_results = {
+            "port_scan": {"open_ports": [80, 443]},
+            "vuln_scan": {"vulnerabilities_found": 1}
+        }
+        
+        test_target_context = {
+            "target": "https://test.example.com",
+            "domain": "test.example.com"
+        }
+        
+        result = await analyzer.analyze_scan_results(
+            test_vulnerabilities,
+            test_tool_results,
+            test_target_context
+        )
+        
+        logger.info("✅ AI分析测试完成")
+        
+        return {
+            "code": 200,
+            "message": "AI分析测试成功",
+            "data": {
+                "test_passed": True,
+                "result": result.to_dict() if hasattr(result, 'to_dict') else str(result),
+                "analyzer_status": {
+                    "llm_client_available": analyzer.llm_client is not None,
+                    "model_id": getattr(analyzer, 'model_id', None)
+                }
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ AI分析测试失败: {str(e)}")
+        return {
+            "code": 500,
+            "message": f"AI分析测试失败: {str(e)}",
+            "data": {
+                "test_passed": False,
+                "error": str(e)
+            }
+        }
+
+
+async def process_chat_message(chat_instance_id: str, message: str) -> Dict[str, Any]:
+    """
+    处理 WebSocket 聊天消息
+    
+    Args:
+        chat_instance_id: 对话实例 ID
+        message: 用户消息
+        
+    Returns:
+        Dict: 包含响应内容的字典
+    """
+    try:
+        from uuid import UUID
+        
+        if not chat_instance_id:
+            chat_instance = await AIChatInstance.create(
+                id=uuid4(),
+                chat_name="新对话",
+                chat_type="general",
+                status="active"
+            )
+            chat_instance_id = str(chat_instance.id)
+        else:
+            try:
+                chat_instance = await AIChatInstance.get(id=UUID(chat_instance_id))
+            except:
+                chat_instance = await AIChatInstance.create(
+                    id=uuid4(),
+                    chat_name="新对话",
+                    chat_type="general",
+                    status="active"
+                )
+                chat_instance_id = str(chat_instance.id)
+        
+        user_message = await AIChatMessage.create(
+            chat_instance_id=chat_instance_id,
+            role="user",
+            content=message,
+            message_type="text"
+        )
+        
+        history = await get_or_create_history(UUID(chat_instance_id))
+        history.add_message(HumanMessage(content=message))
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", SYSTEM_PROMPT),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{input}")
+        ])
+        
+        history_messages = await history.aget_messages()
+        
+        chain = prompt | llm
+        response = await chain.ainvoke({
+            "history": history_messages,
+            "input": message
+        })
+        
+        response_content = response.content
+        history.add_message(AIMessage(content=response_content))
+        
+        ai_message = await AIChatMessage.create(
+            chat_instance_id=chat_instance_id,
+            role="assistant",
+            content=response_content,
+            message_type="text"
+        )
+        
+        chat_instance.updated_at = datetime.now()
+        await chat_instance.save()
+        
+        return {
+            "content": response_content,
+            "chat_instance_id": chat_instance_id,
+            "message_id": ai_message.id
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ 处理聊天消息失败: {str(e)}")
+        return {
+            "content": f"抱歉，处理消息时发生错误: {str(e)}",
+            "error": str(e)
+        }
+
+
+async def get_chat_history(chat_instance_id: str) -> List[Dict[str, Any]]:
+    """
+    获取聊天历史
+    
+    Args:
+        chat_instance_id: 对话实例 ID
+        
+    Returns:
+        List: 消息历史列表
+    """
+    try:
+        from uuid import UUID
+        
+        if not chat_instance_id:
+            return []
+            
+        messages = await AIChatMessage.filter(
+            chat_instance_id=UUID(chat_instance_id)
+        ).order_by("created_at")
+        
+        return [
+            {
+                "id": msg.id,
+                "role": msg.role,
+                "content": msg.content,
+                "created_at": msg.created_at.isoformat() if msg.created_at else None
+            }
+            for msg in messages
+        ]
+        
+    except Exception as e:
+        logger.error(f"❌ 获取聊天历史失败: {str(e)}")
+        return []

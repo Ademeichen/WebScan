@@ -12,6 +12,34 @@
             <h3 class="card-title">搜索漏洞</h3>
           </div>
           <div class="search-content">
+            <div class="seebug-status" :class="{ 'status-available': seebugStatus.available, 'status-unavailable': !seebugStatus.available }">
+              <span class="status-icon">{{ seebugStatus.available ? '✅' : '⚠️' }}</span>
+              <span class="status-text">Seebug API: {{ seebugStatus.available ? '已连接' : '未连接' }}</span>
+              <button @click="checkSeebugStatus" class="btn-refresh" title="刷新状态">🔄</button>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">搜索模式</label>
+              <div class="search-mode-toggle">
+                <button 
+                  @click="searchMode = 'local'" 
+                  :class="['mode-btn', { active: searchMode === 'local' }]"
+                >
+                  📚 本地数据库
+                </button>
+                <button 
+                  @click="searchMode = 'seebug'" 
+                  :class="['mode-btn', { active: searchMode === 'seebug' }]"
+                  :disabled="!seebugStatus.available"
+                >
+                  🌐 Seebug 实时搜索
+                </button>
+              </div>
+              <div class="mode-hint">
+                {{ searchMode === 'local' ? '从本地数据库搜索已同步的漏洞' : '从 Seebug 实时搜索并自动保存到本地数据库' }}
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">关键词</label>
               <input
@@ -19,11 +47,11 @@
                 type="text"
                 class="form-input"
                 placeholder="输入漏洞名称、CVE编号或描述"
-                @keyup.enter="searchVulnerabilities"
+                @keyup.enter="handleSearch"
               />
             </div>
 
-            <div class="form-group">
+            <div v-if="searchMode === 'local'" class="form-group">
               <label class="form-label">数据源</label>
               <select v-model="selectedSource" class="form-select">
                 <option value="">全部</option>
@@ -32,7 +60,7 @@
               </select>
             </div>
 
-            <div class="form-group">
+            <div v-if="searchMode === 'local'" class="form-group">
               <label class="checkbox-label">
                 <input v-model="hasPOC" type="checkbox" class="checkbox-input" />
                 <span class="checkbox-custom"></span>
@@ -41,11 +69,11 @@
             </div>
 
             <div class="search-actions">
-              <button @click="searchVulnerabilities" class="btn btn-primary" :disabled="searching">
-                <span v-if="searching">⏳ 搜索中...</span>
-                <span v-else>🔍 搜索</span>
+              <button @click="handleSearch" class="btn btn-primary" :disabled="searching || searchingFromSeebug">
+                <span v-if="searching || searchingFromSeebug">⏳ 搜索中...</span>
+                <span v-else>{{ searchMode === 'local' ? '🔍 搜索本地' : '🔍 从 Seebug 搜索' }}</span>
               </button>
-              <button @click="syncVulnerabilities" class="btn btn-secondary" :disabled="syncing">
+              <button v-if="searchMode === 'local'" @click="syncVulnerabilities" class="btn btn-secondary" :disabled="syncing">
                 <span v-if="syncing">⏳ 同步中...</span>
                 <span v-else>🔄 同步数据</span>
               </button>
@@ -232,7 +260,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { kbApi } from '@/utils/api'
+import { kbApi, seebugAgentApi } from '@/utils/api'
 import Alert from '@/components/common/Alert.vue'
 import { formatDate } from '@/utils/date'
 
@@ -247,6 +275,7 @@ export default {
     const searching = ref(false)
     const syncing = ref(false)
     const downloadingPOC = ref(false)
+    const searchingFromSeebug = ref(false)
     const errorMessage = ref('')
     const successMessage = ref('')
     const vulnerabilities = ref([])
@@ -257,8 +286,38 @@ export default {
     const currentPage = ref(1)
     const pageSize = ref(10)
     const total = ref(0)
+    const seebugStatus = ref({ available: false, message: '' })
+    const searchMode = ref('local')
 
     const totalPages = computed(() => Math.ceil(total.value / pageSize.value))
+
+    const checkSeebugStatus = async () => {
+      try {
+        const response = await seebugAgentApi.getStatus()
+        if (response.data && response.data.available !== undefined) {
+          seebugStatus.value = {
+            available: response.data.available || false,
+            message: response.data.message || ''
+          }
+        } else if (response.available !== undefined) {
+          seebugStatus.value = {
+            available: response.available || false,
+            message: response.message || ''
+          }
+        } else {
+          seebugStatus.value = {
+            available: false,
+            message: '无法连接到 Seebug 服务'
+          }
+        }
+      } catch (error) {
+        console.error('检查 Seebug 状态失败:', error)
+        seebugStatus.value = {
+          available: false,
+          message: '无法连接到 Seebug 服务'
+        }
+      }
+    }
 
     const searchVulnerabilities = async () => {
       searching.value = true
@@ -292,6 +351,70 @@ export default {
         total.value = 0
       } finally {
         searching.value = false
+      }
+    }
+
+    const searchFromSeebug = async () => {
+      if (!searchKeyword.value.trim()) {
+        errorMessage.value = '请输入搜索关键词'
+        return
+      }
+
+      searchingFromSeebug.value = true
+      errorMessage.value = ''
+      
+      try {
+        const response = await kbApi.searchFromSeebug({
+          keyword: searchKeyword.value,
+          page: currentPage.value,
+          page_size: pageSize.value
+        })
+
+        if (response && response.code === 200 && response.data) {
+          const pocs = response.data.pocs || []
+          vulnerabilities.value = pocs.map(poc => ({
+            id: poc.id,
+            cve_id: poc.cve_id,
+            name: poc.name,
+            description: poc.description,
+            severity: poc.severity,
+            cvss_score: poc.cvss_score,
+            affected_product: poc.affected_product,
+            solution: poc.solution,
+            source: 'seebug',
+            has_poc: true,
+            ssvid: poc.ssvid,
+            is_new: poc.is_new
+          }))
+          total.value = response.data.total || 0
+          
+          const savedCount = response.data.saved_count || 0
+          const updatedCount = response.data.updated_count || 0
+          if (savedCount > 0 || updatedCount > 0) {
+            successMessage.value = `搜索成功！新增 ${savedCount} 条，更新 ${updatedCount} 条数据已保存到本地数据库`
+          } else {
+            successMessage.value = `搜索成功！找到 ${total.value} 条数据（已存在于本地数据库）`
+          }
+        } else {
+          errorMessage.value = response?.message || '从 Seebug 搜索失败'
+          vulnerabilities.value = []
+          total.value = 0
+        }
+      } catch (error) {
+        console.error('从 Seebug 搜索失败:', error)
+        errorMessage.value = '从 Seebug 搜索失败，请检查 API Key 配置'
+        vulnerabilities.value = []
+        total.value = 0
+      } finally {
+        searchingFromSeebug.value = false
+      }
+    }
+
+    const handleSearch = () => {
+      if (searchMode.value === 'seebug') {
+        searchFromSeebug()
+      } else {
+        searchVulnerabilities()
       }
     }
 
@@ -373,6 +496,7 @@ export default {
     }
 
     onMounted(() => {
+      checkSeebugStatus()
       searchVulnerabilities()
     })
 
@@ -381,6 +505,7 @@ export default {
       searching,
       syncing,
       downloadingPOC,
+      searchingFromSeebug,
       errorMessage,
       successMessage,
       vulnerabilities,
@@ -392,7 +517,12 @@ export default {
       pageSize,
       total,
       totalPages,
+      seebugStatus,
+      searchMode,
+      checkSeebugStatus,
       searchVulnerabilities,
+      searchFromSeebug,
+      handleSearch,
       syncVulnerabilities,
       downloadPOC,
       handleViewDetail,
@@ -442,6 +572,90 @@ export default {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+}
+
+.seebug-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius);
+  font-size: 13px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.seebug-status.status-available {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.seebug-status.status-unavailable {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+}
+
+.status-icon {
+  font-size: 14px;
+}
+
+.status-text {
+  flex: 1;
+}
+
+.btn-refresh {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 12px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.btn-refresh:hover {
+  opacity: 1;
+}
+
+.search-mode-toggle {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+}
+
+.mode-btn {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.mode-btn.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #1a1a1a;
+}
+
+.mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: var(--spacing-xs);
 }
 
 .form-group {

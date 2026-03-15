@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AgentScanForm: typeof import('./components/business/AgentScanForm.vue')['default']
+    AIAnalysisDisplay: typeof import('./components/business/AIAnalysisDisplay.vue')['default']
     AIChatFloater: typeof import('./components/common/AIChatFloater.vue')['default']
     Alert: typeof import('./components/common/Alert.vue')['default']
     AppIcon: typeof import('./components/common/AppIcon.vue')['default']
@@ -43,6 +44,7 @@ declare module 'vue' {
     ElMain: typeof import('element-plus/es')['ElMain']
     ElMenu: typeof import('element-plus/es')['ElMenu']
     ElMenuItem: typeof import('element-plus/es')['ElMenuItem']
+    ElNotification: typeof import('element-plus/es')['ElNotification']
     ElOption: typeof import('element-plus/es')['ElOption']
     ElPageHeader: typeof import('element-plus/es')['ElPageHeader']
     ElPopover: typeof import('element-plus/es')['ElPopover']
@@ -56,6 +58,8 @@ declare module 'vue' {
     ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
     ElTag: typeof import('element-plus/es')['ElTag']
     ElText: typeof import('element-plus/es')['ElText']
+    ElTooltip: typeof import('element-plus/es')['ElTooltip']
+    ExecutionDetailsDisplay: typeof import('./components/business/ExecutionDetailsDisplay.vue')['default']
     Loading: typeof import('./components/common/Loading.vue')['default']
     POCResultDisplay: typeof import('./components/business/POCResultDisplay.vue')['default']
     POCScanForm: typeof import('./components/business/POCScanForm.vue')['default']

@@ -175,6 +175,12 @@ def with_timeout_and_error_handling(
         ) -> PluginResult:
             actual_timeout = timeout if timeout is not None else default_timeout
             start_time = time.time()
+            target = kwargs.get('target', args[0] if args else 'unknown')
+            
+            logger.info(
+                f"[{plugin_name}] 🚀 开始执行 | 目标: {target} | "
+                f"超时设置: {actual_timeout}s | 函数: {func.__name__}"
+            )
             
             try:
                 result = await asyncio.wait_for(
@@ -185,8 +191,16 @@ def with_timeout_and_error_handling(
                 
                 if isinstance(result, PluginResult):
                     result.execution_time = execution_time
+                    logger.info(
+                        f"[{plugin_name}] ✅ 执行成功 | 目标: {target} | "
+                        f"执行时间: {execution_time:.3f}s | 状态: {result.status}"
+                    )
                     return result
                 
+                logger.info(
+                    f"[{plugin_name}] ✅ 执行成功 | 目标: {target} | "
+                    f"执行时间: {execution_time:.3f}s | 返回类型: {type(result).__name__}"
+                )
                 return PluginResult.success(
                     data=result,
                     execution_time=execution_time,
@@ -195,7 +209,10 @@ def with_timeout_and_error_handling(
                 
             except asyncio.TimeoutError:
                 execution_time = time.time() - start_time
-                logger.error(f"[{plugin_name}] 执行超时,耗时{execution_time:.2f}秒")
+                logger.error(
+                    f"[{plugin_name}] ⏱️ 执行超时 | 目标: {target} | "
+                    f"超时设置: {actual_timeout}s | 实际执行时间: {execution_time:.3f}s"
+                )
                 return PluginResult.timeout(
                     timeout_seconds=actual_timeout,
                     execution_time=execution_time,
@@ -205,7 +222,11 @@ def with_timeout_and_error_handling(
             except Exception as e:
                 execution_time = time.time() - start_time
                 error_msg = f"{type(e).__name__}: {str(e)}"
-                logger.error(f"[{plugin_name}] 执行异常: {error_msg}", exc_info=True)
+                logger.error(
+                    f"[{plugin_name}] ❌ 执行异常 | 目标: {target} | "
+                    f"执行时间: {execution_time:.3f}s | 错误: {error_msg}",
+                    exc_info=True
+                )
                 return PluginResult.failed(
                     error=error_msg,
                     execution_time=execution_time,
@@ -221,6 +242,12 @@ def with_timeout_and_error_handling(
         ) -> PluginResult:
             actual_timeout = timeout if timeout is not None else default_timeout
             start_time = time.time()
+            target = kwargs.get('target', args[0] if args else 'unknown')
+            
+            logger.info(
+                f"[{plugin_name}] 🚀 开始执行 | 目标: {target} | "
+                f"超时设置: {actual_timeout}s | 函数: {func.__name__}"
+            )
             
             try:
                 if asyncio.iscoroutinefunction(func):
@@ -238,8 +265,16 @@ def with_timeout_and_error_handling(
                 
                 if isinstance(result, PluginResult):
                     result.execution_time = execution_time
+                    logger.info(
+                        f"[{plugin_name}] ✅ 执行成功 | 目标: {target} | "
+                        f"执行时间: {execution_time:.3f}s | 状态: {result.status}"
+                    )
                     return result
                 
+                logger.info(
+                    f"[{plugin_name}] ✅ 执行成功 | 目标: {target} | "
+                    f"执行时间: {execution_time:.3f}s | 返回类型: {type(result).__name__}"
+                )
                 return PluginResult.success(
                     data=result,
                     execution_time=execution_time,
@@ -248,7 +283,10 @@ def with_timeout_and_error_handling(
                 
             except asyncio.TimeoutError:
                 execution_time = time.time() - start_time
-                logger.error(f"[{plugin_name}] 执行超时,耗时{execution_time:.2f}秒")
+                logger.error(
+                    f"[{plugin_name}] ⏱️ 执行超时 | 目标: {target} | "
+                    f"超时设置: {actual_timeout}s | 实际执行时间: {execution_time:.3f}s"
+                )
                 return PluginResult.timeout(
                     timeout_seconds=actual_timeout,
                     execution_time=execution_time,
@@ -258,7 +296,11 @@ def with_timeout_and_error_handling(
             except Exception as e:
                 execution_time = time.time() - start_time
                 error_msg = f"{type(e).__name__}: {str(e)}"
-                logger.error(f"[{plugin_name}] 执行异常: {error_msg}", exc_info=True)
+                logger.error(
+                    f"[{plugin_name}] ❌ 执行异常 | 目标: {target} | "
+                    f"执行时间: {execution_time:.3f}s | 错误: {error_msg}",
+                    exc_info=True
+                )
                 return PluginResult.failed(
                     error=error_msg,
                     execution_time=execution_time,
@@ -305,7 +347,7 @@ class PluginAdapter:
     DEFAULT_TIMEOUT = 60.0
     
     @staticmethod
-    @with_timeout_and_error_handling(default_timeout=30.0, plugin_name="baseinfo")
+    @with_timeout_and_error_handling(default_timeout=60.0, plugin_name="baseinfo")
     async def adapt_baseinfo(
         target: str,
         timeout: Optional[float] = None,
@@ -391,7 +433,7 @@ class PluginAdapter:
         )
     
     @staticmethod
-    @with_timeout_and_error_handling(default_timeout=30.0, plugin_name="waf_detect")
+    @with_timeout_and_error_handling(default_timeout=60.0, plugin_name="waf_detect")
     async def adapt_waf_detect(
         target: str,
         timeout: Optional[float] = None,
@@ -705,6 +747,133 @@ class PluginAdapter:
         )
 
     @staticmethod
+    @with_timeout_and_error_handling(default_timeout=30.0, plugin_name="loginfo")
+    async def adapt_loginfo(
+        target: str,
+        log_name: str = "default",
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """
+        适配日志处理插件
+        
+        Args:
+            target: 目标地址(用于日志标识)
+            log_name: 日志名称
+            timeout: 超时时间(秒)
+            progress_callback: 进度回调函数
+        
+        Returns:
+            PluginResult: 统一格式的执行结果
+        """
+        reporter = create_progress_callback("loginfo", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "初始化日志处理器")
+        
+        from backend.plugins.loginfo.loginfo import LogHandler
+        
+        if reporter:
+            reporter.report("配置中", 50, "正在配置日志处理器")
+        
+        return PluginResult.success(
+            data={"log_name": log_name, "target": target, "status": "ready"},
+            plugin="loginfo",
+            target=target
+        )
+
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=30.0, plugin_name="randheader")
+    async def adapt_randheader(
+        target: str,
+        conn_type: str = "keep-alive",
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """
+        适配随机请求头生成插件
+        
+        Args:
+            target: 目标地址
+            conn_type: 连接类型(keep-alive/close)
+            timeout: 超时时间(秒)
+            progress_callback: 进度回调函数
+        
+        Returns:
+            PluginResult: 统一格式的执行结果
+        """
+        reporter = create_progress_callback("randheader", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始生成随机请求头")
+        
+        from backend.plugins.randheader.randheader import get_random_headers
+        
+        if reporter:
+            reporter.report("生成中", 50, "正在生成随机请求头")
+        
+        result = await asyncio.to_thread(get_random_headers, conn_type)
+        
+        if reporter:
+            reporter.report("完成", 100, "随机请求头生成完成")
+        
+        return PluginResult.success(
+            data={"headers": result, "target": target},
+            plugin="randheader",
+            target=target
+        )
+
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=180.0, plugin_name="dirscan")
+    async def adapt_dirscan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None,
+        dict_path: Optional[str] = None,
+        extensions: Optional[List[str]] = None
+    ) -> PluginResult:
+        """
+        适配目录扫描插件
+        
+        Args:
+            target: 目标地址
+            timeout: 超时时间(秒)
+            progress_callback: 进度回调函数
+            dict_path: 自定义字典路径
+            extensions: 文件扩展名列表
+        
+        Returns:
+            PluginResult: 统一格式的执行结果
+        """
+        reporter = create_progress_callback("dirscan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始目录扫描")
+        
+        from backend.plugins.dirscan.dirscan import get_dirscan
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在进行目录爆破")
+        
+        config = {}
+        if extensions:
+            config["extensions"] = extensions
+        
+        result = await asyncio.to_thread(get_dirscan, target, config, dict_path)
+        
+        found_count = result.get("found_count", 0) if isinstance(result, dict) else 0
+        
+        if reporter:
+            reporter.report("完成", 100, f"目录扫描完成,发现{found_count}个有效路径")
+        
+        return PluginResult.success(
+            data={"dirscan_results": result, "target": target},
+            plugin="dirscan",
+            target=target,
+            found_count=found_count
+        )
+
+    @staticmethod
     @with_timeout_and_error_handling(default_timeout=300.0, plugin_name="awvs")
     async def adapt_awvs(
         target: str,
@@ -786,6 +955,217 @@ class PluginAdapter:
         )
     
     @staticmethod
+    @with_timeout_and_error_handling(default_timeout=300.0, plugin_name="crawler")
+    async def adapt_crawler(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None,
+        max_depth: int = 3,
+        max_pages: int = 100
+    ) -> PluginResult:
+        """
+        适配Web爬虫插件
+        
+        Args:
+            target: 目标地址
+            timeout: 超时时间(秒)
+            progress_callback: 进度回调函数
+            max_depth: 最大爬取深度
+            max_pages: 最大页面数
+        
+        Returns:
+            PluginResult: 统一格式的执行结果
+        """
+        reporter = create_progress_callback("crawler", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始Web爬虫")
+        
+        from backend.plugins.crawler.crawler import WebCrawler
+        
+        config = {
+            "max_depth": max_depth,
+            "max_pages": max_pages
+        }
+        
+        crawler = WebCrawler(target, config)
+        
+        if reporter:
+            reporter.report("爬取中", 30, "正在爬取网站")
+        
+        result = await asyncio.to_thread(crawler.crawl)
+        
+        if reporter:
+            reporter.report("完成", 100, f"爬取完成，发现 {result.get('total_pages', 0)} 个页面")
+        
+        return PluginResult.success(
+            data={"crawler_results": result, "target": target},
+            plugin="crawler",
+            target=target,
+            pages_found=result.get("total_pages", 0)
+        )
+    
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=120.0, plugin_name="fileupload_scan")
+    async def adapt_fileupload_scan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """文件上传漏洞扫描适配器"""
+        reporter = create_progress_callback("fileupload_scan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始文件上传漏洞扫描")
+        
+        from backend.vulnerability_scan_plugins.fileupload.scanner import FileUploadScanner
+        
+        scanner = FileUploadScanner(target)
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在检测文件上传漏洞")
+        
+        result = await asyncio.to_thread(scanner.scan)
+        
+        if reporter:
+            reporter.report("完成", 100, f"扫描完成，发现 {len(result.vulnerabilities)} 个漏洞")
+        
+        return PluginResult.success(
+            data={"fileupload_results": result.to_dict(), "target": target},
+            plugin="fileupload_scan",
+            target=target,
+            found_count=len(result.vulnerabilities)
+        )
+    
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=180.0, plugin_name="cmdi_scan")
+    async def adapt_cmdi_scan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """命令注入扫描适配器"""
+        reporter = create_progress_callback("cmdi_scan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始命令注入扫描")
+        
+        from backend.vulnerability_scan_plugins.cmdi.scanner import CmdiScanner
+        
+        scanner = CmdiScanner(target)
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在检测命令注入漏洞")
+        
+        result = await asyncio.to_thread(scanner.scan)
+        
+        if reporter:
+            reporter.report("完成", 100, f"扫描完成，发现 {len(result.vulnerabilities)} 个漏洞")
+        
+        return PluginResult.success(
+            data={"cmdi_results": result.to_dict(), "target": target},
+            plugin="cmdi_scan",
+            target=target,
+            found_count=len(result.vulnerabilities)
+        )
+    
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=300.0, plugin_name="weakpass_scan")
+    async def adapt_weakpass_scan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """弱口令扫描适配器"""
+        reporter = create_progress_callback("weakpass_scan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始弱口令扫描")
+        
+        from backend.vulnerability_scan_plugins.weakpass.scanner import WeakPassScanner
+        
+        scanner = WeakPassScanner(target)
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在检测弱口令")
+        
+        result = await asyncio.to_thread(scanner.scan)
+        
+        if reporter:
+            reporter.report("完成", 100, f"扫描完成，发现 {len(result.vulnerabilities)} 个弱口令")
+        
+        return PluginResult.success(
+            data={"weakpass_results": result.to_dict(), "target": target},
+            plugin="weakpass_scan",
+            target=target,
+            found_count=len(result.vulnerabilities)
+        )
+    
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=180.0, plugin_name="lfi_scan")
+    async def adapt_lfi_scan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """文件包含扫描适配器"""
+        reporter = create_progress_callback("lfi_scan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始文件包含扫描")
+        
+        from backend.vulnerability_scan_plugins.lfi.scanner import LfiScanner
+        
+        scanner = LfiScanner(target)
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在检测文件包含漏洞")
+        
+        result = await asyncio.to_thread(scanner.scan)
+        
+        if reporter:
+            reporter.report("完成", 100, f"扫描完成，发现 {len(result.vulnerabilities)} 个漏洞")
+        
+        return PluginResult.success(
+            data={"lfi_results": result.to_dict(), "target": target},
+            plugin="lfi_scan",
+            target=target,
+            found_count=len(result.vulnerabilities)
+        )
+    
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=180.0, plugin_name="ssrf_scan")
+    async def adapt_ssrf_scan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """SSRF扫描适配器"""
+        reporter = create_progress_callback("ssrf_scan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始SSRF扫描")
+        
+        from backend.vulnerability_scan_plugins.ssrf.scanner import SsrfScanner
+        
+        scanner = SsrfScanner(target)
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在检测SSRF漏洞")
+        
+        result = await asyncio.to_thread(scanner.scan)
+        
+        if reporter:
+            reporter.report("完成", 100, f"扫描完成，发现 {len(result.vulnerabilities)} 个漏洞")
+        
+        return PluginResult.success(
+            data={"ssrf_results": result.to_dict(), "target": target},
+            plugin="ssrf_scan",
+            target=target,
+            found_count=len(result.vulnerabilities)
+        )
+    
+    @staticmethod
     def get_adapters() -> Dict[str, Callable]:
         """
         获取所有插件适配器
@@ -804,8 +1184,149 @@ class PluginAdapter:
             "webside_scan": PluginAdapter.adapt_webside_scan,
             "webweight_scan": PluginAdapter.adapt_webweight_scan,
             "iplocating": PluginAdapter.adapt_iplocating,
+            "loginfo": PluginAdapter.adapt_loginfo,
+            "randheader": PluginAdapter.adapt_randheader,
+            "dirscan": PluginAdapter.adapt_dirscan,
             "awvs": PluginAdapter.adapt_awvs,
+            "crawler": PluginAdapter.adapt_crawler,
+            "sqli_scan": PluginAdapter.adapt_sqli_scan,
+            "xss_scan": PluginAdapter.adapt_xss_scan,
+            "csrf_scan": PluginAdapter.adapt_csrf_scan,
+            "vuln_infoleak_scan": PluginAdapter.adapt_vuln_infoleak_scan,
+            "fileupload_scan": PluginAdapter.adapt_fileupload_scan,
+            "cmdi_scan": PluginAdapter.adapt_cmdi_scan,
+            "weakpass_scan": PluginAdapter.adapt_weakpass_scan,
+            "lfi_scan": PluginAdapter.adapt_lfi_scan,
+            "ssrf_scan": PluginAdapter.adapt_ssrf_scan,
         }
+    
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=120.0, plugin_name="sqli_scan")
+    async def adapt_sqli_scan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """SQL注入扫描适配器"""
+        reporter = create_progress_callback("sqli_scan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始SQL注入扫描")
+        
+        from backend.vulnerability_scan_plugins.sqli.scanner import SQLiScanner
+        
+        scanner = SQLiScanner(target)
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在检测SQL注入漏洞")
+        
+        result = await asyncio.to_thread(scanner.scan)
+        
+        if reporter:
+            reporter.report("完成", 100, f"扫描完成，发现 {len(result.vulnerabilities)} 个漏洞")
+        
+        return PluginResult.success(
+            data={"sqli_results": result.to_dict(), "target": target},
+            plugin="sqli_scan",
+            target=target,
+            found_count=len(result.vulnerabilities)
+        )
+    
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=120.0, plugin_name="xss_scan")
+    async def adapt_xss_scan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """XSS扫描适配器"""
+        reporter = create_progress_callback("xss_scan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始XSS扫描")
+        
+        from backend.vulnerability_scan_plugins.xss.scanner import XSSScanner
+        
+        scanner = XSSScanner(target)
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在检测XSS漏洞")
+        
+        result = await asyncio.to_thread(scanner.scan)
+        
+        if reporter:
+            reporter.report("完成", 100, f"扫描完成，发现 {len(result.vulnerabilities)} 个漏洞")
+        
+        return PluginResult.success(
+            data={"xss_results": result.to_dict(), "target": target},
+            plugin="xss_scan",
+            target=target,
+            found_count=len(result.vulnerabilities)
+        )
+    
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=60.0, plugin_name="csrf_scan")
+    async def adapt_csrf_scan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """CSRF扫描适配器"""
+        reporter = create_progress_callback("csrf_scan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始CSRF扫描")
+        
+        from backend.vulnerability_scan_plugins.csrf.scanner import CSRFScanner
+        
+        scanner = CSRFScanner(target)
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在检测CSRF漏洞")
+        
+        result = await asyncio.to_thread(scanner.scan)
+        
+        if reporter:
+            reporter.report("完成", 100, f"扫描完成，发现 {len(result.vulnerabilities)} 个漏洞")
+        
+        return PluginResult.success(
+            data={"csrf_results": result.to_dict(), "target": target},
+            plugin="csrf_scan",
+            target=target,
+            found_count=len(result.vulnerabilities)
+        )
+    
+    @staticmethod
+    @with_timeout_and_error_handling(default_timeout=60.0, plugin_name="vuln_infoleak_scan")
+    async def adapt_vuln_infoleak_scan(
+        target: str,
+        timeout: Optional[float] = None,
+        progress_callback: Optional[Callable] = None
+    ) -> PluginResult:
+        """敏感信息泄露扫描适配器"""
+        reporter = create_progress_callback("vuln_infoleak_scan", target, progress_callback)
+        
+        if reporter:
+            reporter.report("初始化", 10, "开始敏感信息泄露扫描")
+        
+        from backend.vulnerability_scan_plugins.infoleak.scanner import InfoLeakScanner
+        
+        scanner = InfoLeakScanner(target)
+        
+        if reporter:
+            reporter.report("扫描中", 30, "正在检测敏感信息泄露")
+        
+        result = await asyncio.to_thread(scanner.scan)
+        
+        if reporter:
+            reporter.report("完成", 100, f"扫描完成，发现 {len(result.vulnerabilities)} 个漏洞")
+        
+        return PluginResult.success(
+            data={"infoleak_results": result.to_dict(), "target": target},
+            plugin="vuln_infoleak_scan",
+            target=target,
+            found_count=len(result.vulnerabilities)
+        )
 
 
 class POCAdapter:
@@ -934,20 +1455,29 @@ class POCAdapter:
         """
         from backend.poc import (
             cve_2020_2551_poc, cve_2018_2628_poc, cve_2018_2894_poc,
-            struts2_009_poc, struts2_032_poc, cve_2017_12615_poc,
-            cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc
+            cve_2020_14756_poc, cve_2023_21839_poc,
+            struts2_009_poc, struts2_032_poc,
+            cve_2017_12615_poc, cve_2022_22965_poc, cve_2022_47986_poc,
+            cve_2017_12149_poc, cve_2020_10199_poc, cve_2018_7600_poc,
+            poc_99617_ai_poc, poc_manual_thinkphp_ai_poc
         )
         
         return {
             "poc_weblogic_2020_2551": cve_2020_2551_poc,
             "poc_weblogic_2018_2628": cve_2018_2628_poc,
             "poc_weblogic_2018_2894": cve_2018_2894_poc,
+            "poc_weblogic_2020_14756": cve_2020_14756_poc,
+            "poc_weblogic_2023_21839": cve_2023_21839_poc,
             "poc_struts2_009": struts2_009_poc,
             "poc_struts2_032": struts2_032_poc,
             "poc_tomcat_2017_12615": cve_2017_12615_poc,
+            "poc_tomcat_2022_22965": cve_2022_22965_poc,
+            "poc_tomcat_2022_47986": cve_2022_47986_poc,
             "poc_jboss_2017_12149": cve_2017_12149_poc,
             "poc_nexus_2020_10199": cve_2020_10199_poc,
             "poc_drupal_2018_7600": cve_2018_7600_poc,
+            "poc_thinkphp_99617": poc_99617_ai_poc,
+            "poc_thinkphp_manual": poc_manual_thinkphp_ai_poc,
         }
     
     @staticmethod
@@ -970,6 +1500,7 @@ class POCAdapter:
             "jboss": ["poc_jboss_2017_12149"],
             "nexus": ["poc_nexus_2020_10199"],
             "drupal": ["poc_drupal_2018_7600"],
+            "thinkphp": ["poc_thinkphp_99617", "poc_thinkphp_manual"],
         }
         
         for key, pocs in poc_mapping.items():

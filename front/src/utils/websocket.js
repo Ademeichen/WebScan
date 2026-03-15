@@ -61,6 +61,10 @@ class WebSocketManager {
     }
 
     this.ws.onmessage = (event) => {
+      if (event.data === 'pong') {
+        return
+      }
+      
       try {
         const data = JSON.parse(event.data)
         this.handleMessage(data)
@@ -123,6 +127,15 @@ class WebSocketManager {
       case 'notification':
         this.emit('notification', payload)
         break
+      case 'subgraph_progress':
+        this.emit('subgraph:progress', payload)
+        break
+      case 'tool_execution':
+        this.emit('tool:execution', payload)
+        break
+      case 'new_notification':
+        this.emit('new_notification', payload)
+        break
       case 'heartbeat':
         this.handleHeartbeat()
         break
@@ -175,7 +188,9 @@ class WebSocketManager {
   startHeartbeat() {
     if (this.options.heartbeatInterval > 0) {
       this.heartbeatTimer = setInterval(() => {
-        this.send('heartbeat')
+        if (this.isConnected.value && this.ws) {
+          this.ws.send('ping')
+        }
       }, this.options.heartbeatInterval)
     }
   }

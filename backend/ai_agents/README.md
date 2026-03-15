@@ -6,8 +6,8 @@
 
 ### 核心特性
 
-✅ **完整的LangGraph工作流**：环境感知 → 任务规划 → 智能决策 → 工具执行 → 结果验证 → POC验证 → 漏洞分析 → 报告生成
-✅ **13个功能节点**：覆盖扫描全流程的完整节点体系
+✅ **完整的LangGraph工作流**：环境感知 → 任务规划 → 智能决策 → 工具执行 → 结果验证 → 漏洞分析 → 报告生成
+✅ **10个功能节点**：覆盖扫描全流程的完整节点体系
 ✅ **统一的工具管理**：集成所有现有扫描插件和POC
 ✅ **智能决策优化**：基于优先级、资源分配、策略自适应
 ✅ **代码生成与执行**：支持动态生成和执行扫描脚本
@@ -69,7 +69,7 @@ ai_agents/
 
 ## 图工作流节点详解
 
-AIAgent工作流包含**13个功能节点**，形成完整的扫描链路：
+AIAgent工作流包含**10个功能节点**，形成完整的扫描链路：
 
 ### 节点列表
 
@@ -83,11 +83,8 @@ AIAgent工作流包含**13个功能节点**，形成完整的扫描链路：
 | 6 | code_execution | CodeExecutionNode | 代码执行，在沙箱环境中执行生成的代码 |
 | 7 | capability_enhancement | CapabilityEnhancementNode | 功能增强，动态安装依赖和扩展能力 |
 | 8 | result_verification | ResultVerificationNode | 结果验证，验证扫描结果并补充任务 |
-| 9 | poc_verification | POCVerificationNode | POC验证，执行POC验证任务 |
-| 10 | seebug_agent | SeebugAgentNode | Seebug集成，搜索和生成POC |
-| 11 | awvs_scanning | AWVSScanningNode | AWVS扫描，调用AWVS执行漏洞扫描 |
-| 12 | vulnerability_analysis | VulnerabilityAnalysisNode | 漏洞分析，去重、排序和严重度评估 |
-| 13 | report_generation | ReportGenerationNode | 报告生成，生成JSON/HTML格式报告 |
+| 9 | vulnerability_analysis | VulnerabilityAnalysisNode | 漏洞分析，去重、排序和严重度评估 |
+| 10 | report_generation | ReportGenerationNode | 报告生成，生成JSON/HTML格式报告 |
 
 ### 工作流程图
 
@@ -112,39 +109,39 @@ AIAgent工作流包含**13个功能节点**，形成完整的扫描链路：
     │   decision       │ ──── 智能决策下一步操作
     └────────┬─────────┘
              │
-    ┌────────┼────────┬────────────┬────────────┐
-    │        │        │            │            │
-    ▼        ▼        ▼            ▼            ▼
-┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐
-│ tool_  ││ code_  ││capabil-││ poc_   ││ seebug │
-│execu-  ││genera-││ ity_   ││verifi- ││ _agent │
-│ tion   ││ tion   ││enhance ││ cation ││        │
-└───┬────┘└───┬────┘└───┬────┘└───┬────┘└───┬────┘
-    │         │         │         │         │
-    │         ▼         │         │         │
-    │    ┌────────┐     │         │         │
-    │    │ code_  │◄────┘         │         │
-    │    │execu-  │               │         │
-    │    │ tion   │               │         │
-    │    └───┬────┘               │         │
-    │        │                    │         │
-    └────────┼────────────────────┼─────────┘
-             │                    │
-             ▼                    │
-    ┌──────────────────┐          │
-    │ result_          │          │
-    │ verification     │◄─────────┘
+    ┌────────┼────────┬────────────┐
+    │        │        │            │
+    ▼        ▼        ▼            ▼
+┌────────┐┌────────┐┌────────┐┌────────┐
+│ tool_  ││ code_  ││capabil-││        │
+│execu-  ││genera-││ ity_   ││        │
+│ tion   ││ tion   ││enhance ││        │
+└───┬────┘└───┬────┘└───┬────┘└────────┘
+    │         │         │
+    │         ▼         │
+    │    ┌────────┐     │
+    │    │ code_  │◄────┘
+    │    │execu-  │
+    │    │ tion   │
+    │    └───┬────┘
+    │        │
+    └────────┼────────
+             │
+             ▼
+    ┌──────────────────┐
+    │ result_          │
+    │ verification     │ ──── 验证结果并补充任务
     └────────┬─────────┘
              │
     ┌────────┼────────┐
     │        │        │
     ▼        ▼        ▼
 ┌────────┐┌────────┐┌────────┐
-│ awvs_  ││ poc_   ││分析    │
-│scanning││verifi- ││(循环)  │
-│        ││ cation ││        │
-└───┬────┘└───┬────┘└────────┘
-    │         │
+│工具执行││        ││分析    │
+│(循环)  ││        ││        │
+│        ││        ││        │
+└───┬────┘└────────┘└────────┘
+    │
     └────┬────┘
          │
          ▼
@@ -254,38 +251,7 @@ AIAgent工作流包含**13个功能节点**，形成完整的扫描链路：
 - 基于端口补充POC任务
 - 迭代验证支持
 
-#### 9. POCVerificationNode（POC验证节点）
-
-**功能**：执行POC验证任务
-
-**特性**：
-- 支持Pocsuite3框架
-- 批量验证
-- 结果分析
-- 置信度评估
-
-#### 10. SeebugAgentNode（Seebug Agent节点）
-
-**功能**：集成Seebug平台，搜索和生成POC
-
-**特性**：
-- 搜索Seebug漏洞库
-- 获取POC详情
-- 自动生成POC代码
-- 下载POC文件
-
-#### 11. AWVSScanningNode（AWVS扫描节点）
-
-**功能**：调用AWVS执行漏洞扫描
-
-**特性**：
-- 自动创建扫描目标
-- 启动扫描任务
-- 监控扫描进度
-- 获取扫描结果
-- 自动提取CVE编号
-
-#### 12. VulnerabilityAnalysisNode（漏洞分析节点）
+#### 9. VulnerabilityAnalysisNode（漏洞分析节点）
 
 **功能**：分析发现的漏洞
 
@@ -295,7 +261,7 @@ AIAgent工作流包含**13个功能节点**，形成完整的扫描链路：
 - AI智能POC匹配
 - 自动生成验证任务
 
-#### 13. ReportGenerationNode（报告生成节点）
+#### 10. ReportGenerationNode（报告生成节点）
 
 **功能**：生成最终扫描报告
 
@@ -350,9 +316,6 @@ state.target_context["intelligent_decisions"]  # 决策列表
 # "fixed_tool"      → 使用现有工具扫描
 # "custom_code"     → 生成自定义代码扫描
 # "enhance_first"   → 先增强功能再扫描
-# "poc_verification"→ 进入POC验证
-# "seebug_agent"    → 使用Seebug Agent
-# "awvs_scan"       → 使用AWVS扫描
 ```
 
 #### 4. ToolExecutionNode
@@ -398,19 +361,7 @@ state.tool_results["code_execution"]  # 执行结果
   # - error: 错误信息
 ```
 
-#### 7. POCVerificationNode
-
-```python
-# 输入参数
-state.poc_verification_tasks  # POC验证任务列表
-state.target                  # 目标URL/IP
-
-# 输出参数
-state.tool_results["poc_verification"]  # 验证结果
-state.vulnerabilities                    # 更新的漏洞列表
-```
-
-#### 8. VulnerabilityAnalysisNode
+#### 7. VulnerabilityAnalysisNode
 
 ```python
 # 输入参数
@@ -423,37 +374,21 @@ state.poc_verification_tasks    # 生成的POC验证任务
 
 ### 条件路由逻辑
 
-#### intelligent_decision → 6种分支
-
-```python
-def _decide_scan_type(state):
-    # 优先级顺序:
-    # 1. 存在POC验证任务 → poc_verification
-    # 2. 需要功能增强 → enhance_first
-    # 3. 需要自定义扫描 → custom_code
-    # 4. 需要Seebug Agent → seebug_agent
-    # 5. 有普通工具任务 → fixed_tool
-    # 6. 需要AWVS扫描 → awvs_scan
-    # 7. 默认 → fixed_tool
-```
-
-#### result_verification → 4种分支
+#### result_verification → 3种分支
 
 ```python
 def _should_continue_or_verify(state):
     # 1. 达到最大工具执行轮次(50次) → analyze
-    # 2. 存在POC验证任务 → poc_verify
-    # 3. 有待执行的非AWVS任务 → continue
-    # 4. 需要AWVS扫描且未完成 → awvs_scan
-    # 5. 所有任务完成 → analyze
+    # 2. 有待执行的任务 → continue
+    # 3. 所有任务完成 → analyze
 ```
 
-#### vulnerability_analysis → 2种分支
+#### vulnerability_analysis → 1种分支
 
 ```python
 def _post_analysis_routing(state):
-    # 1. 有待验证POC且未达到最大轮次(3次) → poc_verification
-    # 2. 否则 → report_generation
+    # 直接进入报告生成
+    # → report_generation
 ```
 
 ---
@@ -501,17 +436,12 @@ def _post_analysis_routing(state):
    └─→ should_continue: True/False
    └─→ planned_tasks: 更新的任务列表
 
-7. POC验证阶段
-   AgentState → POCVerificationNode
-   └─→ tool_results["poc_verification"]: 验证结果
-   └─→ vulnerabilities: 发现的漏洞
-
-8. 漏洞分析阶段
+7. 漏洞分析阶段
    AgentState → VulnerabilityAnalysisNode
    └─→ vulnerabilities: 去重排序后的漏洞
    └─→ poc_verification_tasks: 生成的验证任务
 
-9. 报告生成阶段
+8. 报告生成阶段
    AgentState → ReportGenerationNode
    └─→ tool_results["final_report"]: 标准报告
    └─→ tool_results["execution_trace_report"]: 执行轨迹
@@ -688,20 +618,20 @@ SEEBUG_API_KEY=your_seebug_key
 python main.py
 ```
 
-服务将在 `http://127.0.0.1:3000` 启动。
+服务将在 `http://127.0.0.1:8888` 启动。
 
 ### 4. 使用Agent扫描
 
 ```bash
 # 启动Agent扫描
-curl -X POST "http://127.0.0.1:3000/api/ai_agents/scan" \
+curl -X POST "http://127.0.0.1:8888/api/ai_agents/scan" \
   -H "Content-Type: application/json" \
   -d '{
     "target": "https://www.baidu.com"
   }'
 
 # 查询任务状态
-curl "http://127.0.0.1:3000/api/ai_agents/tasks/{task_id}"
+curl "http://127.0.0.1:8888/api/ai_agents/tasks/{task_id}"
 ```
 
 ---
@@ -775,8 +705,7 @@ ai_agents/
 ├── tools/tests/              # 工具适配器测试
 │   └── test_adapters.py      # 适配器功能测试
 ├── poc_system/tests/         # POC系统测试
-├── analyzers/tests/          # 分析器测试
-└── subgraphs/tests/          # 子图测试
+└── analyzers/tests/          # 分析器测试
 ```
 
 ### 运行测试
@@ -889,11 +818,6 @@ def _build_graph(self) -> StateGraph:
    - 检查依赖是否已安装
    - 查看沙箱执行日志
 
-5. **POC验证失败**
-   - 检查POC脚本格式是否正确
-   - 检查目标是否可访问
-   - 检查Pocsuite3是否正确安装
-
 ### 日志查看
 
 所有Agent执行日志记录在`logs/app.log`：
@@ -938,7 +862,7 @@ grep "task_id: 123e4567" logs/app.log
 
 AI Agents智能体编排系统提供了完整的Web安全漏洞扫描解决方案，具备：
 
-✅ **完整的LangGraph工作流**：13个功能节点覆盖扫描全流程
+✅ **完整的LangGraph工作流**：12个功能节点覆盖扫描全流程
 ✅ **代码生成与执行**：支持动态生成和执行扫描脚本
 ✅ **统一的工具管理**：集成所有现有插件和POC
 ✅ **智能决策优化**：基于优先级、资源分配、策略自适应

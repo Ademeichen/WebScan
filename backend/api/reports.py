@@ -50,8 +50,13 @@ class ReportCreate(BaseModel):
     task_id: int
     name: str = Field(..., description="报告名称")
     format: str = Field(default="json", description="报告格式")
-    content: Optional[Dict[str, Any]] = None
+    content: Optional[Any] = None
     include_awvs: bool = Field(default=False, description="是否包含AWVS数据")
+    include_summary: bool = Field(default=True, description="是否包含扫描摘要")
+    include_vulnerabilities: bool = Field(default=True, description="是否包含漏洞详情")
+    include_recommendations: bool = Field(default=True, description="是否包含修复建议")
+    include_charts: bool = Field(default=True, description="是否包含统计图表")
+    include_appendix: bool = Field(default=True, description="是否包含技术附录")
 
 
 class ReportUpdate(BaseModel):
@@ -252,6 +257,8 @@ def generate_html_report(report_data: Dict[str, Any]) -> str:
                 {vuln_items if vuln_items else '<p>未发现漏洞</p>'}
             </div>
             
+            {generate_ai_analysis_html(report_data.get('ai_analysis'))}
+            
             <div class="footer">
                 <p>报告由 AI_WebSecurity 自动生成 | 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
             </div>
@@ -262,6 +269,295 @@ def generate_html_report(report_data: Dict[str, Any]) -> str:
     return html
 
 
+def generate_ai_analysis_html(ai_analysis: Optional[Dict[str, Any]]) -> str:
+    """
+    生成AI分析结果的HTML部分
+    
+    Args:
+        ai_analysis: AI分析结果
+        
+    Returns:
+        AI分析HTML内容
+    """
+    if not ai_analysis:
+        return ""
+    
+    html = '<div class="section ai-analysis"><h2>🤖 AI智能分析</h2>'
+    
+    if ai_analysis.get('summary'):
+        html += f'''
+        <div class="ai-summary">
+            <h3>风险总结</h3>
+            <p>{ai_analysis['summary']}</p>
+        </div>
+        '''
+    
+    if ai_analysis.get('risk_level'):
+        risk_colors = {
+            'critical': '#c0392b',
+            'high': '#e74c3c',
+            'medium': '#f39c12',
+            'low': '#3498db',
+            'info': '#95a5a6'
+        }
+        color = risk_colors.get(ai_analysis['risk_level'], '#95a5a6')
+        html += f'''
+        <div class="ai-risk-level">
+            <h3>AI评估风险等级</h3>
+            <span style="color: {color}; font-weight: bold; font-size: 18px;">{ai_analysis['risk_level'].upper()}</span>
+        </div>
+        '''
+    
+    priorities = ai_analysis.get('priorities', [])
+    if priorities:
+        html += '<div class="ai-priorities"><h3>修复优先级建议</h3><ul>'
+        for p in priorities[:5]:
+            html += f'''
+            <li>
+                <strong>{p.get('vulnerability', 'Unknown')}</strong>
+                (优先级: {p.get('priority', 'N/A')})
+                <br><small>{p.get('reason', '')}</small>
+            </li>
+            '''
+        html += '</ul></div>'
+    
+    recommendations = ai_analysis.get('recommendations', [])
+    if recommendations:
+        html += '<div class="ai-recommendations"><h3>安全建议</h3><ul>'
+        for rec in recommendations[:5]:
+            html += f'<li>{rec}</li>'
+        html += '</ul></div>'
+    
+    html += '</div>'
+    return html
+
+
+def generate_pdf_report(report_data: Dict[str, Any]) -> bytes:
+    """
+    生成PDF格式报告
+    
+    使用reportlab生成真正的PDF文件
+    
+    Args:
+        report_data: 报告数据
+        
+    Returns:
+        PDF报告二进制内容
+    """
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+        from reportlab.lib import colors
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from io import BytesIO
+        import os
+        import sys
+        
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, 
+                                rightMargin=2*cm, leftMargin=2*cm,
+                                topMargin=2*cm, bottomMargin=2*cm)
+        
+        styles = getSampleStyleSheet()
+        
+        chinese_font_name = 'ChineseFont'
+        font_registered = False
+        
+        try:
+            if sys.platform.startswith('win'):
+                font_paths = [
+                    r'C:\Windows\Fonts\msyh.ttc',
+                    r'C:\Windows\Fonts\simhei.ttf',
+                    r'C:\Windows\Fonts\simsun.ttc',
+                ]
+            elif sys.platform.startswith('darwin'):
+                font_paths = [
+                    '/System/Library/Fonts/PingFang.ttc',
+                    '/System/Library/Fonts/STHeiti Light.ttc',
+                ]
+            else:
+                font_paths = [
+                    '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+                    '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+                ]
+            
+            for font_path in font_paths:
+                if os.path.exists(font_path):
+                    try:
+                        pdfmetrics.registerFont(TTFont(chinese_font_name, font_path))
+                        font_registered = True
+                        break
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+        
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            alignment=1,
+            fontName=chinese_font_name if font_registered else 'Helvetica'
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=16,
+            spaceBefore=20,
+            spaceAfter=10,
+            fontName=chinese_font_name if font_registered else 'Helvetica'
+        )
+        
+        normal_style = ParagraphStyle(
+            'CustomNormal',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceBefore=6,
+            spaceAfter=6,
+            fontName=chinese_font_name if font_registered else 'Helvetica'
+        )
+        
+        story = []
+        
+        story.append(Paragraph("🔒 安全扫描报告", title_style))
+        story.append(Spacer(1, 20))
+        
+        story.append(Paragraph("基本信息", heading_style))
+        info_data = [
+            ["报告名称", report_data.get('report_name', 'N/A')],
+            ["任务名称", report_data.get('task_name', 'N/A')],
+            ["目标", report_data.get('target', 'N/A')],
+            ["扫描时间", report_data.get('scan_time', 'N/A')]
+        ]
+        info_table = Table(info_data, colWidths=[4*cm, 10*cm])
+        info_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(info_table)
+        story.append(Spacer(1, 20))
+        
+        risk = calculate_risk_score(report_data.get('vulnerabilities', []))
+        story.append(Paragraph("风险评估", heading_style))
+        risk_data = [
+            ["风险评分", f"{risk['score']}"],
+            ["风险等级", risk['label']],
+            ["风险颜色", risk['color']]
+        ]
+        risk_table = Table(risk_data, colWidths=[4*cm, 10*cm])
+        risk_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(risk_table)
+        story.append(Spacer(1, 20))
+        
+        summary = report_data.get('summary', {})
+        story.append(Paragraph("漏洞统计", heading_style))
+        summary_data = [
+            ["严重程度", "数量"],
+            ["严重", str(summary.get('critical', 0))],
+            ["高危", str(summary.get('high', 0))],
+            ["中危", str(summary.get('medium', 0))],
+            ["低危", str(summary.get('low', 0))],
+            ["信息", str(summary.get('info', 0))]
+        ]
+        summary_table = Table(summary_data, colWidths=[6*cm, 6*cm])
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('BACKGROUND', (0, 1), (-1, 1), colors.Color(0.75, 0.22, 0.17)),
+            ('BACKGROUND', (0, 2), (-1, 2), colors.Color(0.91, 0.30, 0.24)),
+            ('BACKGROUND', (0, 3), (-1, 3), colors.Color(0.95, 0.61, 0.07)),
+            ('BACKGROUND', (0, 4), (-1, 4), colors.Color(0.20, 0.60, 0.69)),
+            ('BACKGROUND', (0, 5), (-1, 5), colors.Color(0.58, 0.65, 0.69))
+        ]))
+        story.append(summary_table)
+        story.append(Spacer(1, 20))
+        
+        vulnerabilities = report_data.get('vulnerabilities', [])
+        if vulnerabilities:
+            story.append(Paragraph("漏洞详情", heading_style))
+            
+            for i, vuln in enumerate(vulnerabilities[:20], 1):
+                severity = vuln.get('severity', 'info').lower()
+                config = SEVERITY_CONFIG.get(severity, SEVERITY_CONFIG['info'])
+                
+                story.append(Paragraph(f"{i}. {vuln.get('title', 'Unknown')}", normal_style))
+                
+                vuln_info = [
+                    ["等级", config['label']],
+                    ["URL", str(vuln.get('url', 'N/A'))[:100]],
+                    ["描述", str(vuln.get('description', 'N/A'))[:200]]
+                ]
+                vuln_table = Table(vuln_info, colWidths=[2*cm, 12*cm])
+                vuln_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('FONTNAME', (0, 0), (-1, -1), chinese_font_name if font_registered else 'Helvetica'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 9),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey)
+                ]))
+                story.append(vuln_table)
+                story.append(Spacer(1, 10))
+        
+        ai_analysis = report_data.get('ai_analysis')
+        if ai_analysis:
+            story.append(PageBreak())
+            story.append(Paragraph("AI智能分析", heading_style))
+            
+            if ai_analysis.get('summary'):
+                story.append(Paragraph("风险总结", normal_style))
+                story.append(Paragraph(ai_analysis['summary'], normal_style))
+            
+            if ai_analysis.get('risk_level'):
+                story.append(Paragraph(f"AI评估风险等级: {ai_analysis['risk_level'].upper()}", normal_style))
+            
+            priorities = ai_analysis.get('priorities', [])
+            if priorities:
+                story.append(Paragraph("修复优先级建议", normal_style))
+                for p in priorities[:5]:
+                    story.append(Paragraph(f"- {p.get('vulnerability', 'Unknown')}: 优先级 {p.get('priority', 'N/A')}", normal_style))
+        
+        story.append(Spacer(1, 30))
+        story.append(Paragraph(f"报告生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", normal_style))
+        story.append(Paragraph("报告由 AI_WebSecurity 自动生成", normal_style))
+        
+        doc.build(story)
+        
+        pdf_content = buffer.getvalue()
+        buffer.close()
+        
+        return pdf_content
+        
+    except ImportError as e:
+        logger.error(f"PDF生成依赖未安装: {e}")
+        raise Exception(f"PDF生成功能需要安装reportlab库: pip install reportlab")
+    except Exception as e:
+        logger.error(f"PDF生成失败: {e}")
+        raise Exception(f"PDF生成失败: {str(e)}")
+
+# TODO: 待完善格式和字符串
 def generate_markdown_report(report_data: Dict[str, Any]) -> str:
     """
     生成Markdown格式报告
@@ -274,6 +570,7 @@ def generate_markdown_report(report_data: Dict[str, Any]) -> str:
     """
     risk = calculate_risk_score(report_data.get('vulnerabilities', []))
     summary = report_data.get('summary', {})
+    ai_analysis = report_data.get('ai_analysis')
     
     md = f"""# {report_data.get('report_name', '安全扫描报告')}
 
@@ -315,6 +612,33 @@ def generate_markdown_report(report_data: Dict[str, Any]) -> str:
 ---
 
 """
+    
+    if ai_analysis:
+        md += """## 🤖 AI智能分析
+
+"""
+        if ai_analysis.get('summary'):
+            md += f"""### 风险总结
+
+{ai_analysis['summary']}
+
+"""
+        
+        if ai_analysis.get('risk_level'):
+            md += f"""### AI评估风险等级
+
+**{ai_analysis['risk_level'].upper()}**
+
+"""
+        
+        priorities = ai_analysis.get('priorities', [])
+        if priorities:
+            md += """### 修复优先级建议
+
+"""
+            for p in priorities[:5]:
+                md += f"- **{p.get('vulnerability', 'Unknown')}** (优先级: {p.get('priority', 'N/A')})\n  - {p.get('reason', '')}\n"
+            md += "\n"
     
     md += f"\n---\n*报告由 AI_WebSecurity 自动生成 | 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*"
     
@@ -435,13 +759,121 @@ async def create_report(report: ReportCreate):
 
         logger.info(f"[创建报告] 漏洞统计 | critical: {stats['critical']}, high: {stats['high']}, medium: {stats['medium']}, low: {stats['low']}, info: {stats['info']}")
 
+        risk = calculate_risk_score(vuln_list)
+        logger.info(f"[创建报告] 风险评分 | 分数: {risk['score']} | 等级: {risk['level']}")
+        
+        ai_analysis_result = None
+        try:
+            from backend.ai_agents.analyzers.ai_analyzer import AIAnalyzer
+            analyzer = AIAnalyzer()
+            ai_analysis = await analyzer.analyze_scan_results(
+                vuln_list,
+                {},
+                {"target": task.target, "task_name": task.task_name}
+            )
+            ai_analysis_result = ai_analysis.to_dict() if hasattr(ai_analysis, 'to_dict') else None
+            logger.info(f"[创建报告] AI分析完成 | 结果: {ai_analysis_result.get('summary', 'N/A') if ai_analysis_result else 'N/A'}")
+        except Exception as ai_error:
+            logger.warning(f"[创建报告] AI分析跳过 | 原因: {str(ai_error)}")
+
         report_content = {
             "task_name": task.task_name,
             "target": task.target,
             "scan_time": str(task.created_at),
-            "summary": stats,
-            "vulnerabilities": vuln_list
+            "task_type": task.task_type,
+            "task_status": task.status
         }
+        
+        if report.include_summary:
+            report_content["summary"] = stats
+            report_content["risk_assessment"] = risk
+            report_content["scan_summary"] = {
+                "total_vulnerabilities": sum(stats.values()),
+                "scan_duration": str(task.updated_at - task.created_at) if task.updated_at else "N/A",
+                "scan_status": task.status,
+                "target_info": {
+                    "url": task.target,
+                    "type": task.task_type
+                }
+            }
+        
+        if report.include_vulnerabilities:
+            report_content["vulnerabilities"] = vuln_list
+            report_content["vulnerabilities_by_severity"] = {
+                "critical": [v for v in vuln_list if v["severity"] == "critical"],
+                "high": [v for v in vuln_list if v["severity"] == "high"],
+                "medium": [v for v in vuln_list if v["severity"] == "medium"],
+                "low": [v for v in vuln_list if v["severity"] == "low"],
+                "info": [v for v in vuln_list if v["severity"] == "info"]
+            }
+        
+        if report.include_recommendations:
+            report_content["recommendations"] = []
+            for vuln in vuln_list:
+                if vuln.get("remediation"):
+                    report_content["recommendations"].append({
+                        "vulnerability_id": vuln["id"],
+                        "vulnerability_title": vuln["title"],
+                        "severity": vuln["severity"],
+                        "recommendation": vuln["remediation"],
+                        "priority": 1 if vuln["severity"] in ["critical", "high"] else 2 if vuln["severity"] == "medium" else 3
+                    })
+            
+            if ai_analysis_result and ai_analysis_result.get("priorities"):
+                report_content["ai_recommendations"] = ai_analysis_result["priorities"]
+        
+        if report.include_charts:
+            report_content["charts_data"] = {
+                "severity_distribution": {
+                    "labels": ["严重", "高危", "中危", "低危", "信息"],
+                    "values": [stats["critical"], stats["high"], stats["medium"], stats["low"], stats["info"]],
+                    "colors": ["#c0392b", "#e74c3c", "#f39c12", "#3498db", "#95a5a6"]
+                },
+                "vulnerability_trend": [],
+                "top_vulnerability_types": []
+            }
+            
+            vuln_types = {}
+            for v in vuln_list:
+                vtype = v.get("title", "Unknown").split("-")[0].strip() if "-" in v.get("title", "") else v.get("title", "Unknown")
+                vuln_types[vtype] = vuln_types.get(vtype, 0) + 1
+            
+            sorted_types = sorted(vuln_types.items(), key=lambda x: x[1], reverse=True)[:5]
+            report_content["charts_data"]["top_vulnerability_types"] = [
+                {"type": t[0], "count": t[1]} for t in sorted_types
+            ]
+        
+        if report.include_appendix:
+            report_content["appendix"] = {
+                "technical_details": {
+                    "scan_configuration": {
+                        "task_type": task.task_type,
+                        "target": task.target
+                    },
+                    "scan_timestamp": {
+                        "start_time": str(task.created_at),
+                        "end_time": str(task.updated_at) if task.updated_at else "N/A"
+                    },
+                    "tool_info": {
+                        "name": "AI_WebSecurity",
+                        "version": "1.0.0"
+                    }
+                },
+                "glossary": [
+                    {"term": "SQL注入", "description": "通过恶意SQL语句攻击数据库"},
+                    {"term": "XSS", "description": "跨站脚本攻击，注入恶意脚本到网页"},
+                    {"term": "CSRF", "description": "跨站请求伪造，冒充用户发送请求"},
+                    {"term": "SSRF", "description": "服务器端请求伪造，让服务器发起恶意请求"}
+                ],
+                "references": [
+                    {"title": "OWASP Top 10", "url": "https://owasp.org/www-project-top-ten/"},
+                    {"title": "CVE数据库", "url": "https://cve.mitre.org/"},
+                    {"title": "NVD漏洞数据库", "url": "https://nvd.nist.gov/"}
+                ]
+            }
+        
+        if ai_analysis_result:
+            report_content["ai_analysis"] = ai_analysis_result
 
         if report.include_awvs and task.task_type == 'awvs_scan':
             awvs_vulns = await Vulnerability.filter(task_id=task.id, source='awvs').all()
@@ -451,18 +883,20 @@ async def create_report(report: ReportCreate):
                 "severity": v.severity,
                 "url": v.url,
                 "description": v.description,
-                "source_id": v.source_id
+                "source_id": v.source_id,
+                "source": "awvs"
             } for v in awvs_vulns]
             logger.info(f"[创建报告] AWVS漏洞集成 | 数量: {len(awvs_vulns)}")
 
         logger.info(f"[创建报告] 创建报告记录 | 任务ID: {report.task_id}")
+
         new_report = await Report.create(
             task_id=report.task_id,
             report_name=report.name,
             report_type=report.format,
             content=json.dumps(report_content)
         )
-        
+
         logger.info(f"[创建报告] 报告创建成功 | 报告ID: {new_report.id} | 报告名称: {report.name}")
         
         risk = calculate_risk_score(vuln_list)
@@ -688,15 +1122,12 @@ async def export_report(
                 headers={"Content-Disposition": f"attachment; filename={filename}; filename*=utf-8''{filename}"}
             )
         elif format == "pdf":
-            html_content = generate_html_report(content)
-            filename = quote(f"{report.report_name}.html")
+            pdf_content = generate_pdf_report(content)
+            filename = quote(f"{report.report_name}.pdf")
             return Response(
-                content=html_content,
-                media_type="text/html",
-                headers={
-                    "Content-Disposition": f"attachment; filename={filename}; filename*=utf-8''{filename}",
-                    "X-Export-Format": "pdf-ready"
-                }
+                content=pdf_content,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename={filename}; filename*=utf-8''{filename}"}
             )
         else:
             raise HTTPException(status_code=400, detail=f"不支持的导出格式: {format}。支持的格式: html, json, markdown, pdf")
@@ -945,19 +1376,59 @@ async def regenerate_report(report_id: int, background_tasks: BackgroundTasks):
             if s in stats:
                 stats[s] += 1
         
+        ai_analysis_result = None
+        try:
+            from backend.ai_agents.analyzers.ai_analyzer import AIAnalyzer
+            analyzer = AIAnalyzer()
+            ai_analysis = await analyzer.analyze_scan_results(
+                vuln_list,
+                {},
+                {"target": task.target, "task_name": task.task_name}
+            )
+            ai_analysis_result = ai_analysis.to_dict() if hasattr(ai_analysis, 'to_dict') else None
+            logger.info(f"[重新生成] AI分析完成 | 结果: {ai_analysis_result.get('summary', 'N/A') if ai_analysis_result else 'N/A'}")
+        except Exception as ai_error:
+            logger.warning(f"[重新生成] AI分析跳过 | 原因: {str(ai_error)}")
+        
+        existing_content = {}
+        try:
+            existing_content = json.loads(report.content) if report.content else {}
+        except:
+            existing_content = {}
+        
+        execution_history = existing_content.get('execution_history', [])
+        target_context = existing_content.get('target_context', {})
+        tool_results = existing_content.get('tool_results', {})
+        
         report_content = {
             "task_name": task.task_name,
             "target": task.target,
             "scan_time": str(task.created_at),
+            "task_type": task.task_type,
+            "task_status": task.status,
             "summary": stats,
             "vulnerabilities": vuln_list,
+            "vulnerabilities_by_severity": {
+                "critical": [v for v in vuln_list if v["severity"] == "critical"],
+                "high": [v for v in vuln_list if v["severity"] == "high"],
+                "medium": [v for v in vuln_list if v["severity"] == "medium"],
+                "low": [v for v in vuln_list if v["severity"] == "low"],
+                "info": [v for v in vuln_list if v["severity"] == "info"]
+            },
+            "execution_history": execution_history,
+            "target_context": target_context,
+            "tool_results": tool_results,
             "regenerated_at": datetime.now().isoformat()
         }
         
+        risk = calculate_risk_score(vuln_list)
+        report_content["risk_assessment"] = risk
+        
+        if ai_analysis_result:
+            report_content["ai_analysis"] = ai_analysis_result
+        
         report.content = json.dumps(report_content)
         await report.save()
-        
-        risk = calculate_risk_score(vuln_list)
         
         logger.info(f"[重新生成] 完成 | 报告ID: {report_id}")
         
@@ -967,7 +1438,9 @@ async def regenerate_report(report_id: int, background_tasks: BackgroundTasks):
             data={
                 "report_id": report.id,
                 "total_vulnerabilities": len(vuln_list),
-                "risk_assessment": risk
+                "risk_assessment": risk,
+                "has_ai_analysis": ai_analysis_result is not None,
+                "has_execution_history": len(execution_history) > 0
             }
         )
     except HTTPException:

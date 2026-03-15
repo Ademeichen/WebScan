@@ -80,14 +80,13 @@ class Task(Model):
                 
                 # 状态未改变，直接跳过检查
                 if old_status != new_status:
-                    # 定义合法流转
                     valid_transitions = {
                         "pending": ["running", "cancelled", "failed", "processing"],
-                        "running": ["completed", "failed", "cancelled", "processing"],
-                        "processing": ["running", "completed", "failed", "cancelled"], # 兼容 AWVS 状态
-                        "completed": ["pending", "running", "processing"], # 允许重试
-                        "failed": ["pending", "running", "processing"],    # 允许重试
-                        "cancelled": ["pending", "running", "processing"]  # 允许重试
+                        "running": ["completed", "failed", "cancelled", "processing", "pending"],
+                        "processing": ["running", "completed", "failed", "cancelled", "pending"],
+                        "completed": ["pending", "running", "processing"],
+                        "failed": ["pending", "running", "processing"],
+                        "cancelled": ["pending", "running", "processing"]
                     }
                     
                     allowed = valid_transitions.get(old_status, [])
@@ -170,7 +169,7 @@ class Vulnerability(Model):
     task: fields.ForeignKeyRelation[Task] = fields.ForeignKeyField(
         "models.Task", related_name="vulnerabilities", description="关联任务"
     )
-    vuln_type = fields.CharField(max_length=100, description="漏洞类型：XSS, SQLInjection, CSRF, RCE, SSRF, etc.")
+    vuln_type = fields.CharField(max_length=255, description="漏洞类型：XSS, SQLInjection, CSRF, RCE, SSRF, etc.")
     severity = fields.CharField(max_length=20, description="严重程度：critical, high, medium, low, info")
     title = fields.CharField(max_length=255, description="漏洞标题")
     description = fields.TextField(null=True, description="漏洞详细描述")
@@ -632,6 +631,9 @@ class VulnerabilityKB(Model):
     poc_code = fields.TextField(null=True, description="POC代码")
     remediation = fields.TextField(null=True, description="修复建议")
     references = fields.TextField(null=True, description="参考链接（JSON格式）")
+    source = fields.CharField(max_length=50, null=True, description="数据源（seebug, exploit-db等）")
+    has_poc = fields.BooleanField(default=False, description="是否有POC")
+    ssvid = fields.IntField(null=True, description="Seebug SSVID")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
     
@@ -662,14 +664,24 @@ class POCVerificationTask(Model):
         target: 验证目标
         status: 状态
         poc_name: POC名称
+        priority: 优先级
+        progress: 进度
+        config: 配置信息
         created_at: 创建时间
+        updated_at: 更新时间
     """
     id = fields.UUIDField(pk=True, description="任务ID")
     poc_id = fields.CharField(max_length=100, description="POC ID")
     target = fields.CharField(max_length=500, description="验证目标")
     status = fields.CharField(max_length=50, default="pending", description="状态")
     poc_name = fields.CharField(max_length=255, description="POC名称")
+    priority = fields.IntField(default=5, description="优先级(1-10)")
+    progress = fields.FloatField(default=0.0, description="进度(0-100)")
+    config = fields.JSONField(null=True, default=dict, description="配置信息")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+    updated_at = fields.DatetimeField(auto_now=True, description="更新时间")
+    
+    results: fields.ReverseRelation["POCVerificationResult"]
     
     class Meta:
         table = "poc_verification_tasks"
@@ -681,19 +693,35 @@ class POCVerificationResult(Model):
     
     Attributes:
         id: 结果唯一标识（UUID）
-        task: 关联的验证任务
+        verification_task: 关联的验证任务
+        poc_name: POC名称
+        poc_id: POC ID
+        target: 验证目标
         vulnerable: 是否存在漏洞
+        message: 结果消息
         output: 验证输出
         error: 错误信息
+        execution_time: 执行时间
+        confidence: 置信度
+        severity: 严重程度
+        cvss_score: CVSS评分
         created_at: 创建时间
     """
     id = fields.UUIDField(pk=True, description="结果ID")
-    task: fields.ForeignKeyRelation[POCVerificationTask] = fields.ForeignKeyField(
-        "models.POCVerificationTask", related_name="results", description="关联验证任务"
+    verification_task: fields.ForeignKeyRelation[POCVerificationTask] = fields.ForeignKeyField(
+        "models.POCVerificationTask", related_name="verification_results", description="关联验证任务"
     )
+    poc_name = fields.CharField(max_length=255, description="POC名称")
+    poc_id = fields.CharField(max_length=100, description="POC ID")
+    target = fields.CharField(max_length=500, description="验证目标")
     vulnerable = fields.BooleanField(default=False, description="是否存在漏洞")
+    message = fields.TextField(null=True, description="结果消息")
     output = fields.TextField(null=True, description="验证输出")
     error = fields.TextField(null=True, description="错误信息")
+    execution_time = fields.FloatField(default=0.0, description="执行时间(秒)")
+    confidence = fields.FloatField(default=0.0, description="置信度(0-1)")
+    severity = fields.CharField(max_length=20, null=True, description="严重程度")
+    cvss_score = fields.FloatField(default=0.0, description="CVSS评分")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
     
     class Meta:

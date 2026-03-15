@@ -160,3 +160,4 @@ playwright/.cache/
 
 # Trae IDE
 .trae/
+backup/

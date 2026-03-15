@@ -18,6 +18,7 @@
         <select v-model="filters.status" @change="loadTasks">
           <option value="">全部</option>
           <option value="pending">等待中</option>
+          <option value="queued">队列中</option>
           <option value="running">运行中</option>
           <option value="completed">已完成</option>
           <option value="failed">失败</option>
@@ -29,6 +30,7 @@
         <label>类型:</label>
         <select v-model="filters.task_type" @change="loadTasks">
           <option value="">全部</option>
+          <option value="ai_agent_scan">AI Agent扫描</option>
           <option value="awvs_scan">AWVS扫描</option>
           <option value="poc_scan">POC扫描</option>
           <option value="scan_dir">目录扫描</option>
@@ -47,6 +49,7 @@
           placeholder="搜索任务名称或目标"
           @keyup.enter="loadTasks"
         />
+        <button class="btn-search" @click="loadTasks">搜索</button>
       </div>
 
       <div class="filter-group">
@@ -54,24 +57,28 @@
         <el-date-picker
           v-model="filters.start_date"
           type="date"
-          placeholder="YYYY-MM-DD"
+          placeholder="开始日期"
           format="YYYY-MM-DD"
           value-format="YYYY-MM-DD"
           @change="loadTasks"
           @update:model-value="(val) => filters.start_date = val || ''"
-          style="width: 160px"
+          style="width: 150px"
         />
-        <span>至</span>
+        <span class="date-separator">至</span>
         <el-date-picker
           v-model="filters.end_date"
           type="date"
-          placeholder="YYYY-MM-DD"
+          placeholder="结束日期"
           format="YYYY-MM-DD"
           value-format="YYYY-MM-DD"
           @change="loadTasks"
           @update:model-value="(val) => filters.end_date = val || ''"
-          style="width: 160px"
+          style="width: 150px"
         />
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn-reset" @click="resetFilters">重置筛选</button>
       </div>
     </div>
 
@@ -179,12 +186,15 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { tasksApi } from '@/utils/api'
 import TaskCard from '@/components/business/TaskCard.vue'
 import Loading from '@/components/common/Loading.vue'
 import Alert from '@/components/common/Alert.vue'
+import { useWebSocket } from '@/utils/websocket'
+import { useTaskStore } from '@/store/tasks'
+import toast from '@/utils/toast'
 
 export default {
   name: 'ScanTasks',
@@ -196,6 +206,7 @@ export default {
   setup() {
     const router = useRouter()
     const route = useRoute()
+    const taskStore = useTaskStore()
     const loading = ref(true)
     const errorMessage = ref('')
     const tasks = ref([])
@@ -205,6 +216,8 @@ export default {
     const showCreateModal = ref(false)
     const isCreating = ref(false)
     const selectedTaskType = ref('poc_scan')
+    
+    const { connect, on, disconnect } = useWebSocket('ws://localhost:8888/api/ws')
 
     const filters = ref({
       status: '',
@@ -213,6 +226,18 @@ export default {
       start_date: '',
       end_date: ''
     })
+
+    const resetFilters = () => {
+      filters.value = {
+        status: '',
+        task_type: '',
+        search: '',
+        start_date: '',
+        end_date: ''
+      }
+      currentPage.value = 1
+      loadTasks()
+    }
 
     const newTask = ref({
       task_name: '',
@@ -324,12 +349,92 @@ export default {
       }
     }
 
+    const updateTaskStatus = (taskId, payload) => {
+      taskId = String(taskId)
+      
+      const index = tasks.value.findIndex(t => 
+        String(t.id) === taskId || String(t.task_id) === taskId
+      )
+      
+      if (index !== -1) {
+        tasks.value[index] = { ...tasks.value[index], ...payload }
+      } else if (payload.status) {
+        loadTasks()
+      }
+    }
+
+    const updateTaskProgress = (taskId, progress) => {
+      taskId = String(taskId)
+      const index = tasks.value.findIndex(t => 
+        String(t.id) === taskId || String(t.task_id) === taskId
+      )
+      if (index !== -1) {
+        tasks.value[index].progress = progress
+      }
+    }
+
+    const updateTaskCompleted = (taskId, payload) => {
+      taskId = String(taskId)
+      const index = tasks.value.findIndex(t => 
+        String(t.id) === taskId || String(t.task_id) === taskId
+      )
+      if (index !== -1) {
+        tasks.value[index].status = 'completed'
+        tasks.value[index].progress = 100
+        tasks.value[index].result = payload.result || {}
+        tasks.value[index].completed_at = new Date().toISOString()
+        toast.success('任务完成', `扫描任务 ${taskId.substring(0, 8)}... 已完成`)
+      } else {
+        loadTasks()
+      }
+    }
+    
+    const updateTaskFailed = (taskId, error) => {
+      taskId = String(taskId)
+      const index = tasks.value.findIndex(t => 
+        String(t.id) === taskId || String(t.task_id) === taskId
+      )
+      if (index !== -1) {
+        tasks.value[index].status = 'failed'
+        tasks.value[index].error_message = error
+        toast.error('任务失败', `扫描任务 ${taskId.substring(0, 8)}... 执行失败`)
+      } else {
+        loadTasks()
+      }
+    }
+
     onMounted(() => {
       loadTasks()
 
       if (route.query.task) {
         handleViewTask(parseInt(route.query.task))
       }
+      
+      connect()
+      
+      on('task:update', (payload) => {
+        const data = payload.payload || payload
+        updateTaskStatus(data.task_id, data)
+      })
+      
+      on('task:progress', (payload) => {
+        const data = payload.payload || payload
+        updateTaskProgress(data.task_id, data.progress)
+      })
+      
+      on('task:completed', (payload) => {
+        const data = payload.payload || payload
+        updateTaskCompleted(data.task_id, data)
+      })
+      
+      on('task:failed', (payload) => {
+        const data = payload.payload || payload
+        updateTaskFailed(data.task_id, data.error || data.message)
+      })
+    })
+    
+    onBeforeUnmount(() => {
+      disconnect()
     })
 
     return {
@@ -347,6 +452,7 @@ export default {
       newTask,
       taskTypes,
       loadTasks,
+      resetFilters,
       handleCancelTask,
       handleViewTask,
       handleGenerateReport,
@@ -452,6 +558,50 @@ export default {
   color: var(--text-secondary);
   font-weight: 500;
   font-size: 14px;
+}
+
+.date-separator {
+  margin: 0 8px;
+}
+
+.btn-search {
+  padding: 10px 16px;
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-left: 8px;
+}
+
+.btn-search:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.filter-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.btn-reset {
+  padding: 10px 20px;
+  background-color: #f5f5f5;
+  color: #666;
+  border: 2px solid #ddd;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-reset:hover {
+  background-color: #e8e8e8;
+  border-color: #ccc;
 }
 
 .loading-container {

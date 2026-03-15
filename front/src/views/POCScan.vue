@@ -531,15 +531,17 @@ export default {
 
 .main-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
   gap: var(--spacing-xl);
   align-items: start;
+  min-height: calc(100vh - 200px);
 }
 
 .content-area {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
+  max-width: 100%;
 }
 
 .card {
@@ -894,10 +896,64 @@ export default {
 .sidebar {
   position: sticky;
   top: var(--spacing-lg);
+  height: calc(100vh - 160px);
+  max-height: calc(100vh - 120px);
 }
 
 .sidebar-card {
   position: relative;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(64, 158, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-card .card-header {
+  background: linear-gradient(135deg, #409EFF 0%, #66b1ff 100%);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-card .card-header h2 {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.sidebar-card .card-header h2 .icon {
+  width: 20px;
+  height: 20px;
+  stroke: #fff;
+}
+
+.sidebar-card .card-body {
+  padding: var(--spacing-md);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 100px;
+}
+
+.sidebar-card .card-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-card .card-body::-webkit-scrollbar-thumb {
+  background: #dcdfe6;
+  border-radius: 2px;
+}
+
+.sidebar-card .card-body::-webkit-scrollbar-thumb:hover {
+  background: #c0c4cc;
 }
 
 .refresh-btn {
@@ -984,48 +1040,75 @@ export default {
 }
 
 .history-item {
-  padding: var(--spacing-md);
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all var(--transition-base);
-  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  border: 1px solid #ebeef5;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.history-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #409EFF 0%, #66b1ff 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .history-item:hover {
-  background-color: var(--color-primary-bg);
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f1ff 100%);
   transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+}
+
+.history-item:hover::before {
+  opacity: 1;
 }
 
 .history-item.active {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary-bg);
+  border-color: #409EFF;
+  background: linear-gradient(135deg, #e6f1ff 0%, #d9ecff 100%);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.2);
+}
+
+.history-item.active::before {
+  opacity: 1;
 }
 
 .history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 8px;
 }
 
 .history-name {
   font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.9rem;
+  color: #303133;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  margin-right: var(--spacing-sm);
+  margin-right: 8px;
 }
 
 .history-status {
-  padding: 2px var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-  font-size: 0.7rem;
-  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .history-target {
@@ -1096,17 +1179,38 @@ export default {
 
 @media (max-width: 1200px) {
   .main-layout {
-    grid-template-columns: 1fr 280px;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 350px);
+    gap: var(--spacing-lg);
+  }
+  
+  .sidebar {
+    height: calc(100vh - 140px);
+  }
+  
+  .sidebar-card .card-body {
+    max-height: none;
   }
 }
 
 @media (max-width: 1024px) {
   .main-layout {
     grid-template-columns: 1fr;
+    min-height: auto;
   }
 
   .sidebar {
     position: static;
+    height: auto;
+    max-height: none;
+  }
+  
+  .sidebar-card {
+    height: auto;
+  }
+  
+  .sidebar-card .card-body {
+    max-height: 500px;
+    flex: none;
   }
 
   .history-list {

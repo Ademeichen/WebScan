@@ -13,7 +13,6 @@ from pydantic import BaseModel, Field
 from backend.models import POCVerificationTask, POCVerificationResult
 from backend.ai_agents.poc_system import (
     poc_manager,
-
     verification_engine,
     result_analyzer,
     report_generator
@@ -81,13 +80,20 @@ async def create_verification_task(request: CreateVerificationTaskRequest):
         HTTPException: 创建失败时抛出错误
     """
     try:
+        if not request.poc_id or not request.poc_id.strip():
+            raise HTTPException(status_code=400, detail="POC ID 不能为空")
+        
+        if not request.target or not request.target.strip():
+            raise HTTPException(status_code=400, detail="验证目标不能为空")
+        
+        if not request.target.startswith(('http://', 'https://')):
+            raise HTTPException(status_code=400, detail="验证目标必须是有效的URL格式")
+        
         logger.info(f"📋 创建 POC 验证任务: {request.poc_id} -> {request.target}")
         
-        # 检查 POC 验证是否启用
         if not settings.POC_VERIFICATION_ENABLED:
             raise HTTPException(status_code=403, detail="POC 验证功能已禁用")
         
-        # 创建验证任务
         verification_task = await poc_manager.create_verification_task(
             poc_id=request.poc_id,
             target=request.target,
@@ -95,12 +101,16 @@ async def create_verification_task(request: CreateVerificationTaskRequest):
             task_id=request.task_id
         )
         
-        # 执行验证
+        if not verification_task:
+            raise HTTPException(status_code=404, detail=f"POC 不存在: {request.poc_id}")
+        
         result = await verification_engine.execute_verification_task(
             verification_task
         )
         
-        # 分析结果
+        if not result:
+            raise HTTPException(status_code=500, detail="POC 验证执行失败")
+        
         analysis = await result_analyzer.analyze_single_result(result)
         
         logger.info(f"✅ POC 验证任务创建并执行完成: {verification_task.id}")
@@ -134,6 +144,8 @@ async def create_verification_task(request: CreateVerificationTaskRequest):
                 }
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"❌ 创建 POC 验证任务失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"创建任务失败: {str(e)}")

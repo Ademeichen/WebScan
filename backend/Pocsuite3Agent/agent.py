@@ -10,7 +10,6 @@ Pocsuite3Agent 模块
 - 结果解析和报告生成
 - 与 AI Agent 集成
 """
-
 import logging
 import os
 import tempfile
@@ -105,28 +104,51 @@ class Pocsuite3Agent:
         """
         加载可用的 POC 脚本
         
-        从 Pocsuite3 的 POC 目录加载所有可用的 POC 脚本。
+        从 Pocsuite3 的 POC 目录和用户自定义目录加载所有可用的 POC 脚本。
         """
+        loaded_count = 0
+        
         try:
-            from pocsuite3.lib.core.data import paths
+            from pocsuite3.lib.core.data import paths as pocsuite_paths
             
-            poc_dir = paths.POCSUITE_ROOT_PATH
-            if not poc_dir:
-                logger.warning("无法找到 Pocsuite3 POC 目录")
-                return
+            poc_dirs = []
             
-            # 扫描 POC 目录
-            for root, dirs, files in os.walk(poc_dir):
-                for file in files:
-                    if file.endswith('.py') and not file.startswith('_'):
-                        poc_path = os.path.join(root, file)
-                        poc_name = file[:-3]  # 去掉 .py 后缀
-                        
-                        # 注册 POC
-                        self.poc_registry[poc_name] = poc_path
+            if hasattr(pocsuite_paths, 'POCSUITE_ROOT_PATH') and pocsuite_paths.POCSUITE_ROOT_PATH:
+                poc_dirs.append(pocsuite_paths.POCSUITE_ROOT_PATH)
             
-            logger.info(f"加载了 {len(self.poc_registry)} 个 POC 脚本")
+            try:
+                import pocsuite3
+                pocsuite_module_path = os.path.dirname(pocsuite3.__file__)
+                built_in_poc_dir = os.path.join(pocsuite_module_path, 'pocs')
+                if os.path.isdir(built_in_poc_dir):
+                    poc_dirs.append(built_in_poc_dir)
+            except Exception:
+                pass
             
+            user_poc_dir = os.path.join(os.getcwd(), 'pocs')
+            if os.path.isdir(user_poc_dir):
+                poc_dirs.append(user_poc_dir)
+            
+            for poc_dir in poc_dirs:
+                if not os.path.isdir(poc_dir):
+                    continue
+                    
+                for root, dirs, files in os.walk(poc_dir):
+                    dirs[:] = [d for d in dirs if not d.startswith(('_', '.'))]
+                    
+                    for file in files:
+                        if file.endswith('.py') and not file.startswith('_'):
+                            poc_path = os.path.join(root, file)
+                            poc_name = file[:-3]
+                            
+                            if poc_name not in self.poc_registry:
+                                self.poc_registry[poc_name] = poc_path
+                                loaded_count += 1
+            
+            logger.info(f"加载了 {loaded_count} 个 POC 脚本")
+            
+        except ImportError:
+            logger.warning("Pocsuite3 未安装,POC 自动加载功能不可用")
         except Exception as e:
             logger.error(f"加载 POC 脚本失败: {e}")
 
@@ -135,7 +157,7 @@ class Pocsuite3Agent:
         执行单个 POC
         
         Args:
-            poc_name: POC 名称
+            poc_name: POC 名称或 POC 文件路径
             target: 目标 URL 或 IP
             verify: 是否仅验证(不攻击)
             
@@ -148,13 +170,25 @@ class Pocsuite3Agent:
         try:
             logger.info(f"执行 POC: {poc_name}, 目标: {target}")
             
-            # 构建 Pocsuite3 命令
+            poc_path = self.poc_registry.get(poc_name, poc_name)
+            
+            if not os.path.isabs(poc_path) and not os.path.exists(poc_path):
+                found = False
+                for registered_name, registered_path in self.poc_registry.items():
+                    if registered_name == poc_name or os.path.basename(registered_path) == f"{poc_name}.py":
+                        poc_path = registered_path
+                        found = True
+                        break
+                
+                if not found and not os.path.exists(poc_path):
+                    logger.warning(f"POC 文件不存在: {poc_name}, 尝试直接使用")
+            
             cmd = [
                 sys.executable,
                 "-m",
                 "pocsuite3.cli",
                 "-r",
-                self.poc_registry.get(poc_name, poc_name),
+                poc_path,
                 "-u",
                 target
             ]
@@ -164,7 +198,6 @@ class Pocsuite3Agent:
             else:
                 cmd.append("--attack")
             
-            # 执行命令
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -178,7 +211,6 @@ class Pocsuite3Agent:
             
             execution_time = time.time() - start_time
             
-            # 解析结果
             vulnerable = parse_pocsuite_output(output)
             message = "Vulnerable" if vulnerable else "Not Vulnerable"
             
@@ -208,8 +240,6 @@ class Pocsuite3Agent:
                 error=str(e),
                 execution_time=execution_time
             )
-    
-
     
     async def scan_target(
         self,

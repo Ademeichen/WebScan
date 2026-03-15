@@ -9,15 +9,22 @@ from datetime import datetime
 import asyncio
 import logging
 import json
-from backend.utils.serializers import sanitize_json_data
 
 logger = logging.getLogger(__name__)
+
+try:
+    from backend.utils.serializers import sanitize_json_data
+except ImportError:
+    from utils.serializers import sanitize_json_data
 
 
 async def persist_task_state(task_id: str, stage_status: Dict, progress: int):
     """Persist task state to database"""
     try:
-        from backend.models import Task
+        try:
+            from backend.models import Task
+        except ImportError:
+            from models import Task
         
         try:
             tid = int(task_id)
@@ -228,62 +235,6 @@ class AgentState:
     用于条件分支控制,决定是否继续执行工具还是进入下一阶段。
     """
     
-    # = POC 验证 =
-    poc_verification_tasks: List[Dict[str, Any]] = field(default_factory=list)
-    """
-    待验证的 POC 任务列表
-    
-    包含待执行的 POC 验证任务,每个任务包含:
-    - poc_name: POC 名称
-    - poc_id: POC ID(SSVID)
-    - poc_code: POC 代码
-    - target: 验证目标
-    - priority: 优先级
-    - status: 任务状态(pending/running/completed/failed)
-    """
-    
-    poc_verification_results: List[Dict[str, Any]] = field(default_factory=list)
-    """
-    POC 验证结果列表
-    
-    存储 POC 验证的执行结果,每个结果包含:
-    - poc_name: POC 名称
-    - poc_id: POC ID
-    - target: 验证目标
-    - vulnerable: 是否存在漏洞
-    - message: 结果消息
-    - execution_time: 执行时间
-    - confidence: 结果置信度
-    - severity: 漏洞严重度
-    """
-    
-    poc_execution_stats: Dict[str, Any] = field(default_factory=dict)
-    """
-    POC 执行统计信息
-    
-    包含 POC 验证执行的统计数据:
-    - total_pocs: 总 POC 数量
-    - executed_count: 已执行数量
-    - vulnerable_count: 发现漏洞数量
-    - failed_count: 失败数量
-    - success_rate: 成功率
-    - total_execution_time: 总执行时间
-    - average_execution_time: 平均执行时间
-    """
-    
-    poc_verification_status: str = "pending"
-    """
-    POC 验证状态
-    
-    整体验证流程的状态:
-    - pending: 待执行
-    - running: 执行中
-    - paused: 已暂停
-    - completed: 已完成
-    - failed: 执行失败
-    - cancelled: 已取消
-    """
-    
     # = Seebug Agent =
     seebug_pocs: List[Dict[str, Any]] = field(default_factory=list)
     """
@@ -300,24 +251,45 @@ class AgentState:
     """
     生成的 POC 列表
     
-    存储由Seebug Agent生成的POC代码,每个POC包含:
-    - ssvid: POC ID
+    存储生成的POC代码,每个POC包含:
+    - poc_id: POC ID
     - name: POC 名称
     - code: POC 代码
-    - source: 来源(seebug_agent)
+    - source: 来源
     """
     
     # = Stage Tracking =
     stage_status: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {
-        "openai": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
-        "plugins": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
-        "awvs": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
-        "pocsuite3": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None}
+        "planning": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "tool_execution": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "poc_verification": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None},
+        "report": {"status": "pending", "sub_status": "pending", "progress": 0, "logs": [], "start_time": None, "end_time": None}
     })
+    
+    # = Vulnerability Scan =
+    vuln_scan_results: Dict[str, Any] = field(default_factory=dict)
+    vuln_scan_plugins_loaded: List[str] = field(default_factory=list)
+    vuln_scan_progress: int = 0
+    vuln_scan_metadata: Dict[str, Any] = field(default_factory=dict)
     """
     Stage Tracking
     
     Track the progress of 4 stages: openai, plugins, awvs, pocsuite3.
+    """
+    
+    # = AI Analysis Results =
+    scan_summary: Dict[str, Any] = field(default_factory=dict)
+    """
+    扫描摘要
+    
+    存储AI分析的扫描摘要结果。
+    """
+    
+    report: str = ""
+    """
+    分析报告
+    
+    存储AI生成的完整分析报告。
     """
     
     def update_stage_status(self, stage: str, status: str = None, sub_status: str = None, progress: int = None, log: str = None):
@@ -325,7 +297,10 @@ class AgentState:
         Update stage status and broadcast via WebSocket
         """
         # Import here to avoid circular dependency
-        from backend.api.websocket import manager
+        try:
+            from backend.api.websocket import manager
+        except ImportError:
+            from api.websocket import manager
 
         if stage in self.stage_status:
             if status:
@@ -630,8 +605,43 @@ class AgentState:
             "is_complete": self.is_complete,
             "should_continue": self.should_continue,
             "progress": self.get_progress(),
-            "poc_verification_tasks": self.poc_verification_tasks,
-            "poc_verification_results": self.poc_verification_results,
-            "poc_execution_stats": self.poc_execution_stats,
-            "poc_verification_status": self.poc_verification_status
+            "vuln_scan_results": self.vuln_scan_results,
+            "vuln_scan_plugins_loaded": self.vuln_scan_plugins_loaded,
+            "vuln_scan_progress": self.vuln_scan_progress,
+            "vuln_scan_metadata": self.vuln_scan_metadata,
+            "scan_summary": self.scan_summary,
+            "report": self.report
         }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "AgentState":
+        """
+        从字典创建AgentState实例
+        
+        Args:
+            data: 包含状态信息的字典
+            
+        Returns:
+            AgentState: 新的AgentState实例
+        """
+        return cls(
+            target=data.get("target", ""),
+            task_id=data.get("task_id", ""),
+            planned_tasks=data.get("planned_tasks", []),
+            current_task=data.get("current_task"),
+            completed_tasks=data.get("completed_tasks", []),
+            tool_results=data.get("tool_results", {}),
+            vulnerabilities=data.get("vulnerabilities", []),
+            target_context=data.get("target_context", {}),
+            execution_history=data.get("execution_history", []),
+            errors=data.get("errors", []),
+            retry_count=data.get("retry_count", 0),
+            is_complete=data.get("is_complete", False),
+            should_continue=data.get("should_continue", True),
+            vuln_scan_results=data.get("vuln_scan_results", {}),
+            vuln_scan_plugins_loaded=data.get("vuln_scan_plugins_loaded", False),
+            vuln_scan_progress=data.get("vuln_scan_progress", {}),
+            vuln_scan_metadata=data.get("vuln_scan_metadata", {}),
+            scan_summary=data.get("scan_summary", {}),
+            report=data.get("report", "")
+        )

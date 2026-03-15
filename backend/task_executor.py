@@ -52,7 +52,7 @@ TASK_TIMEOUT_CONFIG = {
     "awvs_scan": 5 * 60 * 60,
     "poc_scan": 60 * 60,
     "ai_agent_scan": 5 * 60 * 60,
-    "default": 30 * 60,
+    "default": 60 * 60,
 }
 
 
@@ -145,12 +145,85 @@ class TaskExecutor:
             self._save_task_states()
 
     def _get_task_timeout(self, task_type: str, scan_config: Dict = None) -> int:
-        """获取任务超时时间"""
+        """获取任务超时时间，设置最小超时限制为 300 秒 (5分钟)"""
         if scan_config and 'timeout' in scan_config:
-            return scan_config['timeout']
+            timeout = scan_config['timeout']
+            if timeout < 300:
+                logger.warning(f"[Timeout] 任务配置的超时时间 {timeout}秒太短，自动调整为 300秒")
+                return max(timeout, 300)
+            return timeout
         if scan_config and 'global_timeout' in scan_config:
-            return scan_config['global_timeout']
+            timeout = scan_config['global_timeout']
+            if timeout < 300:
+                logger.warning(f"[Timeout] 任务配置的全局超时时间 {timeout}秒太短，自动调整为 300秒")
+                return max(timeout, 300)
+            return timeout
         return TASK_TIMEOUT_CONFIG.get(task_type, TASK_TIMEOUT_CONFIG['default'])
+
+    async def reset_scan_data(self):
+        """
+        重置扫描数据 - 项目启动时清空所有扫描相关数据
+        
+        清空内容:
+        - 所有任务记录
+        - 所有扫描结果
+        - 所有漏洞记录
+        - 所有POC扫描结果
+        - 所有报告记录
+        """
+        from backend.models import Task, ScanResult, Vulnerability, POCScanResult, Report
+        
+        logger.info("=" * 50)
+        logger.info("开始重置扫描数据...")
+        
+        try:
+            task_count = await Task.all().count()
+            scan_result_count = await ScanResult.all().count()
+            vuln_count = await Vulnerability.all().count()
+            poc_count = await POCScanResult.all().count()
+            report_count = await Report.all().count()
+            
+            logger.info(f"当前数据统计: 任务={task_count}, 扫描结果={scan_result_count}, 漏洞={vuln_count}, POC结果={poc_count}, 报告={report_count}")
+            
+            await POCScanResult.all().delete()
+            logger.info("已清空 POC 扫描结果表")
+            
+            await Vulnerability.all().delete()
+            logger.info("已清空漏洞表")
+            
+            await ScanResult.all().delete()
+            logger.info("已清空扫描结果表")
+            
+            await Report.all().delete()
+            logger.info("已清空报告表")
+            
+            await Task.all().delete()
+            logger.info("已清空任务表")
+            
+            self.queued_task_ids.clear()
+            self.cancelled_task_ids.clear()
+            self.running_task_id = None
+            self.task_processes.clear()
+            self.task_heartbeats.clear()
+            self.task_start_times.clear()
+            self.task_timeouts.clear()
+            self._persisted_tasks.clear()
+            self._save_task_states()
+            logger.info("已清空内存中的任务状态")
+            
+            while not self.queue.empty():
+                try:
+                    self.queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+            logger.info("已清空任务队列")
+            
+            logger.info("扫描数据重置完成")
+            logger.info("=" * 50)
+            
+        except Exception as e:
+            logger.error(f"重置扫描数据失败: {e}", exc_info=True)
+            raise
 
     async def recover_pending_tasks(self):
         """
@@ -364,7 +437,7 @@ class TaskExecutor:
                             "timeout": timeout
                         }
                     })
-                    
+                    logger.info(f"[Worker] 任务开始执行 | 任务ID: {task_id} | 目标: {target} | 超时: {timeout}s")
                     self.current_execution_task = asyncio.create_task(self._execute_wrapper(task_info))
                     
                     await asyncio.wait_for(
@@ -373,10 +446,34 @@ class TaskExecutor:
                     )
                     
                     duration = time.time() - self.task_start_times.get(task_id, time.time())
+                    logger.info(f"[Worker] 任务执行成功 | 任务ID: {task_id} | 目标: {target} | 耗时: {duration:.2f}s")
                     task_state_logger.log_task_completed(
                         task_id=task_id,
                         duration=duration
                     )
+                    
+                    try:
+                        from backend.models import Task
+                        task = await Task.get(id=task_id)
+                        result_data = {}
+                        try:
+                            result_data = json.loads(task.result) if task.result else {}
+                        except:
+                            pass
+                        
+                        await manager.broadcast({
+                            "type": "task_completed",
+                            "payload": {
+                                "task_id": task_id,
+                                "status": "completed",
+                                "progress": 100,
+                                "result": result_data,
+                                "duration": duration
+                            }
+                        })
+                    except Exception as e:
+                        logger.error(f"Failed to broadcast task completion: {e}")
+                    
                     self._remove_task_state(task_id)
                     
                 except asyncio.TimeoutError:
@@ -433,6 +530,7 @@ class TaskExecutor:
                     if task_id in self.task_timeouts:
                         del self.task_timeouts[task_id]
                     self.queue.task_done()
+                    logger.info(f"[Worker] 任务状态已更新,任务完成 | 任务ID: {task_id} | 状态: completed")
                     
             except asyncio.CancelledError:
                 logger.info("Worker被取消,停止运行")
@@ -491,6 +589,8 @@ class TaskExecutor:
             elif task_type == 'ai_agent_scan':
                 await self.execute_agent_task(task_id, target, scan_config)
             else:
+                logger.warning(f"未知任务类型 {task_type}, 任务ID: {task_id}")
+                # TODO：解决未知任务类型的问题
                 await self.execute_plugin_task(task_id, target, scan_config, task_type)
         except Exception as e:
             logger.error(f"任务分发失败: {e}")
@@ -547,39 +647,124 @@ class TaskExecutor:
         await task.save()
         
         logger.info(f"AI Agent任务 {task_id} 开始执行: {target}")
+
+        async def broadcast_subgraph_progress(subgraph_type: str, status: str, progress: int, execution_time: float = 0):
+            """广播子图进度更新"""
+            await manager.broadcast({
+                "type": "subgraph:progress",
+                "payload": {
+                    "task_id": task_id,
+                    "subgraph_type": subgraph_type,
+                    "status": status,
+                    "progress": progress,
+                    "execution_time": execution_time
+                }
+            })
         
-        # 1. 初始化状态
-        # 从 scan_config 中提取参数
         user_tools = scan_config.get('user_tools', [])
         user_requirement = scan_config.get('user_requirement', '')
         memory_info = scan_config.get('memory_info', '')
+        strategy = scan_config.get('strategy', 'standard')
+        concurrency = scan_config.get('concurrency', 5)
+        timeout = scan_config.get('timeout', 300)
+        selected_tools = scan_config.get('selected_tools', [])
+        
+        strategy_config = {
+            'quick': {'max_depth': 2, 'timeout_per_stage': 60, 'max_tools': 3},
+            'standard': {'max_depth': 3, 'timeout_per_stage': 120, 'max_tools': 5},
+            'deep': {'max_depth': 5, 'timeout_per_stage': 300, 'max_tools': 10}
+        }
+        
+        scan_params = strategy_config.get(strategy, strategy_config['standard'])
+        logger.info(f"扫描策略: {strategy}, 并发数: {concurrency}, 超时: {timeout}s, 参数: {scan_params}")
         
         initial_state = AgentState(
             target=target,
-            task_id=str(task_id),  # 传递任务ID用于WebSocket广播
-            target_context=scan_config or {},
-            user_tools=user_tools,
+            task_id=str(task_id),
+            target_context={
+                **scan_config,
+                'strategy': strategy,
+                'concurrency': concurrency,
+                'timeout': timeout,
+                'selected_tools': selected_tools,
+                **scan_params
+            },
+            user_tools=user_tools or selected_tools,
             user_requirement=user_requirement,
             memory_info=memory_info
         )
         
-        # 从配置中提取特定字段到状态属性
         if scan_config and "custom_tasks" in scan_config and scan_config["custom_tasks"]:
             initial_state.planned_tasks = scan_config["custom_tasks"]
         
-        # 2. 构建并编译图
         agent_graph = ScanAgentGraph()
-        app = agent_graph.graph.compile()
         
-        # 3. 执行工作流
-        # 使用 ainvoke 异步执行
-        final_state = await app.ainvoke(initial_state)
+        await broadcast_subgraph_progress('planning', 'running', 0, 0)
         
-        # 4. 处理结果
+        try:
+            import time
+            start_time = time.time()
+            
+            await broadcast_subgraph_progress('planning', 'running', 10, 0)
+            
+            state1 = await agent_graph.invoke_info_collection(initial_state)
+            planning_time = time.time() - start_time
+            await broadcast_subgraph_progress('planning', 'completed', 100, planning_time)
+            logger.info(f"[Task {task_id}] 信息收集子图完成, 耗时: {planning_time:.2f}s")
+            
+            task.progress = 30
+            await task.save()
+            await manager.broadcast({
+                "type": "task_progress",
+                "payload": {"task_id": task_id, "progress": 30, "status": "running"}
+            })
+            
+            await broadcast_subgraph_progress('tool_execution', 'running', 0, 0)
+            vuln_scan_start = time.time()
+            
+            state2 = await agent_graph.invoke_vuln_scan(state1)
+            vuln_scan_time = time.time() - vuln_scan_start
+            await broadcast_subgraph_progress('tool_execution', 'completed', 100, vuln_scan_time)
+            logger.info(f"[Task {task_id}] 漏洞扫描子图完成, 耗时: {vuln_scan_time:.2f}s")
+            
+            task.progress = 60
+            await task.save()
+            await manager.broadcast({
+                "type": "task_progress",
+                "payload": {"task_id": task_id, "progress": 60, "status": "running"}
+            })
+            
+            await broadcast_subgraph_progress('poc_verification', 'running', 0, 0)
+            poc_start = time.time()
+            
+            state3 = await agent_graph.invoke_poc_verification(state2)
+            poc_time = time.time() - poc_start
+            await broadcast_subgraph_progress('poc_verification', 'completed', 100, poc_time)
+            logger.info(f"[Task {task_id}] POC验证子图完成, 耗时: {poc_time:.2f}s")
+            
+            task.progress = 80
+            await task.save()
+            await manager.broadcast({
+                "type": "task_progress",
+                "payload": {"task_id": task_id, "progress": 80, "status": "running"}
+            })
+            
+            await broadcast_subgraph_progress('report', 'running', 0, 0)
+            report_start = time.time()
+            
+            final_state = await agent_graph.invoke_result_analysis(state3)
+            report_time = time.time() - report_start
+            await broadcast_subgraph_progress('report', 'completed', 100, report_time)
+            logger.info(f"[Task {task_id}] 报告生成子图完成, 耗时: {report_time:.2f}s")
+            
+        except Exception as e:
+            logger.error(f"[Task {task_id}] Agent执行失败: {e}", exc_info=True)
+            await broadcast_subgraph_progress('planning', 'failed', 0, 0)
+            raise
+        
         task.status = 'completed'
         task.progress = 100
         
-        # 提取结果（兼容对象和字典模式）
         def get_state_value(state, key, default):
             if state is None:
                 return default
@@ -611,13 +796,11 @@ class TaskExecutor:
             "stages": stage_status
         }
         
-        # Sanitize entire result data to ensure no circular references exist in any field
         result_data = sanitize_json_data(result_data)
         
         task.result = json.dumps(result_data, default=str)
         await task.save()
         
-        # 5. 持久化漏洞信息
         for vuln in vulnerabilities:
             try:
                 await Vulnerability.create(
@@ -635,7 +818,6 @@ class TaskExecutor:
             except Exception as e:
                 logger.error(f"Failed to save vulnerability: {e}")
 
-        # 6. 生成/保存报告
         if report_content:
             try:
                 await Report.create(
@@ -649,14 +831,32 @@ class TaskExecutor:
         
         logger.info(f"AI Agent任务 {task_id} 执行完成")
         
-        # 广播任务完成
+        await self._create_task_notification(
+            task_id=task_id,
+            task_name=task.task_name,
+            task_type='ai_agent_scan',
+            status='completed',
+            target=target,
+            vuln_count=len(vulnerabilities)
+        )
+        
+        execution_time = time.time() - start_time
+        
         await manager.broadcast({
             "type": "task_completed",
             "payload": {
                 "task_id": task_id,
                 "status": "completed",
                 "progress": 100,
-                "result": result_data
+                "result": result_data,
+                "stages": stage_status,
+                "scan_summary": scan_summary,
+                "final_output": result_data,
+                "vulnerabilities": vulnerabilities,
+                "report": report_content,
+                "target_context": initial_state.target_context if hasattr(initial_state, 'target_context') else scan_config,
+                "execution_history": execution_history,
+                "execution_time": execution_time
             }
         })
 
@@ -680,6 +880,61 @@ class TaskExecutor:
         
         return 'Info'
     
+    async def _create_task_notification(self, task_id: int, task_name: str, task_type: str, status: str, target: str = '', vuln_count: int = 0, error: str = ''):
+        """创建任务完成/失败通知"""
+        try:
+            from backend.models import Notification, User
+            
+            logger.info(f"[Notification] 开始创建通知: task_id={task_id}, task_name={task_name}, status={status}")
+            
+            default_user = await User.get_or_none(id=1)
+            if not default_user:
+                logger.warning(f"[Notification] 无法创建通知: 默认用户不存在")
+                return
+            
+            if status == 'completed':
+                title = f"任务完成: {task_name}"
+                if vuln_count > 0:
+                    message = f"扫描任务 {task_name} 已完成，目标: {target}，发现 {vuln_count} 个漏洞。"
+                    notif_type = 'scan-complete'
+                else:
+                    message = f"扫描任务 {task_name} 已完成，目标: {target}，未发现漏洞。"
+                    notif_type = 'scan-complete'
+            elif status == 'failed':
+                title = f"任务失败: {task_name}"
+                message = f"扫描任务 {task_name} 执行失败，目标: {target}。错误: {error}"
+                notif_type = 'scan-failed'
+            else:
+                logger.info(f"[Notification] 跳过创建通知: status={status} 不是 completed 或 failed")
+                return
+            
+            notification = await Notification.create(
+                user=default_user,
+                title=title,
+                message=message,
+                type=notif_type,
+                read=False
+            )
+            
+            logger.info(f"[Notification] 通知创建成功: id={notification.id}, title={title}")
+            
+            await manager.broadcast({
+                "type": "new_notification",
+                "payload": {
+                    "id": notification.id,
+                    "title": title,
+                    "message": message,
+                    "type": notif_type,
+                    "created_at": notification.created_at.isoformat() if notification.created_at else None,
+                    "read": False
+                }
+            })
+            
+            logger.info(f"[Notification] 通知已广播到 WebSocket: id={notification.id}")
+            
+        except Exception as e:
+            logger.error(f"[Notification] 创建任务通知失败: {e}", exc_info=True)
+    
     async def execute_scan_task(self, task_id: int, target: str, scan_config: Dict):
         """
         执行AWVS扫描任务并实时更新进度
@@ -690,20 +945,27 @@ class TaskExecutor:
             from AVWS.API.Scan import Scan
             from backend.config import settings
             
-            # 获取任务
             task = await Task.get(id=task_id)
             
-            # 初始化AWVS客户端
             target_client = Target(settings.AWVS_API_URL, settings.AWVS_API_KEY)
             scan_client = Scan(settings.AWVS_API_URL, settings.AWVS_API_KEY)
             
-            # 更新任务状态为运行中
+            current_config = json.loads(task.config) if task.config else {}
+            existing_scan_id = current_config.get('awvs_scan_id') or current_config.get('scan_id')
+            existing_target_id = current_config.get('awvs_target_id') or current_config.get('target_id')
+            
+            if existing_scan_id:
+                logger.info(f"任务 {task_id} 恢复监控现有AWVS扫描: {existing_scan_id}")
+                task.status = 'running'
+                await task.save()
+                await self._monitor_scan_progress(task_id, existing_scan_id, scan_client)
+                return
+            
             task.status = 'running'
             task.progress = 5
             await task.save()
             logger.info(f"任务 {task_id} 开始执行: {target}")
             
-            # 创建AWVS目标
             target_desc = f"Task {task_id}: {task.task_name}"
             target_id = target_client.add(target, target_desc)
             
@@ -717,15 +979,13 @@ class TaskExecutor:
             
             logger.info(f"任务 {task_id} 创建AWVS目标成功: {target_id}")
             
-            # 更新任务配置,保存target_id
-            current_config = json.loads(task.config) if task.config else {}
             current_config['awvs_target_id'] = target_id
+            current_config['target_id'] = target_id
             task.config = json.dumps(current_config)
             
             task.progress = 10
             await task.save()
             
-            # 启动扫描
             scan_profile = scan_config.get('profile', 'full_scan')
             scan_id = scan_client.add(target_id, scan_profile)
             
@@ -740,12 +1000,11 @@ class TaskExecutor:
             
             task.progress = 20
             
-            # 更新任务配置,保存scan_id
             current_config['awvs_scan_id'] = scan_id
+            current_config['scan_id'] = scan_id
             task.config = json.dumps(current_config)
             await task.save()
             
-            # 开始监控扫描进度
             await self._monitor_scan_progress(task_id, scan_id, scan_client)
             
         except Exception as e:
@@ -805,73 +1064,16 @@ class TaskExecutor:
                     logger.info(f"任务 {task_id} 扫描完成")
                     await self._save_scan_results(task_id, scan_id, scan_client)
                     
-                    # ---------------------------------------------------------
-                    # 自动触发 POC 验证 (集成 DynamicVerificationEngine)
-                    # ---------------------------------------------------------
-                    try:
-                        # 重新加载任务获取最新配置
-                        task = await Task.get(id=task_id)
-                        current_config = json.loads(task.config) if task.config else {}
-                        
-                        # 检查是否开启自动验证 (默认开启或由 Agent 指定)
-                        # 这里我们默认开启对高危漏洞的验证，除非明确禁用
-                        auto_verify = current_config.get('auto_verify_poc', True)
-                        
-                        if auto_verify:
-                            from backend.models import Vulnerability
-                            
-                            # 获取高危漏洞
-                            high_risk_vulns = await Vulnerability.filter(
-                                task_id=task_id,
-                                severity__in=['Critical', 'High']
-                            ).all()
-                            
-                            if high_risk_vulns:
-                                logger.info(f"Task {task_id}: Found {len(high_risk_vulns)} high-risk vulnerabilities. Triggering POC verification...")
-                                
-                                vuln_list = []
-                                for v in high_risk_vulns:
-                                    vuln_list.append({
-                                        "title": v.title,
-                                        "description": v.description,
-                                        "severity": v.severity,
-                                        "url": v.url,
-                                        "cve_id": None # AWVS 可能未提供 CVE，由动态引擎后续匹配
-                                    })
-                                
-                                # 创建 POC 验证任务
-                                new_task = await Task.create(
-                                    task_name=f"Auto POC Verification for Task {task_id}",
-                                    task_type="poc_scan",
-                                    target=task.target,
-                                    status="queued",
-                                    progress=0,
-                                    config=json.dumps({
-                                        "vulnerabilities": vuln_list,
-                                        "parent_task_id": task_id,
-                                        "source": "auto_trigger_awvs",
-                                        "timeout": 3600 # 1 hour timeout for batch verification
-                                    })
-                                )
-                                
-                                # 提交到执行队列
-                                await self.start_task(new_task.id, task.target, {
-                                    "vulnerabilities": vuln_list,
-                                    "parent_task_id": task_id,
-                                    "source": "auto_trigger_awvs",
-                                    "timeout": 3600
-                                })
-                                logger.info(f"Successfully triggered POC Task {new_task.id}")
-                            else:
-                                logger.info(f"Task {task_id}: No high-risk vulnerabilities found for POC verification")
-                        else:
-                            logger.info(f"Task {task_id}: Auto POC verification disabled")
-                            
-                    except Exception as e:
-                        logger.error(f"Failed to auto-trigger POC verification: {e}", exc_info=True)
-                    # ---------------------------------------------------------
+                    vuln_count = scan_info.get('vulnerabilities_count', 0)
+                    await self._create_task_notification(
+                        task_id=task_id,
+                        task_name=task.task_name,
+                        task_type='awvs_scan',
+                        status='completed',
+                        target=task.target,
+                        vuln_count=vuln_count
+                    )
 
-                    # 广播任务完成
                     await manager.broadcast({
                         "type": "task_completed",
                         "payload": {
@@ -888,7 +1090,15 @@ class TaskExecutor:
                     await task.save()
                     logger.error(f"任务 {task_id} 扫描失败")
                     
-                    # 广播任务失败
+                    await self._create_task_notification(
+                        task_id=task_id,
+                        task_name=task.task_name,
+                        task_type='awvs_scan',
+                        status='failed',
+                        target=task.target,
+                        error='AWVS扫描失败'
+                    )
+                    
                     await manager.broadcast({
                         "type": "task_completed",
                         "payload": {
@@ -963,6 +1173,7 @@ class TaskExecutor:
         else:
             return 20
 
+    # INSPECTION:检查扫描结果是否完整
     async def _save_scan_results(self, task_id: int, scan_id: str, scan_client):
         try:
             from backend.models import Task, Vulnerability
@@ -1400,65 +1611,72 @@ class TaskExecutor:
         logger.info("=" * 50)
         
         if self.worker_task and not self.worker_task.done():
-            logger.info("[1/5] 正在取消Worker任务...")
+            logger.info("[1/6] 正在取消Worker任务...")
             self.worker_task.cancel()
             try:
                 await asyncio.wait_for(self.worker_task, timeout=5)
             except asyncio.CancelledError:
                 pass
             except asyncio.TimeoutError:
-                logger.warning("[1/5] Worker取消超时")
-            logger.info("[1/5] Worker已取消")
+                logger.warning("[1/6] Worker取消超时")
+            logger.info("[1/6] Worker已取消")
         else:
-            logger.info("[1/5] Worker未运行，跳过")
+            logger.info("[1/6] Worker未运行，跳过")
         
         if self.current_execution_task and not self.current_execution_task.done():
-            logger.info("[2/5] 正在取消当前执行任务...")
+            logger.info("[2/6] 正在取消当前执行任务...")
             self.current_execution_task.cancel()
             try:
                 await asyncio.wait_for(self.current_execution_task, timeout=5)
             except asyncio.CancelledError:
                 pass
             except asyncio.TimeoutError:
-                logger.warning("[2/5] 当前任务取消超时")
-            logger.info("[2/5] 当前任务已取消")
+                logger.warning("[2/6] 当前任务取消超时")
+            logger.info("[2/6] 当前任务已取消")
         else:
-            logger.info("[2/5] 无正在执行的任务，跳过")
+            logger.info("[2/6] 无正在执行的任务，跳过")
         
         if self.task_processes:
-            logger.info(f"[3/5] 正在终止 {len(self.task_processes)} 个子进程...")
+            logger.info(f"[3/6] 正在终止 {len(self.task_processes)} 个子进程...")
             terminated_count = 0
             for task_id, process in list(self.task_processes.items()):
                 if process.is_alive():
                     logger.info(f"  终止进程: Task {task_id} (PID: {process.pid})")
-                    process.terminate()
-                    process.join(timeout=3)
-                    if process.is_alive():
-                        logger.warning(f"  进程 {process.pid} 未响应SIGTERM，发送SIGKILL")
-                        process.kill()
-                        process.join(timeout=2)
-                    terminated_count += 1
+                    try:
+                        process.terminate()
+                        process.join(timeout=3)
+                        if process.is_alive():
+                            logger.warning(f"  进程 {process.pid} 未响应SIGTERM，发送SIGKILL")
+                            process.kill()
+                            process.join(timeout=2)
+                            if process.is_alive():
+                                logger.error(f"  进程 {process.pid} 仍然存活，强制关闭")
+                                process.terminate()
+                                process.join(timeout=1)
+                        terminated_count += 1
+                    except Exception as e:
+                        logger.error(f"  终止进程 {process.pid} 时出错: {e}")
             self.task_processes.clear()
-            logger.info(f"[3/5] 已终止 {terminated_count} 个子进程")
+            logger.info(f"[3/6] 已终止 {terminated_count} 个子进程")
         else:
-            logger.info("[3/5] 无活跃子进程，跳过")
+            logger.info("[3/6] 无活跃子进程，跳过")
         
         if self.kafka_producer:
-            logger.info("[4/5] 正在关闭Kafka生产者...")
+            logger.info("[4/6] 正在关闭Kafka生产者...")
             try:
                 self.kafka_producer.flush(timeout=5)
                 self.kafka_producer.close(timeout=5)
-                logger.info("[4/5] Kafka生产者已关闭")
+                logger.info("[4/6] Kafka生产者已关闭")
             except Exception as e:
-                logger.error(f"[4/5] 关闭Kafka生产者时发生错误: {e}")
+                logger.error(f"[4/6] 关闭Kafka生产者时发生错误: {e}")
             finally:
                 self.kafka_producer = None
         else:
-            logger.info("[4/5] Kafka生产者未初始化，跳过")
+            logger.info("[4/6] Kafka生产者未初始化，跳过")
         
-        logger.info("[5/5] 正在保存任务状态...")
+        logger.info("[5/6] 正在保存任务状态...")
         self._save_task_states()
-        logger.info(f"[5/5] 已保存 {len(self._persisted_tasks)} 个任务状态")
+        logger.info(f"[5/6] 已保存 {len(self._persisted_tasks)} 个任务状态")
         
         self.queued_task_ids.clear()
         self.cancelled_task_ids.clear()
@@ -1466,6 +1684,14 @@ class TaskExecutor:
         self.task_start_times.clear()
         self.task_timeouts.clear()
         self.running_task_id = None
+        
+        logger.info("[6/6] 正在清空任务队列...")
+        while not self.queue.empty():
+            try:
+                self.queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+        logger.info("[6/6] 任务队列已清空")
         
         logger.info("=" * 50)
         logger.info("任务执行器关闭完成")

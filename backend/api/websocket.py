@@ -68,24 +68,45 @@ class ConnectionManager:
                 logger.error(f"WebSocket accept failed: {e}")
                 return False
 
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.connection_info:
-            info = self.connection_info[websocket]
-            info.state = ConnectionState.DISCONNECTED
-            info.disconnected_at = datetime.now()
-            duration = None
-            if info.connected_at:
-                duration = (info.disconnected_at - info.connected_at).total_seconds()
-            logger.info(
-                f"WebSocket disconnected. "
-                f"Client: {info.client_host or 'unknown'}, "
-                f"Duration: {duration:.2f}s, "
-                f"Total connections: {len(self.active_connections) - 1}"
-            )
-            del self.connection_info[websocket]
+    async def disconnect(self, websocket: WebSocket):
+        """
+        安全断开 WebSocket 连接
         
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
+        使用 try-finally 确保 socket 正确关闭，
+        捕获 ConnectionResetError 等异常以避免 Windows 平台上的错误日志
+        """
+        async with self._lock:
+            try:
+                if websocket in self.connection_info:
+                    info = self.connection_info[websocket]
+                    info.state = ConnectionState.DISCONNECTING
+                    info.disconnected_at = datetime.now()
+                    duration = None
+                    if info.connected_at:
+                        duration = (info.disconnected_at - info.connected_at).total_seconds()
+                    logger.info(
+                        f"WebSocket disconnected. "
+                        f"Client: {info.client_host or 'unknown'}, "
+                        f"Duration: {duration:.2f}s, "
+                        f"Total connections: {len(self.active_connections) - 1}"
+                    )
+                    del self.connection_info[websocket]
+                
+                if websocket in self.active_connections:
+                    self.active_connections.remove(websocket)
+                    
+            except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
+                logger.debug(f"连接已由远程主机关闭: {type(e).__name__}")
+            except Exception as e:
+                logger.warning(f"断开连接时发生异常: {e}")
+            finally:
+                try:
+                    if websocket.client_state.name == "CONNECTED":
+                        await websocket.close(code=1000, reason="Normal closure")
+                except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError, RuntimeError) as e:
+                    logger.debug(f"关闭 WebSocket 时连接已失效: {type(e).__name__}")
+                except Exception as e:
+                    logger.debug(f"关闭 WebSocket 时发生预期异常: {e}")
 
     async def broadcast(self, message: Dict[str, Any]):
         if not self.active_connections:
@@ -108,7 +129,7 @@ class ConnectionManager:
         
         for conn in failed_connections:
             try:
-                self.disconnect(conn)
+                await self.disconnect(conn)
             except:
                 pass
 
@@ -133,11 +154,23 @@ class ConnectionManager:
                     if connection in self.connection_info:
                         self.connection_info[connection].state = ConnectionState.DISCONNECTING
                     
-                    await connection.close(code=1001, reason=reason)
+                    try:
+                        if connection.client_state.name == "CONNECTED":
+                            await connection.close(code=1001, reason=reason)
+                    except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
+                        logger.debug(f"连接已由远程主机关闭: {type(e).__name__}")
+                except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
+                    logger.debug(f"关闭连接时发生预期的连接错误: {type(e).__name__}")
                 except Exception as e:
                     logger.error(f"关闭WebSocket连接时发生错误: {e}")
-                
-                self.disconnect(connection)
+                finally:
+                    try:
+                        if connection in self.active_connections:
+                            self.active_connections.remove(connection)
+                        if connection in self.connection_info:
+                            del self.connection_info[connection]
+                    except:
+                        pass
         
         self._is_shutting_down = False
         logger.info("所有WebSocket连接已关闭")
@@ -177,10 +210,92 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text("pong")
+            
+            try:
+                message = json.loads(data)
+                message_type = message.get("type")
+                
+                if message_type == "ping":
+                    await websocket.send_json({"type": "pong"})
+                
+                elif message_type == "chat_message":
+                    from backend.api.ai import process_chat_message
+                    
+                    chat_instance_id = message.get("chat_instance_id")
+                    user_message = message.get("message")
+                    
+                    response = await process_chat_message(
+                        chat_instance_id=chat_instance_id,
+                        message=user_message
+                    )
+                    
+                    await websocket.send_json({
+                        "type": "chat_response",
+                        "chat_instance_id": chat_instance_id,
+                        "content": response.get("content", response.get("response", "")),
+                        "created_at": datetime.now().isoformat()
+                    })
+                
+                elif message_type == "create_chat_instance":
+                    from backend.api.ai import create_chat_instance
+                    
+                    title = message.get("title", "新对话")
+                    instance = await create_chat_instance(title)
+                    
+                    await websocket.send_json({
+                        "type": "chat_instance_created",
+                        "instance_id": str(instance.get("id", "")),
+                        "title": instance.get("title", title)
+                    })
+                
+                elif message_type == "get_chat_history":
+                    from backend.api.ai import get_chat_history
+                    
+                    instance_id = message.get("chat_instance_id")
+                    history = await get_chat_history(instance_id)
+                    
+                    await websocket.send_json({
+                        "type": "chat_history",
+                        "history": history
+                    })
+                
+                else:
+                    if data == "ping":
+                        await websocket.send_text("pong")
+                    
+            except json.JSONDecodeError:
+                if data == "ping":
+                    await websocket.send_text("pong")
+                    
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        await manager.disconnect(websocket)
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
-        manager.disconnect(websocket)
+        await manager.disconnect(websocket)
+
+@router.websocket("/ws/progress")
+async def websocket_progress_endpoint(websocket: WebSocket):
+    """
+    WebSocket进度更新端点
+    
+    用于实时推送任务进度更新。
+    前端可以通过此端点接收扫描任务的实时进度信息。
+    """
+    client_host = websocket.client.host if websocket.client else None
+    
+    connected = await manager.connect(websocket, client_host)
+    if not connected:
+        return
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
+            elif data == "subscribe":
+                await websocket.send_json({"type": "subscribed", "message": "已订阅进度更新"})
+    except WebSocketDisconnect:
+        await manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket progress error: {e}")
+        await manager.disconnect(websocket)

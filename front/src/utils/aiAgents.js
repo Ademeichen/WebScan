@@ -42,14 +42,14 @@ export const aiAgentsApi = {
 
   getTask: async (taskId) => {
     return requestWithRetry({
-      url: `/agent/tasks/${taskId}`,
+      url: `/ai_agents/tasks/${taskId}`,
       method: 'get'
     })
   },
 
   getTasks: async (params = {}) => {
     return requestWithRetry({
-      url: '/agent/tasks',
+      url: '/ai_agents/tasks',
       method: 'get',
       params
     })
@@ -57,7 +57,7 @@ export const aiAgentsApi = {
 
   cancelTask: async (taskId) => {
     return requestWithRetry({
-      url: `/agent/tasks/${taskId}`,
+      url: `/ai_agents/tasks/${taskId}`,
       method: 'delete'
     })
   },
@@ -167,99 +167,6 @@ export const aiAgentsApi = {
     })
   },
 
-  executeSubgraph: async (subgraphType, data) => {
-    return requestWithRetry({
-      url: `/subgraphs/${subgraphType}`,
-      method: 'post',
-      data
-    })
-  },
-
-  getSubgraphStatus: async (taskId, subgraphType) => {
-    return requestWithRetry({
-      url: `/subgraphs/${subgraphType}/status/${taskId}`,
-      method: 'get'
-    })
-  },
-
-  getSubgraphResult: async (taskId, subgraphType) => {
-    return requestWithRetry({
-      url: `/subgraphs/${subgraphType}/result/${taskId}`,
-      method: 'get'
-    })
-  },
-
-  executeFullScan: async (data) => {
-    return requestWithRetry({
-      url: '/subgraphs/full-scan',
-      method: 'post',
-      data
-    })
-  },
-
-  executePlanning: async (data) => {
-    return requestWithRetry({
-      url: '/subgraphs/planning',
-      method: 'post',
-      data
-    })
-  },
-
-  executeToolScan: async (data) => {
-    return requestWithRetry({
-      url: '/subgraphs/tool-scan',
-      method: 'post',
-      data
-    })
-  },
-
-  executePOCVerification: async (data) => {
-    return requestWithRetry({
-      url: '/subgraphs/poc-verification',
-      method: 'post',
-      data
-    })
-  },
-
-  generateReport: async (data) => {
-    return requestWithRetry({
-      url: '/subgraphs/report',
-      method: 'post',
-      data
-    })
-  },
-
-  getToolRecommendations: async (target, context = {}) => {
-    return requestWithRetry({
-      url: '/ai_agents/tools/recommend',
-      method: 'post',
-      data: { target, context }
-    })
-  },
-
-  getPluginMatches: async (target) => {
-    return requestWithRetry({
-      url: '/ai_agents/plugins/match',
-      method: 'post',
-      data: { target }
-    })
-  },
-
-  getExecutionPlan: async (plugins) => {
-    return requestWithRetry({
-      url: '/ai_agents/plugins/execution-plan',
-      method: 'post',
-      data: { plugins }
-    })
-  },
-
-  getSubgraphHealth: async () => {
-    return requestWithRetry({
-      url: '/subgraphs/health',
-      method: 'get'
-    })
-  },
-
   getResourceUsage: async () => {
     return requestWithRetry({
       url: '/ai_agents/resources/usage',
@@ -272,6 +179,39 @@ export const aiAgentsApi = {
       url: '/ai_agents/resources/statistics',
       method: 'get'
     })
+  },
+
+  searchPOC: async (cveId) => {
+    return requestWithRetry({
+      url: '/ai_agents/poc/search',
+      method: 'post',
+      data: { cve_id: cveId }
+    })
+  },
+
+  executePOC: async (data) => {
+    return requestWithRetry({
+      url: '/ai_agents/poc/execute',
+      method: 'post',
+      data
+    })
+  },
+
+  batchExecutePOC: async (targets, cveIds) => {
+    return requestWithRetry({
+      url: '/ai_agents/poc/batch-execute',
+      method: 'post',
+      data: { targets, cve_ids: cveIds }
+    })
+  },
+
+  getWorkflowMetrics: async (taskId = null) => {
+    const params = taskId ? { task_id: taskId } : {}
+    return requestWithRetry({
+      url: '/ai_agents/workflow/metrics',
+      method: 'get',
+      params
+    })
   }
 }
 
@@ -282,6 +222,8 @@ export class ProgressWatcher {
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = options.maxReconnectAttempts || 5
     this.reconnectDelay = options.reconnectDelay || 1000
+    this.heartbeatInterval = options.heartbeatInterval || 30000
+    this.heartbeatTimer = null
     this.callbacks = new Map()
     this.isConnected = false
   }
@@ -298,10 +240,14 @@ export class ProgressWatcher {
         console.log('WebSocket连接已建立')
         this.isConnected = true
         this.reconnectAttempts = 0
+        this.startHeartbeat()
         this.emit('connected')
       }
 
       this.ws.onmessage = (event) => {
+        if (event.data === 'pong') {
+          return
+        }
         try {
           const data = JSON.parse(event.data)
           this.handleMessage(data)
@@ -313,6 +259,7 @@ export class ProgressWatcher {
       this.ws.onclose = () => {
         console.log('WebSocket连接已关闭')
         this.isConnected = false
+        this.stopHeartbeat()
         this.emit('disconnected')
         this.attemptReconnect()
       }
@@ -415,6 +362,23 @@ export class ProgressWatcher {
     }
   }
 
+  startHeartbeat() {
+    if (this.heartbeatInterval > 0) {
+      this.heartbeatTimer = setInterval(() => {
+        if (this.isConnected && this.ws) {
+          this.ws.send('ping')
+        }
+      }, this.heartbeatInterval)
+    }
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer)
+      this.heartbeatTimer = null
+    }
+  }
+
   subscribeTask(taskId) {
     return this.send('subscribe', { task_id: taskId })
   }
@@ -424,6 +388,7 @@ export class ProgressWatcher {
   }
 
   disconnect() {
+    this.stopHeartbeat()
     if (this.ws) {
       this.ws.close()
       this.ws = null

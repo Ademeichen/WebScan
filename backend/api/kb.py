@@ -84,8 +84,16 @@ class SeebugPOCDownloadRequest(BaseModel):
     
     Attributes:
         ssvid: POC 的 SSVID
+        save_to_local: 是否保存到本地目录
+        category: POC 分类目录
+        cve_id: CVE 编号
+        vuln_name: 漏洞名称
     """
     ssvid: int
+    save_to_local: bool = False
+    category: str = "seebug"
+    cve_id: Optional[str] = None
+    vuln_name: Optional[str] = None
 
 class SeebugAPIResponse(BaseModel):
     """
@@ -144,20 +152,40 @@ async def list_kb_vulnerabilities(
             query = query.filter(Q(name__icontains=keyword) | Q(cve_id__icontains=keyword) | Q(description__icontains=keyword))
         
         if source:
-            query = query.filter(source=source)
-            
+            try:
+                query = query.filter(source=source)
+            except Exception:
+                logger.warning("source 字段不存在于当前数据库表中，跳过过滤")
+        
         if has_poc is not None:
-            query = query.filter(has_poc=has_poc)
+            try:
+                query = query.filter(has_poc=has_poc)
+            except Exception:
+                logger.warning("has_poc 字段不存在于当前数据库表中，跳过过滤")
             
         total = await query.count()
         items = await query.offset((page - 1) * page_size).limit(page_size).order_by("-updated_at")
         
-        # 格式化日期
         formatted_items = []
         for item in items:
-            item_dict = dict(item)
-            item_dict['created_at'] = item.created_at.strftime("%Y-%m-%d %H:%M:%S")
-            item_dict['updated_at'] = item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+            item_dict = {
+                'id': str(item.id),
+                'cve_id': getattr(item, 'cve_id', None),
+                'name': getattr(item, 'name', ''),
+                'description': getattr(item, 'description', None),
+                'severity': getattr(item, 'severity', None),
+                'cvss_score': getattr(item, 'cvss_score', None),
+                'affected_product': getattr(item, 'affected_product', None),
+                'affected_versions': getattr(item, 'affected_versions', None),
+                'poc_code': getattr(item, 'poc_code', None),
+                'remediation': getattr(item, 'remediation', None),
+                'references': getattr(item, 'references', None),
+                'source': getattr(item, 'source', None),
+                'has_poc': getattr(item, 'has_poc', False),
+                'ssvid': getattr(item, 'ssvid', None),
+                'created_at': item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                'updated_at': item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+            }
             formatted_items.append(item_dict)
             
         return {
@@ -179,14 +207,14 @@ async def list_kb_vulnerabilities(
         }
 
 @router.get("/vulnerabilities/{kb_id}", response_model=Dict[str, Any])
-async def get_kb_vulnerability(kb_id: int):
+async def get_kb_vulnerability(kb_id: str):
     """
     获取漏洞知识库详情
     
     根据漏洞 ID 获取详细的漏洞信息。
     
     Args:
-        kb_id: 漏洞知识库 ID
+        kb_id: 漏洞知识库 ID（字符串格式，避免前端大整数精度丢失）
         
     Returns:
         Dict: 包含漏洞详细信息的响应
@@ -198,13 +226,33 @@ async def get_kb_vulnerability(kb_id: int):
         >>> 获取漏洞详情
         >>> GET /kb/vulnerabilities/1
     """
-    item = await VulnerabilityKB.get_or_none(id=kb_id)
+    try:
+        kb_id_int = int(kb_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid vulnerability ID format")
+    
+    item = await VulnerabilityKB.get_or_none(id=kb_id_int)
     if not item:
         raise HTTPException(status_code=404, detail="Vulnerability not found")
     
-    item_dict = dict(item)
-    item_dict['created_at'] = item.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    item_dict['updated_at'] = item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+    item_dict = {
+        'id': str(item.id),
+        'cve_id': getattr(item, 'cve_id', None),
+        'name': getattr(item, 'name', ''),
+        'description': getattr(item, 'description', None),
+        'severity': getattr(item, 'severity', None),
+        'cvss_score': getattr(item, 'cvss_score', None),
+        'affected_product': getattr(item, 'affected_product', None),
+        'affected_versions': getattr(item, 'affected_versions', None),
+        'poc_code': getattr(item, 'poc_code', None),
+        'remediation': getattr(item, 'remediation', None),
+        'references': getattr(item, 'references', None),
+        'source': getattr(item, 'source', None),
+        'has_poc': getattr(item, 'has_poc', False),
+        'ssvid': getattr(item, 'ssvid', None),
+        'created_at': item.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        'updated_at': item.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+    }
     
     return item_dict
 
@@ -236,7 +284,7 @@ async def search_seebug_poc(keyword: str, page: int = 1, page_size: int = 10) ->
     response = await global_seebug_client.search_poc(keyword, page, page_size)
     
     if response.success and response.data:
-        pocs = response.data.get('data', [])
+        pocs = response.data.get('list', [])
         logger.info(f"从 Seebug 搜索到 {len(pocs)} 个POC")
         return pocs
     else:
@@ -284,6 +332,122 @@ async def get_seebug_poc_detail(ssvid: int) -> Optional[Dict[str, Any]]:
 
 
 
+
+
+@router.post("/search-from-seebug", response_model=Dict[str, Any])
+async def search_from_seebug(request: SeebugPOCSearchRequest):
+    """
+    从 Seebug 实时搜索漏洞并保存到本地数据库
+    
+    该接口会：
+    1. 调用 Seebug API 进行实时搜索
+    2. 将搜索结果保存到 VulnerabilityKB 表（去重）
+    3. 返回搜索结果
+    
+    Args:
+        request: 搜索请求参数
+            - keyword: 搜索关键词
+            - page: 页码，默认为1
+            - page_size: 每页数量，默认为10
+        
+    Returns:
+        Dict: 包含搜索结果和保存统计的响应
+            - code: 状态码
+            - message: 响应消息
+            - data: 包含 pocs 列表、saved_count、total
+        
+    Examples:
+        >>> POST /kb/search-from-seebug
+        >>> {
+        ...     "keyword": "thinkphp",
+        ...     "page": 1,
+        ...     "page_size": 10
+        ... }
+    """
+    try:
+        if not await validate_seebug_apikey(settings.SEEBUG_API_KEY):
+            return {
+                "code": 401,
+                "message": "Seebug API Key 无效，请检查配置",
+                "data": None
+            }
+        
+        poc_list = await search_seebug_poc(request.keyword, request.page, request.page_size)
+        
+        if not poc_list:
+            return {
+                "code": 200,
+                "message": "未搜索到相关漏洞",
+                "data": {
+                    "pocs": [],
+                    "saved_count": 0,
+                    "total": 0
+                }
+            }
+        
+        saved_count = 0
+        updated_count = 0
+        saved_pocs = []
+        
+        for poc in poc_list:
+            ssvid = poc.get('ssvid') or poc.get('id')
+            if not ssvid:
+                continue
+            
+            existing = await VulnerabilityKB.get_or_none(ssvid=ssvid)
+            
+            vuln_data = {
+                'cve_id': poc.get('cve_id', ''),
+                'name': poc.get('name', poc.get('title', poc.get('vul_name', 'Unknown'))),
+                'description': poc.get('description', poc.get('summary', '')),
+                'severity': poc.get('level', poc.get('severity', 'Unknown')),
+                'cvss_score': float(poc.get('cvss_score', 0.0)) if poc.get('cvss_score') else 0.0,
+                'affected_product': poc.get('product', poc.get('affected', '')),
+                'solution': poc.get('solution', poc.get('patch', '')),
+                'source': 'seebug',
+                'has_poc': True,
+                'ssvid': ssvid
+            }
+            
+            if existing:
+                for key, value in vuln_data.items():
+                    if key not in ['ssvid', 'source']:
+                        setattr(existing, key, value)
+                await existing.save()
+                updated_count += 1
+                saved_pocs.append({
+                    **vuln_data,
+                    'id': str(existing.id),
+                    'is_new': False
+                })
+            else:
+                new_vuln = await VulnerabilityKB.create(**vuln_data)
+                saved_count += 1
+                saved_pocs.append({
+                    **vuln_data,
+                    'id': str(new_vuln.id),
+                    'is_new': True
+                })
+        
+        logger.info(f"从 Seebug 搜索完成: 关键词={request.keyword}, 结果数={len(poc_list)}, 新增={saved_count}, 更新={updated_count}")
+        
+        return {
+            "code": 200,
+            "message": f"搜索成功，新增 {saved_count} 条，更新 {updated_count} 条",
+            "data": {
+                "pocs": saved_pocs,
+                "saved_count": saved_count,
+                "updated_count": updated_count,
+                "total": len(saved_pocs)
+            }
+        }
+    except Exception as e:
+        logger.error(f"从 Seebug 搜索失败: {e}")
+        return {
+            "code": 500,
+            "message": f"搜索失败: {str(e)}",
+            "data": None
+        }
 
 
 @router.post("/seebug/poc/search", response_model=Dict[str, Any])
@@ -344,7 +508,12 @@ async def download_poc(request: SeebugPOCDownloadRequest):
     下载 Seebug POC 代码
     
     Args:
-        request: 下载请求参数
+        request: 下载请求参数，包含:
+            - ssvid: POC 的 SSVID
+            - save_to_local: 是否保存到本地目录（默认 False）
+            - category: POC 分类目录（默认 seebug）
+            - cve_id: CVE 编号（可选）
+            - vuln_name: 漏洞名称（可选）
         
     Returns:
         Dict: 包含 POC 代码的响应
@@ -352,11 +521,13 @@ async def download_poc(request: SeebugPOCDownloadRequest):
     Examples:
         >>> POST /kb/seebug/poc/download
         >>> {
-        ...     "ssvid": 97343
+        ...     "ssvid": 97343,
+        ...     "save_to_local": true,
+        ...     "category": "weblogic",
+        ...     "cve_id": "CVE-2020-2551"
         ... }
     """
     try:
-        # 验证 API Key
         if not await validate_seebug_apikey(settings.SEEBUG_API_KEY):
             return {
                 "code": 401,
@@ -364,7 +535,6 @@ async def download_poc(request: SeebugPOCDownloadRequest):
                 "data": None
             }
         
-        # 下载 POC
         poc_code = await download_seebug_poc(request.ssvid)
         
         if poc_code is None:
@@ -374,15 +544,35 @@ async def download_poc(request: SeebugPOCDownloadRequest):
                 "data": None
             }
         
+        response_data = {
+            "ssvid": request.ssvid,
+            "poc_code": poc_code
+        }
+        
+        if request.save_to_local:
+            from backend.ai_agents.poc_system.poc_manager import poc_manager
+            
+            save_result = await poc_manager.save_poc_to_local(
+                ssvid=request.ssvid,
+                poc_code=poc_code,
+                category=request.category,
+                cve_id=request.cve_id,
+                vuln_name=request.vuln_name
+            )
+            
+            if save_result.get("success"):
+                response_data["saved_to"] = save_result.get("file_path")
+                response_data["poc_id"] = save_result.get("poc_id")
+                logger.info(f"POC 已保存到本地: {save_result.get('file_path')}")
+            else:
+                logger.warning(f"POC 保存失败: {save_result.get('error')}")
+        
         logger.info(f"下载 Seebug POC 成功: SSVID={request.ssvid}")
         
         return {
             "code": 200,
             "message": "下载成功",
-            "data": {
-                "ssvid": request.ssvid,
-                "poc_code": poc_code
-            }
+            "data": response_data
         }
     except Exception as e:
         logger.error(f"下载 Seebug POC 失败: {e}")

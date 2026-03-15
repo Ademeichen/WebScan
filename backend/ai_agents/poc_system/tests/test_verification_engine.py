@@ -7,22 +7,40 @@ import pytest
 import sys
 import asyncio
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import Mock, patch, AsyncMock, MagicMock, MagicMock as MockMagic
 from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from ai_agents.poc_system.verification_engine import (
-    VerificationEngine,
-    ExecutionConfig,
-    ExecutionStats
-)
+from backend.Pocsuite3Agent.agent import Pocsuite3Agent, POCResult
+
+
+class MockPOCVerificationResult:
+    """模拟POC验证结果类"""
+    def __init__(self, verification_task, poc_name, poc_id, target, vulnerable, message, output="", error="", execution_time=0.0, confidence=0.0, severity="info", cvss_score=0.0):
+        self.verification_task = verification_task
+        self.poc_name = poc_name
+        self.poc_id = poc_id
+        self.target = target
+        self.vulnerable = vulnerable
+        self.message = message
+        self.output = output
+        self.error = error
+        self.execution_time = execution_time
+        self.confidence = confidence
+        self.severity = severity
+        self.cvss_score = cvss_score
+        
+    @classmethod
+    async def create(cls, verification_task, poc_name, poc_id, target, vulnerable, message, output="", error="", execution_time=0.0, confidence=0.0, severity="info", cvss_score=0.0):
+        return cls(verification_task, poc_name, poc_id, target, vulnerable, message, output, error, execution_time, confidence, severity, cvss_score)
 
 
 class POCVerificationTask:
     """测试用POC验证任务类"""
     def __init__(self, id, poc_name, target, poc_code, timeout=60, max_retries=3):
         self.id = id
+        self.poc_id = poc_name
         self.poc_name = poc_name
         self.target = target
         self.poc_code = poc_code
@@ -31,23 +49,12 @@ class POCVerificationTask:
         self.retry_count = 0
         self.status = "pending"
         self.result = None
+        self.progress = 0
+        self._saved_in_db = False
         
     async def save(self):
         """模拟保存方法"""
-        pass
-
-
-class POCVerificationResult:
-    """测试用POC验证结果类"""
-    def __init__(self, task_id, poc_name, target, status, is_vulnerable, message, execution_time, output=""):
-        self.task_id = task_id
-        self.poc_name = poc_name
-        self.target = target
-        self.status = status
-        self.is_vulnerable = is_vulnerable
-        self.message = message
-        self.execution_time = execution_time
-        self.output = output
+        self._saved_in_db = True
 
 
 class TestExecutionConfig:
@@ -55,6 +62,7 @@ class TestExecutionConfig:
     
     def test_creation(self):
         """测试创建执行配置"""
+        from ai_agents.poc_system.verification_engine import ExecutionConfig
         config = ExecutionConfig(
             poc_id="test_poc",
             target="https://www.baidu.com",
@@ -72,6 +80,7 @@ class TestExecutionConfig:
     
     def test_custom_config(self):
         """测试自定义配置"""
+        from ai_agents.poc_system.verification_engine import ExecutionConfig
         config = ExecutionConfig(
             poc_id="custom_poc",
             target="https://example.com",
@@ -95,6 +104,7 @@ class TestExecutionStats:
     
     def test_initial_stats(self):
         """测试初始统计"""
+        from ai_agents.poc_system.verification_engine import ExecutionStats
         stats = ExecutionStats()
         
         assert stats.total_pocs == 0
@@ -107,6 +117,7 @@ class TestExecutionStats:
     
     def test_update_stats(self):
         """测试更新统计"""
+        from ai_agents.poc_system.verification_engine import ExecutionStats
         stats = ExecutionStats()
         stats.total_pocs = 10
         stats.executed_count = 8
@@ -131,9 +142,9 @@ class TestVerificationEngine:
     
     @pytest.fixture
     def engine(self):
-        with patch('backend.ai_agents.poc_system.verification_engine.Pocsuite3Agent'):
-            engine = VerificationEngine()
-            return engine
+        from ai_agents.poc_system.verification_engine import VerificationEngine
+        engine = VerificationEngine()
+        return engine
     
     @pytest.fixture
     def verification_task(self):
@@ -156,48 +167,78 @@ class TestVerificationEngine:
     @pytest.mark.asyncio
     async def test_execute_verification_task_success(self, engine, verification_task):
         """测试成功执行POC验证任务"""
-        with patch.object(engine, 'pocsuite3_agent', Mock()) as mock_agent:
-            mock_result = POCVerificationResult(
-                task_id=verification_task.id,
-                poc_name=verification_task.poc_name,
-                target=verification_task.target,
-                status="success",
-                is_vulnerable=False,
-                message="POC执行成功",
-                execution_time=1.5,
-                output="test output"
-            )
-            mock_agent.execute_poc = AsyncMock(return_value=mock_result)
-            
-            try:
+        mock_result = MockPOCVerificationResult(
+            verification_task=verification_task,
+            poc_name=verification_task.poc_name,
+            poc_id=verification_task.poc_id,
+            target=verification_task.target,
+            vulnerable=False,
+            message="POC执行成功",
+            output="test output",
+            execution_time=1.5,
+            confidence=0.9,
+            severity="info",
+            cvss_score=0.0
+        )
+        
+        with patch('backend.models.POCVerificationResult.create', new_callable=AsyncMock) as mock_create:
+            mock_create.return_value = mock_result
+            with patch('backend.ai_agents.poc_system.verification_engine.poc_manager') as mock_poc_manager:
+                mock_poc_manager.get_poc_code = AsyncMock(return_value=verification_task.poc_code)
                 result = await engine.execute_verification_task(verification_task)
                 assert result is not None
-            except AttributeError:
-                pytest.skip("VerificationEngine需要适配测试环境")
-
+    
     @pytest.mark.asyncio
     async def test_execute_verification_task_timeout(self, engine, verification_task):
         """测试POC验证任务超时"""
-        try:
-            with patch.object(engine, 'pocsuite3_agent', Mock()) as mock_agent:
-                mock_agent.execute_poc = AsyncMock(side_effect=asyncio.TimeoutError("Execution timeout"))
-                
+        verification_task.timeout = 1
+        mock_result = MockPOCVerificationResult(
+            verification_task=verification_task,
+            poc_name=verification_task.poc_name,
+            poc_id=verification_task.poc_id,
+            target=verification_task.target,
+            vulnerable=False,
+            message="执行超时",
+            output="",
+            error="Execution timeout",
+            execution_time=0.0,
+            confidence=0.0,
+            severity="info",
+            cvss_score=0.0
+        )
+        
+        with patch('backend.models.POCVerificationResult.create', new_callable=AsyncMock) as mock_create:
+            mock_create.return_value = mock_result
+            with patch('backend.ai_agents.poc_system.verification_engine.poc_manager') as mock_poc_manager:
+                mock_poc_manager.get_poc_code = AsyncMock(return_value=verification_task.poc_code)
                 result = await engine.execute_verification_task(verification_task)
                 assert result is not None
-        except AttributeError:
-            pytest.skip("VerificationEngine需要适配测试环境")
     
     @pytest.mark.asyncio
     async def test_execute_verification_task_exception(self, engine, verification_task):
         """测试POC验证任务异常"""
-        try:
-            with patch.object(engine, 'pocsuite3_agent', Mock()) as mock_agent:
-                mock_agent.execute_poc = AsyncMock(side_effect=Exception("Execution error"))
-                
+        verification_task.poc_code = "raise Exception('Test error')"
+        mock_result = MockPOCVerificationResult(
+            verification_task=verification_task,
+            poc_name=verification_task.poc_name,
+            poc_id=verification_task.poc_id,
+            target=verification_task.target,
+            vulnerable=False,
+            message="执行错误",
+            output="",
+            error="Execution error",
+            execution_time=0.0,
+            confidence=0.0,
+            severity="info",
+            cvss_score=0.0
+        )
+        
+        with patch('backend.models.POCVerificationResult.create', new_callable=AsyncMock) as mock_create:
+            mock_create.return_value = mock_result
+            with patch('backend.ai_agents.poc_system.verification_engine.poc_manager') as mock_poc_manager:
+                mock_poc_manager.get_poc_code = AsyncMock(return_value=verification_task.poc_code)
                 result = await engine.execute_verification_task(verification_task)
                 assert result is not None
-        except AttributeError:
-            pytest.skip("VerificationEngine需要适配测试环境")
 
 
 if __name__ == '__main__':

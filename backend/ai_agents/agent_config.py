@@ -44,6 +44,38 @@ class AgentConfig:
     
     默认为60秒。
     """
+    
+    # = 流程执行优化配置 =
+    ENABLE_RESPONSE_TIME_MONITORING: bool = True
+    """
+    是否启用响应时间监控
+    
+    默认为True。
+    """
+    
+    NODE_RESPONSE_TIME_THRESHOLD: float = 30.0
+    """
+    节点响应时间阈值(秒)
+    
+    超过此阈值将触发重试机制。
+    默认为30秒。
+    """
+    
+    NODE_MAX_RETRIES: int = 2
+    """
+    节点最大重试次数
+    
+    当节点执行超时时的最大重试次数。
+    默认为2次。
+    """
+    
+    ENABLE_NODE_SKIPPING: bool = True
+    """
+    是否启用节点跳过机制
+    
+    当节点重试失败后，跳过该节点继续执行。
+    默认为True。
+    """
 
     # = LLM 配置 =
     MODEL_ID: str = settings.MODEL_ID
@@ -84,15 +116,31 @@ class AgentConfig:
     DEFAULT_SCAN_TASKS: List[str] = [
         "baseinfo",
         "portscan",
+        "cms_identify",
         "waf_detect",
         "cdn_detect",
-        "cms_identify",
-        "infoleak_scan"
+        "iplocating",
+        "subdomain_scan",
+        "webside_scan",
+        "webweight_scan",
+        "infoleak_scan",
+        "dirscan",
+        "crawler",
+        "sqli_scan",
+        "xss_scan",
+        "csrf_scan",
+        "vuln_infoleak_scan",
+        "fileupload_scan",
+        "cmdi_scan",
+        "weakpass_scan",
+        "lfi_scan",
+        "ssrf_scan"
     ]
     """
     默认扫描任务列表
     
     规则化规划器使用的默认任务序列。
+    包含所有信息收集和漏洞扫描工具，确保完整的安全检测。
     """
     
     # = 漏洞分析配置 =
@@ -150,8 +198,7 @@ class AgentConfig:
         "medium_vulnerability": 0.6,
         "low_vulnerability": 0.4,
         "baseinfo": 0.3,
-        "portscan": 0.5,
-        "poc_verification": 0.9
+        "portscan": 0.5
     }
     """
     任务优先级权重

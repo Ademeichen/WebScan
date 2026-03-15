@@ -16,7 +16,7 @@ if str(seebug_agent_path) not in sys.path:
 
 # 导入Seebug_Agent模块
 try:
-    from Seebug_Agent import SeebugClient, POCGenerator, SeebugAgent, Config as SeebugConfig
+    from Seebug_Agent import SeebugClient, SeebugAgent, Config
     
     SEBUG_AGENT_AVAILABLE = True
 except ImportError as e:
@@ -52,7 +52,6 @@ class SeebugUtils:
         self._initialized = True
         self.config = None
         self.client = None
-        self.generator = None
         self.agent = None
         
         if SEBUG_AGENT_AVAILABLE:
@@ -63,7 +62,7 @@ class SeebugUtils:
         初始化Seebug组件
         """
         # 创建配置
-        self.config = SeebugConfig()
+        self.config = Config()
         
         # 覆盖默认配置
         if hasattr(settings, 'SEEBUG_API_KEY'):
@@ -77,7 +76,6 @@ class SeebugUtils:
         
         # 创建客户端
         self.client = SeebugClient(self.config)
-        self.generator = POCGenerator(self.config)
         self.agent = SeebugAgent(self.config)
     
     def is_available(self) -> bool:
@@ -97,15 +95,6 @@ class SeebugUtils:
             Optional[SeebugClient]: Seebug客户端实例
         """
         return self.client if self.is_available() else None
-    
-    def get_generator(self) -> Optional['POCGenerator']:
-        """
-        获取POC生成器
-        
-        Returns:
-            Optional[POCGenerator]: POC生成器实例
-        """
-        return self.generator if self.is_available() else None
     
     def get_agent(self) -> Optional['SeebugAgent']:
         """
@@ -152,72 +141,6 @@ class SeebugUtils:
             return {"status": "error", "msg": "Seebug_Agent not available"}
         
         return self.agent.get_vulnerability_detail(ssvid)
-    
-    def generate_poc(self, vul_info: Dict[str, Any]) -> str:
-        """
-        生成POC代码
-        
-        Args:
-            vul_info: 漏洞信息字典
-            
-        Returns:
-            str: 生成的POC代码
-        """
-        if not self.is_available():
-            return ""
-        
-        return self.agent.generate_poc(vul_info)
-    
-    def generate_and_save_poc(self, ssvid: str) -> Dict[str, Any]:
-        """
-        获取漏洞详情并生成保存POC
-        
-        Args:
-            ssvid: 漏洞的SSVID
-            
-        Returns:
-            Dict[str, Any]: 包含POC路径和信息的字典
-        """
-        if not self.is_available():
-            return {"success": False, "message": "Seebug_Agent not available"}
-        
-        return self.agent.generate_and_save_poc(ssvid)
-    
-    def search_and_generate(
-        self,
-        keyword: str,
-        selection: int = 0
-    ) -> Dict[str, Any]:
-        """
-        搜索漏洞并生成POC
-        
-        Args:
-            keyword: 搜索关键词
-            selection: 选择的结果索引
-            
-        Returns:
-            Dict[str, Any]: 包含POC路径和信息的字典
-        """
-        if not self.is_available():
-            return {"success": False, "message": "Seebug_Agent not available"}
-        
-        return self.agent.search_and_generate(keyword, selection)
-    
-    def save_poc(self, poc_code: str, filename: str) -> str:
-        """
-        保存POC代码
-        
-        Args:
-            poc_code: POC代码
-            filename: 文件名
-            
-        Returns:
-            str: 保存的文件路径
-        """
-        if not self.is_available():
-            return ""
-        
-        return self.agent.save_poc(poc_code, filename)
     
     def validate_api_key(self) -> Dict[str, Any]:
         """

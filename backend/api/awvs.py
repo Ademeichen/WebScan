@@ -38,7 +38,7 @@ from backend.poc.tomcat.cve_2017_12615_poc import poc as cve_2017_12615_poc
 from backend.poc.tomcat import cve_2022_22965_poc, cve_2022_47986_poc
 from backend.poc.jboss.cve_2017_12149_poc import poc as cve_2017_12149_poc
 from backend.poc.nexus.cve_2020_10199_poc import poc as cve_2020_10199_poc
-from backend.poc.Drupal.cve_2018_7600_poc import poc as cve_2018_7600_poc
+from backend.poc.drupal.cve_2018_7600_poc import poc as cve_2018_7600_poc
 
 logger = logging.getLogger(__name__)
 
@@ -156,12 +156,24 @@ async def sync_vulnerabilities(scan_id: str, scan_session_id: str, task_id: int)
                 existing_vuln.severity = severity
                 existing_vuln.description = description
                 existing_vuln.remediation = remediation
+                # 更新漏洞类型（如果需要）
+                vuln_type = v.get('vt_name', 'Unknown')
+                if len(vuln_type) > 255:
+                    vuln_type = vuln_type[:252] + "..."
+                    logger.warning(f"漏洞类型名称过长，已截断: {v.get('vt_name', '')[:50]}...")
+                existing_vuln.vuln_type = vuln_type
                 await existing_vuln.save()
             else:
                 # 创建新漏洞
+                vuln_type = v.get('vt_name', 'Unknown')
+                # 截断过长的漏洞类型名称（避免超过数据库字段限制）
+                if len(vuln_type) > 255:
+                    vuln_type = vuln_type[:252] + "..."
+                    logger.warning(f"漏洞类型名称过长，已截断: {v.get('vt_name', '')[:50]}...")
+                
                 await Vulnerability.create(
                     task_id=task_id,
-                    vuln_type=v.get('vt_name', 'Unknown'),
+                    vuln_type=vuln_type,
                     severity=severity,
                     title=v.get('vt_name', 'Unknown'),
                     description=description,
@@ -179,9 +191,27 @@ async def sync_scans_from_awvs():
     """从AWVS同步扫描任务到数据库"""
     try:
         client = get_awvs_client()
+        
+        # 检查AWVS配置是否有效
+        if not client['api_url'] or not client['api_key']:
+            logger.warning("AWVS API配置不完整，跳过同步")
+            return
+            
         s = Scan(client['api_url'], client['api_key'])
-        # 获取AWVS中所有扫描 (使用线程池)
-        awvs_scans = await run_sync(s.get_all)
+        
+        # 获取AWVS中所有扫描 (使用线程池，添加超时)
+        try:
+            awvs_scans = await asyncio.wait_for(run_sync(s.get_all), timeout=8.0)
+        except asyncio.TimeoutError:
+            logger.warning("获取AWVS扫描列表超时")
+            return
+        except Exception as api_error:
+            logger.warning(f"获取AWVS扫描列表失败: {str(api_error)}")
+            return
+
+        if not awvs_scans:
+            logger.info("AWVS中没有扫描任务")
+            return
 
 
         # 获取数据库中所有AWVS任务
@@ -194,8 +224,15 @@ async def sync_scans_from_awvs():
             if scan_id:
                 db_task_map[scan_id] = task
 
-        # 同步更新
+        # 同步更新 (限制最多10条)
+        synced_count = 0
+        max_sync_count = 10
+        
         for scan in awvs_scans:
+            if synced_count >= max_sync_count:
+                logger.info(f"已达到同步数量限制 ({max_sync_count}条)，停止同步")
+                break
+                
             scan_id = scan.get('scan_id')
             target_id = scan.get('target_id')
             
@@ -277,7 +314,8 @@ async def sync_scans_from_awvs():
             
             # 同步漏洞数据 (仅当任务处于处理中或已完成时)
             if target_task and scan_session_id and status in ['running', 'completed', 'cancelled', 'processing', 'aborted']:
-                 await sync_vulnerabilities(scan_id, scan_session_id, target_task.id)
+                await sync_vulnerabilities(scan_id, scan_session_id, target_task.id)
+                synced_count += 1
                 
     except Exception as e:
         logger.error(f"同步AWVS扫描任务失败: {str(e)}")
@@ -287,13 +325,17 @@ async def sync_scans_from_awvs():
 @router.get("/scans", response_model=APIResponse)
 async def get_all_scans():
     """
-    获取所有扫描任务列表 (从数据库获取,并尝试同步)
+    获取所有扫描任务列表 (从数据库获取,暂不同步AWVS数据)
+    
+    注意: 由于AWVS数据量过大，暂时禁用自动同步功能。
+    如需同步，请手动调用 /awvs/sync 接口。
     """
     try:
         logger.info("[AWVS扫描列表] 开始获取扫描列表")
-        # 异步触发同步,不阻塞返回(或者可以阻塞以保证最新)
-        # 为了保证显示最新状态,这里选择阻塞同步
-        await sync_scans_from_awvs()
+        
+        # 暂时禁用AWVS同步，直接从数据库读取
+        # 同步功能已迁移到独立的 /awvs/sync 接口
+        # 如需同步，请手动调用该接口
         
         # 从数据库读取
         tasks = await Task.filter(task_type='awvs_scan').order_by('-created_at').all()
@@ -359,12 +401,44 @@ async def get_all_scans():
                 except:
                     pass
             
+            # 确保task_name存在
+            if not scan_data.get('task_name'):
+                scan_data['task_name'] = task.task_name
+            
+            # 确保target信息完整
+            if not scan_data.get('target'):
+                scan_data['target'] = {'address': task.target, 'description': task.task_name}
+            elif not scan_data['target'].get('description'):
+                scan_data['target']['description'] = task.task_name
+            
+            # 确保scan_id存在（用于前端点击跳转）
+            if not scan_data.get('scan_id'):
+                scan_data['scan_id'] = str(task.id)
+            
             data.append(scan_data)
         
         logger.info(f"获取扫描任务列表成功,共 {len(data)} 个任务")
         return APIResponse(code=200, message="获取成功", data=data)
     except Exception as e:
         logger.error(f"获取扫描任务列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ====== 自动同步AWVS数据 ======
+@router.post("/sync", response_model=APIResponse)
+async def sync_awvs_data(background_tasks: BackgroundTasks):
+    """
+    自动触发AWVS数据同步
+    
+    每次同步最多10条数据，避免数据量过大。
+    """
+    try:
+        # 在后台执行同步，避免阻塞请求
+        background_tasks.add_task(sync_scans_from_awvs)
+        logger.info("[AWVS同步] 已触发后台同步任务")
+        return APIResponse(code=200, message="同步任务已启动，请稍后刷新查看", data={"status": "syncing"})
+    except Exception as e:
+        logger.error(f"启动AWVS同步失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -584,6 +658,51 @@ async def add_target(request: AWVSTargetRequest):
             
     except Exception as e:
         logger.error(f"添加目标失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ====== 删除目标 ======
+@router.delete("/target/{target_id}", response_model=APIResponse)
+async def delete_target(target_id: str):
+    """
+    删除扫描目标
+    """
+    try:
+        client = get_awvs_client()
+        t = Target(client['api_url'], client['api_key'])
+        
+        result = t.delete(target_id)
+        
+        if result:
+            logger.info(f"删除目标成功: {target_id}")
+            return APIResponse(code=200, message="删除成功", data={"target_id": target_id})
+        else:
+            return APIResponse(code=400, message="删除目标失败", data=None)
+            
+    except Exception as e:
+        logger.error(f"删除目标失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ====== 获取目标详情 ======
+@router.get("/target/{target_id}", response_model=APIResponse)
+async def get_target_detail(target_id: str):
+    """
+    获取目标详情
+    """
+    try:
+        client = get_awvs_client()
+        t = Target(client['api_url'], client['api_key'])
+        
+        target_data = t.get(target_id)
+        
+        if target_data:
+            return APIResponse(code=200, message="获取成功", data=target_data)
+        else:
+            return APIResponse(code=404, message="目标不存在", data=None)
+            
+    except Exception as e:
+        logger.error(f"获取目标详情失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

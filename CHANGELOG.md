@@ -1,6 +1,82 @@
 # Changelog
-
 All notable changes to the WebScan AI Security Platform will be documented in this file.
+
+## [1.0.1] - 2026-03-14
+
+### Fixed
+#### 文档修复
+- **README.md格式修复**: 修复了多处端口号显示格式错误
+  - 修复配置示例中 `PORT=:8888` 为 `PORT=8888`
+  - 修复uvicorn命令中 `--:8888` 为 `--port 8888`
+  - 修复环境变量中 `VITE_REQUEST_TIMEOUT=:88880` 为 `VITE_REQUEST_TIMEOUT=8880`
+  - 修复Docker Compose端口映射格式
+  - 修复端口配置表格中的显示格式
+
+---
+
+## [1.0.0] - 2026-03-13
+
+### Added
+#### API兼容性分析
+- **前端API匹配率100%**: 所有91个前端API接口都已成功匹配后端实现
+- **API分析工具**: 新增 `analyze_all_apis_fixed.py` 完整的前后端API兼容性分析脚本
+- **API文档更新**: 在主README.md中添加完整的API兼容性分析章节
+- **API模块统计**: 13个API模块，共91个前端接口，141个后端接口
+
+#### 前端API优化
+- **移除未使用的API**: 清理了前端api.js中未使用的API定义
+  - 移除 `vulnerabilitiesApi` 整个模块
+  - 移除 `awvsApi.getVulnerabilities` 
+  - 移除 `kbApi.addKnowledge`
+  - 移除 `kbApi.updateKnowledge`
+  - 移除 `kbApi.deleteKnowledge`
+
+#### 文档优化
+- **删除冗余文档**: 移除重复的README文件
+  - 删除 `backend/README.md`（内容与根目录README重复）
+  - 删除 `backend/api/README.md`（内容与根目录README重复）
+- **更新主README**: 添加完整的API兼容性分析章节，包含：
+  - API统计数据表格
+  - 匹配成功率统计
+  - 所有API模块的详细列表
+  - 主要API端点示例
+  - API分析工具使用说明
+
+### Changed
+#### API接口优化
+- **前端API路径修复**: 修复了API解析脚本中的路径识别错误
+- **API匹配算法改进**: 使用括号匹配算法确保每个API方法正确提取URL和HTTP方法
+
+### API兼容性统计
+| 指标 | 数值 | 说明 |
+|------|------|------|
+| 后端API总数 | 141 | FastAPI提供的所有接口 |
+| 前端API总数 | 91 | Vue3项目使用的API接口 |
+| 匹配成功 | 91 | 前后端接口完全匹配 |
+| 前端未匹配 | 0 | 前端所有API都有对应的后端实现 |
+| 后端未匹配 | 51 | 后端有51个接口前端暂未使用 |
+| 前端API匹配率 | 100% | 所有前端API都已成功匹配 |
+| 后端API使用率 | 64.5% | 前端使用了64.5%的后端接口 |
+
+### API模块分布
+| 模块 | 接口数量 | 状态 |
+|------|---------|------|
+| scanApi | 11 | ✅ 全部匹配 |
+| tasksApi | 4 | ✅ 全部匹配 |
+| reportsApi | 3 | ✅ 全部匹配 |
+| settingsApi | 8 | ✅ 全部匹配 |
+| pocApi | 2 | ✅ 全部匹配 |
+| awvsApi | 9 | ✅ 全部匹配 |
+| aiApi | 3 | ✅ 全部匹配 |
+| kbApi | 4 | ✅ 全部匹配 |
+| userApi | 4 | ✅ 全部匹配 |
+| notificationsApi | 5 | ✅ 全部匹配 |
+| pocVerificationApi | 7 | ✅ 全部匹配 |
+| pocFilesApi | 5 | ✅ 全部匹配 |
+| seebugAgentApi | 3 | ✅ 全部匹配 |
+| aiAgentsApi | 18 | ✅ 全部匹配 |
+
+---
 
 ## [1.0.0] - 2026-02-23
 

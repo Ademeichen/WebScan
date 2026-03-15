@@ -34,6 +34,7 @@ export const useTaskStore = defineStore('tasks', () => {
   const runningTasks = computed(() => tasks.value.filter(t => t.status === 'running'))
   const completedTasks = computed(() => tasks.value.filter(t => t.status === 'completed'))
   const failedTasks = computed(() => tasks.value.filter(t => t.status === 'failed'))
+  const queuedTasks = computed(() => tasks.value.filter(t => t.status === 'queued' || t.status === 'pending'))
 
   function setTasks(newTasks) {
     tasks.value = newTasks
@@ -41,20 +42,67 @@ export const useTaskStore = defineStore('tasks', () => {
   }
 
   function addTask(task) {
-    tasks.value.unshift(task)
+    const normalizedTask = {
+      ...task,
+      id: String(task.id || task.task_id),
+      task_id: String(task.id || task.task_id)
+    }
+    const existingIndex = tasks.value.findIndex(t => t.id === normalizedTask.id || t.task_id === normalizedTask.task_id)
+    if (existingIndex === -1) {
+      tasks.value.unshift(normalizedTask)
+    } else {
+      tasks.value[existingIndex] = { ...tasks.value[existingIndex], ...normalizedTask }
+    }
     saveToStorage({ tasks: tasks.value, currentTask: currentTask.value })
   }
 
   function updateTask(taskId, updates) {
-    const index = tasks.value.findIndex(t => t.id === taskId)
+    const normalizedId = String(taskId)
+    const index = tasks.value.findIndex(t => 
+      String(t.id) === normalizedId || String(t.task_id) === normalizedId
+    )
     if (index !== -1) {
       tasks.value[index] = { ...tasks.value[index], ...updates }
       saveToStorage({ tasks: tasks.value, currentTask: currentTask.value })
     }
   }
 
+  function updateTaskProgress(taskId, progress) {
+    updateTask(taskId, { progress })
+  }
+
+  function updateTaskStatus(taskId, status, extra = {}) {
+    updateTask(taskId, { status, ...extra })
+  }
+
+  function completeTask(taskId, result) {
+    updateTask(taskId, { 
+      status: 'completed', 
+      progress: 100, 
+      result,
+      completed_at: new Date().toISOString()
+    })
+  }
+
+  function failTask(taskId, errorMessage) {
+    updateTask(taskId, { 
+      status: 'failed', 
+      error_message: errorMessage
+    })
+  }
+
+  function getTaskById(taskId) {
+    const normalizedId = String(taskId)
+    return tasks.value.find(t => 
+      String(t.id) === normalizedId || String(t.task_id) === normalizedId
+    )
+  }
+
   function removeTask(taskId) {
-    tasks.value = tasks.value.filter(t => t.id !== taskId)
+    const normalizedId = String(taskId)
+    tasks.value = tasks.value.filter(t => 
+      String(t.id) !== normalizedId && String(t.task_id) !== normalizedId
+    )
     saveToStorage({ tasks: tasks.value, currentTask: currentTask.value })
   }
 
@@ -91,9 +139,15 @@ export const useTaskStore = defineStore('tasks', () => {
     runningTasks,
     completedTasks,
     failedTasks,
+    queuedTasks,
     setTasks,
     addTask,
     updateTask,
+    updateTaskProgress,
+    updateTaskStatus,
+    completeTask,
+    failTask,
+    getTaskById,
     removeTask,
     setCurrentTask,
     setLoading,
